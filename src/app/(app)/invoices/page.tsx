@@ -77,7 +77,7 @@ const statusVariantMap: { [key: string]: 'default' | 'secondary' | 'destructive'
 
 export default function InvoicesPage() {
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto max-w-4xl space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold font-headline">Invoice Engine</h1>
