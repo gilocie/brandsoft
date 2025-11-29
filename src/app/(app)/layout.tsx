@@ -92,7 +92,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             )}
           </SidebarMenu>
         </SidebarContent>
-        <SidebarFooter className="mt-auto mb-4">
+        <SidebarFooter className="mt-auto mb-12">
           <SidebarMenu>
             <SidebarMenuItem>
               {config ? (
