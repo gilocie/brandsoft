@@ -121,7 +121,7 @@ export default function NewInvoicePage() {
                 control={form.control}
                 name="invoiceDate"
                 render={({ field }) => (
-                  <FormItem className="flex flex-col">
+                  <FormItem>
                     <FormLabel>Invoice Date</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
@@ -129,7 +129,7 @@ export default function NewInvoicePage() {
                           <Button
                             variant={"outline"}
                             className={cn(
-                              "pl-3 text-left font-normal",
+                              "w-full pl-3 text-left font-normal",
                               !field.value && "text-muted-foreground"
                             )}
                           >
@@ -155,7 +155,7 @@ export default function NewInvoicePage() {
                 control={form.control}
                 name="dueDate"
                 render={({ field }) => (
-                  <FormItem className="flex flex-col">
+                  <FormItem>
                     <FormLabel>Due Date</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
@@ -163,7 +163,7 @@ export default function NewInvoicePage() {
                           <Button
                             variant={"outline"}
                             className={cn(
-                              "pl-3 text-left font-normal",
+                              "w-full pl-3 text-left font-normal",
                               !field.value && "text-muted-foreground"
                             )}
                           >
