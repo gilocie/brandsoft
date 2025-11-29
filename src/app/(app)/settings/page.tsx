@@ -12,7 +12,6 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from '@/components/ui/card';
 import {
   Form,
@@ -23,15 +22,17 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, UploadCloud } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
 
 const settingsSchema = z.object({
   businessName: z.string().min(2, "Business name is required"),
-  logo: z.string().url("Must be a valid URL").optional().or(z.literal('')),
+  logo: z.string().optional(),
   primaryColor: z.string().optional(),
   secondaryColor: z.string().optional(),
   defaultCurrency: z.string().min(1, "Default currency is required"),
@@ -49,6 +50,8 @@ export default function SettingsPage() {
   const { config, saveConfig, addCurrency } = useBrandsoft();
   const { toast } = useToast();
   const [isAddCurrencyOpen, setIsAddCurrencyOpen] = useState(false);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const form = useForm<SettingsFormData>({
     resolver: zodResolver(settingsSchema),
@@ -75,8 +78,23 @@ export default function SettingsPage() {
             secondaryColor: config.brand.secondaryColor,
             defaultCurrency: config.profile.defaultCurrency,
         });
+        setLogoPreview(config.brand.logo);
     }
   }, [config, form]);
+  
+  const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = reader.result as string;
+        setLogoPreview(dataUrl);
+        form.setValue('logo', dataUrl, { shouldDirty: true });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
 
   const onSubmit = (data: SettingsFormData) => {
     if (config) {
@@ -134,12 +152,47 @@ export default function SettingsPage() {
                     <CardDescription>Update your company's branding details.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                     <FormField control={form.control} name="businessName" render={({ field }) => (
-                        <FormItem><FormLabel>Business Name</FormLabel><FormControl><Input placeholder="Your Company LLC" {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
-                    <FormField control={form.control} name="logo" render={({ field }) => (
-                        <FormItem><FormLabel>Logo URL (Optional)</FormLabel><FormControl><Input placeholder="https://example.com/logo.png" {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                         <div className="space-y-4">
+                            <FormField control={form.control} name="businessName" render={({ field }) => (
+                                <FormItem><FormLabel>Business Name</FormLabel><FormControl><Input placeholder="Your Company LLC" {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                            <FormField control={form.control} name="logo" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Logo</FormLabel>
+                                    <FormControl>
+                                        <>
+                                            <Input
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                ref={fileInputRef}
+                                                onChange={handleLogoChange}
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                onClick={() => fileInputRef.current?.click()}
+                                                className="w-full"
+                                            >
+                                                <UploadCloud className="mr-2 h-4 w-4" /> Upload Logo
+                                            </Button>
+                                        </>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+                         </div>
+                         <div className="flex flex-col items-center justify-center space-y-2 rounded-md border border-dashed p-4 h-full">
+                            <Avatar className="h-24 w-24">
+                                <AvatarImage src={logoPreview || undefined} alt={config?.brand.businessName} />
+                                <AvatarFallback className="text-3xl">
+                                    {config?.brand.businessName?.charAt(0).toUpperCase()}
+                                </AvatarFallback>
+                            </Avatar>
+                            <p className="text-sm text-muted-foreground">Logo Preview</p>
+                         </div>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField control={form.control} name="primaryColor" render={({ field }) => (
                         <FormItem><FormLabel>Primary Color</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>
