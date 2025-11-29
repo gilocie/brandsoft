@@ -95,7 +95,12 @@ export default function CustomersPage() {
   };
 
   const handleNextStep = async () => {
-    const isValid = await form.trigger(['name', 'email', 'phone', 'address']);
+    const fieldsToValidate: (keyof CustomerFormData)[] = ['name', 'email'];
+    if (customerType === 'personal') {
+        fieldsToValidate.push('phone', 'address');
+    }
+    const isValid = await form.trigger(fieldsToValidate);
+    
     if (isValid) {
         if (customerType === 'company') {
             setFormStep(2);
@@ -157,14 +162,16 @@ export default function CustomersPage() {
                                 <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
                             )} />
                         </div>
-                        <FormField control={form.control} name="phone" render={({ field }) => (
-                            <FormItem><FormLabel>Phone (Optional)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                        )} />
-                        {customerType === 'personal' && (
-                             <FormField control={form.control} name="address" render={({ field }) => (
-                                <FormItem><FormLabel>Address (Optional)</FormLabel><FormControl><Textarea {...field} className="min-h-[80px]" /></FormControl><FormMessage /></FormItem>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <FormField control={form.control} name="phone" render={({ field }) => (
+                                <FormItem><FormLabel>Phone (Optional)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                             )} />
-                        )}
+                            {customerType === 'personal' && (
+                                <FormField control={form.control} name="address" render={({ field }) => (
+                                    <FormItem><FormLabel>Address (Optional)</FormLabel><FormControl><Textarea {...field} className="min-h-[80px]" /></FormControl><FormMessage /></FormItem>
+                                )} />
+                            )}
+                        </div>
                     </div>
                 )}
 
