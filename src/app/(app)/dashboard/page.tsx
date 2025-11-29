@@ -71,13 +71,11 @@ export default function DashboardPage() {
               </div>
             </CardHeader>
             <CardContent className="flex-grow flex items-end">
-              <Link href={module.href} passHref>
-                <Button asChild variant="ghost" className="text-primary hover:text-primary p-0 h-auto">
-                  <>
-                    Start Creating <ArrowRight className="ml-2 h-4 w-4" />
-                  </>
-                </Button>
-              </Link>
+              <Button asChild variant="ghost" className="text-primary hover:text-primary p-0 h-auto">
+                <Link href={module.href}>
+                  Start Creating <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
             </CardContent>
           </Card>
         ))}
