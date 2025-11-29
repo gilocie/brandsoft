@@ -11,6 +11,7 @@ import {
   SidebarFooter,
   SidebarInset,
   SidebarTrigger,
+  SidebarMenuSkeleton,
 } from "@/components/ui/sidebar";
 import {
   BriefcaseBusiness,
