@@ -92,27 +92,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             )}
           </SidebarMenu>
         </SidebarContent>
-        <SidebarFooter className="mt-auto mb-[50px]">
+        <SidebarFooter className="mt-auto mb-4">
           <SidebarMenu>
             <SidebarMenuItem>
               {config ? (
-                <div className="flex items-center gap-3 p-2 text-left">
+                <div className="flex items-center justify-center p-2 text-left">
                   <Avatar className="h-9 w-9">
                     <AvatarImage src={config.brand.logo} alt={config.brand.businessName} />
                     <AvatarFallback>{config.brand.businessName?.charAt(0).toUpperCase()}</AvatarFallback>
                   </Avatar>
-                  <div className="flex-1 overflow-hidden">
-                      <p className="text-sm font-medium truncate">{config.brand.businessName}</p>
-                      <p className="text-xs text-sidebar-foreground/70 truncate">{config.profile.email}</p>
-                  </div>
                 </div>
               ) : (
-                <div className="flex items-center gap-3 p-2">
+                <div className="flex items-center justify-center p-2">
                   <Skeleton className="h-9 w-9 rounded-full" />
-                  <div className="flex-1 space-y-1">
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-3 w-32" />
-                  </div>
                 </div>
               )}
             </SidebarMenuItem>
@@ -134,7 +126,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </header>
         <div className="flex-1 flex flex-col">
             <main className="flex-1 overflow-y-auto p-4 md:p-6">{children}</main>
-            <footer className="p-4 md:p-6 border-t mt-auto text-center text-sm text-muted-foreground">
+            <footer className="p-4 text-center text-sm text-foreground bg-sidebar sticky bottom-0">
               © {new Date().getFullYear()} BrandSoft. All rights reserved.
             </footer>
         </div>
