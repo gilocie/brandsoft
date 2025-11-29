@@ -1,7 +1,8 @@
 
 'use client';
 
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useState } from 'react';
+import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from "@/components/ui/button";
@@ -11,21 +12,25 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from "@/lib/utils";
-import { CalendarIcon, PlusCircle, Trash2, Save, Send, Eye } from 'lucide-react';
+import { CalendarIcon, PlusCircle, Trash2, Save, Send, Eye, UserPlus } from 'lucide-react';
 import { format } from "date-fns";
 import Link from 'next/link';
+import { useBrandsoft, type Customer } from '@/hooks/use-brandsoft.tsx';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 const lineItemSchema = z.object({
+  productId: z.string().optional(),
   description: z.string().min(1, 'Description is required.'),
   quantity: z.coerce.number().min(0.01, 'Quantity must be at least 0.01.'),
   price: z.coerce.number().min(0.01, 'Price must be at least 0.01.'),
 });
 
 const formSchema = z.object({
-  customerName: z.string().min(2, 'Customer name is required.'),
-  customerEmail: z.string().email('Invalid email address.'),
+  customerId: z.string().min(1, 'Customer is required.'),
   invoiceDate: z.date(),
   dueDate: z.date(),
   status: z.enum(['Draft', 'Pending', 'Paid', 'Overdue']),
@@ -35,12 +40,22 @@ const formSchema = z.object({
 
 type InvoiceFormData = z.infer<typeof formSchema>;
 
+const NewCustomerFormSchema = z.object({
+  name: z.string().min(2, "Name is required"),
+  email: z.string().email("Invalid email"),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+});
+type NewCustomerFormData = z.infer<typeof NewCustomerFormSchema>;
+
 export default function NewInvoicePage() {
+  const { config, addCustomer, addProduct } = useBrandsoft();
+  const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
+  const [useManualEntry, setUseManualEntry] = useState<boolean[]>([]);
+  
   const form = useForm<InvoiceFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      customerName: '',
-      customerEmail: '',
       invoiceDate: new Date(),
       status: 'Draft',
       lineItems: [{ description: '', quantity: 1, price: 0 }],
@@ -48,14 +63,38 @@ export default function NewInvoicePage() {
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, update } = useFieldArray({
     control: form.control,
     name: "lineItems",
   });
 
+  const newCustomerForm = useForm<NewCustomerFormData>({
+    resolver: zodResolver(NewCustomerFormSchema),
+    defaultValues: { name: "", email: "", phone: "", address: "" },
+  });
+
+  function onAddNewCustomer(data: NewCustomerFormData) {
+    const newCustomer = addCustomer(data);
+    form.setValue('customerId', newCustomer.id, { shouldValidate: true });
+    setIsAddCustomerOpen(false);
+    newCustomerForm.reset();
+  }
+
   function onSubmit(data: InvoiceFormData) {
     console.log(data);
     // Here you would typically send the data to your backend or state management
+  }
+  
+  const handleProductSelect = (productId: string, index: number) => {
+    const product = config?.products.find(p => p.id === productId);
+    if (product) {
+      update(index, {
+        productId: product.id,
+        description: product.name,
+        price: product.price,
+        quantity: 1,
+      });
+    }
   }
 
   const subtotal = form.watch('lineItems').reduce((acc, item) => {
@@ -82,29 +121,30 @@ export default function NewInvoicePage() {
             <CardHeader>
               <CardTitle>Customer Details</CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2">
+            <CardContent className="grid gap-4">
               <FormField
                 control={form.control}
-                name="customerName"
+                name="customerId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Customer Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g. John Doe" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="customerEmail"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Customer Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="e.g. john@example.com" {...field} />
-                    </FormControl>
+                    <FormLabel>Customer</FormLabel>
+                    <div className="flex gap-2">
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a customer" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {config?.customers?.map((c: Customer) => (
+                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button type="button" variant="outline" size="icon" onClick={() => setIsAddCustomerOpen(true)}>
+                        <UserPlus className="h-4 w-4" />
+                      </Button>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -218,67 +258,106 @@ export default function NewInvoicePage() {
             <CardContent>
                 <div className="space-y-4">
                   {fields.map((field, index) => (
-                    <div key={field.id} className="flex gap-4 items-end p-2 border rounded-md">
-                      <FormField
-                        control={form.control}
-                        name={`lineItems.${index}.description`}
-                        render={({ field }) => (
-                          <FormItem className="flex-grow">
-                             <FormLabel className={cn(index !== 0 && "sr-only")}>Description</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Item or service description" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                       <FormField
-                        control={form.control}
-                        name={`lineItems.${index}.quantity`}
-                        render={({ field }) => (
-                          <FormItem className="w-24">
-                             <FormLabel className={cn(index !== 0 && "sr-only")}>Qty</FormLabel>
-                            <FormControl>
-                              <Input type="number" placeholder="1" {...field} />
-                            </FormControl>
-                             <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                       <FormField
-                        control={form.control}
-                        name={`lineItems.${index}.price`}
-                        render={({ field }) => (
-                          <FormItem className="w-32">
-                             <FormLabel className={cn(index !== 0 && "sr-only")}>Price</FormLabel>
-                            <FormControl>
-                              <Input type="number" placeholder="100.00" {...field} />
-                            </FormControl>
-                             <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <div className="w-32 text-right font-medium">
-                         <FormLabel className={cn(index !== 0 && "sr-only")}>Total</FormLabel>
-                        <p className="h-10 flex items-center justify-end pr-3">
-                        ${((form.watch(`lineItems.${index}.quantity`) || 0) * (form.watch(`lineItems.${index}.price`) || 0)).toFixed(2)}
-                        </p>
+                    <div key={field.id} className="p-2 border rounded-md space-y-2">
+                       <div className="flex gap-4 items-start">
+                         <div className="flex-grow space-y-2">
+                           <div className="flex items-center space-x-2">
+                              <Switch id={`manual-entry-${index}`} checked={useManualEntry[index]} onCheckedChange={(checked) => setUseManualEntry(prev => { const next = [...prev]; next[index] = checked; return next; })} />
+                              <Label htmlFor={`manual-entry-${index}`}>Enter Manually</Label>
+                           </div>
+
+                          {useManualEntry[index] ? (
+                            <FormField
+                              control={form.control}
+                              name={`lineItems.${index}.description`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="sr-only">Description</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="Item or service description" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          ) : (
+                            <FormField
+                              control={form.control}
+                              name={`lineItems.${index}.productId`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="sr-only">Product</FormLabel>
+                                    <Select onValueChange={(value) => { field.onChange(value); handleProductSelect(value, index); }}>
+                                      <FormControl>
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Select a product" />
+                                        </SelectTrigger>
+                                      </FormControl>
+                                      <SelectContent>
+                                        {config?.products?.map(p => (
+                                          <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          )}
+                         </div>
+
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          onClick={() => remove(index)}
+                          className="mt-6"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        onClick={() => remove(index)}
-                        disabled={fields.length === 1}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+
+                      <div className="grid grid-cols-3 gap-4">
+                          <FormField
+                            control={form.control}
+                            name={`lineItems.${index}.quantity`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Qty</FormLabel>
+                                <FormControl>
+                                  <Input type="number" placeholder="1" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name={`lineItems.${index}.price`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Price</FormLabel>
+                                <FormControl>
+                                  <Input type="number" placeholder="100.00" {...field} disabled={!useManualEntry[index]}/>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        <div className="text-right font-medium">
+                          <FormLabel>Total</FormLabel>
+                          <p className="h-10 flex items-center justify-end pr-3">
+                            ${((form.watch(`lineItems.${index}.quantity`) || 0) * (form.watch(`lineItems.${index}.price`) || 0)).toFixed(2)}
+                          </p>
+                        </div>
+                      </div>
+
                     </div>
                   ))}
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => append({ description: '', quantity: 1, price: 0 })}
+                    onClick={() => { append({ description: '', quantity: 1, price: 0 }); setUseManualEntry(prev => [...prev, true]); }}
                   >
                     <PlusCircle className="mr-2 h-4 w-4" /> Add Item
                   </Button>
@@ -327,6 +406,35 @@ export default function NewInvoicePage() {
           </div>
         </form>
       </Form>
+      
+      <Dialog open={isAddCustomerOpen} onOpenChange={setIsAddCustomerOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Customer</DialogTitle>
+            <DialogDescription>Enter the details for the new customer.</DialogDescription>
+          </DialogHeader>
+          <Form {...newCustomerForm}>
+            <form onSubmit={newCustomerForm.handleSubmit(onAddNewCustomer)} className="space-y-4">
+              <FormField control={newCustomerForm.control} name="name" render={({ field }) => (
+                <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+              <FormField control={newCustomerForm.control} name="email" render={({ field }) => (
+                <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+              <FormField control={newCustomerForm.control} name="phone" render={({ field }) => (
+                <FormItem><FormLabel>Phone (Optional)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+              <FormField control={newCustomerForm.control} name="address" render={({ field }) => (
+                <FormItem><FormLabel>Address (Optional)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsAddCustomerOpen(false)}>Cancel</Button>
+                <Button type="submit">Save Customer</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

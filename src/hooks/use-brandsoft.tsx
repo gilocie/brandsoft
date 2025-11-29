@@ -8,6 +8,20 @@ const LICENSE_KEY = 'brandsoft_license';
 const CONFIG_KEY = 'brandsoft_config';
 const VALID_SERIAL = 'BRANDSOFT-2024';
 
+export type Customer = {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  address?: string;
+};
+
+export type Product = {
+  id: string;
+  name: string;
+  price: number;
+};
+
 export type BrandsoftConfig = {
   brand: {
     logo: string;
@@ -30,6 +44,8 @@ export type BrandsoftConfig = {
     quotation: boolean;
     marketing: boolean;
   };
+  customers: Customer[];
+  products: Product[];
 };
 
 interface BrandsoftContextType {
@@ -39,6 +55,8 @@ interface BrandsoftContextType {
   activate: (serial: string) => boolean;
   saveConfig: (newConfig: BrandsoftConfig) => void;
   logout: () => void;
+  addCustomer: (customer: Omit<Customer, 'id'>) => Customer;
+  addProduct: (product: Omit<Product, 'id'>) => Product;
 }
 
 const BrandsoftContext = createContext<BrandsoftContextType | undefined>(undefined);
@@ -86,7 +104,11 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       localStorage.setItem(CONFIG_KEY, JSON.stringify(newConfig));
       setIsConfigured(true);
       setConfig(newConfig);
-      router.push('/dashboard');
+      // Only redirect if they are not already on the dashboard.
+      // This prevents redirects when just adding a customer/product.
+      if (!window.location.pathname.startsWith('/dashboard')) {
+        router.push('/dashboard');
+      }
     } catch (error) {
       console.error("Error saving config to localStorage", error);
     }
@@ -102,7 +124,36 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const value = { isActivated, isConfigured, config, activate, saveConfig, logout };
+  const addCustomer = (customerData: Omit<Customer, 'id'>): Customer => {
+    if (!config) throw new Error("Config not loaded");
+    const newCustomer: Customer = {
+      ...customerData,
+      id: `CUST-${Date.now()}`
+    };
+    const newConfig: BrandsoftConfig = {
+      ...config,
+      customers: [...(config.customers || []), newCustomer],
+    };
+    saveConfig(newConfig);
+    return newCustomer;
+  };
+
+  const addProduct = (productData: Omit<Product, 'id'>): Product => {
+    if (!config) throw new Error("Config not loaded");
+    const newProduct: Product = {
+      ...productData,
+      id: `PROD-${Date.now()}`
+    };
+    const newConfig: BrandsoftConfig = {
+      ...config,
+      products: [...(config.products || []), newProduct],
+    };
+    saveConfig(newConfig);
+    return newProduct;
+  };
+
+
+  const value = { isActivated, isConfigured, config, activate, saveConfig, logout, addCustomer, addProduct };
 
   return <BrandsoftContext.Provider value={value}>{children}</BrandsoftContext.Provider>;
 }

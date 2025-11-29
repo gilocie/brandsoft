@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -22,6 +23,8 @@ import {
   FileBarChart2,
   Brush,
   Library,
+  Users,
+  Package,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -32,6 +35,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard", enabledKey: null },
   { href: "/invoices", icon: FileText, label: "Invoices", enabledKey: "invoice" },
+  { href: "/customers", icon: Users, label: "Customers", enabledKey: "invoice" },
+  { href: "/products", icon: Package, label: "Products", enabledKey: "invoice" },
   { href: "/certificates", icon: Award, label: "Certificates", enabledKey: "certificate" },
   { href: "/id-cards", icon: CreditCard, label: "ID Cards", enabledKey: "idCard" },
   { href: "/quotations", icon: FileBarChart2, label: "Quotations", enabledKey: "quotation" },
@@ -71,7 +76,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <SidebarMenuItem key={item.href}>
                 <Link href={item.href}>
                   <SidebarMenuButton
-                    isActive={pathname === item.href}
+                    isActive={pathname.startsWith(item.href)}
                     tooltip={item.label}
                   >
                     <item.icon />
@@ -81,7 +86,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </SidebarMenuItem>
             )) : (
               // Skeleton loading for nav items
-              Array.from({length: 5}).map((_, i) => <SidebarMenuSkeleton key={i} showIcon />)
+              Array.from({length: 7}).map((_, i) => <SidebarMenuSkeleton key={i} showIcon />)
             )}
           </SidebarMenu>
         </SidebarContent>

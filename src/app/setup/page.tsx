@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -95,6 +96,8 @@ export default function SetupPage() {
         quotation: data.quotation,
         marketing: data.marketing,
       },
+      customers: [],
+      products: [],
     };
     setIsFinishing(true);
     await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate saving
