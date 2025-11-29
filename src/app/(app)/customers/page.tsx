@@ -32,6 +32,13 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   Form,
   FormControl,
   FormField,
@@ -48,7 +55,7 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { PlusCircle, ArrowRight, ArrowLeft, Trash2 } from 'lucide-react';
+import { PlusCircle, ArrowRight, ArrowLeft, Trash2, MoreHorizontal, Eye, FilePenLine } from 'lucide-react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Separator } from '@/components/ui/separator';
 
@@ -69,6 +76,40 @@ const formSchema = z.object({
 });
 
 type CustomerFormData = z.infer<typeof formSchema>;
+
+const CustomerActions = ({ customer }: { customer: Customer }) => {
+    // In a real app, these would trigger modals or navigation
+    const handleView = () => console.log('View', customer.id);
+    const handleEdit = () => console.log('Edit', customer.id);
+    const handleDelete = () => console.log('Delete', customer.id);
+
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <MoreHorizontal className="h-4 w-4" />
+                    <span className="sr-only">Actions</span>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleView}>
+                    <Eye className="mr-2 h-4 w-4" />
+                    View Details
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleEdit}>
+                    <FilePenLine className="mr-2 h-4 w-4" />
+                    Edit Customer
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleDelete} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Customer
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
+};
+
 
 export default function CustomersPage() {
   const { config, addCustomer } = useBrandsoft();
@@ -116,6 +157,9 @@ export default function CustomersPage() {
 
   const handleNextStep = async () => {
     const fieldsToValidate: (keyof CustomerFormData)[] = ['name', 'email'];
+    if (customerType === 'company') {
+        fieldsToValidate.push('companyName');
+    }
     const isValid = await form.trigger(fieldsToValidate);
     
     if (isValid) {
@@ -193,6 +237,13 @@ export default function CustomersPage() {
                                 )} />
                             </div>
                         )}
+                        {customerType === 'company' && (
+                            <div className="grid grid-cols-1 gap-4">
+                                <FormField control={form.control} name="companyName" render={({ field }) => (
+                                    <FormItem><FormLabel>Company Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -201,9 +252,6 @@ export default function CustomersPage() {
                         <div>
                             <h3 className="text-lg font-medium">Company Details</h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
-                                <FormField control={form.control} name="companyName" render={({ field }) => (
-                                    <FormItem><FormLabel>Company Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                )} />
                                 <FormField control={form.control} name="vatNumber" render={({ field }) => (
                                     <FormItem><FormLabel>VAT / Tax ID (Optional)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                                 )} />
@@ -294,6 +342,7 @@ export default function CustomersPage() {
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Phone</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -303,11 +352,14 @@ export default function CustomersPage() {
                     <TableCell className="font-medium">{customer.name}</TableCell>
                     <TableCell>{customer.email}</TableCell>
                     <TableCell>{customer.phone || 'N/A'}</TableCell>
+                    <TableCell className="text-right">
+                        <CustomerActions customer={customer} />
+                    </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center">
+                  <TableCell colSpan={4} className="text-center">
                     No customers found.
                   </TableCell>
                 </TableRow>
@@ -319,5 +371,3 @@ export default function CustomersPage() {
     </div>
   );
 }
-
-    
