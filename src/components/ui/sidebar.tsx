@@ -492,7 +492,7 @@ const SidebarMenu = React.forwardRef<
   <ul
     ref={ref}
     data-sidebar="menu"
-    className={cn("flex w-full min-w-0 flex-col gap-1", className)}
+    className={cn("flex w-full min-w-0 flex-col gap-1 px-[15px]", className)}
     {...props}
   />
 ))
@@ -650,9 +650,7 @@ const SidebarMenuSkeleton = React.forwardRef<
     showIcon?: boolean;
     index?: number;
   }
->(({ className, showIcon = false, index = 0, ...props }, ref) => {
-  const widths = ['73%', '88%', '81%', '79%', '80%', '85%'];
-  const width = widths[index % widths.length];
+>(({ className, showIcon = false, ...props }, ref) => {
 
   return (
     <div
@@ -668,8 +666,8 @@ const SidebarMenuSkeleton = React.forwardRef<
         />
       )}
       <Skeleton
-        className="h-4 flex-1"
-        style={{ width: "80%" } as React.CSSProperties}
+        className="h-4 flex-1 max-w-[--skeleton-width]"
+        style={{ '--skeleton-width': '80%' } as React.CSSProperties}
         data-sidebar="menu-skeleton-text"
       />
     </div>
