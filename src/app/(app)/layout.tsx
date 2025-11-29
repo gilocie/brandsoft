@@ -22,7 +22,6 @@ import {
   FileBarChart2,
   Brush,
   Library,
-  LogOut,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -42,7 +41,7 @@ const navItems = [
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { logout, config } = useBrandsoft();
+  const { config } = useBrandsoft();
 
   const getVisibleNavItems = () => {
     if (!config) return [];
@@ -86,7 +85,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             )}
           </SidebarMenu>
         </SidebarContent>
-        <SidebarFooter>
+        <SidebarFooter className="mt-auto mb-[50px]">
           <SidebarMenu>
             <SidebarMenuItem>
               {config ? (
