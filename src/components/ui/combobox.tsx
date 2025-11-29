@@ -32,6 +32,7 @@ type ComboboxProps = {
 
 export function Combobox({ options, value, onChange, onCreate, placeholder, createText, notFoundText }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
+  const [inputValue, setInputValue] = React.useState("")
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -43,26 +44,28 @@ export function Combobox({ options, value, onChange, onCreate, placeholder, crea
           className="w-full justify-between"
         >
           {value
-            ? options.find((option) => option.value === value)?.label
+            ? options.find((option) => option.value.toLowerCase() === value.toLowerCase())?.label
             : placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
         <Command shouldFilter={true}>
-          <CommandInput placeholder={placeholder} />
+          <CommandInput 
+            placeholder={placeholder}
+            onValueChange={setInputValue}
+          />
           <CommandList>
             <CommandEmpty>
-                {onCreate ? (
+                {onCreate && inputValue ? (
                      <Button variant="ghost" className="w-full" onMouseDown={(e) => {
                         e.preventDefault();
-                        const inputValue = (e.currentTarget.closest('[cmdk-root]')?.querySelector('[cmdk-input]') as HTMLInputElement)?.value;
                         if (inputValue) {
                             onCreate(inputValue);
                             setOpen(false);
                         }
                      }}>
-                        {createText || `Create "${(open && (document.querySelector('[cmdk-input]') as HTMLInputElement)?.value) || ''}"`}
+                        {createText || `Create "${inputValue}"`}
                      </Button>
                 ) : (
                     notFoundText || "No results found."
@@ -74,14 +77,14 @@ export function Combobox({ options, value, onChange, onCreate, placeholder, crea
                   key={option.value}
                   value={option.value}
                   onSelect={(currentValue) => {
-                    onChange(currentValue === value ? "" : currentValue)
+                    onChange(currentValue.toLowerCase() === value.toLowerCase() ? "" : currentValue)
                     setOpen(false)
                   }}
                 >
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      value === option.value ? "opacity-100" : "opacity-0"
+                      value.toLowerCase() === option.value.toLowerCase() ? "opacity-100" : "opacity-0"
                     )}
                   />
                   {option.label}

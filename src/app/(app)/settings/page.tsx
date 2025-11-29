@@ -25,7 +25,10 @@ import {
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
-import { Combobox } from '@/components/ui/combobox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { PlusCircle } from 'lucide-react';
 
 const settingsSchema = z.object({
   defaultCurrency: z.string().min(1, "Default currency is required"),
@@ -33,19 +36,27 @@ const settingsSchema = z.object({
 
 type SettingsFormData = z.infer<typeof settingsSchema>;
 
+const newCurrencySchema = z.object({
+    currencyCode: z.string().min(3, "Currency code must be 3 characters").max(3, "Currency code must be 3 characters"),
+});
+type NewCurrencyFormData = z.infer<typeof newCurrencySchema>;
+
+
 export default function SettingsPage() {
   const { config, saveConfig, addCurrency } = useBrandsoft();
   const { toast } = useToast();
+  const [isAddCurrencyOpen, setIsAddCurrencyOpen] = useState(false);
   
-  const [currencyOptions, setCurrencyOptions] = useState(
-    config?.currencies?.map(c => ({label: c, value: c})) || []
-  );
-
   const form = useForm<SettingsFormData>({
     resolver: zodResolver(settingsSchema),
     defaultValues: {
       defaultCurrency: config?.profile.defaultCurrency || 'USD',
     },
+  });
+
+  const newCurrencyForm = useForm<NewCurrencyFormData>({
+    resolver: zodResolver(newCurrencySchema),
+    defaultValues: { currencyCode: '' },
   });
   
   useEffect(() => {
@@ -53,7 +64,6 @@ export default function SettingsPage() {
         form.reset({
             defaultCurrency: config.profile.defaultCurrency,
         });
-        setCurrencyOptions(config.currencies.map(c => ({label: c, value: c})));
     }
   }, [config, form]);
 
@@ -78,11 +88,15 @@ export default function SettingsPage() {
     return <div>Loading settings...</div>;
   }
   
-  const handleCreateCurrency = (value: string) => {
-    const newCurrency = value.toUpperCase();
+  const handleAddCurrency = (data: NewCurrencyFormData) => {
+    const newCurrency = data.currencyCode.toUpperCase();
     addCurrency(newCurrency);
-    setCurrencyOptions(prev => [...prev, { label: newCurrency, value: newCurrency }]);
-    form.setValue('defaultCurrency', newCurrency, { shouldValidate: true });
+    newCurrencyForm.reset();
+    setIsAddCurrencyOpen(false);
+    toast({
+      title: "Currency Added",
+      description: `"${newCurrency}" has been added to your currencies list.`,
+    });
   }
 
   return (
@@ -104,29 +118,70 @@ export default function SettingsPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="max-w-md">
+                    <div className="max-w-md space-y-4">
                         <FormField
                           control={form.control}
                           name="defaultCurrency"
                           render={({ field }) => (
-                            <FormItem className="flex flex-col">
+                            <FormItem>
                               <FormLabel>Default Currency</FormLabel>
-                               <Combobox 
-                                options={currencyOptions}
-                                value={field.value}
-                                onChange={field.onChange}
-                                onCreate={handleCreateCurrency}
-                                placeholder="Select currency..."
-                                createText="Create new currency"
-                                notFoundText="No currency found."
-                               />
+                               <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select a currency" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {config.currencies.map(c => (
+                                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                               <FormDescription>
-                                This will be the default currency for new invoices. You can type to add a new one.
+                                This will be the default currency for new invoices.
                               </FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
+                        <div>
+                             <Dialog open={isAddCurrencyOpen} onOpenChange={setIsAddCurrencyOpen}>
+                                <DialogTrigger asChild>
+                                    <Button type="button" variant="outline">
+                                        <PlusCircle className="mr-2 h-4 w-4" /> Add New Currency
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Add New Currency</DialogTitle>
+                                        <DialogDescription>
+                                            Enter the 3-letter code for the new currency (e.g., INR).
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <Form {...newCurrencyForm}>
+                                        <form onSubmit={newCurrencyForm.handleSubmit(handleAddCurrency)} className="space-y-4">
+                                            <FormField
+                                            control={newCurrencyForm.control}
+                                            name="currencyCode"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                <FormLabel>Currency Code</FormLabel>
+                                                <FormControl>
+                                                    <Input placeholder="EUR" {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                                </FormItem>
+                                            )}
+                                            />
+                                            <DialogFooter>
+                                                <Button type="button" variant="outline" onClick={() => setIsAddCurrencyOpen(false)}>Cancel</Button>
+                                                <Button type="submit">Add Currency</Button>
+                                            </DialogFooter>
+                                        </form>
+                                    </Form>
+                                </DialogContent>
+                             </Dialog>
+                        </div>
                     </div>
                 </CardContent>
                 <CardFooter>
