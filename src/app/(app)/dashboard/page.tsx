@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useBrandsoft } from "@/hooks/use-brandsoft.tsx";
@@ -71,7 +72,7 @@ export default function DashboardPage() {
               </div>
             </CardHeader>
             <CardContent className="flex-grow flex items-end">
-              <Button asChild variant="ghost" className="text-primary hover:text-primary p-0 h-auto">
+              <Button asChild variant="ghost" className="text-primary hover:text-primary-foreground hover:bg-primary/80">
                 <Link href={module.href}>
                   Start Creating <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
