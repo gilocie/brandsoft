@@ -126,7 +126,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </header>
         <div className="flex-1 flex flex-col">
             <main className="flex-1 overflow-y-auto p-4 md:p-6">{children}</main>
-            <footer className="p-4 text-center text-sm text-foreground bg-sidebar sticky bottom-0">
+            <footer className="p-4 text-center text-sm text-sidebar-foreground bg-sidebar sticky bottom-0">
               © {new Date().getFullYear()} BrandSoft. All rights reserved.
             </footer>
         </div>
