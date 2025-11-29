@@ -161,7 +161,7 @@ export default function SettingsPage() {
                                 <FormItem>
                                     <FormLabel>Logo</FormLabel>
                                     <FormControl>
-                                        <>
+                                        <div>
                                             <Input
                                                 type="file"
                                                 accept="image/*"
@@ -177,7 +177,7 @@ export default function SettingsPage() {
                                             >
                                                 <UploadCloud className="mr-2 h-4 w-4" /> Upload Logo
                                             </Button>
-                                        </>
+                                        </div>
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
