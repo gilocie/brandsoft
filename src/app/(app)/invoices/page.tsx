@@ -174,9 +174,7 @@ export default function InvoicesPage() {
             </div>
 
             <CardFooter className={cn(layout === 'grid' ? "flex" : "hidden")}>
-               <Badge variant={statusVariantMap[invoice.status]} className="w-full justify-center">
-                {invoice.status}
-              </Badge>
+              {/* The duplicate badge was here and has been removed */}
             </CardFooter>
           </Card>
         ))}
