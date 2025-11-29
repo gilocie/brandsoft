@@ -111,13 +111,7 @@ export default function SettingsPage() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             <Card>
-                <CardHeader>
-                    <CardTitle>Financial Settings</CardTitle>
-                    <CardDescription>
-                    Configure default settings for financial documents.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                     <div className="max-w-md space-y-4">
                         <FormField
                           control={form.control}
