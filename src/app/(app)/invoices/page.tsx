@@ -1,17 +1,10 @@
 'use client';
 
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -90,70 +83,45 @@ export default function InvoicesPage() {
         </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Invoices</CardTitle>
-          <CardDescription>
-            A list of your most recent invoices.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="relative w-full overflow-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Invoice #</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                  <TableHead className="hidden sm:table-cell">Date</TableHead>
-                  <TableHead className="hidden sm:table-cell">Due Date</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {invoices.map((invoice) => (
-                  <TableRow key={invoice.invoiceId}>
-                    <TableCell>
-                      <Badge variant={statusVariantMap[invoice.status]}>
-                        {invoice.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      {invoice.invoiceId}
-                    </TableCell>
-                    <TableCell>{invoice.customer}</TableCell>
-                    <TableCell className="text-right">
-                      ${invoice.amount.toFixed(2)}
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell">
-                      {invoice.date}
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell">
-                      {invoice.dueDate}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Actions</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>View Details</DropdownMenuItem>
-                          <DropdownMenuItem>Download PDF</DropdownMenuItem>
-                          <DropdownMenuItem>Send Reminder</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {invoices.map((invoice) => (
+          <Card key={invoice.invoiceId} className="flex flex-col">
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div>
+                  <CardTitle>{invoice.customer}</CardTitle>
+                  <CardDescription>{invoice.invoiceId}</CardDescription>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <MoreHorizontal className="h-4 w-4" />
+                      <span className="sr-only">Actions</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem>View Details</DropdownMenuItem>
+                    <DropdownMenuItem>Download PDF</DropdownMenuItem>
+                    <DropdownMenuItem>Send Reminder</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </CardHeader>
+            <CardContent className="flex-grow space-y-2">
+               <div className="text-2xl font-bold">${invoice.amount.toFixed(2)}</div>
+               <div className="text-sm text-muted-foreground">
+                 <p>Date: {invoice.date}</p>
+                 <p>Due: {invoice.dueDate}</p>
+               </div>
+            </CardContent>
+            <CardFooter>
+              <Badge variant={statusVariantMap[invoice.status]} className="w-full justify-center">
+                {invoice.status}
+              </Badge>
+            </CardFooter>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }
