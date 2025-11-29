@@ -3,6 +3,7 @@
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
+import { hexToHsl } from '@/lib/utils';
 
 const LICENSE_KEY = 'brandsoft_license';
 const CONFIG_KEY = 'brandsoft_config';
@@ -90,6 +91,21 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       setIsConfigured(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (config?.brand.primaryColor) {
+      const primaryHsl = hexToHsl(config.brand.primaryColor);
+      if (primaryHsl) {
+        document.documentElement.style.setProperty('--primary', `${primaryHsl.h} ${primaryHsl.s}% ${primaryHsl.l}%`);
+      }
+    }
+    if (config?.brand.secondaryColor) {
+      const accentHsl = hexToHsl(config.brand.secondaryColor);
+       if (accentHsl) {
+        document.documentElement.style.setProperty('--accent', `${accentHsl.h} ${accentHsl.s}% ${accentHsl.l}%`);
+      }
+    }
+  }, [config]);
 
   const activate = (serial: string) => {
     if (serial.trim() === VALID_SERIAL) {
