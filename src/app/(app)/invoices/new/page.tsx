@@ -22,8 +22,6 @@ import { useBrandsoft, type Customer } from '@/hooks/use-brandsoft.tsx';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 
-const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD'];
-
 const currencySymbols: { [key: string]: string } = {
   USD: '$',
   EUR: '€',
@@ -111,7 +109,7 @@ export default function NewInvoicePage() {
   }
 
   const watchedCurrency = form.watch('currency');
-  const currencySymbol = currencySymbols[watchedCurrency] || '$';
+  const currencySymbol = currencySymbols[watchedCurrency] || watchedCurrency;
 
   const subtotal = form.watch('lineItems').reduce((acc, item) => {
     return acc + (Number(item.quantity) || 0) * (Number(item.price) || 0);
@@ -279,7 +277,7 @@ export default function NewInvoicePage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {currencies.map(currency => (
+                          {config?.currencies.map(currency => (
                             <SelectItem key={currency} value={currency}>{currency}</SelectItem>
                           ))}
                         </SelectContent>

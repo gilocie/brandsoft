@@ -99,6 +99,7 @@ export default function SetupPage() {
       },
       customers: [],
       products: [],
+      currencies: ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD'],
     };
     setIsFinishing(true);
     await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate saving

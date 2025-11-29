@@ -23,11 +23,9 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from '@/hooks/use-toast';
-import { useEffect } from 'react';
-
-const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD'];
+import { useEffect, useState } from 'react';
+import { Combobox } from '@/components/ui/combobox';
 
 const settingsSchema = z.object({
   defaultCurrency: z.string().min(1, "Default currency is required"),
@@ -36,8 +34,12 @@ const settingsSchema = z.object({
 type SettingsFormData = z.infer<typeof settingsSchema>;
 
 export default function SettingsPage() {
-  const { config, saveConfig } = useBrandsoft();
+  const { config, saveConfig, addCurrency } = useBrandsoft();
   const { toast } = useToast();
+  
+  const [currencyOptions, setCurrencyOptions] = useState(
+    config?.currencies?.map(c => ({label: c, value: c})) || []
+  );
 
   const form = useForm<SettingsFormData>({
     resolver: zodResolver(settingsSchema),
@@ -51,6 +53,7 @@ export default function SettingsPage() {
         form.reset({
             defaultCurrency: config.profile.defaultCurrency,
         });
+        setCurrencyOptions(config.currencies.map(c => ({label: c, value: c})));
     }
   }, [config, form]);
 
@@ -74,6 +77,13 @@ export default function SettingsPage() {
   if (!config) {
     return <div>Loading settings...</div>;
   }
+  
+  const handleCreateCurrency = (value: string) => {
+    const newCurrency = value.toUpperCase();
+    addCurrency(newCurrency);
+    setCurrencyOptions(prev => [...prev, { label: newCurrency, value: newCurrency }]);
+    form.setValue('defaultCurrency', newCurrency, { shouldValidate: true });
+  }
 
   return (
     <div className="container mx-auto space-y-6">
@@ -96,29 +106,26 @@ export default function SettingsPage() {
                 <CardContent>
                     <div className="max-w-md">
                         <FormField
-                            control={form.control}
-                            name="defaultCurrency"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>Default Currency</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a default currency" />
-                                    </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                    {currencies.map(currency => (
-                                        <SelectItem key={currency} value={currency}>{currency}</SelectItem>
-                                    ))}
-                                    </SelectContent>
-                                </Select>
-                                <FormDescription>
-                                    This will be the default currency for new invoices.
-                                </FormDescription>
-                                <FormMessage />
-                                </FormItem>
-                            )}
+                          control={form.control}
+                          name="defaultCurrency"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                              <FormLabel>Default Currency</FormLabel>
+                               <Combobox 
+                                options={currencyOptions}
+                                value={field.value}
+                                onChange={field.onChange}
+                                onCreate={handleCreateCurrency}
+                                placeholder="Select currency..."
+                                createText="Create new currency"
+                                notFoundText="No currency found."
+                               />
+                              <FormDescription>
+                                This will be the default currency for new invoices. You can type to add a new one.
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
                         />
                     </div>
                 </CardContent>

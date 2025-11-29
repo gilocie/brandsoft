@@ -47,6 +47,7 @@ export type BrandsoftConfig = {
   };
   customers: Customer[];
   products: Product[];
+  currencies: string[];
 };
 
 interface BrandsoftContextType {
@@ -58,6 +59,7 @@ interface BrandsoftContextType {
   logout: () => void;
   addCustomer: (customer: Omit<Customer, 'id'>) => Customer;
   addProduct: (product: Omit<Product, 'id'>) => Product;
+  addCurrency: (currency: string) => void;
 }
 
 const BrandsoftContext = createContext<BrandsoftContextType | undefined>(undefined);
@@ -76,7 +78,11 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       setIsActivated(!!license);
       setIsConfigured(!!configData);
       if (configData) {
-        setConfig(JSON.parse(configData));
+        const parsedConfig = JSON.parse(configData);
+        if (!parsedConfig.currencies) {
+            parsedConfig.currencies = ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD'];
+        }
+        setConfig(parsedConfig);
       }
     } catch (error) {
       console.error("Error accessing localStorage", error);
@@ -153,8 +159,18 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     return newProduct;
   };
 
+  const addCurrency = (currency: string) => {
+    if (!config) throw new Error("Config not loaded");
+    if (!config.currencies.includes(currency)) {
+        const newConfig: BrandsoftConfig = {
+            ...config,
+            currencies: [...config.currencies, currency]
+        };
+        saveConfig(newConfig);
+    }
+  };
 
-  const value = { isActivated, isConfigured, config, activate, saveConfig, logout, addCustomer, addProduct };
+  const value = { isActivated, isConfigured, config, activate, saveConfig, logout, addCustomer, addProduct, addCurrency };
 
   return <BrandsoftContext.Provider value={value}>{children}</BrandsoftContext.Provider>;
 }
