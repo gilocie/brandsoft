@@ -94,14 +94,11 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
   
   const logout = () => {
     try {
-      localStorage.removeItem(LICENSE_KEY);
-      localStorage.removeItem(CONFIG_KEY);
-      setIsActivated(false);
-      setIsConfigured(false);
-      setConfig(null);
-      router.push('/activation');
+      // For offline app, logout might not be a destructive action.
+      // We can decide to clear config or not. For now, it does nothing.
+      console.log("Logout function called, but it's a no-op for offline version.");
     } catch (error) {
-        console.error("Error clearing localStorage", error);
+        console.error("Error during logout", error);
     }
   };
 

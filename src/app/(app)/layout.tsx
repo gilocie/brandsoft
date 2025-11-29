@@ -70,7 +70,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <SidebarMenu>
             {config ? visibleNavItems.map((item) => (
               <SidebarMenuItem key={item.href}>
-                <Link href={item.href} passHref>
+                <Link href={item.href}>
                   <SidebarMenuButton
                     isActive={pathname === item.href}
                     tooltip={item.label}
@@ -82,18 +82,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </SidebarMenuItem>
             )) : (
               // Skeleton loading for nav items
-              Array.from({length: 5}).map((_, i) => <SidebarMenuSkeleton key={i} showIcon index={i} />)
+              Array.from({length: 5}).map((_, i) => <SidebarMenuSkeleton key={i} showIcon />)
             )}
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter>
           <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton onClick={logout} tooltip="Log Out">
-                <LogOut />
-                <span>Log Out</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
             <SidebarMenuItem>
               {config ? (
                 <div className="flex items-center gap-3 p-2 text-left">
