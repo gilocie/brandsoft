@@ -17,7 +17,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -31,6 +30,10 @@ import { Input } from '@/components/ui/input';
 import { PlusCircle } from 'lucide-react';
 
 const settingsSchema = z.object({
+  businessName: z.string().min(2, "Business name is required"),
+  logo: z.string().url("Must be a valid URL").optional().or(z.literal('')),
+  primaryColor: z.string().optional(),
+  secondaryColor: z.string().optional(),
   defaultCurrency: z.string().min(1, "Default currency is required"),
 });
 
@@ -50,6 +53,10 @@ export default function SettingsPage() {
   const form = useForm<SettingsFormData>({
     resolver: zodResolver(settingsSchema),
     defaultValues: {
+      businessName: config?.brand.businessName || '',
+      logo: config?.brand.logo || '',
+      primaryColor: config?.brand.primaryColor || '',
+      secondaryColor: config?.brand.secondaryColor || '',
       defaultCurrency: config?.profile.defaultCurrency || 'USD',
     },
   });
@@ -62,6 +69,10 @@ export default function SettingsPage() {
   useEffect(() => {
     if (config) {
         form.reset({
+            businessName: config.brand.businessName,
+            logo: config.brand.logo,
+            primaryColor: config.brand.primaryColor,
+            secondaryColor: config.brand.secondaryColor,
             defaultCurrency: config.profile.defaultCurrency,
         });
     }
@@ -71,6 +82,13 @@ export default function SettingsPage() {
     if (config) {
       const newConfig: BrandsoftConfig = {
         ...config,
+        brand: {
+          ...config.brand,
+          businessName: data.businessName,
+          logo: data.logo || '',
+          primaryColor: data.primaryColor || '#9400D3',
+          secondaryColor: data.secondaryColor || '#D87093',
+        },
         profile: {
           ...config.profile,
           defaultCurrency: data.defaultCurrency,
@@ -111,6 +129,29 @@ export default function SettingsPage() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             <Card>
+                <CardHeader>
+                    <CardTitle>Brand Identity</CardTitle>
+                    <CardDescription>Update your company's branding details.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                     <FormField control={form.control} name="businessName" render={({ field }) => (
+                        <FormItem><FormLabel>Business Name</FormLabel><FormControl><Input placeholder="Your Company LLC" {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={form.control} name="logo" render={({ field }) => (
+                        <FormItem><FormLabel>Logo URL (Optional)</FormLabel><FormControl><Input placeholder="https://example.com/logo.png" {...field} /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField control={form.control} name="primaryColor" render={({ field }) => (
+                        <FormItem><FormLabel>Primary Color</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>
+                        )} />
+                        <FormField control={form.control} name="secondaryColor" render={({ field }) => (
+                        <FormItem><FormLabel>Accent Color</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>
+                        )} />
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card>
                 <CardContent className="pt-6">
                     <div className="max-w-md space-y-4">
                         <FormField
@@ -131,9 +172,6 @@ export default function SettingsPage() {
                                   ))}
                                 </SelectContent>
                               </Select>
-                              <FormDescription>
-                                This will be the default currency for new invoices.
-                              </FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -178,10 +216,10 @@ export default function SettingsPage() {
                         </div>
                     </div>
                 </CardContent>
-                <CardFooter>
-                    <Button type="submit">Save Settings</Button>
-                </CardFooter>
             </Card>
+            <div className="flex justify-start">
+                <Button type="submit">Save All Settings</Button>
+            </div>
         </form>
       </Form>
     </div>
