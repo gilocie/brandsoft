@@ -98,58 +98,60 @@ export default function InvoicesPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Status</TableHead>
-                <TableHead>Invoice #</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead className="hidden sm:table-cell">Date</TableHead>
-                <TableHead className="hidden sm:table-cell">Due Date</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {invoices.map((invoice) => (
-                <TableRow key={invoice.invoiceId}>
-                  <TableCell>
-                    <Badge variant={statusVariantMap[invoice.status]}>
-                      {invoice.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    {invoice.invoiceId}
-                  </TableCell>
-                  <TableCell>{invoice.customer}</TableCell>
-                  <TableCell className="text-right">
-                    ${invoice.amount.toFixed(2)}
-                  </TableCell>
-                  <TableCell className="hidden sm:table-cell">
-                    {invoice.date}
-                  </TableCell>
-                  <TableCell className="hidden sm:table-cell">
-                    {invoice.dueDate}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Actions</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>View Details</DropdownMenuItem>
-                        <DropdownMenuItem>Download PDF</DropdownMenuItem>
-                        <DropdownMenuItem>Send Reminder</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+          <div className="relative w-full overflow-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Invoice #</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead className="hidden sm:table-cell">Date</TableHead>
+                  <TableHead className="hidden sm:table-cell">Due Date</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {invoices.map((invoice) => (
+                  <TableRow key={invoice.invoiceId}>
+                    <TableCell>
+                      <Badge variant={statusVariantMap[invoice.status]}>
+                        {invoice.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {invoice.invoiceId}
+                    </TableCell>
+                    <TableCell>{invoice.customer}</TableCell>
+                    <TableCell className="text-right">
+                      ${invoice.amount.toFixed(2)}
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell">
+                      {invoice.date}
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell">
+                      {invoice.dueDate}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Actions</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem>View Details</DropdownMenuItem>
+                          <DropdownMenuItem>Download PDF</DropdownMenuItem>
+                          <DropdownMenuItem>Send Reminder</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>
