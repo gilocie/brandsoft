@@ -25,6 +25,8 @@ import {
   List,
   FilePenLine,
   Trash2,
+  FileDown,
+  Send
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -95,6 +97,14 @@ const ActionsMenu = () => (
             <DropdownMenuItem>
                 <FilePenLine className="mr-2 h-4 w-4" />
                 Edit Invoice
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+                <FileDown className="mr-2 h-4 w-4" />
+                Download PDF
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+                <Send className="mr-2 h-4 w-4" />
+                Send Invoice
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
