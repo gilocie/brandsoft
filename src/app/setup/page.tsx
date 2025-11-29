@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useForm, Control } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useBrandsoft, type BrandsoftConfig } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type BrandsoftConfig } from '@/hooks/use-brandsoft.tsx';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";

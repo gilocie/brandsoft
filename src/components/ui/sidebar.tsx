@@ -647,13 +647,12 @@ SidebarMenuBadge.displayName = "SidebarMenuBadge"
 const SidebarMenuSkeleton = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div"> & {
-    showIcon?: boolean
+    showIcon?: boolean;
+    index?: number;
   }
->(({ className, showIcon = false, ...props }, ref) => {
-  // Random width between 50 to 90%.
-  const width = React.useMemo(() => {
-    return `${Math.floor(Math.random() * 40) + 50}%`
-  }, [])
+>(({ className, showIcon = false, index = 0, ...props }, ref) => {
+  const widths = ['73%', '88%', '81%', '79%', '80%', '85%'];
+  const width = widths[index % widths.length];
 
   return (
     <div

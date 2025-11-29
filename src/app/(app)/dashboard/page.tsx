@@ -1,6 +1,6 @@
 "use client";
 
-import { useBrandsoft } from "@/hooks/use-brandsoft";
+import { useBrandsoft } from "@/hooks/use-brandsoft.tsx";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileText, Award, CreditCard, FileBarChart2, Brush, ArrowRight, Library } from "lucide-react";

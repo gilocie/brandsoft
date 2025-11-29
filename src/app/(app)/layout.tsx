@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useBrandsoft } from "@/hooks/use-brandsoft";
+import { useBrandsoft } from "@/hooks/use-brandsoft.tsx";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -83,7 +83,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </SidebarMenuItem>
             )) : (
               // Skeleton loading for nav items
-              Array.from({length: 5}).map((_, i) => <SidebarMenuSkeleton key={i} showIcon />)
+              Array.from({length: 5}).map((_, i) => <SidebarMenuSkeleton key={i} showIcon index={i} />)
             )}
           </SidebarMenu>
         </SidebarContent>

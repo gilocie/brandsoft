@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useBrandsoft } from '@/hooks/use-brandsoft';
+import { useBrandsoft } from '@/hooks/use-brandsoft.tsx';
 import { Loader2 } from 'lucide-react';
 import { Logo } from '@/components/logo';
 
