@@ -88,6 +88,7 @@ export default function SetupPage() {
         email: data.email,
         website: data.website || '',
         taxNumber: data.taxNumber || '',
+        defaultCurrency: 'USD',
       },
       modules: {
         invoice: data.invoice,

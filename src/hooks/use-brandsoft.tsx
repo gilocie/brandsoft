@@ -36,6 +36,7 @@ export type BrandsoftConfig = {
     email: string;
     website: string;
     taxNumber: string;
+    defaultCurrency: string;
   };
   modules: {
     invoice: boolean;
@@ -106,7 +107,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       setConfig(newConfig);
       // Only redirect if they are not already on the dashboard.
       // This prevents redirects when just adding a customer/product.
-      if (!window.location.pathname.startsWith('/dashboard')) {
+      if (!window.location.pathname.startsWith('/dashboard') && !window.location.pathname.startsWith('/settings')) {
         router.push('/dashboard');
       }
     } catch (error) {

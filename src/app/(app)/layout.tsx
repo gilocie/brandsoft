@@ -25,12 +25,14 @@ import {
   Library,
   Users,
   Package,
+  Settings,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useBrandsoft } from "@/hooks/use-brandsoft.tsx";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 
 const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard", enabledKey: null },
@@ -120,9 +122,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <SidebarInset>
         <header className="flex h-14 items-center gap-4 border-b bg-background/95 backdrop-blur-sm sticky top-0 px-4 md:px-6 z-10">
           <SidebarTrigger className="md:hidden" />
-          <h1 className="text-lg font-semibold font-headline">
+          <h1 className="text-lg font-semibold font-headline flex-1">
             {pageTitle}
           </h1>
+          <Button variant="ghost" size="icon" asChild>
+            <Link href="/settings">
+              <Settings className="h-5 w-5" />
+              <span className="sr-only">Settings</span>
+            </Link>
+          </Button>
         </header>
         <main className="flex-1 overflow-y-auto p-4 md:p-6">{children}</main>
       </SidebarInset>

@@ -22,6 +22,17 @@ import { useBrandsoft, type Customer } from '@/hooks/use-brandsoft.tsx';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 
+const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD'];
+
+const currencySymbols: { [key: string]: string } = {
+  USD: '$',
+  EUR: '€',
+  GBP: '£',
+  JPY: '¥',
+  CAD: '$',
+  AUD: '$',
+};
+
 const lineItemSchema = z.object({
   productId: z.string().optional(),
   description: z.string().min(1, 'Description is required.'),
@@ -34,6 +45,7 @@ const formSchema = z.object({
   invoiceDate: z.date(),
   dueDate: z.date(),
   status: z.enum(['Draft', 'Pending', 'Paid', 'Overdue']),
+  currency: z.string().min(1, 'Currency is required'),
   lineItems: z.array(lineItemSchema).min(1, 'At least one line item is required.'),
   notes: z.string().optional(),
 });
@@ -49,7 +61,7 @@ const NewCustomerFormSchema = z.object({
 type NewCustomerFormData = z.infer<typeof NewCustomerFormSchema>;
 
 export default function NewInvoicePage() {
-  const { config, addCustomer, addProduct } = useBrandsoft();
+  const { config, addCustomer } = useBrandsoft();
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
   const [useManualEntry, setUseManualEntry] = useState<boolean[]>([]);
   
@@ -58,6 +70,7 @@ export default function NewInvoicePage() {
     defaultValues: {
       invoiceDate: new Date(),
       status: 'Draft',
+      currency: config?.profile.defaultCurrency || 'USD',
       lineItems: [{ description: '', quantity: 1, price: 0 }],
       notes: '',
     },
@@ -96,6 +109,9 @@ export default function NewInvoicePage() {
       });
     }
   }
+
+  const watchedCurrency = form.watch('currency');
+  const currencySymbol = currencySymbols[watchedCurrency] || '$';
 
   const subtotal = form.watch('lineItems').reduce((acc, item) => {
     return acc + (Number(item.quantity) || 0) * (Number(item.price) || 0);
@@ -249,6 +265,30 @@ export default function NewInvoicePage() {
                   )}
                 />
             </CardContent>
+             <CardContent>
+                <FormField
+                  control={form.control}
+                  name="currency"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Currency</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select currency" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {currencies.map(currency => (
+                            <SelectItem key={currency} value={currency}>{currency}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+            </CardContent>
           </Card>
 
           <Card>
@@ -347,7 +387,7 @@ export default function NewInvoicePage() {
                         <div className="text-right font-medium">
                           <FormLabel>Total</FormLabel>
                           <p className="h-10 flex items-center justify-end pr-3">
-                            ${((form.watch(`lineItems.${index}.quantity`) || 0) * (form.watch(`lineItems.${index}.price`) || 0)).toFixed(2)}
+                            {currencySymbol}{((form.watch(`lineItems.${index}.quantity`) || 0) * (form.watch(`lineItems.${index}.price`) || 0)).toFixed(2)}
                           </p>
                         </div>
                       </div>
@@ -367,15 +407,15 @@ export default function NewInvoicePage() {
                 <div className="w-full max-w-xs space-y-2">
                     <div className="flex justify-between">
                         <span className="text-muted-foreground">Subtotal</span>
-                        <span>${subtotal.toFixed(2)}</span>
+                        <span>{currencySymbol}{subtotal.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
                         <span className="text-muted-foreground">Tax (10%)</span>
-                        <span>${tax.toFixed(2)}</span>
+                        <span>{currencySymbol}{tax.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between font-bold text-lg">
                         <span>Total</span>
-                        <span>${total.toFixed(2)}</span>
+                        <span>{currencySymbol}{total.toFixed(2)}</span>
                     </div>
                 </div>
             </CardFooter>
