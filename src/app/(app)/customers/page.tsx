@@ -2,10 +2,10 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useBrandsoft, type Customer } from '@/hooks/use-brandsoft.tsx';
+import { useBrandsoft, type Customer, type Product } from '@/hooks/use-brandsoft.tsx';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -39,11 +39,22 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { PlusCircle, ArrowRight, ArrowLeft } from 'lucide-react';
+import { PlusCircle, ArrowRight, ArrowLeft, Trash2 } from 'lucide-react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Separator } from '@/components/ui/separator';
+
+const productAssociationSchema = z.object({
+    productId: z.string().min(1, "Product is required"),
+});
 
 const formSchema = z.object({
   customerType: z.enum(['personal', 'company']).default('personal'),
@@ -54,6 +65,7 @@ const formSchema = z.object({
   companyName: z.string().optional(),
   vatNumber: z.string().optional(),
   companyAddress: z.string().optional(),
+  associatedProducts: z.array(productAssociationSchema).optional(),
 });
 
 type CustomerFormData = z.infer<typeof formSchema>;
@@ -74,19 +86,27 @@ export default function CustomersPage() {
         address: '',
         companyName: '',
         vatNumber: '',
-        companyAddress: ''
+        companyAddress: '',
+        associatedProducts: [],
     },
   });
 
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: 'associatedProducts',
+  });
+
   const onSubmit = (data: CustomerFormData) => {
-    // We can decide how to map this to the single Customer object.
-    // For now, let's just combine the names if it's a company.
-    const customerToSave = {
+    const customerToSave: Omit<Customer, 'id' | 'associatedProductIds'> & { associatedProductIds?: string[] } = {
         name: data.customerType === 'company' ? `${data.companyName} (${data.name})` : data.name,
         email: data.email,
         phone: data.phone,
         address: data.customerType === 'company' ? data.companyAddress : data.address,
     };
+    if (data.customerType === 'company' && data.associatedProducts) {
+        customerToSave.associatedProductIds = data.associatedProducts.map(p => p.productId);
+    }
+
     addCustomer(customerToSave);
     form.reset();
     setFormStep(1);
@@ -96,16 +116,18 @@ export default function CustomersPage() {
 
   const handleNextStep = async () => {
     const fieldsToValidate: (keyof CustomerFormData)[] = ['name', 'email'];
-    if (customerType === 'personal') {
-        fieldsToValidate.push('phone', 'address');
-    }
     const isValid = await form.trigger(fieldsToValidate);
     
     if (isValid) {
         if (customerType === 'company') {
             setFormStep(2);
         } else {
-            form.handleSubmit(onSubmit)();
+            // For personal customer, we need to validate all fields before submitting
+            const personalFields: (keyof CustomerFormData)[] = ['phone', 'address'];
+            const isPersonalValid = await form.trigger(personalFields);
+            if(isPersonalValid) {
+                form.handleSubmit(onSubmit)();
+            }
         }
     }
   }
@@ -114,9 +136,8 @@ export default function CustomersPage() {
     if (value) {
         setCustomerType(value);
         form.setValue('customerType', value);
-        if (value === 'personal') {
-            setFormStep(1); // always go back to step 1 for personal
-        }
+        // Always reset to step 1 when changing type
+        setFormStep(1);
     }
   }
 
@@ -145,8 +166,8 @@ export default function CustomersPage() {
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                  <ToggleGroup type="single" defaultValue="personal" value={customerType} onValueChange={handleCustomerTypeChange} className="grid grid-cols-2">
-                    <ToggleGroupItem value="personal">Personal</ToggleGroupItem>
-                    <ToggleGroupItem value="company">Company</ToggleGroupItem>
+                    <ToggleGroupItem value="personal" className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">Personal</ToggleGroupItem>
+                    <ToggleGroupItem value="company" className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">Company</ToggleGroupItem>
                  </ToggleGroup>
                 
                 <Separator />
@@ -162,33 +183,85 @@ export default function CustomersPage() {
                                 <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
                             )} />
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <FormField control={form.control} name="phone" render={({ field }) => (
-                                <FormItem><FormLabel>Phone (Optional)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
-                            {customerType === 'personal' && (
+                        {customerType === 'personal' && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <FormField control={form.control} name="phone" render={({ field }) => (
+                                    <FormItem><FormLabel>Phone (Optional)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
                                 <FormField control={form.control} name="address" render={({ field }) => (
                                     <FormItem><FormLabel>Address (Optional)</FormLabel><FormControl><Textarea {...field} className="min-h-[80px]" /></FormControl><FormMessage /></FormItem>
                                 )} />
-                            )}
-                        </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
                 {formStep === 2 && customerType === 'company' && (
-                     <div className="space-y-4">
-                        <h3 className="text-lg font-medium">Company Details</h3>
-                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <FormField control={form.control} name="companyName" render={({ field }) => (
-                                <FormItem><FormLabel>Company Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                     <div className="space-y-6">
+                        <div>
+                            <h3 className="text-lg font-medium">Company Details</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+                                <FormField control={form.control} name="companyName" render={({ field }) => (
+                                    <FormItem><FormLabel>Company Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                                <FormField control={form.control} name="vatNumber" render={({ field }) => (
+                                    <FormItem><FormLabel>VAT / Tax ID (Optional)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                            </div>
+                            <FormField control={form.control} name="companyAddress" render={({ field }) => (
+                                <FormItem className="mt-4"><FormLabel>Company Address (Optional)</FormLabel><FormControl><Textarea {...field} className="min-h-[80px]" /></FormControl><FormMessage /></FormItem>
                             )} />
-                            <FormField control={form.control} name="vatNumber" render={({ field }) => (
-                                <FormItem><FormLabel>VAT / Tax ID (Optional)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
-                         </div>
-                        <FormField control={form.control} name="companyAddress" render={({ field }) => (
-                            <FormItem><FormLabel>Company Address (Optional)</FormLabel><FormControl><Textarea {...field} className="min-h-[80px]" /></FormControl><FormMessage /></FormItem>
-                        )} />
+                        </div>
+                        <Separator />
+                        <div>
+                            <h3 className="text-lg font-medium">Contact Person Details</h3>
+                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+                                <FormField control={form.control} name="phone" render={({ field }) => (
+                                    <FormItem><FormLabel>Phone (Optional)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                                <FormField control={form.control} name="address" render={({ field }) => (
+                                    <FormItem><FormLabel>Address (Optional)</FormLabel><FormControl><Textarea {...field} className="min-h-[80px]" /></FormControl><FormMessage /></FormItem>
+                                )} />
+                            </div>
+                        </div>
+                         <Separator />
+                        <div>
+                            <h3 className="text-lg font-medium">Associated Products</h3>
+                            <div className="space-y-2 mt-2">
+                                {fields.map((field, index) => (
+                                    <div key={field.id} className="flex items-center gap-2">
+                                        <FormField
+                                            control={form.control}
+                                            name={`associatedProducts.${index}.productId`}
+                                            render={({ field }) => (
+                                                <FormItem className="flex-grow">
+                                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                        <FormControl>
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Select a product" />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            {config?.products.map((p: Product) => (
+                                                                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}>
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                             <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => append({ productId: '' })}>
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Add Product
+                            </Button>
+                        </div>
                     </div>
                 )}
                 
@@ -246,3 +319,5 @@ export default function CustomersPage() {
     </div>
   );
 }
+
+    
