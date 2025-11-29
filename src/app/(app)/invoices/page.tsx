@@ -15,6 +15,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -22,6 +23,8 @@ import {
   PlusCircle,
   LayoutGrid,
   List,
+  FilePenLine,
+  Trash2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -80,6 +83,29 @@ const statusVariantMap: {
   Overdue: 'destructive',
 };
 
+const ActionsMenu = () => (
+    <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10">
+            <MoreHorizontal className="h-4 w-4" />
+            <span className="sr-only">Actions</span>
+        </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+            <DropdownMenuItem>
+                <FilePenLine className="mr-2 h-4 w-4" />
+                Edit Invoice
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+            </DropdownMenuItem>
+        </DropdownMenuContent>
+    </DropdownMenu>
+);
+
+
 export default function InvoicesPage() {
   const [layout, setLayout] = useState<'grid' | 'list'>('grid');
 
@@ -126,19 +152,7 @@ export default function InvoicesPage() {
                       <CardDescription className={cn(layout === 'list' && "text-xs")}>{invoice.invoiceId}</CardDescription>
                     </div>
                      <div className={cn(layout === 'grid' ? "flex" : "hidden")}>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="h-4 w-4" />
-                              <span className="sr-only">Actions</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>View Details</DropdownMenuItem>
-                            <DropdownMenuItem>Download PDF</DropdownMenuItem>
-                            <DropdownMenuItem>Send Reminder</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <ActionsMenu />
                     </div>
                   </div>
                 </CardHeader>
@@ -158,19 +172,7 @@ export default function InvoicesPage() {
                 </CardContent>
             </div>
              <div className={cn(layout === 'list' ? "flex items-center p-4" : "hidden")}>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MoreHorizontal className="h-4 w-4" />
-                      <span className="sr-only">Actions</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>View Details</DropdownMenuItem>
-                    <DropdownMenuItem>Download PDF</DropdownMenuItem>
-                    <DropdownMenuItem>Send Reminder</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <ActionsMenu />
             </div>
 
             <CardFooter className={cn(layout === 'grid' ? "flex" : "hidden")}>
