@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import {
   Card,
   CardContent,
@@ -137,8 +138,10 @@ export default function InvoicesPage() {
                     <List className="h-4 w-4" />
                 </ToggleGroupItem>
             </ToggleGroup>
-            <Button>
+            <Button asChild>
+              <Link href="/invoices/new">
                 <PlusCircle className="mr-2 h-4 w-4" /> Create New Invoice
+              </Link>
             </Button>
         </div>
       </div>
