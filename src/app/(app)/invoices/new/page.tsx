@@ -18,9 +18,11 @@ import { cn } from "@/lib/utils";
 import { CalendarIcon, PlusCircle, Trash2, Save, Send, Eye, UserPlus } from 'lucide-react';
 import { format } from "date-fns";
 import Link from 'next/link';
-import { useBrandsoft, type Customer } from '@/hooks/use-brandsoft.tsx';
+import { useBrandsoft, type Customer, type Invoice, type Product } from '@/hooks/use-brandsoft.tsx';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
 
 const currencySymbols: { [key: string]: string } = {
   USD: '$',
@@ -42,10 +44,11 @@ const formSchema = z.object({
   customerId: z.string().min(1, 'Customer is required.'),
   invoiceDate: z.date(),
   dueDate: z.date(),
-  status: z.enum(['Draft', 'Pending', 'Paid', 'Overdue']),
+  status: z.enum(['Draft', 'Pending', 'Paid', 'Overdue', 'Canceled']),
   currency: z.string().min(1, 'Currency is required'),
   lineItems: z.array(lineItemSchema).min(1, 'At least one line item is required.'),
   notes: z.string().optional(),
+  applyTax: z.boolean().default(true),
 });
 
 type InvoiceFormData = z.infer<typeof formSchema>;
@@ -59,7 +62,9 @@ const NewCustomerFormSchema = z.object({
 type NewCustomerFormData = z.infer<typeof NewCustomerFormSchema>;
 
 export default function NewInvoicePage() {
-  const { config, addCustomer } = useBrandsoft();
+  const { config, addCustomer, addInvoice } = useBrandsoft();
+  const router = useRouter();
+  const { toast } = useToast();
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
   const [useManualEntry, setUseManualEntry] = useState<boolean[]>([]);
   
@@ -67,10 +72,12 @@ export default function NewInvoicePage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       invoiceDate: new Date(),
+      dueDate: new Date(new Date().setDate(new Date().getDate() + 30)),
       status: 'Draft',
       currency: config?.profile.defaultCurrency || 'USD',
       lineItems: [{ description: '', quantity: 1, price: 0 }],
       notes: '',
+      applyTax: true,
     },
   });
 
@@ -91,9 +98,37 @@ export default function NewInvoicePage() {
     newCustomerForm.reset();
   }
 
+  const handleFormSubmit = (status: 'Draft' | 'Pending') => {
+    form.setValue('status', status);
+    form.handleSubmit(onSubmit)();
+  }
+
   function onSubmit(data: InvoiceFormData) {
-    console.log(data);
-    // Here you would typically send the data to your backend or state management
+    if (!config) return;
+
+    const customer = config.customers.find(c => c.id === data.customerId);
+    if (!customer) return;
+
+    const subtotal = data.lineItems.reduce((acc, item) => acc + (item.quantity * item.price), 0);
+    const tax = data.applyTax ? subtotal * 0.1 : 0;
+    const total = subtotal + tax;
+
+    const newInvoice: Omit<Invoice, 'invoiceId'> = {
+        customer: customer.name,
+        date: format(data.invoiceDate, 'yyyy-MM-dd'),
+        dueDate: format(data.dueDate, 'yyyy-MM-dd'),
+        amount: total,
+        status: data.status,
+    };
+    
+    addInvoice(newInvoice);
+    
+    toast({
+        title: "Invoice Saved!",
+        description: `Invoice for ${customer.name} has been saved as a ${data.status.toLowerCase()}.`
+    });
+
+    router.push('/invoices');
   }
   
   const handleProductSelect = (productId: string, index: number) => {
@@ -105,6 +140,12 @@ export default function NewInvoicePage() {
         price: product.price,
         quantity: 1,
       });
+      // Also update manual entry state
+      setUseManualEntry(prev => {
+        const next = [...prev];
+        next[index] = false; 
+        return next;
+      });
     }
   }
 
@@ -115,7 +156,8 @@ export default function NewInvoicePage() {
     return acc + (Number(item.quantity) || 0) * (Number(item.price) || 0);
   }, 0);
   
-  const tax = subtotal * 0.1; // Example 10% tax
+  const applyTax = form.watch('applyTax');
+  const tax = applyTax ? subtotal * 0.1 : 0;
   const total = subtotal + tax;
 
   return (
@@ -130,7 +172,7 @@ export default function NewInvoicePage() {
           </Button>
        </div>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <form onSubmit={e => e.preventDefault()} className="space-y-8">
           <Card>
             <CardHeader>
               <CardTitle>Customer Details</CardTitle>
@@ -256,6 +298,7 @@ export default function NewInvoicePage() {
                           <SelectItem value="Pending">Pending</SelectItem>
                           <SelectItem value="Paid">Paid</SelectItem>
                           <SelectItem value="Overdue">Overdue</SelectItem>
+                          <SelectItem value="Canceled">Canceled</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -325,7 +368,7 @@ export default function NewInvoicePage() {
                               render={({ field }) => (
                                 <FormItem>
                                   <FormLabel className="sr-only">Product</FormLabel>
-                                    <Select onValueChange={(value) => { field.onChange(value); handleProductSelect(value, index); }}>
+                                    <Select onValueChange={(value) => { field.onChange(value); handleProductSelect(value, index); }} defaultValue={field.value}>
                                       <FormControl>
                                         <SelectTrigger>
                                           <SelectValue placeholder="Select a product" />
@@ -395,7 +438,7 @@ export default function NewInvoicePage() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => { append({ description: '', quantity: 1, price: 0 }); setUseManualEntry(prev => [...prev, true]); }}
+                    onClick={() => { append({ productId: '', description: '', quantity: 1, price: 0 }); setUseManualEntry(prev => [...prev, true]); }}
                   >
                     <PlusCircle className="mr-2 h-4 w-4" /> Add Item
                   </Button>
@@ -407,10 +450,28 @@ export default function NewInvoicePage() {
                         <span className="text-muted-foreground">Subtotal</span>
                         <span>{currencySymbol}{subtotal.toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between">
-                        <span className="text-muted-foreground">Tax (10%)</span>
-                        <span>{currencySymbol}{tax.toFixed(2)}</span>
-                    </div>
+                    <FormField
+                        control={form.control}
+                        name="applyTax"
+                        render={({ field }) => (
+                            <FormItem className="flex justify-between items-center">
+                                <FormLabel htmlFor="apply-tax-switch" className="text-muted-foreground flex items-center">Tax (10%)</FormLabel>
+                                <FormControl>
+                                  <Switch
+                                    id="apply-tax-switch"
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                  />
+                                </FormControl>
+                            </FormItem>
+                        )}
+                        />
+                    {applyTax && (
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground"></span>
+                            <span>{currencySymbol}{tax.toFixed(2)}</span>
+                        </div>
+                    )}
                     <div className="flex justify-between font-bold text-lg">
                         <span>Total</span>
                         <span>{currencySymbol}{total.toFixed(2)}</span>
@@ -439,8 +500,8 @@ export default function NewInvoicePage() {
 
           <div className="flex justify-end gap-2">
              <Button type="button" variant="outline"><Eye className="mr-2 h-4 w-4"/> Preview</Button>
-            <Button type="submit" variant="secondary"><Save className="mr-2 h-4 w-4"/> Save Draft</Button>
-            <Button type="submit"><Send className="mr-2 h-4 w-4"/> Save and Send</Button>
+            <Button type="button" variant="secondary" onClick={() => handleFormSubmit('Draft')}><Save className="mr-2 h-4 w-4"/> Save Draft</Button>
+            <Button type="button" onClick={() => handleFormSubmit('Pending')}><Send className="mr-2 h-4 w-4"/> Save and Send</Button>
           </div>
         </form>
       </Form>

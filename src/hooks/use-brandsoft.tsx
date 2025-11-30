@@ -78,6 +78,7 @@ interface BrandsoftContextType {
   addProduct: (product: Omit<Product, 'id'>) => Product;
   updateProduct: (productId: string, data: Partial<Omit<Product, 'id'>>) => void;
   deleteProduct: (productId: string) => void;
+  addInvoice: (invoice: Omit<Invoice, 'invoiceId'>) => void;
   addCurrency: (currency: string, setAsDefault?: boolean) => void;
 }
 
@@ -299,6 +300,26 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     saveConfig(newConfig, { redirect: false });
   }
 
+  const addInvoice = (invoiceData: Omit<Invoice, 'invoiceId'>) => {
+    if (!config) throw new Error("Config not loaded");
+    
+    const lastId = config.invoices.reduce((max, inv) => {
+        const idNum = parseInt(inv.invoiceId.replace('INV', ''), 10);
+        return idNum > max ? idNum : max;
+    }, 0);
+
+    const newInvoice: Invoice = {
+      ...invoiceData,
+      invoiceId: `INV${String(lastId + 1).padStart(3, '0')}`,
+    };
+    
+    const newConfig: BrandsoftConfig = {
+      ...config,
+      invoices: [...config.invoices, newInvoice],
+    };
+    saveConfig(newConfig, { redirect: false });
+  };
+
   const addCurrency = (currency: string, setAsDefault = false) => {
     if (!config) throw new Error("Config not loaded");
     
@@ -317,7 +338,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     saveConfig(newConfig, { redirect: false });
   };
 
-  const value = { isActivated, isConfigured, config, activate, saveConfig, logout, addCustomer, updateCustomer, deleteCustomer, addProduct, updateProduct, deleteProduct, addCurrency };
+  const value = { isActivated, isConfigured, config, activate, saveConfig, logout, addCustomer, updateCustomer, deleteCustomer, addProduct, updateProduct, deleteProduct, addInvoice, addCurrency };
 
   return <BrandsoftContext.Provider value={value}>{children}</BrandsoftContext.Provider>;
 }
@@ -329,5 +350,3 @@ export function useBrandsoft() {
   }
   return context;
 }
-
-    
