@@ -3,42 +3,23 @@
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
+import type { BrandsoftConfig, Customer, Product } from './use-brandsoft.tsx';
 
 const LICENSE_KEY = 'brandsoft_license';
 const CONFIG_KEY = 'brandsoft_config';
 const VALID_SERIAL = 'BRANDSOFT-2024';
-
-export type BrandsoftConfig = {
-  brand: {
-    logo: string;
-    primaryColor: string;
-    secondaryColor: string;
-    font: string;
-    businessName: string;
-  };
-  profile: {
-    address: string;
-    phone: string;
-    email: string;
-    website: string;
-    taxNumber: string;
-  };
-  modules: {
-    invoice: boolean;
-    certificate: boolean;
-    idCard: boolean;
-    quotation: boolean;
-    marketing: boolean;
-  };
-};
 
 interface BrandsoftContextType {
   isActivated: boolean | null;
   isConfigured: boolean | null;
   config: BrandsoftConfig | null;
   activate: (serial: string) => boolean;
-  saveConfig: (newConfig: BrandsoftConfig) => void;
+  saveConfig: (newConfig: BrandsoftConfig, options?: { redirect?: boolean }) => void;
   logout: () => void;
+  addCustomer: (customer: Omit<Customer, 'id'>) => Customer;
+  deleteCustomer: (customerId: string) => void;
+  addProduct: (product: Omit<Product, 'id'>) => Product;
+  addCurrency: (currency: string) => void;
 }
 
 const BrandsoftContext = createContext<BrandsoftContextType | undefined>(undefined);
@@ -81,12 +62,20 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     return false;
   };
 
-  const saveConfig = (newConfig: BrandsoftConfig) => {
+  const saveConfig = (newConfig: BrandsoftConfig, options: { redirect?: boolean } = { redirect: true }) => {
     try {
       localStorage.setItem(CONFIG_KEY, JSON.stringify(newConfig));
       setIsConfigured(true);
       setConfig(newConfig);
-      router.push('/dashboard');
+
+      if (options.redirect) {
+        const nonRedirectPaths = ['/dashboard', '/settings', '/customers', '/products', '/invoices'];
+        const shouldRedirect = !nonRedirectPaths.some(path => window.location.pathname.startsWith(path));
+        
+        if (shouldRedirect) {
+          router.push('/dashboard');
+        }
+      }
     } catch (error) {
       console.error("Error saving config to localStorage", error);
     }
@@ -105,7 +94,57 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const value = { isActivated, isConfigured, config, activate, saveConfig, logout };
+  const addCustomer = (customerData: Omit<Customer, 'id'>): Customer => {
+    if (!config) throw new Error("Config not loaded");
+    const newCustomer: Customer = {
+      ...customerData,
+      id: `CUST-${Date.now()}`
+    };
+    const newConfig: BrandsoftConfig = {
+      ...config,
+      customers: [...(config.customers || []), newCustomer],
+    };
+    saveConfig(newConfig, { redirect: false });
+    return newCustomer;
+  };
+
+  const deleteCustomer = (customerId: string) => {
+    if (!config) throw new Error("Config not loaded");
+    const updatedCustomers = config.customers.filter(c => c.id !== customerId);
+    const newConfig: BrandsoftConfig = {
+        ...config,
+        customers: updatedCustomers,
+    };
+    saveConfig(newConfig, { redirect: false });
+  }
+
+  const addProduct = (productData: Omit<Product, 'id'>): Product => {
+    if (!config) throw new Error("Config not loaded");
+    const newProduct: Product = {
+      ...productData,
+      id: `PROD-${Date.now()}`
+    };
+    const newConfig: BrandsoftConfig = {
+      ...config,
+      products: [...(config.products || []), newProduct],
+    };
+    saveConfig(newConfig, { redirect: false });
+    return newProduct;
+  };
+
+   const addCurrency = (currency: string) => {
+    if (!config) throw new Error("Config not loaded");
+    if (!config.currencies.includes(currency)) {
+        const newConfig: BrandsoftConfig = {
+            ...config,
+            currencies: [...config.currencies, currency]
+        };
+        saveConfig(newConfig, { redirect: false });
+    }
+  };
+
+
+  const value = { isActivated, isConfigured, config, activate, saveConfig, logout, addCustomer, deleteCustomer, addProduct, addCurrency };
 
   return <BrandsoftContext.Provider value={value}>{children}</BrandsoftContext.Provider>;
 }
