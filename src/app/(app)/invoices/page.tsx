@@ -48,6 +48,15 @@ const statusVariantMap: {
   Draft: 'secondary',
 };
 
+const currencySymbols: { [key: string]: string } = {
+  USD: '$',
+  EUR: '€',
+  GBP: '£',
+  JPY: '¥',
+  CAD: '$',
+  AUD: '$',
+};
+
 const ActionsMenu = () => (
     <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -83,6 +92,8 @@ export default function InvoicesPage() {
   const [layout, setLayout] = useState<'grid' | 'list'>('grid');
   const { config } = useBrandsoft();
   const invoices = config?.invoices || [];
+
+  const currencySymbol = config ? currencySymbols[config.profile.defaultCurrency] || config.profile.defaultCurrency : '$';
 
   return (
     <div className="container mx-auto space-y-6">
@@ -135,7 +146,7 @@ export default function InvoicesPage() {
                 </CardHeader>
                 <CardContent className={cn("flex-grow space-y-2", layout === 'list' && "p-4 pt-0 md:flex md:items-center md:justify-between md:space-y-0")}>
                   <div className={cn("text-2xl font-bold", layout === 'list' && "text-base font-bold w-1/4")}>
-                    ${invoice.amount.toFixed(2)}
+                    {currencySymbol}{invoice.amount.toFixed(2)}
                   </div>
                   <div className={cn("text-sm text-muted-foreground", layout === 'list' && "text-xs w-1/4")}>
                     <p>Date: {invoice.date}</p>
