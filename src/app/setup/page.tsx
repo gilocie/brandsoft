@@ -16,6 +16,7 @@ import { Loader2, ArrowLeft, ArrowRight, CheckCircle, PartyPopper, UploadCloud, 
 import { Separator } from '@/components/ui/separator';
 import { hexToHsl } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 
 const TOTAL_STEPS = 4;
@@ -61,7 +62,7 @@ export default function SetupPage() {
       logo: '',
       primaryColor: '#9400D3',
       secondaryColor: '#D87093',
-      font: 'Alegreya',
+      font: 'Poppins',
       address: '',
       phone: '',
       email: '',
@@ -102,7 +103,7 @@ export default function SetupPage() {
         logo: data.logo || '',
         primaryColor: data.primaryColor || '#9400D3',
         secondaryColor: data.secondaryColor || '#D87093',
-        font: data.font || 'Alegreya',
+        font: data.font || 'Poppins',
       },
       profile: {
         address: data.address,
@@ -278,6 +279,30 @@ function Step1BrandIdentity({ control, form }: { control: Control<FormData>, for
           <p className="text-sm text-muted-foreground">Logo Preview</p>
         </div>
       </div>
+       <FormField
+            control={control}
+            name="font"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Font</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select a font" />
+                    </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                        <SelectItem value="Poppins">Poppins</SelectItem>
+                        <SelectItem value="Belleza">Belleza</SelectItem>
+                        <SelectItem value="Source Code Pro">Source Code Pro</SelectItem>
+                        <SelectItem value="Arial">Arial</SelectItem>
+                        <SelectItem value="Verdana">Verdana</SelectItem>
+                    </SelectContent>
+                </Select>
+                <FormMessage />
+                </FormItem>
+            )}
+        />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormField
           control={control}
@@ -356,7 +381,7 @@ function Step3ModuleSelection({ control }: { control: Control<FormData> }) {
 }
 
 function Step5Finish({ isFinishing }: { isFinishing: boolean }) {
-  return <div className="flex flex-col items-center justify-center text-center p-8 space-y-4 min-h-[250px]">
+  return <div className="flex flex-col items-center justify-center text-center p-8 space-y-4 min-h-[190px]">
     {isFinishing ? (
       <>
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -373,3 +398,4 @@ function Step5Finish({ isFinishing }: { isFinishing: boolean }) {
   </div>;
 }
 
+    
