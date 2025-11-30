@@ -35,6 +35,7 @@ const settingsSchema = z.object({
   logo: z.string().optional(),
   primaryColor: z.string().optional(),
   secondaryColor: z.string().optional(),
+  font: z.string().optional(),
   defaultCurrency: z.string().min(1, "Default currency is required"),
 });
 
@@ -60,6 +61,7 @@ export default function SettingsPage() {
       logo: config?.brand.logo || '',
       primaryColor: config?.brand.primaryColor || '',
       secondaryColor: config?.brand.secondaryColor || '',
+      font: config?.brand.font || 'Poppins',
       defaultCurrency: config?.profile.defaultCurrency || 'USD',
     },
   });
@@ -76,6 +78,7 @@ export default function SettingsPage() {
             logo: config.brand.logo,
             primaryColor: config.brand.primaryColor,
             secondaryColor: config.brand.secondaryColor,
+            font: config.brand.font,
             defaultCurrency: config.profile.defaultCurrency,
         });
         setLogoPreview(config.brand.logo);
@@ -106,6 +109,7 @@ export default function SettingsPage() {
           logo: data.logo || '',
           primaryColor: data.primaryColor || '#9400D3',
           secondaryColor: data.secondaryColor || '#D87093',
+          font: data.font || 'Poppins',
         },
         profile: {
           ...config.profile,
@@ -193,6 +197,30 @@ export default function SettingsPage() {
                             <p className="text-sm text-muted-foreground">Logo Preview</p>
                          </div>
                     </div>
+                     <FormField
+                        control={form.control}
+                        name="font"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Font</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a font" />
+                                </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="Poppins">Poppins</SelectItem>
+                                    <SelectItem value="Belleza">Belleza</SelectItem>
+                                    <SelectItem value="Source Code Pro">Source Code Pro</SelectItem>
+                                    <SelectItem value="Arial">Arial</SelectItem>
+                                    <SelectItem value="Verdana">Verdana</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField control={form.control} name="primaryColor" render={({ field }) => (
                         <FormItem><FormLabel>Primary Color</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>

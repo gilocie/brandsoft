@@ -277,7 +277,7 @@ export default function NewInvoicePage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {config?.currencies.map(currency => (
+                          {config?.currencies?.map(currency => (
                             <SelectItem key={currency} value={currency}>{currency}</SelectItem>
                           ))}
                         </SelectContent>
