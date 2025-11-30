@@ -1,11 +1,11 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useBrandsoft, type Customer, type Product } from '@/hooks/use-brandsoft.tsx';
+import { useBrandsoft, type Customer, type Product, type Invoice } from '@/hooks/use-brandsoft.tsx';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -65,7 +65,7 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { PlusCircle, ArrowRight, ArrowLeft, Trash2, MoreHorizontal, Eye, FilePenLine } from 'lucide-react';
+import { PlusCircle, ArrowRight, ArrowLeft, Trash2, MoreHorizontal, Eye, FilePenLine, Send } from 'lucide-react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
@@ -187,7 +187,7 @@ export default function CustomersPage() {
     if (data.id) {
         updateCustomer(data.id, customerToSave);
     } else {
-        addCustomer(customerTosave);
+        addCustomer(customerToSave);
     }
     
     setIsFormOpen(false);
@@ -228,6 +228,15 @@ export default function CustomersPage() {
         setFormStep(1);
     }
   }
+
+  const getCustomerInvoice = (customerName: string | undefined): Invoice | undefined => {
+    if (!customerName || !config?.invoices) return undefined;
+    return config.invoices.find(
+      inv => inv.customer === customerName && (inv.status === 'Pending' || inv.status === 'Overdue')
+    );
+  };
+
+  const customerInvoice = useMemo(() => getCustomerInvoice(selectedCustomer?.name), [selectedCustomer, config?.invoices]);
 
   return (
     <div className="container mx-auto space-y-6">
@@ -421,18 +430,19 @@ export default function CustomersPage() {
             <DialogDescription>{selectedCustomer?.name}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="grid grid-cols-3 items-center gap-4">
-              <Label className="text-right">Email</Label>
-              <div className="col-span-2 font-medium">{selectedCustomer?.email}</div>
+            <div className="grid grid-cols-2 gap-4">
+                <div className="font-semibold text-muted-foreground">Email</div>
+                <div className="font-medium">{selectedCustomer?.email}</div>
             </div>
-            <div className="grid grid-cols-3 items-center gap-4">
-              <Label className="text-right">Phone</Label>
-              <div className="col-span-2 font-medium">{selectedCustomer?.phone || 'N/A'}</div>
+             <div className="grid grid-cols-2 gap-4">
+                <div className="font-semibold text-muted-foreground">Phone</div>
+                <div className="font-medium">{selectedCustomer?.phone || 'N/A'}</div>
             </div>
-            <div className="grid grid-cols-3 items-start gap-4">
-              <Label className="text-right mt-1">Address</Label>
-              <div className="col-span-2 font-medium">{selectedCustomer?.address || 'N/A'}</div>
+             <div className="grid grid-cols-2 gap-4">
+                <div className="font-semibold text-muted-foreground">Address</div>
+                <div className="font-medium">{selectedCustomer?.address || 'N/A'}</div>
             </div>
+
             {selectedCustomer?.associatedProductIds && selectedCustomer.associatedProductIds.length > 0 && (
               <>
                 <Separator />
@@ -443,6 +453,33 @@ export default function CustomersPage() {
                         const product = config?.products.find(p => p.id === id);
                         return product ? <Badge key={id} variant="secondary">{product.name}</Badge> : null;
                     })}
+                  </div>
+                </div>
+              </>
+            )}
+            
+            {customerInvoice && (
+              <>
+                <Separator />
+                <div className="space-y-3">
+                  <h4 className="font-semibold">Outstanding Invoice</h4>
+                  <div className="grid grid-cols-2 gap-4 items-center">
+                    <div className="font-semibold text-muted-foreground">Invoice Status</div>
+                    <Badge variant={customerInvoice.status === 'Overdue' ? 'destructive' : 'secondary'} className="w-fit">{customerInvoice.status}</Badge>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="font-semibold text-muted-foreground">Amount Due</div>
+                    <div className="font-medium">${customerInvoice.amount.toFixed(2)}</div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="font-semibold text-muted-foreground">Due Date</div>
+                    <div className="font-medium">{customerInvoice.dueDate}</div>
+                  </div>
+                  <div className="flex justify-end">
+                    <Button size="sm">
+                      <Send className="mr-2 h-4 w-4" />
+                      Send Reminder
+                    </Button>
                   </div>
                 </div>
               </>
@@ -475,3 +512,5 @@ export default function CustomersPage() {
     </div>
   );
 }
+
+    
