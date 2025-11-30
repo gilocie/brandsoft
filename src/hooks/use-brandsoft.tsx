@@ -189,15 +189,19 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     return false;
   };
 
-  const saveConfig = (newConfig: BrandsoftConfig) => {
+  const saveConfig = (newConfig: BrandsoftConfig, options: { redirect?: boolean } = { redirect: true }) => {
     try {
       localStorage.setItem(CONFIG_KEY, JSON.stringify(newConfig));
       setIsConfigured(true);
       setConfig(newConfig);
-      // Only redirect if they are not already on the dashboard.
-      // This prevents redirects when just adding a customer/product.
-      if (!window.location.pathname.startsWith('/dashboard') && !window.location.pathname.startsWith('/settings') && !window.location.pathname.startsWith('/customers')) {
-        router.push('/dashboard');
+
+      if (options.redirect) {
+        const nonRedirectPaths = ['/dashboard', '/settings', '/customers', '/products', '/invoices'];
+        const shouldRedirect = !nonRedirectPaths.some(path => window.location.pathname.startsWith(path));
+        
+        if (shouldRedirect) {
+          router.push('/dashboard');
+        }
       }
     } catch (error) {
       console.error("Error saving config to localStorage", error);
@@ -224,7 +228,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       ...config,
       customers: [...(config.customers || []), newCustomer],
     };
-    saveConfig(newConfig);
+    saveConfig(newConfig, { redirect: false });
     return newCustomer;
   };
   
@@ -235,7 +239,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
         ...config,
         customers: updatedCustomers,
     };
-    saveConfig(newConfig);
+    saveConfig(newConfig, { redirect: false });
   }
 
   const addProduct = (productData: Omit<Product, 'id'>): Product => {
@@ -248,7 +252,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       ...config,
       products: [...(config.products || []), newProduct],
     };
-    saveConfig(newConfig);
+    saveConfig(newConfig, { redirect: false });
     return newProduct;
   };
 
@@ -259,7 +263,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
             ...config,
             currencies: [...config.currencies, currency]
         };
-        saveConfig(newConfig);
+        saveConfig(newConfig, { redirect: false });
     }
   };
 
