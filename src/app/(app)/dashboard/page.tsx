@@ -1,12 +1,13 @@
 
 "use client";
 
-import { useBrandsoft } from "@/hooks/use-brandsoft.tsx";
+import { useBrandsoft, type Invoice } from "@/hooks/use-brandsoft.tsx";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, Award, CreditCard, FileBarChart2, Brush, ArrowRight, Library } from "lucide-react";
+import { FileText, Award, CreditCard, FileBarChart2, Brush, ArrowRight, Library, Users, Package, CheckCircle, XCircle, Clock, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useMemo } from "react";
 
 const modules = [
   { title: "Invoice Designer", description: "Create and manage invoices.", icon: FileText, href: "/invoices", enabledKey: "invoice" },
@@ -17,8 +18,48 @@ const modules = [
   { title: "Template Marketplace", description: "Browse and manage templates.", icon: Library, href: "/templates", enabledKey: null },
 ];
 
+const StatCard = ({ title, value, icon: Icon, description }: { title: string, value: string | number, icon: React.ElementType, description: string }) => (
+    <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{title}</CardTitle>
+            <Icon className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+            <div className="text-2xl font-bold">{value}</div>
+            <p className="text-xs text-muted-foreground">{description}</p>
+        </CardContent>
+    </Card>
+);
+
+
 export default function DashboardPage() {
   const { config } = useBrandsoft();
+
+  const stats = useMemo(() => {
+    if (!config || !config.invoices) return {
+        paid: 0,
+        unpaid: 0,
+        overdue: 0,
+        canceled: 0,
+        totalCustomers: config?.customers.length || 0,
+        totalProducts: config?.products.length || 0,
+    };
+
+    const paid = config.invoices.filter(inv => inv.status === 'Paid').length;
+    const unpaid = config.invoices.filter(inv => inv.status === 'Pending').length;
+    const overdue = config.invoices.filter(inv => inv.status === 'Overdue').length;
+    const canceled = config.invoices.filter(inv => inv.status === 'Canceled').length;
+    
+    return {
+        paid,
+        unpaid,
+        overdue,
+        canceled,
+        totalCustomers: config.customers.length,
+        totalProducts: config.products.length,
+    }
+  }, [config]);
+
 
   if (!config) {
     return (
@@ -26,6 +67,9 @@ export default function DashboardPage() {
         <div className="space-y-2">
             <Skeleton className="h-8 w-1/2" />
             <Skeleton className="h-4 w-3/4" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-28" />)}
         </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {Array(6).fill(0).map((_, i) => (
@@ -55,7 +99,20 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-headline font-bold">Welcome back, {config.brand.businessName}!</h1>
-        <p className="text-muted-foreground">What would you like to create today?</p>
+        <p className="text-muted-foreground">Here's a snapshot of your business activity.</p>
+      </div>
+
+       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          <StatCard title="Paid Invoices" value={stats.paid} icon={CheckCircle} description="Total completed payments" />
+          <StatCard title="Unpaid Invoices" value={stats.unpaid} icon={Clock} description="Total pending payments" />
+          <StatCard title="Overdue Invoices" value={stats.overdue} icon={AlertTriangle} description="Total overdue payments" />
+          <StatCard title="Canceled Invoices" value={stats.canceled} icon={XCircle} description="Total canceled invoices" />
+          <StatCard title="Total Customers" value={stats.totalCustomers} icon={Users} description="Total active customers" />
+          <StatCard title="Products & Services" value={stats.totalProducts} icon={Package} description="Total items available" />
+      </div>
+      
+      <div>
+        <h2 className="text-2xl font-headline font-bold mt-8 mb-2">What would you like to create today?</h2>
       </div>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {enabledModules.map((module) => (

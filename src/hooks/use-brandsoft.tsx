@@ -24,6 +24,15 @@ export type Product = {
   price: number;
 };
 
+export type Invoice = {
+    invoiceId: string;
+    customer: string;
+    date: string;
+    dueDate: string;
+    amount: number;
+    status: 'Paid' | 'Pending' | 'Overdue' | 'Canceled' | 'Draft';
+};
+
 export type BrandsoftConfig = {
   brand: {
     logo: string;
@@ -49,6 +58,7 @@ export type BrandsoftConfig = {
   };
   customers: Customer[];
   products: Product[];
+  invoices: Invoice[];
   currencies: string[];
 };
 
@@ -65,6 +75,58 @@ interface BrandsoftContextType {
 }
 
 const BrandsoftContext = createContext<BrandsoftContextType | undefined>(undefined);
+
+const initialInvoices: Invoice[] = [
+  {
+    invoiceId: 'INV001',
+    customer: 'Liam Johnson',
+    date: '2023-06-23',
+    dueDate: '2023-07-23',
+    amount: 250.0,
+    status: 'Paid',
+  },
+  {
+    invoiceId: 'INV002',
+    customer: 'Olivia Smith',
+    date: '2023-07-15',
+    dueDate: '2023-08-15',
+    amount: 150.0,
+    status: 'Pending',
+  },
+  {
+    invoiceId: 'INV003',
+    customer: 'Noah Williams',
+    date: '2023-08-01',
+    dueDate: '2023-09-01',
+    amount: 350.0,
+    status: 'Paid',
+  },
+  {
+    invoiceId: 'INV004',
+    customer: 'Emma Brown',
+    date: '2023-09-10',
+    dueDate: '2023-10-10',
+    amount: 450.0,
+    status: 'Overdue',
+  },
+  {
+    invoiceId: 'INV005',
+    customer: 'James Jones',
+    date: '2023-10-20',
+    dueDate: '2023-11-20',
+    amount: 550.0,
+    status: 'Pending',
+  },
+   {
+    invoiceId: 'INV006',
+    customer: 'Sophia Garcia',
+    date: '2023-10-22',
+    dueDate: '2023-11-22',
+    amount: 300.0,
+    status: 'Canceled',
+  },
+];
+
 
 export function BrandsoftProvider({ children }: { children: ReactNode }) {
   const [isActivated, setIsActivated] = useState<boolean | null>(null);
@@ -83,6 +145,9 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
         const parsedConfig = JSON.parse(configData);
         if (!parsedConfig.currencies) {
             parsedConfig.currencies = ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD'];
+        }
+        if (!parsedConfig.invoices) {
+            parsedConfig.invoices = initialInvoices;
         }
         setConfig(parsedConfig);
       }
@@ -199,5 +264,3 @@ export function useBrandsoft() {
   }
   return context;
 }
-
-    

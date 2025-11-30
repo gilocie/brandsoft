@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useForm, Control } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useBrandsoft, type BrandsoftConfig } from '@/hooks/use-brandsoft.tsx';
+import { useBrandsoft, type BrandsoftConfig, type Invoice } from '@/hooks/use-brandsoft.tsx';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -48,6 +48,58 @@ const step3Schema = z.object({
 const formSchema = step1Schema.merge(step2Schema).merge(step3Schema);
 
 type FormData = z.infer<typeof formSchema>;
+
+const initialInvoices: Invoice[] = [
+  {
+    invoiceId: 'INV001',
+    customer: 'Liam Johnson',
+    date: '2023-06-23',
+    dueDate: '2023-07-23',
+    amount: 250.0,
+    status: 'Paid',
+  },
+  {
+    invoiceId: 'INV002',
+    customer: 'Olivia Smith',
+    date: '2023-07-15',
+    dueDate: '2023-08-15',
+    amount: 150.0,
+    status: 'Pending',
+  },
+  {
+    invoiceId: 'INV003',
+    customer: 'Noah Williams',
+    date: '2023-08-01',
+    dueDate: '2023-09-01',
+    amount: 350.0,
+    status: 'Paid',
+  },
+  {
+    invoiceId: 'INV004',
+    customer: 'Emma Brown',
+    date: '2023-09-10',
+    dueDate: '2023-10-10',
+    amount: 450.0,
+    status: 'Overdue',
+  },
+  {
+    invoiceId: 'INV005',
+    customer: 'James Jones',
+    date: '2023-10-20',
+    dueDate: '2023-11-20',
+    amount: 550.0,
+    status: 'Pending',
+  },
+   {
+    invoiceId: 'INV006',
+    customer: 'Sophia Garcia',
+    date: '2023-10-22',
+    dueDate: '2023-11-22',
+    amount: 300.0,
+    status: 'Canceled',
+  },
+];
+
 
 export default function SetupPage() {
   const { saveConfig } = useBrandsoft();
@@ -123,6 +175,7 @@ export default function SetupPage() {
       },
       customers: [],
       products: [],
+      invoices: initialInvoices,
       currencies: ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD'],
     };
     setIsFinishing(true);
@@ -147,7 +200,7 @@ export default function SetupPage() {
   };
 
   const prevStep = () => {
-    if (step > 1) setStep(s => s - 1);
+    if (step > 1) setStep(s => s + 1);
   };
   
   const stepInfo = [
@@ -191,7 +244,7 @@ export default function SetupPage() {
                 </div>
                 {watchedBusinessName && <CardDescription>Brandsoft Studio</CardDescription>}
                 <Separator className="my-4" />
-                <CardTitle className={cn("text-3xl", getFontClass(step === 1 ? 'Belleza' : 'Poppins'))}>{stepInfo[step-1].title}</CardTitle>
+                <CardTitle className={cn("text-3xl", step === 1 ? 'font-headline' : 'font-body')}>{stepInfo[step-1].title}</CardTitle>
                 <CardDescription>{stepInfo[step-1].description}</CardDescription>
               </CardHeader>
               <CardContent className="flex-grow overflow-auto pr-3">
@@ -420,6 +473,3 @@ function Step3ModuleSelection({ control }: { control: Control<FormData> }) {
     ))}
   </div>;
 }
-    
-
-    

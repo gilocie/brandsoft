@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -34,49 +35,8 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@/components/ui/toggle-group"
+import { useBrandsoft, type Invoice } from '@/hooks/use-brandsoft.tsx';
 
-const invoices = [
-  {
-    invoiceId: 'INV001',
-    customer: 'Liam Johnson',
-    date: '2023-06-23',
-    dueDate: '2023-07-23',
-    amount: 250.0,
-    status: 'Paid',
-  },
-  {
-    invoiceId: 'INV002',
-    customer: 'Olivia Smith',
-    date: '2023-07-15',
-    dueDate: '2023-08-15',
-    amount: 150.0,
-    status: 'Pending',
-  },
-  {
-    invoiceId: 'INV003',
-    customer: 'Noah Williams',
-    date: '2023-08-01',
-    dueDate: '2023-09-01',
-    amount: 350.0,
-    status: 'Paid',
-  },
-  {
-    invoiceId: 'INV004',
-    customer: 'Emma Brown',
-    date: '2023-09-10',
-    dueDate: '2023-10-10',
-    amount: 450.0,
-    status: 'Overdue',
-  },
-  {
-    invoiceId: 'INV005',
-    customer: 'James Jones',
-    date: '2023-10-20',
-    dueDate: '2023-11-20',
-    amount: 550.0,
-    status: 'Pending',
-  },
-];
 
 const statusVariantMap: {
   [key: string]: 'default' | 'secondary' | 'destructive';
@@ -84,6 +44,8 @@ const statusVariantMap: {
   Paid: 'default',
   Pending: 'secondary',
   Overdue: 'destructive',
+  Canceled: 'destructive',
+  Draft: 'secondary',
 };
 
 const ActionsMenu = () => (
@@ -119,6 +81,8 @@ const ActionsMenu = () => (
 
 export default function InvoicesPage() {
   const [layout, setLayout] = useState<'grid' | 'list'>('grid');
+  const { config } = useBrandsoft();
+  const invoices = config?.invoices || [];
 
   return (
     <div className="container mx-auto space-y-6">
