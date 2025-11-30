@@ -23,6 +23,9 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
+import { Separator } from '@/components/ui/separator';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+
 
 const currencySymbols: { [key: string]: string } = {
   USD: '$',
@@ -48,7 +51,12 @@ const formSchema = z.object({
   currency: z.string().min(1, 'Currency is required'),
   lineItems: z.array(lineItemSchema).min(1, 'At least one line item is required.'),
   notes: z.string().optional(),
-  applyTax: z.boolean().default(true),
+  applyTax: z.boolean().default(false),
+  taxName: z.string().optional(),
+  taxType: z.enum(['percentage', 'flat']).default('percentage'),
+  taxValue: z.coerce.number().optional(),
+  applyShipping: z.boolean().default(false),
+  shippingValue: z.coerce.number().optional(),
 });
 
 type InvoiceFormData = z.infer<typeof formSchema>;
@@ -77,7 +85,12 @@ export default function NewInvoicePage() {
       currency: config?.profile.defaultCurrency || 'USD',
       lineItems: [{ description: '', quantity: 1, price: 0 }],
       notes: '',
-      applyTax: true,
+      applyTax: false,
+      taxName: 'Tax',
+      taxType: 'percentage',
+      taxValue: 10,
+      applyShipping: false,
+      shippingValue: 0,
     },
   });
 
@@ -108,10 +121,20 @@ export default function NewInvoicePage() {
 
     const customer = config.customers.find(c => c.id === data.customerId);
     if (!customer) return;
-
+    
     const subtotal = data.lineItems.reduce((acc, item) => acc + (item.quantity * item.price), 0);
-    const tax = data.applyTax ? subtotal * 0.1 : 0;
-    const total = subtotal + tax;
+    
+    let taxAmount = 0;
+    if (data.applyTax && data.taxValue) {
+        if (data.taxType === 'percentage') {
+            taxAmount = subtotal * (data.taxValue / 100);
+        } else {
+            taxAmount = data.taxValue;
+        }
+    }
+    
+    const shipping = data.applyShipping && data.shippingValue ? data.shippingValue : 0;
+    const total = subtotal + taxAmount + shipping;
 
     const newInvoice: Omit<Invoice, 'invoiceId'> = {
         customer: customer.name,
@@ -149,16 +172,24 @@ export default function NewInvoicePage() {
     }
   }
 
-  const watchedCurrency = form.watch('currency');
-  const currencySymbol = currencySymbols[watchedCurrency] || watchedCurrency;
+  const watchedValues = form.watch();
+  const currencySymbol = currencySymbols[watchedValues.currency] || watchedValues.currency;
 
-  const subtotal = form.watch('lineItems').reduce((acc, item) => {
+  const subtotal = watchedValues.lineItems.reduce((acc, item) => {
     return acc + (Number(item.quantity) || 0) * (Number(item.price) || 0);
   }, 0);
   
-  const applyTax = form.watch('applyTax');
-  const tax = applyTax ? subtotal * 0.1 : 0;
-  const total = subtotal + tax;
+  let taxAmount = 0;
+  if (watchedValues.applyTax && watchedValues.taxValue) {
+      if (watchedValues.taxType === 'percentage') {
+          taxAmount = subtotal * (watchedValues.taxValue / 100);
+      } else {
+          taxAmount = watchedValues.taxValue;
+      }
+  }
+
+  const shippingAmount = watchedValues.applyShipping && watchedValues.shippingValue ? watchedValues.shippingValue : 0;
+  const total = subtotal + taxAmount + shippingAmount;
 
   return (
     <div className="container mx-auto max-w-4xl space-y-6">
@@ -445,17 +476,21 @@ export default function NewInvoicePage() {
                 </div>
             </CardContent>
             <CardFooter className="flex flex-col items-end gap-2">
-                <div className="w-full max-w-xs space-y-2">
+                <div className="w-full max-w-sm space-y-2 self-end">
                     <div className="flex justify-between">
                         <span className="text-muted-foreground">Subtotal</span>
                         <span>{currencySymbol}{subtotal.toFixed(2)}</span>
                     </div>
+
+                    <Separator />
+                    
+                    {/* Tax Section */}
                     <FormField
                         control={form.control}
                         name="applyTax"
                         render={({ field }) => (
                             <FormItem className="flex justify-between items-center">
-                                <FormLabel htmlFor="apply-tax-switch" className="text-muted-foreground flex items-center">Tax (10%)</FormLabel>
+                                <FormLabel htmlFor="apply-tax-switch">Apply Tax</FormLabel>
                                 <FormControl>
                                   <Switch
                                     id="apply-tax-switch"
@@ -466,13 +501,65 @@ export default function NewInvoicePage() {
                             </FormItem>
                         )}
                         />
-                    {applyTax && (
-                        <div className="flex justify-between">
-                            <span className="text-muted-foreground"></span>
-                            <span>{currencySymbol}{tax.toFixed(2)}</span>
+                    {watchedValues.applyTax && (
+                        <div className="pl-4 space-y-4 pt-2 pb-2">
+                           <div className="grid grid-cols-2 gap-4">
+                                <FormField control={form.control} name="taxName" render={({ field }) => (
+                                    <FormItem><FormLabel>Tax Name</FormLabel><FormControl><Input placeholder="e.g. VAT" {...field} /></FormControl></FormItem>
+                                )} />
+                               <FormField control={form.control} name="taxType" render={({ field }) => (
+                                    <FormItem><FormLabel>Rate Type</FormLabel><FormControl>
+                                        <ToggleGroup type="single" value={field.value} onValueChange={field.onChange} className="grid grid-cols-2 border rounded-md h-10">
+                                            <ToggleGroupItem value="percentage" className="h-full rounded-l-md rounded-r-none text-xs">Percentage</ToggleGroupItem>
+                                            <ToggleGroupItem value="flat" className="h-full rounded-r-md rounded-l-none text-xs">Flat</ToggleGroupItem>
+                                        </ToggleGroup>
+                                    </FormControl></FormItem>
+                                )} />
+                           </div>
+                           <FormField control={form.control} name="taxValue" render={({ field }) => (
+                                <FormItem><FormLabel>Value</FormLabel><FormControl><Input type="number" placeholder={watchedValues.taxType === 'percentage' ? '16' : '100'} {...field} /></FormControl></FormItem>
+                            )} />
+                           <div className="flex justify-between text-muted-foreground">
+                             <span>{watchedValues.taxName || 'Tax'}</span>
+                             <span>{currencySymbol}{taxAmount.toFixed(2)}</span>
+                           </div>
                         </div>
                     )}
-                    <div className="flex justify-between font-bold text-lg">
+                    
+                    <Separator />
+
+                    {/* Shipping Section */}
+                    <FormField
+                        control={form.control}
+                        name="applyShipping"
+                        render={({ field }) => (
+                            <FormItem className="flex justify-between items-center">
+                                <FormLabel htmlFor="apply-shipping-switch">Add Shipping</FormLabel>
+                                <FormControl>
+                                  <Switch
+                                    id="apply-shipping-switch"
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                  />
+                                </FormControl>
+                            </FormItem>
+                        )}
+                        />
+                    {watchedValues.applyShipping && (
+                         <div className="pl-4 space-y-2 pt-2 pb-2">
+                           <FormField control={form.control} name="shippingValue" render={({ field }) => (
+                                <FormItem><FormLabel>Shipping Cost</FormLabel><FormControl><Input type="number" placeholder="5.00" {...field} /></FormControl></FormItem>
+                            )} />
+                            <div className="flex justify-between text-muted-foreground">
+                                <span>Shipping</span>
+                                <span>{currencySymbol}{shippingAmount.toFixed(2)}</span>
+                            </div>
+                        </div>
+                    )}
+
+                    <Separator />
+
+                    <div className="flex justify-between font-bold text-lg pt-2">
                         <span>Total</span>
                         <span>{currencySymbol}{total.toFixed(2)}</span>
                     </div>
