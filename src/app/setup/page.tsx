@@ -19,7 +19,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 
-const TOTAL_STEPS = 3;
+const TOTAL_STEPS = 4;
 
 const step1Schema = z.object({
   businessName: z.string().min(2, "Business name is required"),
@@ -191,7 +191,7 @@ export default function SetupPage() {
                 </div>
                 {watchedBusinessName && <CardDescription>Brandsoft Studio</CardDescription>}
                 <Separator className="my-4" />
-                <CardTitle className="font-body text-3xl">{stepInfo[step-1].title}</CardTitle>
+                <CardTitle className={cn("text-3xl", getFontClass(step === 1 ? 'Belleza' : 'Poppins'))}>{stepInfo[step-1].title}</CardTitle>
                 <CardDescription>{stepInfo[step-1].description}</CardDescription>
               </CardHeader>
               <CardContent className="flex-grow overflow-auto pr-3">
@@ -199,31 +199,29 @@ export default function SetupPage() {
                     <div style={{ display: step === 1 ? 'block' : 'none' }}><Step1BrandIdentity control={form.control} form={form} /></div>
                     <div style={{ display: step === 2 ? 'block' : 'none' }}><Step2BusinessProfile control={form.control} /></div>
                     <div style={{ display: step === 3 ? 'block' : 'none' }}><Step3ModuleSelection control={form.control} /></div>
+                    <div style={{ display: step === 4 ? 'block' : 'none' }}>
+                       {isFinishing ? (
+                         <div className="flex flex-col items-center justify-center text-center space-y-4 min-h-[200px]">
+                           <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                           <p className="text-xl font-medium font-headline">Finalizing your setup...</p>
+                           <p className="text-muted-foreground">Just a moment while we save your preferences.</p>
+                         </div>
+                       ) : (
+                         <div className="flex flex-col items-center justify-center text-center space-y-4 min-h-[200px]">
+                           <PartyPopper className="h-16 w-16 text-primary" />
+                           <p className="text-2xl font-medium font-headline">Configuration Complete!</p>
+                           <p className="text-muted-foreground max-w-sm">You are all set to start creating amazing documents. Click "Finish Setup" to go to your dashboard.</p>
+                         </div>
+                       )}
+                    </div>
                 </form>
               </CardContent>
               <CardFooter className="flex justify-between pt-6 sticky bottom-0 bg-card">
                 <Button type="button" variant="outline" onClick={prevStep} disabled={step === 1 || isFinishing}>
                   <ArrowLeft className="mr-2 h-4 w-4" /> Previous
                 </Button>
-                {step === TOTAL_STEPS ? (
-                     <div className="flex flex-col items-center justify-center text-center space-y-4 min-h-[200px]">
-                     {isFinishing ? (
-                       <>
-                         <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                         <p className="text-xl font-medium font-headline">Finalizing your setup...</p>
-                         <p className="text-muted-foreground">Just a moment while we save your preferences.</p>
-                       </>
-                     ) : (
-                       <>
-                         <PartyPopper className="h-16 w-16 text-primary" />
-                         <p className="text-2xl font-medium font-headline">Configuration Complete!</p>
-                         <p className="text-muted-foreground max-w-sm">You are all set to start creating amazing documents. Click "Finish Setup" to go to your dashboard.</p>
-                       </>
-                     )}
-                   </div>
-                ) : null}
-                <Button type="button" onClick={nextStep} disabled={isFinishing}>
-                  {isFinishing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Button type="button" onClick={nextStep} disabled={isFinishing && step === TOTAL_STEPS}>
+                  {isFinishing && step === TOTAL_STEPS && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {step === TOTAL_STEPS ? 'Finish Setup' : 'Next'}
                   {step < TOTAL_STEPS && <ArrowRight className="ml-2 h-4 w-4" />}
                 </Button>
@@ -422,4 +420,6 @@ function Step3ModuleSelection({ control }: { control: Control<FormData> }) {
     ))}
   </div>;
 }
+    
+
     
