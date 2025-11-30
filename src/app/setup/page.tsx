@@ -18,7 +18,7 @@ import { hexToHsl } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 4;
 
 const step1Schema = z.object({
   businessName: z.string().min(2, "Business name is required"),
@@ -152,7 +152,6 @@ export default function SetupPage() {
     { title: "Brand Identity", description: "Let's start with your brand basics." },
     { title: "Business Profile", description: "Tell us about your business." },
     { title: "Module Selection", description: "Choose the tools you need." },
-    { title: "Template Library", description: "Getting your templates ready." },
     { title: "Finish Setup", description: "You're all set!" },
   ];
 
@@ -184,8 +183,7 @@ export default function SetupPage() {
               <div style={{ display: step === 1 ? 'block' : 'none' }}><Step1BrandIdentity control={form.control} form={form} /></div>
               <div style={{ display: step === 2 ? 'block' : 'none' }}><Step2BusinessProfile control={form.control} /></div>
               <div style={{ display: step === 3 ? 'block' : 'none' }}><Step3ModuleSelection control={form.control} /></div>
-              <div style={{ display: step === 4 ? 'block' : 'none' }}><Step4TemplateLibrary /></div>
-              <div style={{ display: step === 5 ? 'block' : 'none' }}><Step5Finish isFinishing={isFinishing} /></div>
+              <div style={{ display: step === 4 ? 'block' : 'none' }}><Step5Finish isFinishing={isFinishing} /></div>
 
               <div className="flex justify-between pt-4">
                 <Button type="button" variant="outline" onClick={prevStep} disabled={step === 1 || isFinishing}>
@@ -357,30 +355,6 @@ function Step3ModuleSelection({ control }: { control: Control<FormData> }) {
   </div>;
 }
 
-function Step4TemplateLibrary() {
-  const [progress, setProgress] = useState(0);
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setProgress(oldProgress => {
-        if (oldProgress >= 100) {
-          clearInterval(timer);
-          return 100;
-        }
-        const diff = Math.random() * 20;
-        return Math.min(oldProgress + diff, 100);
-      });
-    }, 400);
-    return () => clearInterval(timer);
-  }, []);
-
-  return <div className="flex flex-col items-center justify-center text-center p-8 space-y-4 min-h-[250px]">
-    <Loader2 className="h-10 w-10 animate-spin text-primary" />
-    <p className="text-lg font-medium">Scanning for new templates...</p>
-    <Progress value={progress} className="w-full" />
-    {progress >= 100 && <div className="flex items-center gap-2 text-green-600 pt-2"><CheckCircle className="h-5 w-5" /><p>Template library is ready!</p></div>}
-  </div>;
-}
-
 function Step5Finish({ isFinishing }: { isFinishing: boolean }) {
   return <div className="flex flex-col items-center justify-center text-center p-8 space-y-4 min-h-[250px]">
     {isFinishing ? (
@@ -398,3 +372,4 @@ function Step5Finish({ isFinishing }: { isFinishing: boolean }) {
     )}
   </div>;
 }
+
