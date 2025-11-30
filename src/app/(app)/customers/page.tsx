@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -458,32 +459,39 @@ export default function CustomersPage() {
               </>
             )}
             
-            {customerInvoice && (
-              <>
+            <>
                 <Separator />
                 <div className="space-y-3">
                   <h4 className="font-semibold">Outstanding Invoice</h4>
-                  <div className="grid grid-cols-2 gap-4 items-center">
-                    <div className="font-semibold text-muted-foreground">Invoice Status</div>
-                    <Badge variant={customerInvoice.status === 'Overdue' ? 'destructive' : 'secondary'} className="w-fit">{customerInvoice.status}</Badge>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="font-semibold text-muted-foreground">Amount Due</div>
-                    <div className="font-medium">${customerInvoice.amount.toFixed(2)}</div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="font-semibold text-muted-foreground">Due Date</div>
-                    <div className="font-medium">{customerInvoice.dueDate}</div>
-                  </div>
+                  {customerInvoice ? (
+                    <>
+                      <div className="grid grid-cols-2 gap-4 items-center">
+                        <div className="font-semibold text-muted-foreground">Invoice Status</div>
+                        <Badge variant={customerInvoice.status === 'Overdue' ? 'destructive' : 'secondary'} className="w-fit">{customerInvoice.status}</Badge>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="font-semibold text-muted-foreground">Amount Due</div>
+                        <div className="font-medium">${customerInvoice.amount.toFixed(2)}</div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="font-semibold text-muted-foreground">Due Date</div>
+                        <div className="font-medium">{customerInvoice.dueDate}</div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="font-semibold text-muted-foreground">Invoice Status</div>
+                      <div className="font-medium text-muted-foreground">No outstanding invoice</div>
+                    </div>
+                  )}
                   <div className="flex justify-end">
-                    <Button size="sm">
+                    <Button size="sm" disabled={!customerInvoice}>
                       <Send className="mr-2 h-4 w-4" />
                       Send Reminder
                     </Button>
                   </div>
                 </div>
               </>
-            )}
           </div>
           <DialogFooter>
             <Button onClick={() => setIsViewOpen(false)}>Close</Button>
@@ -512,5 +520,7 @@ export default function CustomersPage() {
     </div>
   );
 }
+
+    
 
     
