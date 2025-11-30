@@ -34,6 +34,10 @@ export type Invoice = {
     dueDate: string;
     amount: number;
     status: 'Paid' | 'Pending' | 'Overdue' | 'Canceled' | 'Draft';
+    subtotal?: number;
+    discount?: number;
+    tax?: number;
+    shipping?: number;
 };
 
 export type BrandsoftConfig = {

@@ -57,6 +57,9 @@ const formSchema = z.object({
   taxValue: z.coerce.number().optional(),
   applyShipping: z.boolean().default(false),
   shippingValue: z.coerce.number().optional(),
+  applyDiscount: z.boolean().default(false),
+  discountType: z.enum(['percentage', 'flat']).default('percentage'),
+  discountValue: z.coerce.number().optional(),
 });
 
 type InvoiceFormData = z.infer<typeof formSchema>;
@@ -91,6 +94,9 @@ export default function NewInvoicePage() {
       taxValue: 10,
       applyShipping: false,
       shippingValue: 0,
+      applyDiscount: false,
+      discountType: 'percentage',
+      discountValue: 0,
     },
   });
 
@@ -123,18 +129,28 @@ export default function NewInvoicePage() {
     if (!customer) return;
     
     const subtotal = data.lineItems.reduce((acc, item) => acc + (item.quantity * item.price), 0);
+
+    let discountAmount = 0;
+    if (data.applyDiscount && data.discountValue) {
+        if (data.discountType === 'percentage') {
+            discountAmount = subtotal * (data.discountValue / 100);
+        } else {
+            discountAmount = data.discountValue;
+        }
+    }
+    const subtotalAfterDiscount = subtotal - discountAmount;
     
     let taxAmount = 0;
     if (data.applyTax && data.taxValue) {
         if (data.taxType === 'percentage') {
-            taxAmount = subtotal * (data.taxValue / 100);
+            taxAmount = subtotalAfterDiscount * (data.taxValue / 100);
         } else {
             taxAmount = data.taxValue;
         }
     }
     
     const shipping = data.applyShipping && data.shippingValue ? data.shippingValue : 0;
-    const total = subtotal + taxAmount + shipping;
+    const total = subtotalAfterDiscount + taxAmount + shipping;
 
     const newInvoice: Omit<Invoice, 'invoiceId'> = {
         customer: customer.name,
@@ -142,6 +158,10 @@ export default function NewInvoicePage() {
         dueDate: format(data.dueDate, 'yyyy-MM-dd'),
         amount: total,
         status: data.status,
+        subtotal,
+        discount: discountAmount,
+        tax: taxAmount,
+        shipping,
     };
     
     addInvoice(newInvoice);
@@ -174,22 +194,36 @@ export default function NewInvoicePage() {
 
   const watchedValues = form.watch();
   const currencySymbol = currencySymbols[watchedValues.currency] || watchedValues.currency;
+  const formatCurrency = (value: number) => {
+    return `${currencySymbol}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
 
   const subtotal = watchedValues.lineItems.reduce((acc, item) => {
     return acc + (Number(item.quantity) || 0) * (Number(item.price) || 0);
   }, 0);
   
+  let discountAmount = 0;
+  if (watchedValues.applyDiscount && watchedValues.discountValue) {
+      if (watchedValues.discountType === 'percentage') {
+          discountAmount = subtotal * (watchedValues.discountValue / 100);
+      } else {
+          discountAmount = watchedValues.discountValue;
+      }
+  }
+
+  const subtotalAfterDiscount = subtotal - discountAmount;
+  
   let taxAmount = 0;
   if (watchedValues.applyTax && watchedValues.taxValue) {
       if (watchedValues.taxType === 'percentage') {
-          taxAmount = subtotal * (watchedValues.taxValue / 100);
+          taxAmount = subtotalAfterDiscount * (watchedValues.taxValue / 100);
       } else {
           taxAmount = watchedValues.taxValue;
       }
   }
 
   const shippingAmount = watchedValues.applyShipping && watchedValues.shippingValue ? watchedValues.shippingValue : 0;
-  const total = subtotal + taxAmount + shippingAmount;
+  const total = subtotalAfterDiscount + taxAmount + shippingAmount;
 
   return (
     <div className="container mx-auto max-w-4xl space-y-6">
@@ -459,7 +493,7 @@ export default function NewInvoicePage() {
                         <div className="text-right font-medium">
                           <FormLabel>Total</FormLabel>
                           <p className="h-10 flex items-center justify-end pr-3">
-                            {currencySymbol}{((form.watch(`lineItems.${index}.quantity`) || 0) * (form.watch(`lineItems.${index}.price`) || 0)).toFixed(2)}
+                            {formatCurrency(((form.watch(`lineItems.${index}.quantity`) || 0) * (form.watch(`lineItems.${index}.price`) || 0)))}
                           </p>
                         </div>
                       </div>
@@ -479,11 +513,52 @@ export default function NewInvoicePage() {
                 <div className="w-full max-w-sm space-y-2 self-end">
                     <div className="flex justify-between">
                         <span className="text-muted-foreground">Subtotal</span>
-                        <span>{currencySymbol}{subtotal.toFixed(2)}</span>
+                        <span>{formatCurrency(subtotal)}</span>
                     </div>
 
                     <Separator />
                     
+                    {/* Discount Section */}
+                    <FormField
+                        control={form.control}
+                        name="applyDiscount"
+                        render={({ field }) => (
+                            <FormItem className="flex justify-between items-center">
+                                <FormLabel htmlFor="apply-discount-switch">Apply Discount</FormLabel>
+                                <FormControl>
+                                  <Switch
+                                    id="apply-discount-switch"
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                  />
+                                </FormControl>
+                            </FormItem>
+                        )}
+                        />
+                    {watchedValues.applyDiscount && (
+                        <div className="pl-4 space-y-4 pt-2 pb-2">
+                           <div className="grid grid-cols-2 gap-4">
+                                <FormField control={form.control} name="discountType" render={({ field }) => (
+                                    <FormItem><FormLabel>Discount Type</FormLabel><FormControl>
+                                        <ToggleGroup type="single" value={field.value} onValueChange={field.onChange} className="grid grid-cols-2 border rounded-md h-10">
+                                            <ToggleGroupItem value="percentage" className="h-full rounded-l-md rounded-r-none text-xs">Percentage</ToggleGroupItem>
+                                            <ToggleGroupItem value="flat" className="h-full rounded-r-md rounded-l-none text-xs">Flat</ToggleGroupItem>
+                                        </ToggleGroup>
+                                    </FormControl></FormItem>
+                                )} />
+                               <FormField control={form.control} name="discountValue" render={({ field }) => (
+                                    <FormItem><FormLabel>Value</FormLabel><FormControl><Input type="number" placeholder={watchedValues.discountType === 'percentage' ? '10' : '50'} {...field} /></FormControl></FormItem>
+                                )} />
+                           </div>
+                           <div className="flex justify-between text-muted-foreground">
+                             <span>Discount</span>
+                             <span>- {formatCurrency(discountAmount)}</span>
+                           </div>
+                        </div>
+                    )}
+                    
+                    <Separator />
+
                     {/* Tax Section */}
                     <FormField
                         control={form.control}
@@ -521,7 +596,7 @@ export default function NewInvoicePage() {
                             )} />
                            <div className="flex justify-between text-muted-foreground">
                              <span>{watchedValues.taxName || 'Tax'}</span>
-                             <span>{currencySymbol}{taxAmount.toFixed(2)}</span>
+                             <span>{formatCurrency(taxAmount)}</span>
                            </div>
                         </div>
                     )}
@@ -552,7 +627,7 @@ export default function NewInvoicePage() {
                             )} />
                             <div className="flex justify-between text-muted-foreground">
                                 <span>Shipping</span>
-                                <span>{currencySymbol}{shippingAmount.toFixed(2)}</span>
+                                <span>{formatCurrency(shippingAmount)}</span>
                             </div>
                         </div>
                     )}
@@ -561,7 +636,7 @@ export default function NewInvoicePage() {
 
                     <div className="flex justify-between font-bold text-lg pt-2">
                         <span>Total</span>
-                        <span>{currencySymbol}{total.toFixed(2)}</span>
+                        <span>{formatCurrency(total)}</span>
                     </div>
                 </div>
             </CardFooter>
