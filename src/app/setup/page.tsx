@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm, Control } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -13,14 +13,17 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Logo } from '@/components/logo';
-import { Loader2, ArrowLeft, ArrowRight, CheckCircle, PartyPopper } from 'lucide-react';
+import { Loader2, ArrowLeft, ArrowRight, CheckCircle, PartyPopper, UploadCloud } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { hexToHsl } from '@/lib/utils';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
 
 const TOTAL_STEPS = 5;
 
 const step1Schema = z.object({
   businessName: z.string().min(2, "Business name is required"),
-  logo: z.string().url("Must be a valid URL").optional().or(z.literal('')),
+  logo: z.string().optional(),
   primaryColor: z.string().optional(),
   secondaryColor: z.string().optional(),
   font: z.string().optional(),
@@ -72,6 +75,24 @@ export default function SetupPage() {
       marketing: false,
     },
   });
+
+  const primaryColor = form.watch('primaryColor');
+  const secondaryColor = form.watch('secondaryColor');
+
+  useEffect(() => {
+    if (primaryColor) {
+      const primaryHsl = hexToHsl(primaryColor);
+      if (primaryHsl) {
+        document.documentElement.style.setProperty('--primary', `${primaryHsl.h} ${primaryHsl.s}% ${primaryHsl.l}%`);
+      }
+    }
+    if (secondaryColor) {
+      const accentHsl = hexToHsl(secondaryColor);
+       if (accentHsl) {
+        document.documentElement.style.setProperty('--accent', `${accentHsl.h} ${accentHsl.s}% ${accentHsl.l}%`);
+      }
+    }
+  }, [primaryColor, secondaryColor]);
 
   async function processSubmit(data: FormData) {
     const config: BrandsoftConfig = {
@@ -152,7 +173,7 @@ export default function SetupPage() {
         <CardContent>
           <Form {...form}>
             <form className="space-y-6">
-              <div style={{ display: step === 1 ? 'block' : 'none' }}><Step1BrandIdentity control={form.control} /></div>
+              <div style={{ display: step === 1 ? 'block' : 'none' }}><Step1BrandIdentity control={form.control} form={form} /></div>
               <div style={{ display: step === 2 ? 'block' : 'none' }}><Step2BusinessProfile control={form.control} /></div>
               <div style={{ display: step === 3 ? 'block' : 'none' }}><Step3ModuleSelection control={form.control} /></div>
               <div style={{ display: step === 4 ? 'block' : 'none' }}><Step4TemplateLibrary /></div>
@@ -177,23 +198,108 @@ export default function SetupPage() {
 }
 
 // Sub-components for each wizard step for better organization.
-function Step1BrandIdentity({ control }: { control: Control<FormData> }) {
-  return <div className="space-y-4">
-    <FormField control={control} name="businessName" render={({ field }) => (
-      <FormItem><FormLabel>Business Name</FormLabel><FormControl><Input placeholder="Your Company LLC" {...field} /></FormControl><FormMessage /></FormItem>
-    )} />
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <FormField control={control} name="primaryColor" render={({ field }) => (
-          <FormItem><FormLabel>Primary Color</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>
-        )} />
-        <FormField control={control} name="secondaryColor" render={({ field }) => (
-          <FormItem><FormLabel>Accent Color</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>
-        )} />
+function Step1BrandIdentity({ control, form }: { control: Control<FormData>, form: any }) {
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = reader.result as string;
+        setLogoPreview(dataUrl);
+        form.setValue('logo', dataUrl, { shouldDirty: true });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+        <div className="space-y-4">
+          <FormField
+            control={control}
+            name="businessName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Business Name</FormLabel>
+                <FormControl>
+                  <Input placeholder="Your Company LLC" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={control}
+            name="logo"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Logo</FormLabel>
+                <FormControl>
+                  <div>
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      ref={fileInputRef}
+                      onChange={handleLogoChange}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full"
+                    >
+                      <UploadCloud className="mr-2 h-4 w-4" /> Upload Logo
+                    </Button>
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <div className="flex flex-col items-center justify-center space-y-2 rounded-md border border-dashed p-4 h-full">
+          <Avatar className="h-24 w-24">
+            <AvatarImage src={logoPreview || undefined} alt={form.watch('businessName')} />
+            <AvatarFallback className="text-3xl">
+              {form.watch('businessName')?.charAt(0).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <p className="text-sm text-muted-foreground">Logo Preview</p>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FormField
+          control={control}
+          name="primaryColor"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Primary Color</FormLabel>
+              <FormControl>
+                <Input type="color" {...field} className="h-10 p-1" />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={control}
+          name="secondaryColor"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Accent Color</FormLabel>
+              <FormControl>
+                <Input type="color" {...field} className="h-10 p-1" />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+      </div>
     </div>
-    <FormField control={control} name="logo" render={({ field }) => (
-      <FormItem><FormLabel>Logo URL (Optional)</FormLabel><FormControl><Input placeholder="https://example.com/logo.png" {...field} /></FormControl><FormMessage /></FormItem>
-    )} />
-  </div>;
+  );
 }
 
 function Step2BusinessProfile({ control }: { control: Control<FormData> }) {
