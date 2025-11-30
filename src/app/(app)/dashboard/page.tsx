@@ -4,7 +4,7 @@
 import { useBrandsoft, type Invoice } from "@/hooks/use-brandsoft.tsx";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, Award, CreditCard, FileBarChart2, Brush, ArrowRight, Library, Users, Package, CheckCircle, XCircle, Clock, AlertTriangle } from "lucide-react";
+import { FileText, Award, CreditCard, FileBarChart2, Brush, ArrowRight, Library, Users, Package, CheckCircle, XCircle, Clock, AlertTriangle, DollarSign, FileClock, FileX, Receipt } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMemo } from "react";
@@ -18,14 +18,16 @@ const modules = [
   { title: "Template Marketplace", description: "Browse and manage templates.", icon: Library, href: "/templates", enabledKey: null },
 ];
 
-const StatCard = ({ title, value, icon: Icon, description }: { title: string, value: string | number, icon: React.ElementType, description: string }) => (
+const StatCard = ({ title, value, icon: Icon, description, formatAsCurrency = false }: { title: string, value: string | number, icon: React.ElementType, description: string, formatAsCurrency?: boolean }) => (
     <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{title}</CardTitle>
             <Icon className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-            <div className="text-2xl font-bold">{value}</div>
+            <div className="text-2xl font-bold">
+                {formatAsCurrency && '$'}{typeof value === 'number' && formatAsCurrency ? value.toFixed(2) : value}
+            </div>
             <p className="text-xs text-muted-foreground">{description}</p>
         </CardContent>
     </Card>
@@ -38,28 +40,42 @@ export default function DashboardPage() {
   const stats = useMemo(() => {
     if (!config) {
         return {
-            paid: 0,
-            unpaid: 0,
-            overdue: 0,
-            canceled: 0,
+            paidCount: 0,
+            unpaidCount: 0,
+            overdueCount: 0,
+            canceledCount: 0,
             totalCustomers: 0,
             totalProducts: 0,
+            paidAmount: 0,
+            unpaidAmount: 0,
+            canceledAmount: 0,
+            quotationsSent: 0, // Placeholder
+            receiptsIssued: 0, // Placeholder
         };
     }
 
     const invoices = config.invoices || [];
-    const paid = invoices.filter(inv => inv.status === 'Paid').length;
-    const unpaid = invoices.filter(inv => inv.status === 'Pending').length;
-    const overdue = invoices.filter(inv => inv.status === 'Overdue').length;
-    const canceled = invoices.filter(inv => inv.status === 'Canceled').length;
+    
+    const paidInvoices = invoices.filter(inv => inv.status === 'Paid');
+    const unpaidInvoices = invoices.filter(inv => inv.status === 'Pending' || inv.status === 'Overdue');
+    const canceledInvoices = invoices.filter(inv => inv.status === 'Canceled');
+
+    const paidAmount = paidInvoices.reduce((sum, inv) => sum + inv.amount, 0);
+    const unpaidAmount = unpaidInvoices.reduce((sum, inv) => sum + inv.amount, 0);
+    const canceledAmount = canceledInvoices.reduce((sum, inv) => sum + inv.amount, 0);
     
     return {
-        paid,
-        unpaid,
-        overdue,
-        canceled,
+        paidCount: paidInvoices.length,
+        unpaidCount: invoices.filter(inv => inv.status === 'Pending').length,
+        overdueCount: invoices.filter(inv => inv.status === 'Overdue').length,
+        canceledCount: canceledInvoices.length,
         totalCustomers: config.customers?.length || 0,
         totalProducts: config.products?.length || 0,
+        paidAmount,
+        unpaidAmount,
+        canceledAmount,
+        quotationsSent: 0, // Placeholder
+        receiptsIssued: paidInvoices.length,
     }
   }, [config]);
 
@@ -71,8 +87,8 @@ export default function DashboardPage() {
             <Skeleton className="h-8 w-1/2" />
             <Skeleton className="h-4 w-3/4" />
         </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-            {Array(6).fill(0).map((_, i) => <Skeleton key={i} className="h-28" />)}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            {Array(10).fill(0).map((_, i) => <Skeleton key={i} className="h-28" />)}
         </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {Array(6).fill(0).map((_, i) => (
@@ -105,11 +121,16 @@ export default function DashboardPage() {
         <p className="text-muted-foreground">Here's a snapshot of your business activity.</p>
       </div>
 
-       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          <StatCard title="Paid Invoices" value={stats.paid} icon={CheckCircle} description="Total completed payments" />
-          <StatCard title="Unpaid Invoices" value={stats.unpaid} icon={Clock} description="Total pending payments" />
-          <StatCard title="Overdue Invoices" value={stats.overdue} icon={AlertTriangle} description="Total overdue payments" />
-          <StatCard title="Canceled Invoices" value={stats.canceled} icon={XCircle} description="Total canceled invoices" />
+       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          <StatCard title="Total Revenue" value={stats.paidAmount} icon={DollarSign} description={`${stats.paidCount} paid invoices`} formatAsCurrency />
+          <StatCard title="Outstanding" value={stats.unpaidAmount} icon={FileClock} description={`${stats.unpaidCount + stats.overdueCount} unpaid invoices`} formatAsCurrency />
+          <StatCard title="Canceled" value={stats.canceledAmount} icon={FileX} description={`${stats.canceledCount} canceled invoices`} formatAsCurrency />
+          <StatCard title="Quotations Sent" value={stats.quotationsSent} icon={FileBarChart2} description="Total quotations issued" />
+          <StatCard title="Receipts Issued" value={stats.receiptsIssued} icon={Receipt} description="Total receipts generated" />
+          
+          <StatCard title="Paid Invoices" value={stats.paidCount} icon={CheckCircle} description="Total completed payments" />
+          <StatCard title="Unpaid Invoices" value={stats.unpaidCount} icon={Clock} description="Total pending payments" />
+          <StatCard title="Overdue Invoices" value={stats.overdueCount} icon={AlertTriangle} description="Total overdue payments" />
           <StatCard title="Total Customers" value={stats.totalCustomers} icon={Users} description="Total active customers" />
           <StatCard title="Products & Services" value={stats.totalProducts} icon={Package} description="Total items available" />
       </div>
