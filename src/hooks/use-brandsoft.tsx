@@ -75,7 +75,7 @@ interface BrandsoftContextType {
   updateCustomer: (customerId: string, data: Partial<Omit<Customer, 'id'>>) => void;
   deleteCustomer: (customerId: string) => void;
   addProduct: (product: Omit<Product, 'id'>) => Product;
-  addCurrency: (currency: string) => void;
+  addCurrency: (currency: string, setAsDefault?: boolean) => void;
 }
 
 const BrandsoftContext = createContext<BrandsoftContextType | undefined>(undefined);
@@ -274,15 +274,22 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     return newProduct;
   };
 
-  const addCurrency = (currency: string) => {
+  const addCurrency = (currency: string, setAsDefault = false) => {
     if (!config) throw new Error("Config not loaded");
-    if (!config.currencies.includes(currency)) {
-        const newConfig: BrandsoftConfig = {
-            ...config,
-            currencies: [...config.currencies, currency]
-        };
-        saveConfig(newConfig, { redirect: false });
-    }
+    
+    const newCurrencies = config.currencies.includes(currency) 
+      ? config.currencies 
+      : [...config.currencies, currency];
+
+    const newConfig: BrandsoftConfig = {
+        ...config,
+        currencies: newCurrencies,
+        profile: {
+            ...config.profile,
+            defaultCurrency: setAsDefault ? currency : config.profile.defaultCurrency
+        }
+    };
+    saveConfig(newConfig, { redirect: false });
   };
 
   const value = { isActivated, isConfigured, config, activate, saveConfig, logout, addCustomer, updateCustomer, deleteCustomer, addProduct, addCurrency };
@@ -297,3 +304,5 @@ export function useBrandsoft() {
   }
   return context;
 }
+
+    

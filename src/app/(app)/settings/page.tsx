@@ -28,6 +28,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from '@/components/ui/input';
 import { PlusCircle, UploadCloud } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 
 const settingsSchema = z.object({
@@ -43,6 +45,7 @@ type SettingsFormData = z.infer<typeof settingsSchema>;
 
 const newCurrencySchema = z.object({
     currencyCode: z.string().min(3, "Currency code must be 3 characters").max(3, "Currency code must be 3 characters"),
+    setAsDefault: z.boolean().default(false),
 });
 type NewCurrencyFormData = z.infer<typeof newCurrencySchema>;
 
@@ -68,7 +71,7 @@ export default function SettingsPage() {
 
   const newCurrencyForm = useForm<NewCurrencyFormData>({
     resolver: zodResolver(newCurrencySchema),
-    defaultValues: { currencyCode: '' },
+    defaultValues: { currencyCode: '', setAsDefault: false },
   });
   
   useEffect(() => {
@@ -130,8 +133,8 @@ export default function SettingsPage() {
   
   const handleAddCurrency = (data: NewCurrencyFormData) => {
     const newCurrency = data.currencyCode.toUpperCase();
-    addCurrency(newCurrency);
-    newCurrencyForm.reset();
+    addCurrency(newCurrency, data.setAsDefault);
+    newCurrencyForm.reset({ currencyCode: '', setAsDefault: false });
     setIsAddCurrencyOpen(false);
     toast({
       title: "Currency Added",
@@ -274,17 +277,34 @@ export default function SettingsPage() {
                                     <Form {...newCurrencyForm}>
                                         <form onSubmit={newCurrencyForm.handleSubmit(handleAddCurrency)} className="space-y-4">
                                             <FormField
-                                            control={newCurrencyForm.control}
-                                            name="currencyCode"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                <FormLabel>Currency Code</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="EUR" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                                </FormItem>
-                                            )}
+                                                control={newCurrencyForm.control}
+                                                name="currencyCode"
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                    <FormLabel>Currency Code</FormLabel>
+                                                    <FormControl>
+                                                        <Input placeholder="EUR" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormField
+                                                control={newCurrencyForm.control}
+                                                name="setAsDefault"
+                                                render={({ field }) => (
+                                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                                                        <div className="space-y-0.5">
+                                                            <FormLabel>Set as Default</FormLabel>
+                                                        </div>
+                                                        <FormControl>
+                                                            <Switch
+                                                            checked={field.value}
+                                                            onCheckedChange={field.onChange}
+                                                            />
+                                                        </FormControl>
+                                                    </FormItem>
+                                                )}
                                             />
                                             <DialogFooter>
                                                 <Button type="button" variant="outline" onClick={() => setIsAddCurrencyOpen(false)}>Cancel</Button>
@@ -306,3 +326,5 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+    
