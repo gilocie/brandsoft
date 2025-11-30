@@ -24,6 +24,16 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Table,
   TableBody,
   TableCell,
@@ -77,42 +87,61 @@ const formSchema = z.object({
 
 type CustomerFormData = z.infer<typeof formSchema>;
 
-const CustomerActions = ({ customer }: { customer: Customer }) => {
+const CustomerActions = ({ customer, onDelete }: { customer: Customer; onDelete: () => void; }) => {
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     // In a real app, these would trigger modals or navigation
     const handleView = () => console.log('View', customer.id);
     const handleEdit = () => console.log('Edit', customer.id);
-    const handleDelete = () => console.log('Delete', customer.id);
-
+    
     return (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <MoreHorizontal className="h-4 w-4" />
-                    <span className="sr-only">Actions</span>
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleView}>
-                    <Eye className="mr-2 h-4 w-4" />
-                    View Details
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleEdit}>
-                    <FilePenLine className="mr-2 h-4 w-4" />
-                    Edit Customer
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleDelete} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete Customer
-                </DropdownMenuItem>
-            </DropdownMenuContent>
-        </DropdownMenu>
+        <>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreHorizontal className="h-4 w-4" />
+                        <span className="sr-only">Actions</span>
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={handleView}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        View Details
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleEdit}>
+                        <FilePenLine className="mr-2 h-4 w-4" />
+                        Edit Customer
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setIsDeleteDialogOpen(true)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete Customer
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the customer
+                            "{customer.name}" and remove their data from our servers.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={onDelete} className="bg-destructive hover:bg-destructive/90">
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
     );
 };
 
 
 export default function CustomersPage() {
-  const { config, addCustomer } = useBrandsoft();
+  const { config, addCustomer, deleteCustomer } = useBrandsoft();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formStep, setFormStep] = useState(1);
   const [customerType, setCustomerType] = useState<'personal' | 'company'>('personal');
@@ -353,7 +382,7 @@ export default function CustomersPage() {
                     <TableCell>{customer.email}</TableCell>
                     <TableCell>{customer.phone || 'N/A'}</TableCell>
                     <TableCell className="text-right">
-                        <CustomerActions customer={customer} />
+                        <CustomerActions customer={customer} onDelete={() => deleteCustomer(customer.id)} />
                     </TableCell>
                   </TableRow>
                 ))

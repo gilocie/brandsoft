@@ -70,6 +70,7 @@ interface BrandsoftContextType {
   saveConfig: (newConfig: BrandsoftConfig) => void;
   logout: () => void;
   addCustomer: (customer: Omit<Customer, 'id'>) => Customer;
+  deleteCustomer: (customerId: string) => void;
   addProduct: (product: Omit<Product, 'id'>) => Product;
   addCurrency: (currency: string) => void;
 }
@@ -195,7 +196,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       setConfig(newConfig);
       // Only redirect if they are not already on the dashboard.
       // This prevents redirects when just adding a customer/product.
-      if (!window.location.pathname.startsWith('/dashboard') && !window.location.pathname.startsWith('/settings')) {
+      if (!window.location.pathname.startsWith('/dashboard') && !window.location.pathname.startsWith('/settings') && !window.location.pathname.startsWith('/customers')) {
         router.push('/dashboard');
       }
     } catch (error) {
@@ -226,6 +227,16 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     saveConfig(newConfig);
     return newCustomer;
   };
+  
+  const deleteCustomer = (customerId: string) => {
+    if (!config) throw new Error("Config not loaded");
+    const updatedCustomers = config.customers.filter(c => c.id !== customerId);
+    const newConfig: BrandsoftConfig = {
+        ...config,
+        customers: updatedCustomers,
+    };
+    saveConfig(newConfig);
+  }
 
   const addProduct = (productData: Omit<Product, 'id'>): Product => {
     if (!config) throw new Error("Config not loaded");
@@ -252,7 +263,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const value = { isActivated, isConfigured, config, activate, saveConfig, logout, addCustomer, addProduct, addCurrency };
+  const value = { isActivated, isConfigured, config, activate, saveConfig, logout, addCustomer, deleteCustomer, addProduct, addCurrency };
 
   return <BrandsoftContext.Provider value={value}>{children}</BrandsoftContext.Provider>;
 }
