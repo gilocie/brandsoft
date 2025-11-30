@@ -69,6 +69,7 @@ import { PlusCircle, ArrowRight, ArrowLeft, Trash2, MoreHorizontal, Eye, FilePen
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 
 const productAssociationSchema = z.object({
     productId: z.string().min(1, "Product is required"),
@@ -108,7 +109,7 @@ const CustomerActions = ({ customer, onSelectAction }: { customer: Customer; onS
                     Edit Customer
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => onSelectAction('delete', customer)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                <DropdownMenuItem onClick={() => onSelectAction('delete', customer)} className="text-destructive focus:bg-destructive focus:text-destructive-foreground">
                     <Trash2 className="mr-2 h-4 w-4" />
                     Delete Customer
                 </DropdownMenuItem>
@@ -186,7 +187,7 @@ export default function CustomersPage() {
     if (data.id) {
         updateCustomer(data.id, customerToSave);
     } else {
-        addCustomer(customerToSave);
+        addCustomer(customerTosave);
     }
     
     setIsFormOpen(false);
@@ -474,5 +475,3 @@ export default function CustomersPage() {
     </div>
   );
 }
-
-    
