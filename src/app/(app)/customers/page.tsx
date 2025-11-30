@@ -484,16 +484,14 @@ export default function CustomersPage() {
                       <div className="font-medium text-muted-foreground">No outstanding invoice</div>
                     </div>
                   )}
-                  <div className="flex justify-end">
-                    <Button size="sm" disabled={!customerInvoice}>
-                      <Send className="mr-2 h-4 w-4" />
-                      Send Reminder
-                    </Button>
-                  </div>
                 </div>
               </>
           </div>
-          <DialogFooter>
+          <DialogFooter className="justify-between">
+            <Button size="sm" disabled={!customerInvoice}>
+              <Send className="mr-2 h-4 w-4" />
+              Send Reminder
+            </Button>
             <Button onClick={() => setIsViewOpen(false)}>Close</Button>
           </DialogFooter>
         </DialogContent>
@@ -520,7 +518,3 @@ export default function CustomersPage() {
     </div>
   );
 }
-
-    
-
-    
