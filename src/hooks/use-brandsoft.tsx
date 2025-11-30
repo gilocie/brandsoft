@@ -38,6 +38,7 @@ export type Invoice = {
     discount?: number;
     tax?: number;
     shipping?: number;
+    notes?: string;
 };
 
 export type BrandsoftConfig = {
@@ -83,6 +84,8 @@ interface BrandsoftContextType {
   updateProduct: (productId: string, data: Partial<Omit<Product, 'id'>>) => void;
   deleteProduct: (productId: string) => void;
   addInvoice: (invoice: Omit<Invoice, 'invoiceId'>) => void;
+  updateInvoice: (invoiceId: string, data: Partial<Omit<Invoice, 'invoiceId'>>) => void;
+  deleteInvoice: (invoiceId: string) => void;
   addCurrency: (currency: string, setAsDefault?: boolean) => void;
 }
 
@@ -96,6 +99,10 @@ const initialInvoices: Invoice[] = [
     dueDate: '2023-07-23',
     amount: 250.0,
     status: 'Paid',
+    subtotal: 250,
+    discount: 0,
+    tax: 0,
+    shipping: 0,
   },
   {
     invoiceId: 'INV002',
@@ -104,6 +111,10 @@ const initialInvoices: Invoice[] = [
     dueDate: '2023-08-15',
     amount: 150.0,
     status: 'Pending',
+    subtotal: 150,
+    discount: 0,
+    tax: 0,
+    shipping: 0,
   },
   {
     invoiceId: 'INV003',
@@ -112,6 +123,10 @@ const initialInvoices: Invoice[] = [
     dueDate: '2023-09-01',
     amount: 350.0,
     status: 'Paid',
+    subtotal: 350,
+    discount: 0,
+    tax: 0,
+    shipping: 0,
   },
   {
     invoiceId: 'INV004',
@@ -120,6 +135,10 @@ const initialInvoices: Invoice[] = [
     dueDate: '2023-10-10',
     amount: 450.0,
     status: 'Overdue',
+    subtotal: 450,
+    discount: 0,
+    tax: 0,
+    shipping: 0,
   },
   {
     invoiceId: 'INV005',
@@ -128,6 +147,10 @@ const initialInvoices: Invoice[] = [
     dueDate: '2023-11-20',
     amount: 550.0,
     status: 'Pending',
+    subtotal: 550,
+    discount: 0,
+    tax: 0,
+    shipping: 0,
   },
    {
     invoiceId: 'INV006',
@@ -136,6 +159,10 @@ const initialInvoices: Invoice[] = [
     dueDate: '2023-11-22',
     amount: 300.0,
     status: 'Canceled',
+    subtotal: 300,
+    discount: 0,
+    tax: 0,
+    shipping: 0,
   },
 ];
 
@@ -207,11 +234,13 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       setConfig(newConfig);
 
       if (options.redirect) {
-        const nonRedirectPaths = ['/dashboard', '/settings', '/products'];
+        const nonRedirectPaths = ['/dashboard', '/settings', '/products', '/invoices'];
         const isCustomerPage = window.location.pathname.startsWith('/customers');
         const isProductsPage = window.location.pathname.startsWith('/products');
+        const isInvoicePage = window.location.pathname.startsWith('/invoices');
+
         
-        const shouldRedirect = !nonRedirectPaths.includes(window.location.pathname) && !isCustomerPage && !isProductsPage;
+        const shouldRedirect = !nonRedirectPaths.includes(window.location.pathname) && !isCustomerPage && !isProductsPage && !isInvoicePage;
         
         if (shouldRedirect) {
           router.push('/dashboard');
@@ -324,6 +353,28 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     saveConfig(newConfig, { redirect: false });
   };
 
+  const updateInvoice = (invoiceId: string, data: Partial<Omit<Invoice, 'invoiceId'>>) => {
+    if (!config) throw new Error("Config not loaded");
+    const updatedInvoices = config.invoices.map(inv =>
+      inv.invoiceId === invoiceId ? { ...inv, ...data, invoiceId } : inv
+    );
+     const newConfig: BrandsoftConfig = {
+      ...config,
+      invoices: updatedInvoices,
+    };
+    saveConfig(newConfig, { redirect: false });
+  };
+
+  const deleteInvoice = (invoiceId: string) => {
+    if (!config) throw new Error("Config not loaded");
+    const updatedInvoices = config.invoices.filter(inv => inv.invoiceId !== invoiceId);
+    const newConfig: BrandsoftConfig = {
+      ...config,
+      invoices: updatedInvoices,
+    };
+    saveConfig(newConfig, { redirect: false });
+  };
+
   const addCurrency = (currency: string, setAsDefault = false) => {
     if (!config) throw new Error("Config not loaded");
     
@@ -342,7 +393,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     saveConfig(newConfig, { redirect: false });
   };
 
-  const value = { isActivated, isConfigured, config, activate, saveConfig, logout, addCustomer, updateCustomer, deleteCustomer, addProduct, updateProduct, deleteProduct, addInvoice, addCurrency };
+  const value = { isActivated, isConfigured, config, activate, saveConfig, logout, addCustomer, updateCustomer, deleteCustomer, addProduct, updateProduct, deleteProduct, addInvoice, updateInvoice, deleteInvoice, addCurrency };
 
   return <BrandsoftContext.Provider value={value}>{children}</BrandsoftContext.Provider>;
 }

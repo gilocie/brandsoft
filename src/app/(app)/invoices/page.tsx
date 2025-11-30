@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Card,
   CardContent,
@@ -21,6 +22,24 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
   MoreHorizontal,
   PlusCircle,
   LayoutGrid,
@@ -28,7 +47,8 @@ import {
   FilePenLine,
   Trash2,
   FileDown,
-  Send
+  Send,
+  Eye
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -36,7 +56,7 @@ import {
   ToggleGroupItem,
 } from "@/components/ui/toggle-group"
 import { useBrandsoft, type Invoice } from '@/hooks/use-brandsoft.tsx';
-
+import { Separator } from '@/components/ui/separator';
 
 const statusVariantMap: {
   [key: string]: 'default' | 'secondary' | 'destructive';
@@ -57,7 +77,7 @@ const currencySymbols: { [key: string]: string } = {
   AUD: '$',
 };
 
-const ActionsMenu = () => (
+const ActionsMenu = ({ invoice, onSelectAction }: { invoice: Invoice, onSelectAction: (action: 'view' | 'edit' | 'delete' | 'download' | 'send', invoice: Invoice) => void }) => (
     <DropdownMenu>
         <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary-foreground hover:bg-primary">
@@ -66,20 +86,24 @@ const ActionsMenu = () => (
         </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onSelectAction('view', invoice)}>
+                <Eye className="mr-2 h-4 w-4" />
+                View Details
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onSelectAction('edit', invoice)}>
                 <FilePenLine className="mr-2 h-4 w-4" />
                 Edit Invoice
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onSelectAction('download', invoice)}>
                 <FileDown className="mr-2 h-4 w-4" />
                 Download PDF
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onSelectAction('send', invoice)}>
                 <Send className="mr-2 h-4 w-4" />
                 Send Invoice
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
+            <DropdownMenuItem onClick={() => onSelectAction('delete', invoice)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
                 <Trash2 className="mr-2 h-4 w-4" />
                 Delete
             </DropdownMenuItem>
@@ -90,10 +114,47 @@ const ActionsMenu = () => (
 
 export default function InvoicesPage() {
   const [layout, setLayout] = useState<'grid' | 'list'>('grid');
-  const { config } = useBrandsoft();
-  const invoices = config?.invoices || [];
+  const { config, deleteInvoice } = useBrandsoft();
+  const router = useRouter();
 
-  const currencySymbol = config ? currencySymbols[config.profile.defaultCurrency] || config.profile.defaultCurrency : '$';
+  const [isViewOpen, setIsViewOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+
+  const invoices = config?.invoices || [];
+  const currencyCode = config?.profile.defaultCurrency || '';
+  const currencySymbol = currencySymbols[currencyCode] || currencyCode;
+
+  const handleSelectAction = (action: 'view' | 'edit' | 'delete' | 'download' | 'send', invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    switch (action) {
+        case 'view':
+            setIsViewOpen(true);
+            break;
+        case 'edit':
+            router.push(`/invoices/${invoice.invoiceId}/edit`);
+            break;
+        case 'delete':
+            setIsDeleteOpen(true);
+            break;
+        case 'download':
+            // Placeholder for download logic
+            alert(`Downloading PDF for ${invoice.invoiceId}`);
+            break;
+        case 'send':
+            // Placeholder for send logic
+            alert(`Sending invoice ${invoice.invoiceId}`);
+            break;
+    }
+  };
+
+  const handleDelete = () => {
+    if (selectedInvoice) {
+      deleteInvoice(selectedInvoice.invoiceId);
+      setIsDeleteOpen(false);
+      setSelectedInvoice(null);
+    }
+  };
 
   return (
     <div className="container mx-auto space-y-6">
@@ -140,13 +201,13 @@ export default function InvoicesPage() {
                       <CardDescription className={cn(layout === 'list' && "text-xs")}>{invoice.invoiceId}</CardDescription>
                     </div>
                      <div className={cn(layout === 'grid' ? "flex" : "hidden")}>
-                        <ActionsMenu />
+                        <ActionsMenu invoice={invoice} onSelectAction={handleSelectAction} />
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className={cn("flex-grow space-y-2", layout === 'list' && "p-4 pt-0 md:flex md:items-center md:justify-between md:space-y-0")}>
                   <div className={cn("text-2xl font-bold", layout === 'list' && "text-base font-bold w-1/4")}>
-                    {currencySymbol}{invoice.amount.toFixed(2)}
+                    {currencySymbol}{invoice.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                   <div className={cn("text-sm text-muted-foreground", layout === 'list' && "text-xs w-1/4")}>
                     <p>Date: {invoice.date}</p>
@@ -160,7 +221,7 @@ export default function InvoicesPage() {
                 </CardContent>
             </div>
              <div className={cn(layout === 'list' ? "flex items-center p-4" : "hidden")}>
-                <ActionsMenu />
+                <ActionsMenu invoice={invoice} onSelectAction={handleSelectAction} />
             </div>
 
             <CardFooter className={cn(layout === 'grid' ? "flex" : "hidden")}>
@@ -169,6 +230,74 @@ export default function InvoicesPage() {
           </Card>
         ))}
       </div>
+
+       {/* View Details Dialog */}
+      <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Invoice {selectedInvoice?.invoiceId}</DialogTitle>
+            <DialogDescription>To: {selectedInvoice?.customer}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Status</span>
+              {selectedInvoice && <Badge variant={statusVariantMap[selectedInvoice.status]}>{selectedInvoice.status}</Badge>}
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Invoice Date</span>
+              <span>{selectedInvoice?.date}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Due Date</span>
+              <span>{selectedInvoice?.dueDate}</span>
+            </div>
+            <Separator />
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Subtotal</span>
+              <span>{currencySymbol}{selectedInvoice?.subtotal?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '0.00'}</span>
+            </div>
+             <div className="flex justify-between">
+              <span className="text-muted-foreground">Discount</span>
+              <span>-{currencySymbol}{selectedInvoice?.discount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '0.00'}</span>
+            </div>
+             <div className="flex justify-between">
+              <span className="text-muted-foreground">Tax</span>
+              <span>{currencySymbol}{selectedInvoice?.tax?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '0.00'}</span>
+            </div>
+             <div className="flex justify-between">
+              <span className="text-muted-foreground">Shipping</span>
+              <span>{currencySymbol}{selectedInvoice?.shipping?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '0.00'}</span>
+            </div>
+            <Separator />
+            <div className="flex justify-between font-bold text-base">
+              <span>Total Amount</span>
+              <span>{currencySymbol}{selectedInvoice?.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setIsViewOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete invoice
+                    "{selectedInvoice?.invoiceId}".
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                    Delete
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
     </div>
   );
 }
