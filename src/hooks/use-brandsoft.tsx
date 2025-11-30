@@ -21,7 +21,9 @@ export type Customer = {
 export type Product = {
   id: string;
   name: string;
+  description?: string;
   price: number;
+  type: 'product' | 'service';
 };
 
 export type Invoice = {
@@ -67,7 +69,7 @@ interface BrandsoftContextType {
   isConfigured: boolean | null;
   config: BrandsoftConfig | null;
   activate: (serial: string) => boolean;
-  saveConfig: (newConfig: BrandsoftConfig) => void;
+  saveConfig: (newConfig: BrandsoftConfig, options?: { redirect?: boolean }) => void;
   logout: () => void;
   addCustomer: (customer: Omit<Customer, 'id'>) => Customer;
   updateCustomer: (customerId: string, data: Partial<Omit<Customer, 'id'>>) => void;
@@ -197,8 +199,11 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       setConfig(newConfig);
 
       if (options.redirect) {
-        const nonRedirectPaths = ['/dashboard', '/settings', '/customers', '/products', '/invoices'];
-        const shouldRedirect = !nonRedirectPaths.some(path => window.location.pathname.startsWith(path));
+        const nonRedirectPaths = ['/dashboard', '/settings', '/products'];
+        const isCustomerPage = window.location.pathname.startsWith('/customers');
+        
+        // Don't redirect if on customers page (for add/edit customer)
+        const shouldRedirect = !nonRedirectPaths.some(path => window.location.pathname.startsWith(path)) && !isCustomerPage;
         
         if (shouldRedirect) {
           router.push('/dashboard');
@@ -292,5 +297,3 @@ export function useBrandsoft() {
   }
   return context;
 }
-
-    

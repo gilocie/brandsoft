@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useBrandsoft, type Product } from '@/hooks/use-brandsoft.tsx';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Card,
   CardContent,
@@ -40,11 +41,15 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { PlusCircle } from 'lucide-react';
 
 const formSchema = z.object({
   name: z.string().min(2, "Product name is required"),
+  description: z.string().optional(),
   price: z.coerce.number().min(0.01, 'Price must be at least 0.01.'),
+  type: z.enum(['product', 'service']).default('product'),
 });
 type ProductFormData = z.infer<typeof formSchema>;
 
@@ -54,12 +59,12 @@ export default function ProductsPage() {
 
   const form = useForm<ProductFormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: { name: '', price: 0 },
+    defaultValues: { name: '', description: '', price: 0, type: 'product' },
   });
 
   const onSubmit = (data: ProductFormData) => {
     addProduct(data);
-    form.reset();
+    form.reset({ name: '', description: '', price: 0, type: 'product' });
     setIsDialogOpen(false);
   };
 
@@ -74,28 +79,46 @@ export default function ProductsPage() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
-              <PlusCircle className="mr-2 h-4 w-4" /> Add New Product
+            <Button onClick={() => form.reset({ name: '', description: '', price: 0, type: 'product' })}>
+              <PlusCircle className="mr-2 h-4 w-4" /> Add New Item
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Add New Product</DialogTitle>
+              <DialogTitle>Add New Product or Service</DialogTitle>
               <DialogDescription>
-                Fill in the details for the new product or service.
+                Fill in the details for the new item.
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                 <FormField
+                  control={form.control}
+                  name="type"
+                  render={({ field }) => (
+                    <FormItem className="space-y-3">
+                      <FormControl>
+                        <ToggleGroup type="single" defaultValue={field.value} onValueChange={field.onChange} className="grid grid-cols-2">
+                           <ToggleGroupItem value="product">Product</ToggleGroupItem>
+                           <ToggleGroupItem value="service">Service</ToggleGroupItem>
+                        </ToggleGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <FormField control={form.control} name="name" render={({ field }) => (
-                  <FormItem><FormLabel>Product/Service Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="description" render={({ field }) => (
+                  <FormItem><FormLabel>Description (Optional)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={form.control} name="price" render={({ field }) => (
-                  <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                  <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <DialogFooter>
                   <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-                  <Button type="submit">Save Product</Button>
+                  <Button type="submit">Save Item</Button>
                 </DialogFooter>
               </form>
             </Form>
@@ -108,7 +131,9 @@ export default function ProductsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Product/Service Name</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead>Type</TableHead>
                 <TableHead className="text-right">Price</TableHead>
               </TableRow>
             </TableHeader>
@@ -117,13 +142,19 @@ export default function ProductsPage() {
                 config.products.map((product: Product) => (
                   <TableRow key={product.id}>
                     <TableCell className="font-medium">{product.name}</TableCell>
+                    <TableCell className="text-muted-foreground max-w-xs truncate">{product.description || 'N/A'}</TableCell>
+                    <TableCell>
+                      <Badge variant={product.type === 'service' ? 'secondary' : 'outline'} className="capitalize">
+                        {product.type}
+                      </Badge>
+                    </TableCell>
                     <TableCell className="text-right">${product.price.toFixed(2)}</TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={2} className="text-center">
-                    No products found.
+                  <TableCell colSpan={4} className="text-center">
+                    No products or services found.
                   </TableCell>
                 </TableRow>
               )}
