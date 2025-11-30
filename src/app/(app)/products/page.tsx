@@ -254,19 +254,17 @@ export default function ProductsPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{selectedProduct?.name}</DialogTitle>
-            <DialogDescription>
-                <Badge variant={selectedProduct?.type === 'service' ? 'secondary' : 'outline'} className="capitalize">
-                    {selectedProduct?.type}
-                </Badge>
-            </DialogDescription>
+             <Badge variant={selectedProduct?.type === 'service' ? 'secondary' : 'outline'} className="capitalize w-fit">
+                {selectedProduct?.type}
+            </Badge>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="grid grid-cols-3 items-center gap-4">
-                <Label className="text-right">Price</Label>
+                <Label>Price</Label>
                 <div className="col-span-2 font-medium">{currencySymbol}{selectedProduct?.price.toFixed(2)}</div>
             </div>
             <div className="grid grid-cols-3 items-start gap-4">
-                <Label className="text-right pt-1">Description</Label>
+                <Label className="pt-1">Description</Label>
                 <div className="col-span-2 text-muted-foreground">{selectedProduct?.description || 'No description provided.'}</div>
             </div>
           </div>
