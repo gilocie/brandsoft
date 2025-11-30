@@ -158,7 +158,7 @@ export default function SetupPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
-      <Card className="w-full max-w-2xl shadow-2xl">
+      <Card className="w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] sm:max-h-[500px]">
         <CardHeader>
           <div className="flex items-start justify-between">
              <div className="flex items-center gap-2">
@@ -178,7 +178,7 @@ export default function SetupPage() {
           <CardTitle className="font-headline text-3xl">{stepInfo[step-1].title}</CardTitle>
           <CardDescription>{stepInfo[step-1].description}</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex-grow overflow-auto">
           <Form {...form}>
             <form className="space-y-6">
               <div style={{ display: step === 1 ? 'block' : 'none' }}><Step1BrandIdentity control={form.control} form={form} /></div>
@@ -186,7 +186,7 @@ export default function SetupPage() {
               <div style={{ display: step === 3 ? 'block' : 'none' }}><Step3ModuleSelection control={form.control} /></div>
               <div style={{ display: step === 4 ? 'block' : 'none' }}><Step5Finish isFinishing={isFinishing} /></div>
 
-              <div className="flex justify-between pt-4">
+              <div className="flex justify-between pt-4 sticky bottom-0 bg-card">
                 <Button type="button" variant="outline" onClick={prevStep} disabled={step === 1 || isFinishing}>
                   <ArrowLeft className="mr-2 h-4 w-4" /> Previous
                 </Button>
@@ -381,7 +381,7 @@ function Step3ModuleSelection({ control }: { control: Control<FormData> }) {
 }
 
 function Step5Finish({ isFinishing }: { isFinishing: boolean }) {
-  return <div className="flex flex-col items-center justify-center text-center p-8 space-y-4 min-h-[190px]">
+  return <div className="flex flex-col items-center justify-center text-center p-8 space-y-4 min-h-[130px]">
     {isFinishing ? (
       <>
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
