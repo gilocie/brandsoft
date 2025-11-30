@@ -124,8 +124,8 @@ export default function DashboardPage() {
 
        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           <StatCard title="Total Revenue" value={stats.paidAmount} icon={DollarSign} description={`${stats.paidCount} paid invoices`} formatAsCurrency variant="primary" />
-          <StatCard title="Outstanding" value={stats.unpaidAmount} icon={FileClock} description={`${stats.unpaidCount + stats.overdueCount} unpaid invoices`} formatAsCurrency />
-          <StatCard title="Canceled" value={stats.canceledAmount} icon={FileX} description={`${stats.canceledCount} canceled invoices`} formatAsCurrency />
+          <StatCard title="Outstanding" value={stats.unpaidAmount} icon={FileClock} description={`${stats.unpaidCount + stats.overdueCount} unpaid invoices`} formatAsCurrency variant="primary" />
+          <StatCard title="Canceled" value={stats.canceledAmount} icon={FileX} description={`${stats.canceledCount} canceled invoices`} formatAsCurrency variant="primary" />
           <StatCard title="Quotations Sent" value={stats.quotationsSent} icon={FileBarChart2} description="Total quotations issued" />
           <StatCard title="Receipts Issued" value={stats.receiptsIssued} icon={Receipt} description="Total receipts generated" />
           
