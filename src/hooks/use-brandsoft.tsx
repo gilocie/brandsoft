@@ -70,6 +70,7 @@ interface BrandsoftContextType {
   saveConfig: (newConfig: BrandsoftConfig) => void;
   logout: () => void;
   addCustomer: (customer: Omit<Customer, 'id'>) => Customer;
+  updateCustomer: (customerId: string, data: Partial<Omit<Customer, 'id'>>) => void;
   deleteCustomer: (customerId: string) => void;
   addProduct: (product: Omit<Product, 'id'>) => Product;
   addCurrency: (currency: string) => void;
@@ -232,6 +233,18 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     return newCustomer;
   };
   
+  const updateCustomer = (customerId: string, data: Partial<Omit<Customer, 'id'>>) => {
+    if (!config) throw new Error("Config not loaded");
+    const updatedCustomers = config.customers.map(c =>
+      c.id === customerId ? { ...c, ...data } : c
+    );
+    const newConfig: BrandsoftConfig = {
+      ...config,
+      customers: updatedCustomers,
+    };
+    saveConfig(newConfig, { redirect: false });
+  };
+  
   const deleteCustomer = (customerId: string) => {
     if (!config) throw new Error("Config not loaded");
     const updatedCustomers = config.customers.filter(c => c.id !== customerId);
@@ -267,7 +280,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const value = { isActivated, isConfigured, config, activate, saveConfig, logout, addCustomer, deleteCustomer, addProduct, addCurrency };
+  const value = { isActivated, isConfigured, config, activate, saveConfig, logout, addCustomer, updateCustomer, deleteCustomer, addProduct, addCurrency };
 
   return <BrandsoftContext.Provider value={value}>{children}</BrandsoftContext.Provider>;
 }
@@ -279,3 +292,5 @@ export function useBrandsoft() {
   }
   return context;
 }
+
+    

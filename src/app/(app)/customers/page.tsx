@@ -68,12 +68,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { PlusCircle, ArrowRight, ArrowLeft, Trash2, MoreHorizontal, Eye, FilePenLine } from 'lucide-react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 
 const productAssociationSchema = z.object({
     productId: z.string().min(1, "Product is required"),
 });
 
 const formSchema = z.object({
+  id: z.string().optional(),
   customerType: z.enum(['personal', 'company']).default('personal'),
   name: z.string().min(2, "Name is required"),
   email: z.string().email("Invalid email"),
@@ -87,101 +89,115 @@ const formSchema = z.object({
 
 type CustomerFormData = z.infer<typeof formSchema>;
 
-const CustomerActions = ({ customer, onDelete }: { customer: Customer; onDelete: () => void; }) => {
-    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-    // In a real app, these would trigger modals or navigation
-    const handleView = () => console.log('View', customer.id);
-    const handleEdit = () => console.log('Edit', customer.id);
-    
+const CustomerActions = ({ customer, onSelectAction }: { customer: Customer; onSelectAction: (action: 'view' | 'edit' | 'delete', customer: Customer) => void; }) => {
     return (
-        <>
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Actions</span>
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={handleView}>
-                        <Eye className="mr-2 h-4 w-4" />
-                        View Details
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleEdit}>
-                        <FilePenLine className="mr-2 h-4 w-4" />
-                        Edit Customer
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setIsDeleteDialogOpen(true)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete Customer
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
-            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the customer
-                            "{customer.name}" and remove their data from our servers.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={onDelete} className="bg-destructive hover:bg-destructive/90">
-                            Delete
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-        </>
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <MoreHorizontal className="h-4 w-4" />
+                    <span className="sr-only">Actions</span>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => onSelectAction('view', customer)}>
+                    <Eye className="mr-2 h-4 w-4" />
+                    View Details
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onSelectAction('edit', customer)}>
+                    <FilePenLine className="mr-2 h-4 w-4" />
+                    Edit Customer
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => onSelectAction('delete', customer)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Customer
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
     );
 };
 
 
 export default function CustomersPage() {
-  const { config, addCustomer, deleteCustomer } = useBrandsoft();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { config, addCustomer, updateCustomer, deleteCustomer } = useBrandsoft();
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isViewOpen, setIsViewOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [formStep, setFormStep] = useState(1);
   const [customerType, setCustomerType] = useState<'personal' | 'company'>('personal');
 
   const form = useForm<CustomerFormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-        customerType: 'personal',
-        name: '',
-        email: '',
-        phone: '',
-        address: '',
-        companyName: '',
-        vatNumber: '',
-        companyAddress: '',
-        associatedProducts: [],
-    },
   });
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: 'associatedProducts',
   });
+  
+  const handleOpenForm = (customer: Customer | null = null) => {
+    setSelectedCustomer(customer);
+    if (customer) {
+      const isCompany = customer.name.includes('(');
+      const type = isCompany ? 'company' : 'personal';
+      setCustomerType(type);
+      form.reset({
+        id: customer.id,
+        customerType: type,
+        name: isCompany ? customer.name.substring(customer.name.indexOf('(') + 1, customer.name.indexOf(')')) : customer.name,
+        email: customer.email,
+        phone: customer.phone,
+        address: type === 'personal' ? customer.address : undefined,
+        companyName: isCompany ? customer.name.split(' (')[0] : undefined,
+        vatNumber: (customer as any).vatNumber, // Assuming these might exist
+        companyAddress: type === 'company' ? customer.address : undefined,
+        associatedProducts: customer.associatedProductIds?.map(id => ({ productId: id })) || [],
+      });
+    } else {
+      setCustomerType('personal');
+      form.reset({
+          customerType: 'personal',
+          name: '', email: '', phone: '', address: '',
+          companyName: '', vatNumber: '', companyAddress: '',
+          associatedProducts: [],
+      });
+    }
+    setFormStep(1);
+    setIsFormOpen(true);
+  };
+  
+  const handleSelectAction = (action: 'view' | 'edit' | 'delete', customer: Customer) => {
+      setSelectedCustomer(customer);
+      if (action === 'view') setIsViewOpen(true);
+      if (action === 'edit') handleOpenForm(customer);
+      if (action === 'delete') setIsDeleteOpen(true);
+  };
 
   const onSubmit = (data: CustomerFormData) => {
-    const customerToSave: Omit<Customer, 'id' | 'associatedProductIds'> & { associatedProductIds?: string[] } = {
+    const customerToSave: Partial<Customer> & { name: string; email: string } = {
         name: data.customerType === 'company' ? `${data.companyName} (${data.name})` : data.name,
         email: data.email,
         phone: data.phone,
         address: data.customerType === 'company' ? data.companyAddress : data.address,
+        associatedProductIds: data.associatedProducts?.map(p => p.productId) || []
     };
-    if (data.customerType === 'company' && data.associatedProducts) {
-        customerToSave.associatedProductIds = data.associatedProducts.map(p => p.productId);
+    
+    if (data.id) {
+        updateCustomer(data.id, customerToSave);
+    } else {
+        addCustomer(customerToSave);
     }
-
-    addCustomer(customerToSave);
-    form.reset();
-    setFormStep(1);
-    setCustomerType('personal');
-    setIsDialogOpen(false);
+    
+    setIsFormOpen(false);
+  };
+  
+  const handleDelete = () => {
+    if (selectedCustomer) {
+        deleteCustomer(selectedCustomer.id);
+        setIsDeleteOpen(false);
+        setSelectedCustomer(null);
+    }
   };
 
   const handleNextStep = async () => {
@@ -195,7 +211,6 @@ export default function CustomersPage() {
         if (customerType === 'company') {
             setFormStep(2);
         } else {
-            // For personal customer, we need to validate all fields before submitting
             const personalFields: (keyof CustomerFormData)[] = ['phone', 'address'];
             const isPersonalValid = await form.trigger(personalFields);
             if(isPersonalValid) {
@@ -209,7 +224,6 @@ export default function CustomersPage() {
     if (value) {
         setCustomerType(value);
         form.setValue('customerType', value);
-        // Always reset to step 1 when changing type
         setFormStep(1);
     }
   }
@@ -223,24 +237,60 @@ export default function CustomersPage() {
             Manage your customer profiles here.
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); form.reset(); setFormStep(1); setCustomerType('personal'); }}>
-          <DialogTrigger asChild>
-            <Button>
-              <PlusCircle className="mr-2 h-4 w-4" /> Add New Customer
-            </Button>
-          </DialogTrigger>
+        <Button onClick={() => handleOpenForm()}>
+          <PlusCircle className="mr-2 h-4 w-4" /> Add New Customer
+        </Button>
+      </div>
+
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Phone</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {config?.customers && config.customers.length > 0 ? (
+                config.customers.map((customer: Customer) => (
+                  <TableRow key={customer.id}>
+                    <TableCell className="font-medium">{customer.name}</TableCell>
+                    <TableCell>{customer.email}</TableCell>
+                    <TableCell>{customer.phone || 'N/A'}</TableCell>
+                    <TableCell className="text-right">
+                        <CustomerActions customer={customer} onSelectAction={handleSelectAction} />
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center">
+                    No customers found.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+      
+       {/* Add/Edit Dialog */}
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
-              <DialogTitle>Add New Customer</DialogTitle>
+              <DialogTitle>{selectedCustomer ? 'Edit' : 'Add New'} Customer</DialogTitle>
               <DialogDescription>
                 Select customer type and fill in the details.
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                 <ToggleGroup type="single" defaultValue="personal" value={customerType} onValueChange={handleCustomerTypeChange} className="grid grid-cols-2">
-                    <ToggleGroupItem value="personal" className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">Personal</ToggleGroupItem>
-                    <ToggleGroupItem value="company" className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">Company</ToggleGroupItem>
+                 <ToggleGroup type="single" value={customerType} onValueChange={handleCustomerTypeChange} className="grid grid-cols-2">
+                    <ToggleGroupItem value="personal">Personal</ToggleGroupItem>
+                    <ToggleGroupItem value="company">Company</ToggleGroupItem>
                  </ToggleGroup>
                 
                 <Separator />
@@ -348,7 +398,7 @@ export default function CustomersPage() {
                         <ArrowLeft className="mr-2 h-4 w-4" /> Back
                     </Button>
                   )}
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+                  <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>Cancel</Button>
                   {customerType === 'personal' || formStep === 2 ? (
                      <Button type="submit">Save Customer</Button>
                   ) : (
@@ -360,43 +410,69 @@ export default function CustomersPage() {
               </form>
             </Form>
           </DialogContent>
-        </Dialog>
-      </div>
-
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {config?.customers && config.customers.length > 0 ? (
-                config.customers.map((customer: Customer) => (
-                  <TableRow key={customer.id}>
-                    <TableCell className="font-medium">{customer.name}</TableCell>
-                    <TableCell>{customer.email}</TableCell>
-                    <TableCell>{customer.phone || 'N/A'}</TableCell>
-                    <TableCell className="text-right">
-                        <CustomerActions customer={customer} onDelete={() => deleteCustomer(customer.id)} />
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center">
-                    No customers found.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      </Dialog>
+      
+      {/* View Details Dialog */}
+      <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Customer Details</DialogTitle>
+            <DialogDescription>{selectedCustomer?.name}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-3 items-center gap-4">
+              <Label className="text-right">Email</Label>
+              <div className="col-span-2 font-medium">{selectedCustomer?.email}</div>
+            </div>
+            <div className="grid grid-cols-3 items-center gap-4">
+              <Label className="text-right">Phone</Label>
+              <div className="col-span-2 font-medium">{selectedCustomer?.phone || 'N/A'}</div>
+            </div>
+            <div className="grid grid-cols-3 items-start gap-4">
+              <Label className="text-right mt-1">Address</Label>
+              <div className="col-span-2 font-medium">{selectedCustomer?.address || 'N/A'}</div>
+            </div>
+            {selectedCustomer?.associatedProductIds && selectedCustomer.associatedProductIds.length > 0 && (
+              <>
+                <Separator />
+                <div className="space-y-2">
+                  <h4 className="font-semibold">Associated Products</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedCustomer.associatedProductIds.map(id => {
+                        const product = config?.products.find(p => p.id === id);
+                        return product ? <Badge key={id} variant="secondary">{product.name}</Badge> : null;
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setIsViewOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete Confirmation Dialog */}
+       <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete the customer
+                        "{selectedCustomer?.name}" and remove their data from our servers.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                        Delete
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     </div>
   );
 }
+
+    
