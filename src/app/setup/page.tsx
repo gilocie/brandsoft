@@ -14,7 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Loader2, ArrowLeft, ArrowRight, PartyPopper, UploadCloud, BriefcaseBusiness } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
-import { hexToHsl } from '@/lib/utils';
+import { hexToHsl, cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -80,6 +80,7 @@ export default function SetupPage() {
   const watchedLogo = form.watch('logo');
   const primaryColor = form.watch('primaryColor');
   const secondaryColor = form.watch('secondaryColor');
+  const font = form.watch('font');
 
   useEffect(() => {
     if (primaryColor) {
@@ -156,6 +157,15 @@ export default function SetupPage() {
     { title: "Finish Setup", description: "You're all set!" },
   ];
 
+  const getFontClass = (fontName?: string) => {
+    switch(fontName) {
+      case 'Poppins': return 'font-body';
+      case 'Belleza': return 'font-headline';
+      case 'Source Code Pro': return 'font-code';
+      default: return 'font-body'; // Default to body font
+    }
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
        <Form {...form}>
@@ -167,7 +177,7 @@ export default function SetupPage() {
                         <AvatarImage src={watchedLogo || undefined} />
                         <AvatarFallback><BriefcaseBusiness className="h-6 w-6 text-primary" /></AvatarFallback>
                     </Avatar>
-                    <h1 className="text-3xl font-headline font-bold text-primary">{watchedBusinessName || 'BrandSoft'}</h1>
+                    <h1 className={cn("text-3xl font-bold text-primary", getFontClass(font))}>{watchedBusinessName || 'BrandSoft'}</h1>
                  </div>
                 <div className="text-right">
                   <p className="font-semibold text-muted-foreground">Step {step} of {TOTAL_STEPS}</p>
