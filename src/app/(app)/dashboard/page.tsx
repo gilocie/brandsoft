@@ -8,6 +8,7 @@ import { FileText, Award, CreditCard, FileBarChart2, Brush, ArrowRight, Library,
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMemo } from "react";
+import { cn } from "@/lib/utils";
 
 const modules = [
   { title: "Invoice Designer", description: "Create and manage invoices.", icon: FileText, href: "/invoices", enabledKey: "invoice" },
@@ -18,17 +19,17 @@ const modules = [
   { title: "Template Marketplace", description: "Browse and manage templates.", icon: Library, href: "/templates", enabledKey: null },
 ];
 
-const StatCard = ({ title, value, icon: Icon, description, formatAsCurrency = false }: { title: string, value: string | number, icon: React.ElementType, description: string, formatAsCurrency?: boolean }) => (
-    <Card>
+const StatCard = ({ title, value, icon: Icon, description, formatAsCurrency = false, variant }: { title: string, value: string | number, icon: React.ElementType, description: string, formatAsCurrency?: boolean, variant?: "default" | "primary" }) => (
+    <Card className={cn(variant === 'primary' && "bg-primary text-primary-foreground")}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{title}</CardTitle>
-            <Icon className="h-4 w-4 text-muted-foreground" />
+            <Icon className={cn("h-4 w-4", variant === 'primary' ? "text-primary-foreground/70" : "text-muted-foreground")} />
         </CardHeader>
         <CardContent>
             <div className="text-2xl font-bold">
                 {formatAsCurrency && '$'}{typeof value === 'number' && formatAsCurrency ? value.toFixed(2) : value}
             </div>
-            <p className="text-xs text-muted-foreground">{description}</p>
+            <p className={cn("text-xs", variant === 'primary' ? "text-primary-foreground/80" : "text-muted-foreground")}>{description}</p>
         </CardContent>
     </Card>
 );
@@ -122,7 +123,7 @@ export default function DashboardPage() {
       </div>
 
        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-          <StatCard title="Total Revenue" value={stats.paidAmount} icon={DollarSign} description={`${stats.paidCount} paid invoices`} formatAsCurrency />
+          <StatCard title="Total Revenue" value={stats.paidAmount} icon={DollarSign} description={`${stats.paidCount} paid invoices`} formatAsCurrency variant="primary" />
           <StatCard title="Outstanding" value={stats.unpaidAmount} icon={FileClock} description={`${stats.unpaidCount + stats.overdueCount} unpaid invoices`} formatAsCurrency />
           <StatCard title="Canceled" value={stats.canceledAmount} icon={FileX} description={`${stats.canceledCount} canceled invoices`} formatAsCurrency />
           <StatCard title="Quotations Sent" value={stats.quotationsSent} icon={FileBarChart2} description="Total quotations issued" />
