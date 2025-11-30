@@ -149,19 +149,24 @@ export default function CustomersPage() {
         customerType: type,
         name: isCompany ? customer.name.substring(customer.name.indexOf('(') + 1, customer.name.indexOf(')')) : customer.name,
         email: customer.email,
-        phone: customer.phone,
-        address: type === 'personal' ? customer.address : undefined,
-        companyName: isCompany ? customer.name.split(' (')[0] : undefined,
-        vatNumber: (customer as any).vatNumber, // Assuming these might exist
-        companyAddress: type === 'company' ? customer.address : undefined,
+        phone: customer.phone || '',
+        address: type === 'personal' ? customer.address || '' : '',
+        companyName: isCompany ? customer.name.split(' (')[0] : '',
+        vatNumber: (customer as any).vatNumber || '',
+        companyAddress: type === 'company' ? customer.address || '' : '',
         associatedProducts: customer.associatedProductIds?.map(id => ({ productId: id })) || [],
       });
     } else {
       setCustomerType('personal');
       form.reset({
           customerType: 'personal',
-          name: '', email: '', phone: '', address: '',
-          companyName: '', vatNumber: '', companyAddress: '',
+          name: '', 
+          email: '', 
+          phone: '', 
+          address: '',
+          companyName: '', 
+          vatNumber: '', 
+          companyAddress: '',
           associatedProducts: [],
       });
     }
