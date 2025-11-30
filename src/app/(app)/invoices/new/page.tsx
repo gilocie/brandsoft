@@ -714,7 +714,7 @@ export default function NewInvoicePage() {
             <InvoicePreview
                 config={config}
                 customer={config?.customers.find(c => c.id === watchedValues.customerId) || null}
-                invoiceData={watchedValues as InvoiceFormData}
+                invoiceData={watchedValues}
             />
           </div>
           <DialogFooter>

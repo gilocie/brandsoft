@@ -106,8 +106,8 @@ export default function EditInvoicePage() {
         notes: invoiceToEdit.notes || '',
 
         applyDiscount: !!invoiceToEdit.discount,
-        discountType: invoiceToEdit.discount && invoiceToEdit.subtotal && invoiceToEdit.discount > 0 ? (invoiceToEdit.discount / invoiceToEdit.subtotal) < 1 ? 'percentage' : 'flat' : 'flat',
-        discountValue: invoiceToEdit.discount && invoiceToEdit.subtotal && (invoiceToEdit.discount / invoiceToEdit.subtotal) < 1 ? (invoiceToEdit.discount / invoiceToEdit.subtotal) * 100 : invoiceToEdit.discount || 0,
+        discountType: invoiceToEdit.discount && invoiceToEdit.subtotal && invoiceToEdit.discount > 0 && invoiceToEdit.subtotal > 0 ? (invoiceToEdit.discount / invoiceToEdit.subtotal) < 1 ? 'percentage' : 'flat' : 'flat',
+        discountValue: invoiceToEdit.discount && invoiceToEdit.subtotal && (invoiceToEdit.discount / invoiceToEdit.subtotal) < 1 && invoiceToEdit.subtotal > 0 ? (invoiceToEdit.discount / invoiceToEdit.subtotal) * 100 : invoiceToEdit.discount || 0,
         
         applyTax: !!invoiceToEdit.tax,
         taxType: 'flat', // Default to flat as it's harder to reverse engineer with discounts
@@ -752,7 +752,7 @@ export default function EditInvoicePage() {
             <InvoicePreview
                 config={config}
                 customer={config?.customers.find(c => c.id === watchedValues.customerId) || null}
-                invoiceData={watchedValues as InvoiceFormData}
+                invoiceData={watchedValues}
                 invoiceId={invoiceId}
             />
           </div>

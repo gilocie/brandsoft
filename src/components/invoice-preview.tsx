@@ -2,23 +2,76 @@
 
 'use client';
 
-import { BrandsoftConfig, Customer, Invoice, InvoiceLineItem } from '@/hooks/use-brandsoft.tsx';
+import { BrandsoftConfig, Customer, Invoice } from '@/hooks/use-brandsoft.tsx';
 import { format, parseISO } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
+import { cn } from '@/lib/utils';
+
+// This props definition is intentionally verbose to support both
+// the real-time form data from a new/edit page and the stored data from an existing invoice.
+type InvoiceData = Partial<Invoice> & {
+    lineItems?: {
+        productId?: string;
+        description: string;
+        quantity: number;
+        price: number;
+    }[],
+    currency?: string;
+    invoiceDate?: Date;
+    dueDate?: Date;
+    taxName?: string;
+    applyTax?: boolean;
+    taxType?: 'percentage' | 'flat';
+    taxValue?: number;
+    applyDiscount?: boolean;
+    discountType?: 'percentage' | 'flat';
+    discountValue?: number;
+    applyShipping?: boolean;
+    shippingValue?: number;
+};
+
 
 interface InvoicePreviewProps {
     config: BrandsoftConfig | null;
     customer: Customer | null;
-    invoiceData: Partial<Invoice> & {
-        lineItems?: InvoiceLineItem[],
-        currency?: string;
-        invoiceDate?: Date;
-        dueDate?: Date;
-        taxName?: string;
-    };
+    invoiceData: InvoiceData;
     invoiceId?: string;
 }
+
+const InvoiceStatusWatermark = ({ status }: { status: Invoice['status'] }) => {
+    let text = '';
+    let colorClass = '';
+
+    switch (status) {
+        case 'Pending':
+        case 'Overdue':
+            text = 'UNPAID';
+            colorClass = 'text-red-500/20';
+            break;
+        case 'Paid':
+            text = 'PAID';
+            colorClass = 'text-green-500/20';
+            break;
+        case 'Canceled':
+            text = 'CANCELED';
+            colorClass = 'text-gray-500/20';
+            break;
+        default:
+            return null;
+    }
+
+    return (
+        <div className={cn(
+            "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0",
+            "text-[8rem] font-black tracking-widest leading-none transform -rotate-15 select-none",
+            colorClass
+        )}>
+            {text}
+        </div>
+    );
+};
+
 
 export function InvoicePreview({ config, customer, invoiceData, invoiceId }: InvoicePreviewProps) {
 
@@ -36,7 +89,7 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId }: Inv
     const subtotal = invoiceData.lineItems?.reduce((acc, item) => acc + (item.quantity * item.price), 0) || 0;
     
     let discountAmount = 0;
-    if ('applyDiscount' in invoiceData && invoiceData.applyDiscount && 'discountValue' in invoiceData && invoiceData.discountValue) {
+    if (invoiceData.applyDiscount && invoiceData.discountValue) {
         if (invoiceData.discountType === 'percentage') {
             discountAmount = subtotal * (invoiceData.discountValue / 100);
         } else {
@@ -49,7 +102,7 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId }: Inv
     const subtotalAfterDiscount = subtotal - discountAmount;
     
     let taxAmount = 0;
-    if ('applyTax' in invoiceData && invoiceData.applyTax && 'taxValue' in invoiceData && invoiceData.taxValue) {
+    if (invoiceData.applyTax && invoiceData.taxValue) {
         if (invoiceData.taxType === 'percentage') {
             taxAmount = subtotalAfterDiscount * (invoiceData.taxValue / 100);
         } else {
@@ -60,7 +113,7 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId }: Inv
     }
 
     let shippingAmount = 0;
-    if ('applyShipping' in invoiceData && invoiceData.applyShipping && 'shippingValue' in invoiceData && invoiceData.shippingValue) {
+    if (invoiceData.applyShipping && invoiceData.shippingValue) {
       shippingAmount = invoiceData.shippingValue;
     } else if (invoiceData.shipping) {
       shippingAmount = invoiceData.shipping;
@@ -68,13 +121,17 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId }: Inv
 
     const total = subtotalAfterDiscount + taxAmount + shippingAmount;
     
-    const invoiceDate = typeof invoiceData.date === 'string' ? parseISO(invoiceData.date) : invoiceData.invoiceDate;
-    const dueDate = typeof invoiceData.dueDate === 'string' ? parseISO(invoiceData.dueDate) : invoiceData.dueDate;
+    const rawInvoiceDate = invoiceData.invoiceDate || invoiceData.date;
+    const rawDueDate = invoiceData.dueDate || invoiceData.date;
+    const invoiceDate = typeof rawInvoiceDate === 'string' ? parseISO(rawInvoiceDate) : rawInvoiceDate;
+    const dueDate = typeof rawDueDate === 'string' ? parseISO(rawDueDate) : rawDueDate;
 
     return (
         <div className="bg-gray-100 p-4 sm:p-8 rounded-lg">
             <div className="w-full max-w-[8.5in] min-h-[11in] mx-auto bg-white shadow-lg p-8 sm:p-12 relative font-sans">
                 
+                 {invoiceData.status && <InvoiceStatusWatermark status={invoiceData.status} />}
+
                 {config.brand.letterheadImage ? (
                     <div className="absolute top-0 left-0 right-0 h-40">
                          <img src={config.brand.letterheadImage} className="w-full h-full object-cover" alt="Letterhead"/>
