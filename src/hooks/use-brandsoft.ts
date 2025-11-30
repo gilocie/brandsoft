@@ -20,6 +20,8 @@ interface BrandsoftContextType {
   updateCustomer: (customerId: string, data: Partial<Omit<Customer, 'id'>>) => void;
   deleteCustomer: (customerId: string) => void;
   addProduct: (product: Omit<Product, 'id'>) => Product;
+  updateProduct: (productId: string, data: Partial<Omit<Product, 'id'>>) => void;
+  deleteProduct: (productId: string) => void;
   addCurrency: (currency: string) => void;
 }
 
@@ -72,9 +74,9 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       if (options.redirect) {
         const nonRedirectPaths = ['/dashboard', '/settings', '/products'];
         const isCustomerPage = window.location.pathname.startsWith('/customers');
-        
-        // Don't redirect if on customers page (for add/edit customer)
-        const shouldRedirect = !nonRedirectPaths.some(path => window.location.pathname.startsWith(path)) && !isCustomerPage;
+        const isProductsPage = window.location.pathname.startsWith('/products');
+
+        const shouldRedirect = !nonRedirectPaths.includes(window.location.pathname) && !isCustomerPage && !isProductsPage;
         
         if (shouldRedirect) {
           router.push('/dashboard');
@@ -148,6 +150,28 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     return newProduct;
   };
 
+  const updateProduct = (productId: string, data: Partial<Omit<Product, 'id'>>) => {
+    if (!config) throw new Error("Config not loaded");
+    const updatedProducts = config.products.map(p =>
+      p.id === productId ? { ...p, ...data } : p
+    );
+    const newConfig: BrandsoftConfig = {
+      ...config,
+      products: updatedProducts,
+    };
+    saveConfig(newConfig, { redirect: false });
+  };
+  
+  const deleteProduct = (productId: string) => {
+    if (!config) throw new Error("Config not loaded");
+    const updatedProducts = config.products.filter(p => p.id !== productId);
+    const newConfig: BrandsoftConfig = {
+        ...config,
+        products: updatedProducts,
+    };
+    saveConfig(newConfig, { redirect: false });
+  }
+
    const addCurrency = (currency: string) => {
     if (!config) throw new Error("Config not loaded");
     if (!config.currencies.includes(currency)) {
@@ -160,7 +184,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
   };
 
 
-  const value = { isActivated, isConfigured, config, activate, saveConfig, logout, addCustomer, updateCustomer, deleteCustomer, addProduct, addCurrency };
+  const value = { isActivated, isConfigured, config, activate, saveConfig, logout, addCustomer, updateCustomer, deleteCustomer, addProduct, updateProduct, deleteProduct, addCurrency };
 
   return <BrandsoftContext.Provider value={value}>{children}</BrandsoftContext.Provider>;
 }
@@ -172,3 +196,5 @@ export function useBrandsoft() {
   }
   return context;
 }
+
+    
