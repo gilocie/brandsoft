@@ -36,27 +36,30 @@ export default function DashboardPage() {
   const { config } = useBrandsoft();
 
   const stats = useMemo(() => {
-    if (!config || !config.invoices) return {
-        paid: 0,
-        unpaid: 0,
-        overdue: 0,
-        canceled: 0,
-        totalCustomers: config?.customers.length || 0,
-        totalProducts: config?.products.length || 0,
-    };
+    if (!config) {
+        return {
+            paid: 0,
+            unpaid: 0,
+            overdue: 0,
+            canceled: 0,
+            totalCustomers: 0,
+            totalProducts: 0,
+        };
+    }
 
-    const paid = config.invoices.filter(inv => inv.status === 'Paid').length;
-    const unpaid = config.invoices.filter(inv => inv.status === 'Pending').length;
-    const overdue = config.invoices.filter(inv => inv.status === 'Overdue').length;
-    const canceled = config.invoices.filter(inv => inv.status === 'Canceled').length;
+    const invoices = config.invoices || [];
+    const paid = invoices.filter(inv => inv.status === 'Paid').length;
+    const unpaid = invoices.filter(inv => inv.status === 'Pending').length;
+    const overdue = invoices.filter(inv => inv.status === 'Overdue').length;
+    const canceled = invoices.filter(inv => inv.status === 'Canceled').length;
     
     return {
         paid,
         unpaid,
         overdue,
         canceled,
-        totalCustomers: config.customers.length,
-        totalProducts: config.products.length,
+        totalCustomers: config.customers?.length || 0,
+        totalProducts: config.products?.length || 0,
     }
   }, [config]);
 
@@ -68,8 +71,8 @@ export default function DashboardPage() {
             <Skeleton className="h-8 w-1/2" />
             <Skeleton className="h-4 w-3/4" />
         </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-28" />)}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            {Array(6).fill(0).map((_, i) => <Skeleton key={i} className="h-28" />)}
         </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {Array(6).fill(0).map((_, i) => (
