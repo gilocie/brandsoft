@@ -12,8 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
-import { Logo } from '@/components/logo';
-import { Loader2, ArrowLeft, ArrowRight, CheckCircle, PartyPopper, UploadCloud } from 'lucide-react';
+import { Loader2, ArrowLeft, ArrowRight, CheckCircle, PartyPopper, UploadCloud, BriefcaseBusiness } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { hexToHsl } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -76,6 +75,8 @@ export default function SetupPage() {
     },
   });
 
+  const watchedBusinessName = form.watch('businessName');
+  const watchedLogo = form.watch('logo');
   const primaryColor = form.watch('primaryColor');
   const secondaryColor = form.watch('secondaryColor');
 
@@ -160,12 +161,19 @@ export default function SetupPage() {
       <Card className="w-full max-w-2xl shadow-2xl">
         <CardHeader>
           <div className="flex items-start justify-between">
-            <Logo />
+             <div className="flex items-center gap-2">
+                <Avatar>
+                    <AvatarImage src={watchedLogo || undefined} />
+                    <AvatarFallback><BriefcaseBusiness className="h-6 w-6 text-primary" /></AvatarFallback>
+                </Avatar>
+                <h1 className="text-3xl font-headline font-bold text-primary">{watchedBusinessName || 'BrandSoft'}</h1>
+             </div>
             <div className="text-right">
               <p className="font-semibold text-muted-foreground">Step {step} of {TOTAL_STEPS}</p>
               <Progress value={(step / TOTAL_STEPS) * 100} className="mt-1 w-32" />
             </div>
           </div>
+           {watchedBusinessName && <CardDescription>Brandsoft Studio</CardDescription>}
           <Separator className="my-4" />
           <CardTitle className="font-headline text-3xl">{stepInfo[step-1].title}</CardTitle>
           <CardDescription>{stepInfo[step-1].description}</CardDescription>
