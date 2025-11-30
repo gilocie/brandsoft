@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -68,15 +69,6 @@ const statusVariantMap: {
   Draft: 'secondary',
 };
 
-const currencySymbols: { [key: string]: string } = {
-  USD: '$',
-  EUR: '€',
-  GBP: '£',
-  JPY: '¥',
-  CAD: '$',
-  AUD: '$',
-};
-
 const ActionsMenu = ({ invoice, onSelectAction }: { invoice: Invoice, onSelectAction: (action: 'view' | 'edit' | 'delete' | 'download' | 'send', invoice: Invoice) => void }) => (
     <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -123,7 +115,6 @@ export default function InvoicesPage() {
 
   const invoices = config?.invoices || [];
   const currencyCode = config?.profile.defaultCurrency || '';
-  const currencySymbol = currencySymbols[currencyCode] || currencyCode;
 
   const handleSelectAction = (action: 'view' | 'edit' | 'delete' | 'download' | 'send', invoice: Invoice) => {
     setSelectedInvoice(invoice);
@@ -207,7 +198,7 @@ export default function InvoicesPage() {
                 </CardHeader>
                 <CardContent className={cn("flex-grow space-y-2", layout === 'list' && "p-4 pt-0 md:flex md:items-center md:justify-between md:space-y-0")}>
                   <div className={cn("text-2xl font-bold", layout === 'list' && "text-base font-bold w-1/4")}>
-                    {currencySymbol}{invoice.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {currencyCode}{invoice.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                   <div className={cn("text-sm text-muted-foreground", layout === 'list' && "text-xs w-1/4")}>
                     <p>Date: {invoice.date}</p>
@@ -254,24 +245,24 @@ export default function InvoicesPage() {
             <Separator />
             <div className="flex justify-between">
               <span className="text-muted-foreground">Subtotal</span>
-              <span>{currencySymbol}{selectedInvoice?.subtotal?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '0.00'}</span>
+              <span>{currencyCode}{selectedInvoice?.subtotal?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '0.00'}</span>
             </div>
              <div className="flex justify-between">
               <span className="text-muted-foreground">Discount</span>
-              <span>-{currencySymbol}{selectedInvoice?.discount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '0.00'}</span>
+              <span>-{currencyCode}{selectedInvoice?.discount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '0.00'}</span>
             </div>
              <div className="flex justify-between">
               <span className="text-muted-foreground">Tax</span>
-              <span>{currencySymbol}{selectedInvoice?.tax?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '0.00'}</span>
+              <span>{currencyCode}{selectedInvoice?.tax?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '0.00'}</span>
             </div>
              <div className="flex justify-between">
               <span className="text-muted-foreground">Shipping</span>
-              <span>{currencySymbol}{selectedInvoice?.shipping?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '0.00'}</span>
+              <span>{currencyCode}{selectedInvoice?.shipping?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '0.00'}</span>
             </div>
             <Separator />
             <div className="flex justify-between font-bold text-base">
               <span>Total Amount</span>
-              <span>{currencySymbol}{selectedInvoice?.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              <span>{currencyCode}{selectedInvoice?.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
           </div>
           <DialogFooter>
@@ -301,3 +292,5 @@ export default function InvoicesPage() {
     </div>
   );
 }
+
+    

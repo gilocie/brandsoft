@@ -127,11 +127,15 @@ export default function CustomersPage() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [formStep, setFormStep] = useState(1);
-  const [customerType, setCustomerType] = useState<'personal' | 'company'>('personal');
 
   const form = useForm<CustomerFormData>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      customerType: 'personal',
+    }
   });
+
+  const customerType = form.watch('customerType');
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -141,24 +145,21 @@ export default function CustomersPage() {
   const handleOpenForm = (customer: Customer | null = null) => {
     setSelectedCustomer(customer);
     if (customer) {
-      const isCompany = customer.name.includes('(');
-      const type = isCompany ? 'company' : 'personal';
-      setCustomerType(type);
       form.reset({
         id: customer.id,
-        customerType: type,
-        name: isCompany ? customer.name.substring(customer.name.indexOf('(') + 1, customer.name.indexOf(')')) : customer.name,
+        customerType: customer.companyName ? 'company' : 'personal',
+        name: customer.name,
         email: customer.email,
         phone: customer.phone || '',
-        address: type === 'personal' ? customer.address || '' : '',
-        companyName: isCompany ? customer.name.split(' (')[0] : '',
-        vatNumber: (customer as any).vatNumber || '',
-        companyAddress: type === 'company' ? customer.address || '' : '',
+        address: customer.address || '',
+        companyName: customer.companyName || '',
+        vatNumber: customer.vatNumber || '',
+        companyAddress: customer.companyAddress || '',
         associatedProducts: customer.associatedProductIds?.map(id => ({ productId: id })) || [],
       });
     } else {
-      setCustomerType('personal');
       form.reset({
+          id: undefined,
           customerType: 'personal',
           name: '', 
           email: '', 
@@ -182,18 +183,21 @@ export default function CustomersPage() {
   };
 
   const onSubmit = (data: CustomerFormData) => {
-    const customerToSave: Partial<Customer> & { name: string; email: string } = {
-        name: data.customerType === 'company' ? `${data.companyName} (${data.name})` : data.name,
+    const customerToSave: Partial<Customer> = {
+        name: data.name,
         email: data.email,
         phone: data.phone,
-        address: data.customerType === 'company' ? data.companyAddress : data.address,
+        address: data.address,
+        companyName: data.customerType === 'company' ? data.companyName : undefined,
+        vatNumber: data.customerType === 'company' ? data.vatNumber : undefined,
+        companyAddress: data.customerType === 'company' ? data.companyAddress : undefined,
         associatedProductIds: data.associatedProducts?.map(p => p.productId) || []
     };
     
     if (data.id) {
         updateCustomer(data.id, customerToSave);
     } else {
-        addCustomer(customerToSave);
+        addCustomer(customerToSave as Omit<Customer, 'id'>);
     }
     
     setIsFormOpen(false);
@@ -208,41 +212,28 @@ export default function CustomersPage() {
   };
 
   const handleNextStep = async () => {
-    const fieldsToValidate: (keyof CustomerFormData)[] = ['name', 'email'];
-    if (customerType === 'company') {
+    let fieldsToValidate: (keyof CustomerFormData)[] = ['name', 'email'];
+    if(customerType === 'company') {
         fieldsToValidate.push('companyName');
     }
     const isValid = await form.trigger(fieldsToValidate);
     
     if (isValid) {
-        if (customerType === 'company') {
-            setFormStep(2);
-        } else {
-            const personalFields: (keyof CustomerFormData)[] = ['phone', 'address'];
-            const isPersonalValid = await form.trigger(personalFields);
-            if(isPersonalValid) {
-                form.handleSubmit(onSubmit)();
-            }
-        }
-    }
-  }
-
-  const handleCustomerTypeChange = (value: 'personal' | 'company') => {
-    if (value) {
-        setCustomerType(value);
-        form.setValue('customerType', value);
-        setFormStep(1);
+      setFormStep(2);
     }
   }
 
   const getCustomerInvoice = (customerName: string | undefined): Invoice | undefined => {
     if (!customerName || !config?.invoices) return undefined;
+    const customer = config.customers.find(c => c.name === customerName || c.companyName === customerName);
+    if (!customer) return undefined;
+
     return config.invoices.find(
-      inv => inv.customer === customerName && (inv.status === 'Pending' || inv.status === 'Overdue')
+      inv => inv.customer === customer.name && (inv.status === 'Pending' || inv.status === 'Overdue')
     );
   };
 
-  const customerInvoice = useMemo(() => getCustomerInvoice(selectedCustomer?.name), [selectedCustomer, config?.invoices]);
+  const customerInvoice = useMemo(() => getCustomerInvoice(selectedCustomer?.name), [selectedCustomer, config]);
 
   return (
     <div className="container mx-auto space-y-6">
@@ -265,7 +256,7 @@ export default function CustomersPage() {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Phone</TableHead>
+                <TableHead>Company</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -275,7 +266,7 @@ export default function CustomersPage() {
                   <TableRow key={customer.id}>
                     <TableCell className="font-medium">{customer.name}</TableCell>
                     <TableCell>{customer.email}</TableCell>
-                    <TableCell>{customer.phone || 'N/A'}</TableCell>
+                    <TableCell>{customer.companyName || 'N/A'}</TableCell>
                     <TableCell className="text-right">
                         <CustomerActions customer={customer} onSelectAction={handleSelectAction} />
                     </TableCell>
@@ -304,66 +295,64 @@ export default function CustomersPage() {
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                 <ToggleGroup type="single" value={customerType} onValueChange={handleCustomerTypeChange} className="grid grid-cols-2">
-                    <ToggleGroupItem value="personal">Personal</ToggleGroupItem>
-                    <ToggleGroupItem value="company">Company</ToggleGroupItem>
-                 </ToggleGroup>
-                
+                <FormField
+                  control={form.control}
+                  name="customerType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <ToggleGroup type="single" value={field.value} onValueChange={(value) => { if(value) field.onChange(value); setFormStep(1); }} className="grid grid-cols-2">
+                          <ToggleGroupItem value="personal">Personal</ToggleGroupItem>
+                          <ToggleGroupItem value="company">Company</ToggleGroupItem>
+                        </ToggleGroup>
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
                 <Separator />
                 
                 {formStep === 1 && (
                     <div className="space-y-4">
-                        <h3 className="text-lg font-medium">{customerType === 'personal' ? 'Personal Details' : 'Contact Person Details'}</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <FormField control={form.control} name="name" render={({ field }) => (
-                                <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
-                            <FormField control={form.control} name="email" render={({ field }) => (
-                                <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
-                        </div>
-                        {customerType === 'personal' && (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <FormField control={form.control} name="phone" render={({ field }) => (
-                                    <FormItem><FormLabel>Phone (Optional)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                )} />
-                                <FormField control={form.control} name="address" render={({ field }) => (
-                                    <FormItem><FormLabel>Address (Optional)</FormLabel><FormControl><Textarea {...field} className="min-h-[80px]" /></FormControl><FormMessage /></FormItem>
-                                )} />
-                            </div>
-                        )}
+                        <h3 className="text-lg font-medium">{customerType === 'personal' ? 'Personal Details' : 'Company & Contact Details'}</h3>
                         {customerType === 'company' && (
-                            <div className="grid grid-cols-1 gap-4">
-                                <FormField control={form.control} name="companyName" render={({ field }) => (
-                                    <FormItem><FormLabel>Company Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                )} />
-                            </div>
+                             <FormField control={form.control} name="companyName" render={({ field }) => (
+                                <FormItem><FormLabel>Company Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
                         )}
+                        <FormField control={form.control} name="name" render={({ field }) => (
+                            <FormItem><FormLabel>{customerType === 'company' ? 'Contact Person Name' : 'Full Name'}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                        <FormField control={form.control} name="email" render={({ field }) => (
+                            <FormItem><FormLabel>{customerType === 'company' ? 'Contact Person Email' : 'Email'}</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
                     </div>
                 )}
 
-                {formStep === 2 && customerType === 'company' && (
+                {formStep === 2 && (
                      <div className="space-y-6">
-                        <div>
-                            <h3 className="text-lg font-medium">Company Details</h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+                        {customerType === 'company' && (
+                          <div>
+                            <h3 className="text-lg font-medium">Company Address & Tax</h3>
+                            <div className="space-y-4 mt-2">
                                 <FormField control={form.control} name="vatNumber" render={({ field }) => (
                                     <FormItem><FormLabel>VAT / Tax ID (Optional)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                                 )} />
+                                <FormField control={form.control} name="companyAddress" render={({ field }) => (
+                                    <FormItem><FormLabel>Company Address (Optional)</FormLabel><FormControl><Textarea {...field} className="min-h-[80px]" /></FormControl><FormMessage /></FormItem>
+                                )} />
                             </div>
-                            <FormField control={form.control} name="companyAddress" render={({ field }) => (
-                                <FormItem className="mt-4"><FormLabel>Company Address (Optional)</FormLabel><FormControl><Textarea {...field} className="min-h-[80px]" /></FormControl><FormMessage /></FormItem>
-                            )} />
-                        </div>
+                           </div>
+                        )}
+                        
                         <Separator />
                         <div>
-                            <h3 className="text-lg font-medium">Contact Person Details</h3>
-                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+                            <h3 className="text-lg font-medium">{customerType === 'company' ? 'Contact Person Details' : 'Contact Details'}</h3>
+                             <div className="space-y-4 mt-2">
                                 <FormField control={form.control} name="phone" render={({ field }) => (
                                     <FormItem><FormLabel>Phone (Optional)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                                 )} />
                                 <FormField control={form.control} name="address" render={({ field }) => (
-                                    <FormItem><FormLabel>Address (Optional)</FormLabel><FormControl><Textarea {...field} className="min-h-[80px]" /></FormControl><FormMessage /></FormItem>
+                                    <FormItem><FormLabel>{customerType === 'company' ? 'Contact Person Address (Optional)' : 'Address (Optional)'}</FormLabel><FormControl><Textarea {...field} className="min-h-[80px]" /></FormControl><FormMessage /></FormItem>
                                 )} />
                             </div>
                         </div>
@@ -415,7 +404,7 @@ export default function CustomersPage() {
                     </Button>
                   )}
                   <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>Cancel</Button>
-                  {customerType === 'personal' || formStep === 2 ? (
+                  {formStep === 2 ? (
                      <Button type="submit">Save Customer</Button>
                   ) : (
                      <Button type="button" onClick={handleNextStep}>
@@ -430,24 +419,37 @@ export default function CustomersPage() {
       
       {/* View Details Dialog */}
       <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Customer Details</DialogTitle>
-            <DialogDescription>{selectedCustomer?.name}</DialogDescription>
+            <DialogTitle>{selectedCustomer?.companyName || selectedCustomer?.name}</DialogTitle>
+            {selectedCustomer?.companyName && <DialogDescription>{selectedCustomer?.name}</DialogDescription>}
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-                <div className="font-semibold text-muted-foreground">Email</div>
-                <div className="font-medium">{selectedCustomer?.email}</div>
+          <div className="space-y-4 py-4 text-sm">
+            <div className="grid grid-cols-3 gap-2">
+                <div className="font-semibold text-muted-foreground col-span-1">Email</div>
+                <div className="font-medium col-span-2">{selectedCustomer?.email}</div>
             </div>
-             <div className="grid grid-cols-2 gap-4">
-                <div className="font-semibold text-muted-foreground">Phone</div>
-                <div className="font-medium">{selectedCustomer?.phone || 'N/A'}</div>
+             <div className="grid grid-cols-3 gap-2">
+                <div className="font-semibold text-muted-foreground col-span-1">Phone</div>
+                <div className="font-medium col-span-2">{selectedCustomer?.phone || 'N/A'}</div>
             </div>
-             <div className="grid grid-cols-2 gap-4">
-                <div className="font-semibold text-muted-foreground">Address</div>
-                <div className="font-medium">{selectedCustomer?.address || 'N/A'}</div>
+             <div className="grid grid-cols-3 gap-2">
+                <div className="font-semibold text-muted-foreground col-span-1">Address</div>
+                <div className="font-medium col-span-2">{selectedCustomer?.address || 'N/A'}</div>
             </div>
+            {selectedCustomer?.companyName && (
+              <>
+                <Separator />
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="font-semibold text-muted-foreground col-span-1">Company Address</div>
+                  <div className="font-medium col-span-2">{selectedCustomer?.companyAddress || 'N/A'}</div>
+                </div>
+                 <div className="grid grid-cols-3 gap-2">
+                  <div className="font-semibold text-muted-foreground col-span-1">VAT/Tax ID</div>
+                  <div className="font-medium col-span-2">{selectedCustomer?.vatNumber || 'N/A'}</div>
+                </div>
+              </>
+            )}
 
             {selectedCustomer?.associatedProductIds && selectedCustomer.associatedProductIds.length > 0 && (
               <>
@@ -476,7 +478,7 @@ export default function CustomersPage() {
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="font-semibold text-muted-foreground">Amount Due</div>
-                        <div className="font-medium">${customerInvoice.amount.toFixed(2)}</div>
+                        <div className="font-medium">{config?.profile.defaultCurrency}{customerInvoice.amount.toFixed(2)}</div>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="font-semibold text-muted-foreground">Due Date</div>
@@ -523,3 +525,5 @@ export default function CustomersPage() {
     </div>
   );
 }
+
+    

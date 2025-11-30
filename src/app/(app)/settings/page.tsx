@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -12,6 +13,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from '@/components/ui/card';
 import {
   Form,
@@ -20,17 +22,25 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState, useRef } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { PlusCircle, UploadCloud } from 'lucide-react';
+import { UploadCloud } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
+
 
 const settingsSchema = z.object({
   businessName: z.string().min(2, "Business name is required"),
@@ -40,40 +50,37 @@ const settingsSchema = z.object({
   font: z.string().optional(),
   defaultCurrency: z.string().min(1, "Default currency is required"),
   brandsoftFooter: z.boolean().default(true),
+  // New fields
+  paymentDetails: z.string().optional(),
+  letterheadImage: z.string().optional(),
+  footerContent: z.string().optional(),
 });
 
 type SettingsFormData = z.infer<typeof settingsSchema>;
 
-const newCurrencySchema = z.object({
-    currencyCode: z.string().min(3, "Currency code must be 3 characters").max(3, "Currency code must be 3 characters"),
-    setAsDefault: z.boolean().default(false),
-});
-type NewCurrencyFormData = z.infer<typeof newCurrencySchema>;
-
-
 export default function SettingsPage() {
-  const { config, saveConfig, addCurrency } = useBrandsoft();
+  const { config, saveConfig } = useBrandsoft();
   const { toast } = useToast();
-  const [isAddCurrencyOpen, setIsAddCurrencyOpen] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [letterheadPreview, setLetterheadPreview] = useState<string | null>(null);
+
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const letterheadInputRef = useRef<HTMLInputElement>(null);
   
   const form = useForm<SettingsFormData>({
     resolver: zodResolver(settingsSchema),
     defaultValues: {
-      businessName: config?.brand.businessName || '',
-      logo: config?.brand.logo || '',
-      primaryColor: config?.brand.primaryColor || '',
-      secondaryColor: config?.brand.secondaryColor || '',
-      font: config?.brand.font || 'Poppins',
-      defaultCurrency: config?.profile.defaultCurrency || 'USD',
-      brandsoftFooter: config?.brand.brandsoftFooter ?? true,
+      businessName: '',
+      logo: '',
+      primaryColor: '#9400D3',
+      secondaryColor: '#D87093',
+      font: 'Poppins',
+      defaultCurrency: 'USD',
+      brandsoftFooter: true,
+      paymentDetails: '',
+      letterheadImage: '',
+      footerContent: '',
     },
-  });
-
-  const newCurrencyForm = useForm<NewCurrencyFormData>({
-    resolver: zodResolver(newCurrencySchema),
-    defaultValues: { currencyCode: '', setAsDefault: false },
   });
   
   useEffect(() => {
@@ -86,19 +93,27 @@ export default function SettingsPage() {
             font: config.brand.font,
             defaultCurrency: config.profile.defaultCurrency,
             brandsoftFooter: config.brand.brandsoftFooter,
+            paymentDetails: config.profile.paymentDetails || '',
+            letterheadImage: config.brand.letterheadImage || '',
+            footerContent: config.brand.footerContent || '',
         });
         setLogoPreview(config.brand.logo);
+        setLetterheadPreview(config.brand.letterheadImage || null);
     }
   }, [config, form]);
   
-  const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = (
+    event: React.ChangeEvent<HTMLInputElement>, 
+    setter: (dataUrl: string) => void,
+    field: keyof SettingsFormData
+  ) => {
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
         const dataUrl = reader.result as string;
-        setLogoPreview(dataUrl);
-        form.setValue('logo', dataUrl, { shouldDirty: true });
+        setter(dataUrl);
+        form.setValue(field, dataUrl, { shouldDirty: true });
       };
       reader.readAsDataURL(file);
     }
@@ -117,10 +132,13 @@ export default function SettingsPage() {
           secondaryColor: data.secondaryColor || '#D87093',
           font: data.font || 'Poppins',
           brandsoftFooter: data.brandsoftFooter,
+          letterheadImage: data.letterheadImage || '',
+          footerContent: data.footerContent || '',
         },
         profile: {
           ...config.profile,
           defaultCurrency: data.defaultCurrency,
+          paymentDetails: data.paymentDetails || '',
         },
       };
       saveConfig(newConfig);
@@ -134,17 +152,6 @@ export default function SettingsPage() {
   if (!config) {
     return <div>Loading settings...</div>;
   }
-  
-  const handleAddCurrency = (data: NewCurrencyFormData) => {
-    const newCurrency = data.currencyCode.toUpperCase();
-    addCurrency(newCurrency, data.setAsDefault);
-    newCurrencyForm.reset({ currencyCode: '', setAsDefault: false });
-    setIsAddCurrencyOpen(false);
-    toast({
-      title: "Currency Added",
-      description: `"${newCurrency}" has been added to your currencies list.`,
-    });
-  }
 
   return (
     <div className="container mx-auto space-y-6">
@@ -157,65 +164,49 @@ export default function SettingsPage() {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Brand Identity</CardTitle>
-                    <CardDescription>Update your company's branding details.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-                         <div className="space-y-4">
-                            <FormField control={form.control} name="businessName" render={({ field }) => (
-                                <FormItem><FormLabel>Business Name</FormLabel><FormControl><Input placeholder="Your Company LLC" {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
-                            <FormField control={form.control} name="logo" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Logo</FormLabel>
-                                    <FormControl>
-                                        <div>
-                                            <Input
-                                                type="file"
-                                                accept="image/*"
-                                                className="hidden"
-                                                ref={fileInputRef}
-                                                onChange={handleLogoChange}
-                                            />
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                onClick={() => fileInputRef.current?.click()}
-                                                className="w-full"
-                                            >
-                                                <UploadCloud className="mr-2 h-4 w-4" /> Upload Logo
-                                            </Button>
-                                        </div>
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )} />
-                         </div>
-                         <div className="flex flex-col items-center justify-center space-y-2 rounded-md border border-dashed p-4 h-full">
-                            <Avatar className="h-24 w-24">
-                                <AvatarImage src={logoPreview || undefined} alt={config?.brand.businessName} />
-                                <AvatarFallback className="text-3xl">
-                                    {config?.brand.businessName?.charAt(0).toUpperCase()}
-                                </AvatarFallback>
-                            </Avatar>
-                            <p className="text-sm text-muted-foreground">Logo Preview</p>
-                         </div>
-                    </div>
-                     <FormField
-                        control={form.control}
-                        name="font"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>Font</FormLabel>
+            <Accordion type="multiple" defaultValue={['item-1', 'item-2', 'item-3', 'item-4']} className="w-full">
+              <AccordionItem value="item-1">
+                <AccordionTrigger className="text-xl font-headline">Brand Identity</AccordionTrigger>
+                <AccordionContent>
+                  <Card className="border-none shadow-none">
+                    <CardHeader className="p-2 pt-0">
+                      <CardDescription>Update your company's branding details.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4 p-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                             <div className="space-y-4">
+                                <FormField control={form.control} name="businessName" render={({ field }) => (
+                                    <FormItem><FormLabel>Business Name</FormLabel><FormControl><Input placeholder="Your Company LLC" {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                                <FormField control={form.control} name="logo" render={() => (
+                                    <FormItem>
+                                        <FormLabel>Logo</FormLabel>
+                                        <FormControl>
+                                            <div>
+                                                <Input type="file" accept="image/*" className="hidden" ref={logoInputRef} onChange={(e) => handleImageChange(e, setLogoPreview, 'logo')}/>
+                                                <Button type="button" variant="outline" onClick={() => logoInputRef.current?.click()} className="w-full">
+                                                    <UploadCloud className="mr-2 h-4 w-4" /> Upload Logo
+                                                </Button>
+                                            </div>
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )} />
+                             </div>
+                             <div className="flex flex-col items-center justify-center space-y-2 rounded-md border border-dashed p-4 h-full">
+                                <Avatar className="h-24 w-24">
+                                    <AvatarImage src={logoPreview || undefined} alt={config?.brand.businessName} />
+                                    <AvatarFallback className="text-3xl">
+                                        {config?.brand.businessName?.charAt(0).toUpperCase()}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <p className="text-sm text-muted-foreground">Logo Preview</p>
+                             </div>
+                        </div>
+                         <FormField control={form.control} name="font" render={({ field }) => (
+                            <FormItem><FormLabel>Font</FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select a font" />
-                                </SelectTrigger>
-                                </FormControl>
+                                <FormControl><SelectTrigger><SelectValue placeholder="Select a font" /></SelectTrigger></FormControl>
                                 <SelectContent>
                                     <SelectItem value="Poppins">Poppins</SelectItem>
                                     <SelectItem value="Belleza">Belleza</SelectItem>
@@ -224,130 +215,111 @@ export default function SettingsPage() {
                                     <SelectItem value="Verdana">Verdana</SelectItem>
                                 </SelectContent>
                             </Select>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField control={form.control} name="primaryColor" render={({ field }) => (
-                        <FormItem><FormLabel>Primary Color</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>
+                            <FormMessage /></FormItem>
+                         )} />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField control={form.control} name="primaryColor" render={({ field }) => (
+                            <FormItem><FormLabel>Primary Color</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>
+                            )} />
+                            <FormField control={form.control} name="secondaryColor" render={({ field }) => (
+                            <FormItem><FormLabel>Accent Color</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>
+                            )} />
+                        </div>
+                    </CardContent>
+                  </Card>
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="item-2">
+                <AccordionTrigger className="text-xl font-headline">Regional & Currency</AccordionTrigger>
+                <AccordionContent>
+                   <Card className="border-none shadow-none">
+                     <CardHeader className="p-2 pt-0">
+                        <CardDescription>Manage currency and regional formats.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-6 p-2">
+                        <div className="max-w-md space-y-4">
+                            <FormField control={form.control} name="defaultCurrency" render={({ field }) => (
+                                <FormItem><FormLabel>Default Currency Code</FormLabel>
+                                <FormControl><Input placeholder="e.g. USD, MWK" {...field} /></FormControl>
+                                <FormDescription>Enter the 3-letter currency code for your documents.</FormDescription>
+                                <FormMessage /></FormItem>
+                            )} />
+                        </div>
+                    </CardContent>
+                   </Card>
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="item-3">
+                <AccordionTrigger className="text-xl font-headline">Payment Settings</AccordionTrigger>
+                <AccordionContent>
+                    <Card className="border-none shadow-none">
+                        <CardHeader className="p-2 pt-0">
+                            <CardDescription>Configure how you get paid.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-2">
+                            <FormField control={form.control} name="paymentDetails" render={({ field }) => (
+                                <FormItem><FormLabel>Payment Instructions</FormLabel>
+                                <FormControl><Textarea placeholder="e.g., Bank Name, Account Number, PayPal email, etc." {...field} rows={4} /></FormControl>
+                                <FormDescription>This will appear on your invoices.</FormDescription>
+                                <FormMessage /></FormItem>
+                            )} />
+                        </CardContent>
+                    </Card>
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="item-4">
+                <AccordionTrigger className="text-xl font-headline">Letterhead & Footer</AccordionTrigger>
+                <AccordionContent>
+                  <Card className="border-none shadow-none">
+                    <CardHeader className="p-2 pt-0">
+                        <CardDescription>Customize your document headers and footers.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6 p-2">
+                       <div className="space-y-4">
+                           <Label>Letterhead</Label>
+                            <div className="flex flex-col items-center justify-center space-y-2 rounded-md border border-dashed p-4 h-48 w-full">
+                                {letterheadPreview ? (
+                                    <img src={letterheadPreview} alt="Letterhead preview" className="max-h-full max-w-full object-contain"/>
+                                ) : (
+                                    <p className="text-sm text-muted-foreground">No letterhead uploaded</p>
+                                )}
+                            </div>
+                            <FormField control={form.control} name="letterheadImage" render={() => (
+                                <FormItem>
+                                    <FormControl>
+                                        <div>
+                                            <Input type="file" accept="image/*" className="hidden" ref={letterheadInputRef} onChange={(e) => handleImageChange(e, setLetterheadPreview, 'letterheadImage')} />
+                                            <Button type="button" variant="outline" onClick={() => letterheadInputRef.current?.click()} className="w-full">
+                                                <UploadCloud className="mr-2 h-4 w-4" /> Upload Letterhead Image
+                                            </Button>
+                                        </div>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+                       </div>
+                       <Separator />
+                       <FormField control={form.control} name="footerContent" render={({ field }) => (
+                            <FormItem><FormLabel>Custom Footer Content</FormLabel>
+                            <FormControl><Textarea placeholder="e.g., Thank you for your business!" {...field} rows={3} /></FormControl>
+                            <FormDescription>This content will appear at the bottom of your documents, replacing the default footer.</FormDescription>
+                            <FormMessage /></FormItem>
                         )} />
-                        <FormField control={form.control} name="secondaryColor" render={({ field }) => (
-                        <FormItem><FormLabel>Accent Color</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>
-                        )} />
-                    </div>
-                    <Separator />
-                     <FormField
-                        control={form.control}
-                        name="brandsoftFooter"
-                        render={({ field }) => (
+                        <FormField control={form.control} name="brandsoftFooter" render={({ field }) => (
                             <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                                 <div className="space-y-0.5">
                                     <FormLabel>Enable BrandSoft Footer</FormLabel>
-                                    <FormDescription>
-                                        Show "Created by BrandSoft" on your documents.
-                                    </FormDescription>
+                                    <FormDescription>Show "Created by BrandSoft" on your documents. This appears below your custom footer.</FormDescription>
                                 </div>
-                                <FormControl>
-                                    <Switch
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                    />
-                                </FormControl>
+                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                             </FormItem>
-                        )}
-                    />
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Regional Settings</CardTitle>
-                    <CardDescription>Manage currencies for your business.</CardDescription>
-                </CardHeader>
-                <CardContent className="pt-6">
-                    <div className="max-w-md space-y-4">
-                        <FormField
-                          control={form.control}
-                          name="defaultCurrency"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Default Currency</FormLabel>
-                               <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select a currency" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  {config.currencies.map(c => (
-                                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <div>
-                             <Dialog open={isAddCurrencyOpen} onOpenChange={setIsAddCurrencyOpen}>
-                                <DialogTrigger asChild>
-                                    <Button type="button" variant="outline">
-                                        <PlusCircle className="mr-2 h-4 w-4" /> Add New Currency
-                                    </Button>
-                                </DialogTrigger>
-                                <DialogContent>
-                                    <DialogHeader>
-                                        <DialogTitle>Add New Currency</DialogTitle>
-                                        <DialogDescription>
-                                            Enter the 3-letter code for the new currency (e.g., INR).
-                                        </DialogDescription>
-                                    </DialogHeader>
-                                    <Form {...newCurrencyForm}>
-                                        <form onSubmit={newCurrencyForm.handleSubmit(handleAddCurrency)} className="space-y-4">
-                                            <FormField
-                                                control={newCurrencyForm.control}
-                                                name="currencyCode"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                    <FormLabel>Currency Code</FormLabel>
-                                                    <FormControl>
-                                                        <Input placeholder="EUR" {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                            <FormField
-                                                control={newCurrencyForm.control}
-                                                name="setAsDefault"
-                                                render={({ field }) => (
-                                                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                                                        <div className="space-y-0.5">
-                                                            <FormLabel>Set as Default</FormLabel>
-                                                        </div>
-                                                        <FormControl>
-                                                            <Switch
-                                                            checked={field.value}
-                                                            onCheckedChange={field.onChange}
-                                                            />
-                                                        </FormControl>
-                                                    </FormItem>
-                                                )}
-                                            />
-                                            <DialogFooter>
-                                                <Button type="button" variant="outline" onClick={() => setIsAddCurrencyOpen(false)}>Cancel</Button>
-                                                <Button type="submit">Add Currency</Button>
-                                            </DialogFooter>
-                                        </form>
-                                    </Form>
-                                </DialogContent>
-                             </Dialog>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-            <div className="flex justify-start">
+                        )} />
+                    </CardContent>
+                  </Card>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+            <div className="flex justify-start pt-8">
                 <Button type="submit">Save All Settings</Button>
             </div>
         </form>
@@ -355,3 +327,5 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+    

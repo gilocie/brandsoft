@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
@@ -15,6 +16,9 @@ export type Customer = {
   email: string;
   phone?: string;
   address?: string;
+  companyName?: string;
+  companyAddress?: string;
+  vatNumber?: string;
   associatedProductIds?: string[];
 };
 
@@ -56,6 +60,8 @@ export type BrandsoftConfig = {
     font: string;
     businessName: string;
     brandsoftFooter: boolean;
+    letterheadImage?: string;
+    footerContent?: string;
   };
   profile: {
     address: string;
@@ -64,6 +70,7 @@ export type BrandsoftConfig = {
     website: string;
     taxNumber: string;
     defaultCurrency: string;
+    paymentDetails?: string;
   };
   modules: {
     invoice: boolean;
@@ -75,7 +82,6 @@ export type BrandsoftConfig = {
   customers: Customer[];
   products: Product[];
   invoices: Invoice[];
-  currencies: string[];
 };
 
 interface BrandsoftContextType {
@@ -94,7 +100,6 @@ interface BrandsoftContextType {
   addInvoice: (invoice: Omit<Invoice, 'invoiceId'>) => Invoice;
   updateInvoice: (invoiceId: string, data: Partial<Omit<Invoice, 'invoiceId'>>) => void;
   deleteInvoice: (invoiceId: string) => void;
-  addCurrency: (currency: string, setAsDefault?: boolean) => void;
 }
 
 const BrandsoftContext = createContext<BrandsoftContextType | undefined>(undefined);
@@ -196,14 +201,11 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       setIsConfigured(!!configData);
       if (configData) {
         const parsedConfig = JSON.parse(configData);
-        if (!parsedConfig.currencies) {
-            parsedConfig.currencies = ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD'];
+        if (parsedConfig.brand.brandsoftFooter === undefined) {
+          parsedConfig.brand.brandsoftFooter = true;
         }
         if (!parsedConfig.invoices) {
             parsedConfig.invoices = initialInvoices;
-        }
-        if (parsedConfig.brand.brandsoftFooter === undefined) {
-          parsedConfig.brand.brandsoftFooter = true;
         }
         setConfig(parsedConfig);
       }
@@ -391,25 +393,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     saveConfig(newConfig, { redirect: false });
   };
 
-  const addCurrency = (currency: string, setAsDefault = false) => {
-    if (!config) throw new Error("Config not loaded");
-    
-    const newCurrencies = config.currencies.includes(currency) 
-      ? config.currencies 
-      : [...config.currencies, currency];
-
-    const newConfig: BrandsoftConfig = {
-        ...config,
-        currencies: newCurrencies,
-        profile: {
-            ...config.profile,
-            defaultCurrency: setAsDefault ? currency : config.profile.defaultCurrency
-        }
-    };
-    saveConfig(newConfig, { redirect: false });
-  };
-
-  const value = { isActivated, isConfigured, config, activate, saveConfig, logout, addCustomer, updateCustomer, deleteCustomer, addProduct, updateProduct, deleteProduct, addInvoice, updateInvoice, deleteInvoice, addCurrency };
+  const value = { isActivated, isConfigured, config, activate, saveConfig, logout, addCustomer, updateCustomer, deleteCustomer, addProduct, updateProduct, deleteProduct, addInvoice, updateInvoice, deleteInvoice };
 
   return <BrandsoftContext.Provider value={value}>{children}</BrandsoftContext.Provider>;
 }
@@ -421,3 +405,5 @@ export function useBrandsoft() {
   }
   return context;
 }
+
+    
