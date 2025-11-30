@@ -335,7 +335,7 @@ const modules = [
 ] as const;
 
 function Step3ModuleSelection({ control }: { control: Control<FormData> }) {
-  return <div className="space-y-3">
+  return <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
     {modules.map(item => (
       <FormField key={item.id} control={control} name={item.id} render={({ field }) => (
         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
