@@ -222,7 +222,7 @@ export default function NewInvoicePage() {
       }
   }
 
-  const shippingAmount = watchedValues.applyShipping && watchedValues.shippingValue ? watchedValues.shippingValue : 0;
+  const shippingAmount = watchedValues.applyShipping && watchedValues.shippingValue ? Number(watchedValues.shippingValue) : 0;
   const total = subtotalAfterDiscount + taxAmount + shippingAmount;
 
   return (
@@ -699,3 +699,4 @@ export default function NewInvoicePage() {
     </div>
   );
 }
+
