@@ -3,9 +3,8 @@
 'use client';
 
 import { BrandsoftConfig, Customer, Invoice, InvoiceLineItem } from '@/hooks/use-brandsoft.tsx';
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 
 interface InvoicePreviewProps {
@@ -68,19 +67,24 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId }: Inv
     }
 
     const total = subtotalAfterDiscount + taxAmount + shippingAmount;
+    
+    const invoiceDate = typeof invoiceData.date === 'string' ? parseISO(invoiceData.date) : invoiceData.invoiceDate;
+    const dueDate = typeof invoiceData.dueDate === 'string' ? parseISO(invoiceData.dueDate) : invoiceData.dueDate;
 
     return (
         <div className="bg-gray-100 p-4 sm:p-8 rounded-lg">
             <div className="w-full max-w-[8.5in] min-h-[11in] mx-auto bg-white shadow-lg p-8 sm:p-12 relative font-sans">
                 
-                {config.brand.letterheadImage && (
+                {config.brand.letterheadImage ? (
                     <div className="absolute top-0 left-0 right-0 h-40">
                          <img src={config.brand.letterheadImage} className="w-full h-full object-cover" alt="Letterhead"/>
                     </div>
+                ) : (
+                    <div className="absolute top-0 left-0 right-0 h-10" style={{backgroundColor: config.brand.primaryColor}}></div>
                 )}
                 
                 {/* Header */}
-                <header className="relative z-10 flex justify-between items-start mb-12">
+                <header className="relative z-10 flex justify-between items-start mb-12 pt-10">
                     <div className="flex items-center gap-4">
                         {config.brand.logo && (
                             <Avatar className="h-16 w-16 sm:h-20 sm:w-20">
@@ -118,11 +122,11 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId }: Inv
                             </div>
                             <div className="space-y-1 sm:mb-2">
                                 <p className="text-sm font-semibold text-gray-500">DATE</p>
-                                <p className="font-medium">{format(invoiceData.invoiceDate || new Date(), 'MM/dd/yy')}</p>
+                                <p className="font-medium">{format(invoiceDate || new Date(), 'MM/dd/yy')}</p>
                             </div>
                              <div className="space-y-1">
                                 <p className="text-sm font-semibold text-gray-500">INVOICE DUE DATE</p>
-                                <p className="font-medium">{format(invoiceData.dueDate || new Date(), 'MM/dd/yy')}</p>
+                                <p className="font-medium">{format(dueDate || new Date(), 'MM/dd/yy')}</p>
                             </div>
                         </div>
                     </div>
@@ -160,7 +164,7 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId }: Inv
                 </section>
 
                 {/* Totals & Notes */}
-                <section className="relative z-10 mt-8 grid grid-cols-2 gap-8">
+                <section className="relative z-10 mt-8 grid grid-cols-2 gap-8 items-start">
                     <div className="text-sm">
                         {invoiceData.notes && (
                              <div>
@@ -217,5 +221,3 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId }: Inv
         </div>
     );
 }
-
-    

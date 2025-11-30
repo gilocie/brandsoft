@@ -37,8 +37,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-  DialogFooter,
 } from '@/components/ui/dialog';
 import {
   MoreHorizontal,
@@ -56,8 +54,8 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@/components/ui/toggle-group"
-import { useBrandsoft, type Invoice } from '@/hooks/use-brandsoft.tsx';
-import { Separator } from '@/components/ui/separator';
+import { useBrandsoft, type Customer, type Invoice } from '@/hooks/use-brandsoft.tsx';
+import { InvoicePreview } from '@/components/invoice-preview';
 
 const statusVariantMap: {
   [key: string]: 'default' | 'secondary' | 'destructive';
@@ -146,6 +144,8 @@ export default function InvoicesPage() {
       setSelectedInvoice(null);
     }
   };
+  
+  const selectedCustomer = config?.customers.find(c => c.name === selectedInvoice?.customer) || null;
 
   return (
     <div className="container mx-auto space-y-6">
@@ -224,50 +224,20 @@ export default function InvoicesPage() {
 
        {/* View Details Dialog */}
       <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-4xl h-[90vh]">
           <DialogHeader>
-            <DialogTitle>Invoice {selectedInvoice?.invoiceId}</DialogTitle>
-            <DialogDescription>To: {selectedInvoice?.customer}</DialogDescription>
+            <DialogTitle>Invoice Preview</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Status</span>
-              {selectedInvoice && <Badge variant={statusVariantMap[selectedInvoice.status]}>{selectedInvoice.status}</Badge>}
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Invoice Date</span>
-              <span>{selectedInvoice?.date}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Due Date</span>
-              <span>{selectedInvoice?.dueDate}</span>
-            </div>
-            <Separator />
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Subtotal</span>
-              <span>{currencyCode}{selectedInvoice?.subtotal?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '0.00'}</span>
-            </div>
-             <div className="flex justify-between">
-              <span className="text-muted-foreground">Discount</span>
-              <span>-{currencyCode}{selectedInvoice?.discount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '0.00'}</span>
-            </div>
-             <div className="flex justify-between">
-              <span className="text-muted-foreground">Tax</span>
-              <span>{currencyCode}{selectedInvoice?.tax?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '0.00'}</span>
-            </div>
-             <div className="flex justify-between">
-              <span className="text-muted-foreground">Shipping</span>
-              <span>{currencyCode}{selectedInvoice?.shipping?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) ?? '0.00'}</span>
-            </div>
-            <Separator />
-            <div className="flex justify-between font-bold text-base">
-              <span>Total Amount</span>
-              <span>{currencyCode}{selectedInvoice?.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-            </div>
+          <div className="h-full overflow-y-auto">
+            {selectedInvoice && (
+              <InvoicePreview
+                config={config}
+                customer={selectedCustomer}
+                invoiceData={selectedInvoice}
+                invoiceId={selectedInvoice.invoiceId}
+              />
+            )}
           </div>
-          <DialogFooter>
-            <Button onClick={() => setIsViewOpen(false)}>Close</Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
       

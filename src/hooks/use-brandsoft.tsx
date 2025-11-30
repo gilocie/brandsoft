@@ -82,6 +82,7 @@ export type BrandsoftConfig = {
   customers: Customer[];
   products: Product[];
   invoices: Invoice[];
+  currencies: string[];
 };
 
 interface BrandsoftContextType {
@@ -100,6 +101,7 @@ interface BrandsoftContextType {
   addInvoice: (invoice: Omit<Invoice, 'invoiceId'>) => Invoice;
   updateInvoice: (invoiceId: string, data: Partial<Omit<Invoice, 'invoiceId'>>) => void;
   deleteInvoice: (invoiceId: string) => void;
+  addCurrency: (currency: string) => void;
 }
 
 const BrandsoftContext = createContext<BrandsoftContextType | undefined>(undefined);
@@ -393,7 +395,19 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     saveConfig(newConfig, { redirect: false });
   };
 
-  const value = { isActivated, isConfigured, config, activate, saveConfig, logout, addCustomer, updateCustomer, deleteCustomer, addProduct, updateProduct, deleteProduct, addInvoice, updateInvoice, deleteInvoice };
+  const addCurrency = (currency: string) => {
+    if (!config) throw new Error("Config not loaded");
+    if (!config.currencies.includes(currency)) {
+        const newConfig: BrandsoftConfig = {
+            ...config,
+            currencies: [...config.currencies, currency]
+        };
+        saveConfig(newConfig, { redirect: false });
+    }
+  };
+
+
+  const value = { isActivated, isConfigured, config, activate, saveConfig, logout, addCustomer, updateCustomer, deleteCustomer, addProduct, updateProduct, deleteProduct, addInvoice, updateInvoice, deleteInvoice, addCurrency };
 
   return <BrandsoftContext.Provider value={value}>{children}</BrandsoftContext.Provider>;
 }
