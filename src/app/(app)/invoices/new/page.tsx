@@ -25,7 +25,7 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-
+import { InvoicePreview } from '@/components/invoice-preview';
 
 const currencySymbols: { [key: string]: string } = {
   USD: '$',
@@ -40,7 +40,7 @@ const lineItemSchema = z.object({
   productId: z.string().optional(),
   description: z.string().min(1, 'Description is required.'),
   quantity: z.coerce.number().min(0.01, 'Quantity must be at least 0.01.'),
-  price: z.coerce.number().min(0.01, 'Price must be at least 0.01.'),
+  price: z.coerce.number().min(0, 'Price must be non-negative.'),
 });
 
 const formSchema = z.object({
@@ -77,8 +77,9 @@ export default function NewInvoicePage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
-  const [useManualEntry, setUseManualEntry] = useState<boolean[]>([]);
-  
+  const [useManualEntry, setUseManualEntry] = useState<boolean[]>([true]);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
   const form = useForm<InvoiceFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -89,7 +90,7 @@ export default function NewInvoicePage() {
       lineItems: [{ description: '', quantity: 1, price: 0 }],
       notes: '',
       applyTax: false,
-      taxName: 'Tax',
+      taxName: config?.profile.taxNumber ? 'Tax' : '',
       taxType: 'percentage',
       taxValue: 10,
       applyShipping: false,
@@ -162,13 +163,15 @@ export default function NewInvoicePage() {
         discount: discountAmount,
         tax: taxAmount,
         shipping,
+        notes: data.notes,
+        lineItems: data.lineItems,
     };
     
-    addInvoice(newInvoice);
+    const savedInvoice = addInvoice(newInvoice);
     
     toast({
         title: "Invoice Saved!",
-        description: `Invoice for ${customer.name} has been saved as a ${data.status.toLowerCase()}.`
+        description: `Invoice ${savedInvoice.invoiceId} for ${customer.name} has been saved as a ${data.status.toLowerCase()}.`
     });
 
     router.push('/invoices');
@@ -183,7 +186,6 @@ export default function NewInvoicePage() {
         price: product.price,
         quantity: 1,
       });
-      // Also update manual entry state
       setUseManualEntry(prev => {
         const next = [...prev];
         next[index] = false; 
@@ -193,14 +195,15 @@ export default function NewInvoicePage() {
   }
 
   const watchedValues = form.watch();
-  const currencySymbol = currencySymbols[watchedValues.currency] || watchedValues.currency;
+  const currencySymbol = config ? (currencySymbols[watchedValues.currency] || watchedValues.currency) : '$';
+  
   const formatCurrency = (value: number) => {
     return `${currencySymbol}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
-  const subtotal = watchedValues.lineItems.reduce((acc, item) => {
+  const subtotal = watchedValues.lineItems ? watchedValues.lineItems.reduce((acc, item) => {
     return acc + (Number(item.quantity) || 0) * (Number(item.price) || 0);
-  }, 0);
+  }, 0) : 0;
   
   let discountAmount = 0;
   if (watchedValues.applyDiscount && watchedValues.discountValue) {
@@ -224,6 +227,19 @@ export default function NewInvoicePage() {
 
   const shippingAmount = watchedValues.applyShipping && watchedValues.shippingValue ? Number(watchedValues.shippingValue) : 0;
   const total = subtotalAfterDiscount + taxAmount + shippingAmount;
+
+  const handlePreview = async () => {
+    const isValid = await form.trigger();
+    if (isValid) {
+      setIsPreviewOpen(true);
+    } else {
+      toast({
+        title: "Incomplete Form",
+        description: "Please fill out all required fields before previewing.",
+        variant: "destructive"
+      })
+    }
+  }
 
   return (
     <div className="container mx-auto max-w-4xl space-y-6">
@@ -661,7 +677,7 @@ export default function NewInvoicePage() {
           </Card>
 
           <div className="flex justify-end gap-2">
-             <Button type="button" variant="outline"><Eye className="mr-2 h-4 w-4"/> Preview</Button>
+             <Button type="button" variant="outline" onClick={handlePreview}><Eye className="mr-2 h-4 w-4"/> Preview</Button>
             <Button type="button" variant="secondary" onClick={() => handleFormSubmit('Draft')}><Save className="mr-2 h-4 w-4"/> Save Draft</Button>
             <Button type="button" onClick={() => handleFormSubmit('Pending')}><Send className="mr-2 h-4 w-4"/> Save and Send</Button>
           </div>
@@ -696,8 +712,24 @@ export default function NewInvoicePage() {
           </Form>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+        <DialogContent className="max-w-4xl h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Invoice Preview</DialogTitle>
+          </DialogHeader>
+          <div className="h-full overflow-y-auto">
+            <InvoicePreview
+                config={config}
+                customer={config?.customers.find(c => c.id === watchedValues.customerId) || null}
+                invoiceData={watchedValues as InvoiceFormData}
+            />
+          </div>
+          <DialogFooter>
+             <Button onClick={() => setIsPreviewOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
-
-

@@ -30,7 +30,7 @@ import { PlusCircle, UploadCloud } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-
+import { Separator } from '@/components/ui/separator';
 
 const settingsSchema = z.object({
   businessName: z.string().min(2, "Business name is required"),
@@ -39,6 +39,7 @@ const settingsSchema = z.object({
   secondaryColor: z.string().optional(),
   font: z.string().optional(),
   defaultCurrency: z.string().min(1, "Default currency is required"),
+  brandsoftFooter: z.boolean().default(true),
 });
 
 type SettingsFormData = z.infer<typeof settingsSchema>;
@@ -66,6 +67,7 @@ export default function SettingsPage() {
       secondaryColor: config?.brand.secondaryColor || '',
       font: config?.brand.font || 'Poppins',
       defaultCurrency: config?.profile.defaultCurrency || 'USD',
+      brandsoftFooter: config?.brand.brandsoftFooter ?? true,
     },
   });
 
@@ -83,6 +85,7 @@ export default function SettingsPage() {
             secondaryColor: config.brand.secondaryColor,
             font: config.brand.font,
             defaultCurrency: config.profile.defaultCurrency,
+            brandsoftFooter: config.brand.brandsoftFooter,
         });
         setLogoPreview(config.brand.logo);
     }
@@ -113,6 +116,7 @@ export default function SettingsPage() {
           primaryColor: data.primaryColor || '#9400D3',
           secondaryColor: data.secondaryColor || '#D87093',
           font: data.font || 'Poppins',
+          brandsoftFooter: data.brandsoftFooter,
         },
         profile: {
           ...config.profile,
@@ -232,10 +236,35 @@ export default function SettingsPage() {
                         <FormItem><FormLabel>Accent Color</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>
                         )} />
                     </div>
+                    <Separator />
+                     <FormField
+                        control={form.control}
+                        name="brandsoftFooter"
+                        render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                                <div className="space-y-0.5">
+                                    <FormLabel>Enable BrandSoft Footer</FormLabel>
+                                    <FormDescription>
+                                        Show "Created by BrandSoft" on your documents.
+                                    </FormDescription>
+                                </div>
+                                <FormControl>
+                                    <Switch
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                    />
+                                </FormControl>
+                            </FormItem>
+                        )}
+                    />
                 </CardContent>
             </Card>
 
             <Card>
+                <CardHeader>
+                    <CardTitle>Regional Settings</CardTitle>
+                    <CardDescription>Manage currencies for your business.</CardDescription>
+                </CardHeader>
                 <CardContent className="pt-6">
                     <div className="max-w-md space-y-4">
                         <FormField
@@ -326,5 +355,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
-    

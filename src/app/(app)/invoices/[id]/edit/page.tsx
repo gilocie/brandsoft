@@ -25,7 +25,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-
+import { InvoicePreview } from '@/components/invoice-preview';
 
 const currencySymbols: { [key: string]: string } = {
   USD: '$',
@@ -40,7 +40,7 @@ const lineItemSchema = z.object({
   productId: z.string().optional(),
   description: z.string().min(1, 'Description is required.'),
   quantity: z.coerce.number().min(0.01, 'Quantity must be at least 0.01.'),
-  price: z.coerce.number().min(0.01, 'Price must be at least 0.01.'),
+  price: z.coerce.number().min(0, 'Price must be non-negative.'),
 });
 
 const formSchema = z.object({
@@ -80,6 +80,7 @@ export default function EditInvoicePage() {
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
   const [useManualEntry, setUseManualEntry] = useState<boolean[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const invoiceId = params.id as string;
   const invoiceToEdit = config?.invoices.find(inv => inv.invoiceId === invoiceId);
@@ -103,36 +104,30 @@ export default function EditInvoicePage() {
         currency: config.profile.defaultCurrency,
         notes: invoiceToEdit.notes || '',
 
-        // We estimate these values from the totals.
-        // This won't be perfect if the logic has changed, but it's a good approximation.
         applyDiscount: !!invoiceToEdit.discount,
-        discountType: 'flat', // Default to flat, as percentage is harder to reverse-engineer
-        discountValue: invoiceToEdit.discount || 0,
+        discountType: invoiceToEdit.discount && invoiceToEdit.subtotal && invoiceToEdit.discount > 0 ? (invoiceToEdit.discount / invoiceToEdit.subtotal) < 1 ? 'percentage' : 'flat' : 'flat',
+        discountValue: invoiceToEdit.discount && invoiceToEdit.subtotal && (invoiceToEdit.discount / invoiceToEdit.subtotal) < 1 ? (invoiceToEdit.discount / invoiceToEdit.subtotal) * 100 : invoiceToEdit.discount || 0,
         
         applyTax: !!invoiceToEdit.tax,
-        taxType: 'flat', // Default to flat
+        taxType: 'flat', // Default to flat as it's harder to reverse engineer with discounts
         taxValue: invoiceToEdit.tax || 0,
         taxName: invoiceToEdit.tax ? 'Tax' : '',
 
         applyShipping: !!invoiceToEdit.shipping,
         shippingValue: invoiceToEdit.shipping || 0,
 
-        // Line items are tricky to reconstruct. For this example, we'll create one from the subtotal.
-        lineItems: invoiceToEdit.subtotal ? [{
+        lineItems: invoiceToEdit.lineItems || (invoiceToEdit.subtotal ? [{
           description: 'Original Items',
           quantity: 1,
           price: invoiceToEdit.subtotal,
           productId: ''
-        }] : []
+        }] : [])
       });
 
-      setUseManualEntry(invoiceToEdit.subtotal ? [true] : []);
+      setUseManualEntry(invoiceToEdit.lineItems?.map(() => true) ?? (invoiceToEdit.subtotal ? [true] : []));
       setIsLoading(false);
-    } else if (!config) {
-        // Still waiting for config to load
-        setIsLoading(true);
-    } else {
-        // Invoice not found
+    } else if (config && !invoiceToEdit) {
+        // Config loaded but invoice not found
         toast({ title: "Error", description: "Invoice not found.", variant: 'destructive'});
         router.push('/invoices');
     }
@@ -201,6 +196,7 @@ export default function EditInvoicePage() {
         tax: taxAmount,
         shipping,
         notes: data.notes,
+        lineItems: data.lineItems,
     };
     
     updateInvoice(invoiceToEdit.invoiceId, updatedInvoice);
@@ -263,6 +259,19 @@ export default function EditInvoicePage() {
 
   const shippingAmount = watchedValues.applyShipping && watchedValues.shippingValue ? Number(watchedValues.shippingValue) : 0;
   const total = subtotalAfterDiscount + taxAmount + shippingAmount;
+
+  const handlePreview = async () => {
+    const isValid = await form.trigger();
+    if (isValid) {
+      setIsPreviewOpen(true);
+    } else {
+      toast({
+        title: "Incomplete Form",
+        description: "Please fill out all required fields before previewing.",
+        variant: "destructive"
+      })
+    }
+  }
 
   if (isLoading) {
     return (
@@ -706,7 +715,7 @@ export default function EditInvoicePage() {
           </Card>
 
           <div className="flex justify-end gap-2">
-             <Button type="button" variant="outline"><Eye className="mr-2 h-4 w-4"/> Preview</Button>
+             <Button type="button" variant="outline" onClick={handlePreview}><Eye className="mr-2 h-4 w-4"/> Preview</Button>
             <Button type="button" variant="secondary" onClick={() => handleFormSubmit('Draft')}><Save className="mr-2 h-4 w-4"/> Save Draft</Button>
             <Button type="button" onClick={() => handleFormSubmit('Pending')}><Send className="mr-2 h-4 w-4"/> Save and Send</Button>
           </div>
@@ -739,6 +748,25 @@ export default function EditInvoicePage() {
               </DialogFooter>
             </form>
           </Form>
+        </DialogContent>
+      </Dialog>
+
+       <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+        <DialogContent className="max-w-4xl h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Invoice Preview</DialogTitle>
+          </DialogHeader>
+          <div className="h-full overflow-y-auto">
+            <InvoicePreview
+                config={config}
+                customer={config?.customers.find(c => c.id === watchedValues.customerId) || null}
+                invoiceData={watchedValues as InvoiceFormData}
+                invoiceId={invoiceId}
+            />
+          </div>
+          <DialogFooter>
+             <Button onClick={() => setIsPreviewOpen(false)}>Close</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

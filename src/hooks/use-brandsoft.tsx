@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
@@ -27,6 +26,13 @@ export type Product = {
   type: 'product' | 'service';
 };
 
+export type InvoiceLineItem = {
+    productId?: string;
+    description: string;
+    quantity: number;
+    price: number;
+};
+
 export type Invoice = {
     invoiceId: string;
     customer: string;
@@ -39,6 +45,7 @@ export type Invoice = {
     tax?: number;
     shipping?: number;
     notes?: string;
+    lineItems?: InvoiceLineItem[];
 };
 
 export type BrandsoftConfig = {
@@ -48,6 +55,7 @@ export type BrandsoftConfig = {
     secondaryColor: string;
     font: string;
     businessName: string;
+    brandsoftFooter: boolean;
   };
   profile: {
     address: string;
@@ -83,7 +91,7 @@ interface BrandsoftContextType {
   addProduct: (product: Omit<Product, 'id'>) => Product;
   updateProduct: (productId: string, data: Partial<Omit<Product, 'id'>>) => void;
   deleteProduct: (productId: string) => void;
-  addInvoice: (invoice: Omit<Invoice, 'invoiceId'>) => void;
+  addInvoice: (invoice: Omit<Invoice, 'invoiceId'>) => Invoice;
   updateInvoice: (invoiceId: string, data: Partial<Omit<Invoice, 'invoiceId'>>) => void;
   deleteInvoice: (invoiceId: string) => void;
   addCurrency: (currency: string, setAsDefault?: boolean) => void;
@@ -103,6 +111,7 @@ const initialInvoices: Invoice[] = [
     discount: 0,
     tax: 0,
     shipping: 0,
+    lineItems: [{ description: 'Web Design Consultation', quantity: 2, price: 125 }],
   },
   {
     invoiceId: 'INV002',
@@ -115,6 +124,7 @@ const initialInvoices: Invoice[] = [
     discount: 0,
     tax: 0,
     shipping: 0,
+     lineItems: [{ description: 'Logo Design', quantity: 1, price: 150 }],
   },
   {
     invoiceId: 'INV003',
@@ -127,6 +137,7 @@ const initialInvoices: Invoice[] = [
     discount: 0,
     tax: 0,
     shipping: 0,
+     lineItems: [{ description: 'Social Media Campaign', quantity: 1, price: 350 }],
   },
   {
     invoiceId: 'INV004',
@@ -139,6 +150,7 @@ const initialInvoices: Invoice[] = [
     discount: 0,
     tax: 0,
     shipping: 0,
+     lineItems: [{ description: 'SEO Audit', quantity: 1, price: 450 }],
   },
   {
     invoiceId: 'INV005',
@@ -151,6 +163,7 @@ const initialInvoices: Invoice[] = [
     discount: 0,
     tax: 0,
     shipping: 0,
+     lineItems: [{ description: 'Complete Branding Package', quantity: 1, price: 550 }],
   },
    {
     invoiceId: 'INV006',
@@ -163,6 +176,7 @@ const initialInvoices: Invoice[] = [
     discount: 0,
     tax: 0,
     shipping: 0,
+     lineItems: [{ description: 'Business Card Design', quantity: 200, price: 1.5 }],
   },
 ];
 
@@ -187,6 +201,9 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
         }
         if (!parsedConfig.invoices) {
             parsedConfig.invoices = initialInvoices;
+        }
+        if (parsedConfig.brand.brandsoftFooter === undefined) {
+          parsedConfig.brand.brandsoftFooter = true;
         }
         setConfig(parsedConfig);
       }
@@ -253,8 +270,6 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
   
   const logout = () => {
     try {
-      // For offline app, logout might not be a destructive action.
-      // We can decide to clear config or not. For now, it does nothing.
       console.log("Logout function called, but it's a no-op for offline version.");
     } catch (error) {
         console.error("Error during logout", error);
@@ -333,7 +348,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     saveConfig(newConfig, { redirect: false });
   }
 
-  const addInvoice = (invoiceData: Omit<Invoice, 'invoiceId'>) => {
+  const addInvoice = (invoiceData: Omit<Invoice, 'invoiceId'>): Invoice => {
     if (!config) throw new Error("Config not loaded");
     
     const lastId = config.invoices.reduce((max, inv) => {
@@ -351,6 +366,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       invoices: [...config.invoices, newInvoice],
     };
     saveConfig(newConfig, { redirect: false });
+    return newInvoice;
   };
 
   const updateInvoice = (invoiceId: string, data: Partial<Omit<Invoice, 'invoiceId'>>) => {

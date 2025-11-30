@@ -8,7 +8,7 @@ import * as z from 'zod';
 import { useBrandsoft, type BrandsoftConfig, type Invoice } from '@/hooks/use-brandsoft.tsx';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
@@ -17,6 +17,7 @@ import { Separator } from '@/components/ui/separator';
 import { hexToHsl, cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 
 
 const TOTAL_STEPS = 4;
@@ -27,6 +28,7 @@ const step1Schema = z.object({
   primaryColor: z.string().optional(),
   secondaryColor: z.string().optional(),
   font: z.string().optional(),
+  brandsoftFooter: z.boolean().default(true),
 });
 
 const step2Schema = z.object({
@@ -57,6 +59,11 @@ const initialInvoices: Invoice[] = [
     dueDate: '2023-07-23',
     amount: 250.0,
     status: 'Paid',
+    subtotal: 250,
+    discount: 0,
+    tax: 0,
+    shipping: 0,
+    lineItems: [{ description: 'Web Design Consultation', quantity: 2, price: 125 }],
   },
   {
     invoiceId: 'INV002',
@@ -65,6 +72,11 @@ const initialInvoices: Invoice[] = [
     dueDate: '2023-08-15',
     amount: 150.0,
     status: 'Pending',
+    subtotal: 150,
+    discount: 0,
+    tax: 0,
+    shipping: 0,
+    lineItems: [{ description: 'Logo Design', quantity: 1, price: 150 }],
   },
   {
     invoiceId: 'INV003',
@@ -73,6 +85,11 @@ const initialInvoices: Invoice[] = [
     dueDate: '2023-09-01',
     amount: 350.0,
     status: 'Paid',
+    subtotal: 350,
+    discount: 0,
+    tax: 0,
+    shipping: 0,
+    lineItems: [{ description: 'Social Media Campaign', quantity: 1, price: 350 }],
   },
   {
     invoiceId: 'INV004',
@@ -81,6 +98,11 @@ const initialInvoices: Invoice[] = [
     dueDate: '2023-10-10',
     amount: 450.0,
     status: 'Overdue',
+    subtotal: 450,
+    discount: 0,
+    tax: 0,
+    shipping: 0,
+    lineItems: [{ description: 'SEO Audit', quantity: 1, price: 450 }],
   },
   {
     invoiceId: 'INV005',
@@ -89,6 +111,11 @@ const initialInvoices: Invoice[] = [
     dueDate: '2023-11-20',
     amount: 550.0,
     status: 'Pending',
+    subtotal: 550,
+    discount: 0,
+    tax: 0,
+    shipping: 0,
+    lineItems: [{ description: 'Complete Branding Package', quantity: 1, price: 550 }],
   },
    {
     invoiceId: 'INV006',
@@ -97,6 +124,11 @@ const initialInvoices: Invoice[] = [
     dueDate: '2023-11-22',
     amount: 300.0,
     status: 'Canceled',
+    subtotal: 300,
+    discount: 0,
+    tax: 0,
+    shipping: 0,
+    lineItems: [{ description: 'Business Card Design', quantity: 200, price: 1.5 }],
   },
 ];
 
@@ -115,6 +147,7 @@ export default function SetupPage() {
       primaryColor: '#9400D3',
       secondaryColor: '#D87093',
       font: 'Poppins',
+      brandsoftFooter: true,
       address: '',
       phone: '',
       email: '',
@@ -157,6 +190,7 @@ export default function SetupPage() {
         primaryColor: data.primaryColor || '#9400D3',
         secondaryColor: data.secondaryColor || '#D87093',
         font: data.font || 'Poppins',
+        brandsoftFooter: data.brandsoftFooter,
       },
       profile: {
         address: data.address,
@@ -200,7 +234,7 @@ export default function SetupPage() {
   };
 
   const prevStep = () => {
-    if (step > 1) setStep(s => s + 1);
+    if (step > 1) setStep(s => s - 1);
   };
   
   const stepInfo = [
@@ -227,7 +261,7 @@ export default function SetupPage() {
     >
       <div className="flex min-h-screen items-center justify-center bg-background/80 backdrop-blur-sm p-4">
         <Form {...form}>
-            <Card className="w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] sm:max-h-[500px]">
+            <Card className="w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] sm:max-h-[550px]">
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2">
@@ -286,14 +320,11 @@ export default function SetupPage() {
   );
 }
 
-// Sub-components for each wizard step for better organization.
 function Step1BrandIdentity({ control, form }: { control: Control<FormData>, form: any }) {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // When the form's logo value changes and it's not the same as the preview
-    // (to avoid loops), update the preview. This handles resetting the form.
     const subscription = form.watch((value: { logo: any; }, { name }: any) => {
       if (name === 'logo' && value.logo !== logoPreview) {
         setLogoPreview(value.logo);
@@ -336,7 +367,7 @@ function Step1BrandIdentity({ control, form }: { control: Control<FormData>, for
           <FormField
             control={control}
             name="logo"
-            render={({ field }) => (
+            render={() => (
               <FormItem>
                 <FormLabel>Logo</FormLabel>
                 <FormControl>
@@ -423,6 +454,27 @@ function Step1BrandIdentity({ control, form }: { control: Control<FormData>, for
           )}
         />
       </div>
+       <Separator />
+        <FormField
+            control={control}
+            name="brandsoftFooter"
+            render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                    <div className="space-y-0.5">
+                        <FormLabel>Enable BrandSoft Footer</FormLabel>
+                        <FormDescription>
+                           Show "Created by BrandSoft" on your documents.
+                        </FormDescription>
+                    </div>
+                    <FormControl>
+                        <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        />
+                    </FormControl>
+                </FormItem>
+            )}
+        />
     </div>
   );
 }
