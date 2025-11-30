@@ -19,7 +19,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 3;
 
 const step1Schema = z.object({
   businessName: z.string().min(2, "Business name is required"),
@@ -167,48 +167,70 @@ export default function SetupPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
-       <Form {...form}>
-          <Card className="w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] sm:max-h-[500px]">
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                 <div className="flex items-center gap-2">
-                    <Avatar>
-                        <AvatarImage src={watchedLogo || undefined} />
-                        <AvatarFallback><BriefcaseBusiness className="h-6 w-6 text-primary" /></AvatarFallback>
-                    </Avatar>
-                    <h1 className={cn("text-3xl font-bold text-primary", getFontClass(font))}>{watchedBusinessName || 'BrandSoft'}</h1>
-                 </div>
-                <div className="text-right">
-                  <p className="font-semibold text-muted-foreground">Step {step} of {TOTAL_STEPS}</p>
-                  <Progress value={(step / TOTAL_STEPS) * 100} className="mt-1 w-32" />
+    <div 
+        className="min-h-screen bg-cover bg-center"
+        style={{ backgroundImage: "url('https://picsum.photos/seed/setupbg/1920/1080')" }}
+        data-ai-hint="background abstract"
+    >
+      <div className="flex min-h-screen items-center justify-center bg-background/80 backdrop-blur-sm p-4">
+        <Form {...form}>
+            <Card className="w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] sm:max-h-[500px]">
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-2">
+                      <Avatar>
+                          <AvatarImage src={watchedLogo || undefined} />
+                          <AvatarFallback><BriefcaseBusiness className="h-6 w-6 text-primary" /></AvatarFallback>
+                      </Avatar>
+                      <h1 className={cn("text-3xl font-bold text-primary", getFontClass(font))}>{watchedBusinessName || 'BrandSoft'}</h1>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold text-muted-foreground">Step {step} of {TOTAL_STEPS}</p>
+                    <Progress value={(step / TOTAL_STEPS) * 100} className="mt-1 w-32" />
+                  </div>
                 </div>
-              </div>
-               {watchedBusinessName && <CardDescription>Brandsoft Studio</CardDescription>}
-              <Separator className="my-4" />
-              <CardTitle className="font-headline text-3xl">{stepInfo[step-1].title}</CardTitle>
-              <CardDescription>{stepInfo[step-1].description}</CardDescription>
-            </CardHeader>
-            <CardContent className="flex-grow overflow-auto pr-3">
-              <form className="space-y-6">
-                  <div style={{ display: step === 1 ? 'block' : 'none' }}><Step1BrandIdentity control={form.control} form={form} /></div>
-                  <div style={{ display: step === 2 ? 'block' : 'none' }}><Step2BusinessProfile control={form.control} /></div>
-                  <div style={{ display: step === 3 ? 'block' : 'none' }}><Step3ModuleSelection control={form.control} /></div>
-                  <div style={{ display: step === 4 ? 'block' : 'none' }}><Step4Finish isFinishing={isFinishing} /></div>
-              </form>
-            </CardContent>
-             <CardFooter className="flex justify-between pt-6 sticky bottom-0 bg-card">
-              <Button type="button" variant="outline" onClick={prevStep} disabled={step === 1 || isFinishing}>
-                <ArrowLeft className="mr-2 h-4 w-4" /> Previous
-              </Button>
-              <Button type="button" onClick={nextStep} disabled={isFinishing}>
-                {isFinishing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {step === TOTAL_STEPS ? 'Finish Setup' : 'Next'}
-                {step < TOTAL_STEPS && <ArrowRight className="ml-2 h-4 w-4" />}
-              </Button>
-            </CardFooter>
-          </Card>
-      </Form>
+                {watchedBusinessName && <CardDescription>Brandsoft Studio</CardDescription>}
+                <Separator className="my-4" />
+                <CardTitle className="font-body text-3xl">{stepInfo[step-1].title}</CardTitle>
+                <CardDescription>{stepInfo[step-1].description}</CardDescription>
+              </CardHeader>
+              <CardContent className="flex-grow overflow-auto pr-3">
+                <form className="space-y-6">
+                    <div style={{ display: step === 1 ? 'block' : 'none' }}><Step1BrandIdentity control={form.control} form={form} /></div>
+                    <div style={{ display: step === 2 ? 'block' : 'none' }}><Step2BusinessProfile control={form.control} /></div>
+                    <div style={{ display: step === 3 ? 'block' : 'none' }}><Step3ModuleSelection control={form.control} /></div>
+                </form>
+              </CardContent>
+              <CardFooter className="flex justify-between pt-6 sticky bottom-0 bg-card">
+                <Button type="button" variant="outline" onClick={prevStep} disabled={step === 1 || isFinishing}>
+                  <ArrowLeft className="mr-2 h-4 w-4" /> Previous
+                </Button>
+                {step === TOTAL_STEPS ? (
+                     <div className="flex flex-col items-center justify-center text-center space-y-4 min-h-[200px]">
+                     {isFinishing ? (
+                       <>
+                         <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                         <p className="text-xl font-medium font-headline">Finalizing your setup...</p>
+                         <p className="text-muted-foreground">Just a moment while we save your preferences.</p>
+                       </>
+                     ) : (
+                       <>
+                         <PartyPopper className="h-16 w-16 text-primary" />
+                         <p className="text-2xl font-medium font-headline">Configuration Complete!</p>
+                         <p className="text-muted-foreground max-w-sm">You are all set to start creating amazing documents. Click "Finish Setup" to go to your dashboard.</p>
+                       </>
+                     )}
+                   </div>
+                ) : null}
+                <Button type="button" onClick={nextStep} disabled={isFinishing}>
+                  {isFinishing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {step === TOTAL_STEPS ? 'Finish Setup' : 'Next'}
+                  {step < TOTAL_STEPS && <ArrowRight className="ml-2 h-4 w-4" />}
+                </Button>
+              </CardFooter>
+            </Card>
+        </Form>
+      </div>
     </div>
   );
 }
@@ -400,23 +422,4 @@ function Step3ModuleSelection({ control }: { control: Control<FormData> }) {
     ))}
   </div>;
 }
-
-function Step4Finish({ isFinishing }: { isFinishing: boolean }) {
-  return <div className="flex flex-col items-center justify-center text-center p-8 space-y-4 min-h-[200px]">
-    {isFinishing ? (
-      <>
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="text-xl font-medium font-headline">Finalizing your setup...</p>
-        <p className="text-muted-foreground">Just a moment while we save your preferences.</p>
-      </>
-    ) : (
-      <>
-        <PartyPopper className="h-16 w-16 text-primary" />
-        <p className="text-2xl font-medium font-headline">Configuration Complete!</p>
-        <p className="text-muted-foreground max-w-sm">You are all set to start creating amazing documents. Click "Finish Setup" to go to your dashboard.</p>
-      </>
-    )}
-  </div>;
-}
-
     
