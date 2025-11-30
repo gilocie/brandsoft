@@ -7,12 +7,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useBrandsoft, type BrandsoftConfig } from '@/hooks/use-brandsoft.tsx';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, ArrowLeft, ArrowRight, CheckCircle, PartyPopper, UploadCloud, BriefcaseBusiness } from 'lucide-react';
+import { Loader2, ArrowLeft, ArrowRight, PartyPopper, UploadCloud, BriefcaseBusiness } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { hexToHsl } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -131,7 +131,7 @@ export default function SetupPage() {
 
   const nextStep = async () => {
     let fieldsToValidate: (keyof FormData)[] = [];
-    if (step === 1) fieldsToValidate = ['businessName', 'logo'];
+    if (step === 1) fieldsToValidate = ['businessName'];
     if (step === 2) fieldsToValidate = ['address', 'phone', 'email', 'website'];
     
     const isValid = fieldsToValidate.length > 0 ? await form.trigger(fieldsToValidate) : true;
@@ -158,48 +158,47 @@ export default function SetupPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
-      <Card className="w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] sm:max-h-[500px]">
-        <CardHeader>
-          <div className="flex items-start justify-between">
-             <div className="flex items-center gap-2">
-                <Avatar>
-                    <AvatarImage src={watchedLogo || undefined} />
-                    <AvatarFallback><BriefcaseBusiness className="h-6 w-6 text-primary" /></AvatarFallback>
-                </Avatar>
-                <h1 className="text-3xl font-headline font-bold text-primary">{watchedBusinessName || 'BrandSoft'}</h1>
-             </div>
-            <div className="text-right">
-              <p className="font-semibold text-muted-foreground">Step {step} of {TOTAL_STEPS}</p>
-              <Progress value={(step / TOTAL_STEPS) * 100} className="mt-1 w-32" />
-            </div>
-          </div>
-           {watchedBusinessName && <CardDescription>Brandsoft Studio</CardDescription>}
-          <Separator className="my-4" />
-          <CardTitle className="font-headline text-3xl">{stepInfo[step-1].title}</CardTitle>
-          <CardDescription>{stepInfo[step-1].description}</CardDescription>
-        </CardHeader>
-        <CardContent className="flex-grow overflow-auto">
-          <Form {...form}>
-            <form className="space-y-6">
-              <div style={{ display: step === 1 ? 'block' : 'none' }}><Step1BrandIdentity control={form.control} form={form} /></div>
-              <div style={{ display: step === 2 ? 'block' : 'none' }}><Step2BusinessProfile control={form.control} /></div>
-              <div style={{ display: step === 3 ? 'block' : 'none' }}><Step3ModuleSelection control={form.control} /></div>
-              <div style={{ display: step === 4 ? 'block' : 'none' }}><Step5Finish isFinishing={isFinishing} /></div>
-
-              <div className="flex justify-between pt-4 sticky bottom-0 bg-card">
-                <Button type="button" variant="outline" onClick={prevStep} disabled={step === 1 || isFinishing}>
-                  <ArrowLeft className="mr-2 h-4 w-4" /> Previous
-                </Button>
-                <Button type="button" onClick={nextStep} disabled={isFinishing}>
-                  {isFinishing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {step === TOTAL_STEPS ? 'Finish Setup' : 'Next'}
-                  {step < TOTAL_STEPS && <ArrowRight className="ml-2 h-4 w-4" />}
-                </Button>
+       <Form {...form}>
+          <Card className="w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] sm:max-h-[500px]">
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                 <div className="flex items-center gap-2">
+                    <Avatar>
+                        <AvatarImage src={watchedLogo || undefined} />
+                        <AvatarFallback><BriefcaseBusiness className="h-6 w-6 text-primary" /></AvatarFallback>
+                    </Avatar>
+                    <h1 className="text-3xl font-headline font-bold text-primary">{watchedBusinessName || 'BrandSoft'}</h1>
+                 </div>
+                <div className="text-right">
+                  <p className="font-semibold text-muted-foreground">Step {step} of {TOTAL_STEPS}</p>
+                  <Progress value={(step / TOTAL_STEPS) * 100} className="mt-1 w-32" />
+                </div>
               </div>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+               {watchedBusinessName && <CardDescription>Brandsoft Studio</CardDescription>}
+              <Separator className="my-4" />
+              <CardTitle className="font-headline text-3xl">{stepInfo[step-1].title}</CardTitle>
+              <CardDescription>{stepInfo[step-1].description}</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-grow overflow-auto pr-3">
+              <form className="space-y-6">
+                  <div style={{ display: step === 1 ? 'block' : 'none' }}><Step1BrandIdentity control={form.control} form={form} /></div>
+                  <div style={{ display: step === 2 ? 'block' : 'none' }}><Step2BusinessProfile control={form.control} /></div>
+                  <div style={{ display: step === 3 ? 'block' : 'none' }}><Step3ModuleSelection control={form.control} /></div>
+                  <div style={{ display: step === 4 ? 'block' : 'none' }}><Step4Finish isFinishing={isFinishing} /></div>
+              </form>
+            </CardContent>
+             <CardFooter className="flex justify-between pt-6 sticky bottom-0 bg-card">
+              <Button type="button" variant="outline" onClick={prevStep} disabled={step === 1 || isFinishing}>
+                <ArrowLeft className="mr-2 h-4 w-4" /> Previous
+              </Button>
+              <Button type="button" onClick={nextStep} disabled={isFinishing}>
+                {isFinishing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {step === TOTAL_STEPS ? 'Finish Setup' : 'Next'}
+                {step < TOTAL_STEPS && <ArrowRight className="ml-2 h-4 w-4" />}
+              </Button>
+            </CardFooter>
+          </Card>
+      </Form>
     </div>
   );
 }
@@ -209,6 +208,18 @@ function Step1BrandIdentity({ control, form }: { control: Control<FormData>, for
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    // When the form's logo value changes and it's not the same as the preview
+    // (to avoid loops), update the preview. This handles resetting the form.
+    const subscription = form.watch((value: { logo: any; }, { name }: any) => {
+      if (name === 'logo' && value.logo !== logoPreview) {
+        setLogoPreview(value.logo);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form, logoPreview]);
+
+
   const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -216,7 +227,7 @@ function Step1BrandIdentity({ control, form }: { control: Control<FormData>, for
       reader.onloadend = () => {
         const dataUrl = reader.result as string;
         setLogoPreview(dataUrl);
-        form.setValue('logo', dataUrl, { shouldDirty: true });
+        form.setValue('logo', dataUrl, { shouldDirty: true, shouldValidate: true });
       };
       reader.readAsDataURL(file);
     }
@@ -380,8 +391,8 @@ function Step3ModuleSelection({ control }: { control: Control<FormData> }) {
   </div>;
 }
 
-function Step5Finish({ isFinishing }: { isFinishing: boolean }) {
-  return <div className="flex flex-col items-center justify-center text-center p-8 space-y-4 min-h-[130px]">
+function Step4Finish({ isFinishing }: { isFinishing: boolean }) {
+  return <div className="flex flex-col items-center justify-center text-center p-8 space-y-4 min-h-[200px]">
     {isFinishing ? (
       <>
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
