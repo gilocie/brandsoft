@@ -189,18 +189,11 @@ export default function InvoicesPage() {
             layout === 'list' && "flex-row items-center"
           )}>
             <div className={cn("flex-grow", layout === 'list' && "w-full")}>
-                <CardHeader className={cn(layout === 'list' && "p-4")}>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className={cn(layout === 'list' && "text-base font-semibold")}>{customerName}</CardTitle>
-                      <CardDescription className={cn(layout === 'list' && "text-xs")}>{invoice.invoiceId}</CardDescription>
-                    </div>
-                     <div className={cn(layout === 'grid' ? "flex" : "hidden")}>
-                        <ActionsMenu invoice={invoice} onSelectAction={handleSelectAction} />
-                    </div>
-                  </div>
+                <CardHeader className={cn(layout === 'list' ? "p-4" : "p-6")}>
+                    <CardTitle className={cn("truncate", layout === 'list' && "text-base font-semibold")}>{customerName}</CardTitle>
+                    <CardDescription className={cn(layout === 'list' && "text-xs")}>{invoice.invoiceId}</CardDescription>
                 </CardHeader>
-                <CardContent className={cn("flex-grow space-y-2", layout === 'list' && "p-4 pt-0 md:flex md:items-center md:justify-between md:space-y-0")}>
+                <CardContent className={cn("flex-grow space-y-2", layout === 'list' ? "p-4 pt-0 md:flex md:items-center md:justify-between md:space-y-0" : "p-6 pt-0")}>
                   <div className={cn("text-2xl font-bold", layout === 'list' && "text-base font-bold w-1/4")}>
                     {currencyCode}{invoice.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
@@ -208,10 +201,13 @@ export default function InvoicesPage() {
                     <p>Date: {invoice.date}</p>
                     <p>Due: {invoice.dueDate}</p>
                   </div>
-                   <div className={cn(layout === 'list' && "w-1/4")}>
-                      <Badge variant={statusVariantMap[invoice.status]} className={cn(layout === 'grid' ? "w-full justify-center" : "w-auto")}>
-                        {invoice.status}
-                      </Badge>
+                   <div className={cn("flex items-center justify-between", layout === 'list' && "w-auto")}>
+                        <Badge variant={statusVariantMap[invoice.status]} className="w-auto">
+                            {invoice.status}
+                        </Badge>
+                        <div className={cn(layout === 'grid' ? "flex" : "hidden")}>
+                            <ActionsMenu invoice={invoice} onSelectAction={handleSelectAction} />
+                        </div>
                    </div>
                 </CardContent>
             </div>
@@ -219,9 +215,6 @@ export default function InvoicesPage() {
                 <ActionsMenu invoice={invoice} onSelectAction={handleSelectAction} />
             </div>
 
-            <CardFooter className={cn(layout === 'grid' ? "flex" : "hidden")}>
-              {/* The duplicate badge was here and has been removed */}
-            </CardFooter>
           </Card>
         )})}
       </div>
@@ -266,5 +259,3 @@ export default function InvoicesPage() {
     </div>
   );
 }
-
-    
