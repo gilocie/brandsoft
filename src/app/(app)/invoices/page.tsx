@@ -178,7 +178,6 @@ export default function InvoicesPage() {
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isMarkPaidOpen, setIsMarkPaidOpen] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
 
   const invoices = config?.invoices || [];
@@ -209,11 +208,12 @@ export default function InvoicesPage() {
             setIsMarkPaidOpen(true);
             break;
         case 'download':
-            setIsDownloading(true);
-            // Wait for the next render cycle to ensure the offscreen element is available
-            setTimeout(() => {
-                downloadInvoiceAsPdf(invoice.invoiceId).finally(() => setIsDownloading(false));
-            }, 100);
+            const customer = config?.customers.find(c => c.name === invoice.customer || c.id === invoice.customerId) || null;
+            if (config && customer) {
+                await downloadInvoiceAsPdf({ config, customer, invoiceData: invoice, invoiceId: invoice.invoiceId });
+            } else {
+                console.error("Missing data for PDF generation.");
+            }
             break;
         case 'send':
             // Placeholder for send logic
@@ -310,20 +310,6 @@ export default function InvoicesPage() {
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* Off-screen renderer for PDF generation */}
-      {isDownloading && selectedInvoice && (
-        <div style={{ position: 'fixed', left: '-9999px', top: 0 }}>
-            <div id={`invoice-preview-${selectedInvoice.invoiceId}`}>
-                <InvoicePreview
-                    config={config}
-                    customer={selectedCustomer}
-                    invoiceData={selectedInvoice}
-                    invoiceId={selectedInvoice.invoiceId}
-                />
-            </div>
-        </div>
-      )}
       
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
@@ -364,3 +350,5 @@ export default function InvoicesPage() {
     </div>
   );
 }
+
+    

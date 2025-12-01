@@ -32,7 +32,7 @@ type InvoiceData = Partial<Invoice> & {
 };
 
 
-interface InvoicePreviewProps {
+export interface InvoicePreviewProps {
     config: BrandsoftConfig | null;
     customer: Customer | null;
     invoiceData: InvoiceData;
@@ -314,3 +314,4 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId }: Inv
     );
 }
 
+    
