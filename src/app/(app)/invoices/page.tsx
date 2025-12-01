@@ -2,14 +2,13 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -54,16 +53,17 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@/components/ui/toggle-group"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useBrandsoft, type Customer, type Invoice } from '@/hooks/use-brandsoft.tsx';
 import { InvoicePreview } from '@/components/invoice-preview';
 
 const statusVariantMap: {
-  [key: string]: 'default' | 'secondary' | 'destructive';
+  [key: string]: 'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'accent';
 } = {
-  Paid: 'default',
-  Pending: 'secondary',
+  Paid: 'success',
+  Pending: 'accent',
   Overdue: 'destructive',
-  Canceled: 'destructive',
+  Canceled: 'outline',
   Draft: 'secondary',
 };
 
@@ -102,6 +102,67 @@ const ActionsMenu = ({ invoice, onSelectAction }: { invoice: Invoice, onSelectAc
 );
 
 
+const InvoiceList = ({invoices, layout, onSelectAction, currencyCode}: {invoices: Invoice[], layout: 'grid' | 'list', onSelectAction: any, currencyCode: string}) => {
+    
+    const { config } = useBrandsoft();
+
+    if (invoices.length === 0) {
+        return (
+            <div className="flex h-60 items-center justify-center rounded-lg border-2 border-dashed bg-muted/40">
+                <p className="text-muted-foreground">No invoices found in this category.</p>
+            </div>
+        )
+    }
+
+    return (
+        <div className={cn(
+            "gap-6",
+            layout === 'grid' 
+                ? "grid md:grid-cols-2 lg:grid-cols-3" 
+                : "flex flex-col"
+          )}>
+            {invoices.map((invoice) => {
+              const customer = config?.customers.find(c => c.id === invoice.customerId || c.name === invoice.customer);
+              const customerName = customer?.companyName || customer?.name || invoice.customer;
+              
+              return (
+              <Card key={invoice.invoiceId} className={cn(
+                "flex flex-col",
+                layout === 'list' && "flex-row items-center"
+              )}>
+                <div className={cn("flex-grow", layout === 'list' && "w-full")}>
+                    <CardHeader className={cn(layout === 'list' ? "p-4" : "p-6")}>
+                        <CardTitle className={cn("truncate", layout === 'list' && "text-base font-semibold")}>{customerName}</CardTitle>
+                        <CardDescription className={cn(layout === 'list' && "text-xs")}>{invoice.invoiceId}</CardDescription>
+                    </CardHeader>
+                    <CardContent className={cn("flex-grow space-y-2", layout === 'list' ? "p-4 pt-0 md:flex md:items-center md:justify-between md:space-y-0" : "p-6 pt-0")}>
+                      <div className={cn("text-2xl font-bold", layout === 'list' && "text-base font-bold w-1/4")}>
+                        {currencyCode}{invoice.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </div>
+                      <div className={cn("text-sm text-muted-foreground", layout === 'list' && "text-xs w-1/4")}>
+                        <p>Date: {invoice.date}</p>
+                        <p>Due: {invoice.dueDate}</p>
+                      </div>
+                       <div className={cn("flex items-center justify-between", layout === 'list' && "w-auto")}>
+                            <Badge variant={statusVariantMap[invoice.status]} className="w-auto">
+                                {invoice.status}
+                            </Badge>
+                            <div className={cn(layout === 'grid' ? "flex" : "hidden")}>
+                                <ActionsMenu invoice={invoice} onSelectAction={onSelectAction} />
+                            </div>
+                       </div>
+                    </CardContent>
+                </div>
+                 <div className={cn(layout === 'list' ? "flex items-center p-4" : "hidden")}>
+                    <ActionsMenu invoice={invoice} onSelectAction={onSelectAction} />
+                </div>
+    
+              </Card>
+            )})}
+          </div>
+    )
+}
+
 export default function InvoicesPage() {
   const [layout, setLayout] = useState<'grid' | 'list'>('grid');
   const { config, deleteInvoice } = useBrandsoft();
@@ -113,6 +174,14 @@ export default function InvoicesPage() {
 
   const invoices = config?.invoices || [];
   const currencyCode = config?.profile.defaultCurrency || '';
+  
+  const filteredInvoices = useMemo(() => ({
+    all: invoices,
+    active: invoices.filter(inv => inv.status === 'Pending' || inv.status === 'Overdue'),
+    paid: invoices.filter(inv => inv.status === 'Paid'),
+    canceled: invoices.filter(inv => inv.status === 'Canceled'),
+  }), [invoices]);
+
 
   const handleSelectAction = (action: 'view' | 'edit' | 'delete' | 'download' | 'send', invoice: Invoice) => {
     setSelectedInvoice(invoice);
@@ -172,52 +241,28 @@ export default function InvoicesPage() {
             </Button>
         </div>
       </div>
+      
+       <Tabs defaultValue="all" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="all">All</TabsTrigger>
+          <TabsTrigger value="active">Active</TabsTrigger>
+          <TabsTrigger value="paid">Paid</TabsTrigger>
+          <TabsTrigger value="canceled">Canceled</TabsTrigger>
+        </TabsList>
+        <TabsContent value="all">
+          <InvoiceList invoices={filteredInvoices.all} layout={layout} onSelectAction={handleSelectAction} currencyCode={currencyCode} />
+        </TabsContent>
+        <TabsContent value="active">
+           <InvoiceList invoices={filteredInvoices.active} layout={layout} onSelectAction={handleSelectAction} currencyCode={currencyCode} />
+        </TabsContent>
+        <TabsContent value="paid">
+            <InvoiceList invoices={filteredInvoices.paid} layout={layout} onSelectAction={handleSelectAction} currencyCode={currencyCode} />
+        </TabsContent>
+        <TabsContent value="canceled">
+           <InvoiceList invoices={filteredInvoices.canceled} layout={layout} onSelectAction={handleSelectAction} currencyCode={currencyCode} />
+        </TabsContent>
+      </Tabs>
 
-      <div className={cn(
-        "gap-6",
-        layout === 'grid' 
-            ? "grid md:grid-cols-2 lg:grid-cols-3" 
-            : "flex flex-col"
-      )}>
-        {invoices.map((invoice) => {
-          const customer = config?.customers.find(c => c.id === invoice.customerId || c.name === invoice.customer);
-          const customerName = customer?.companyName || customer?.name || invoice.customer;
-          
-          return (
-          <Card key={invoice.invoiceId} className={cn(
-            "flex flex-col",
-            layout === 'list' && "flex-row items-center"
-          )}>
-            <div className={cn("flex-grow", layout === 'list' && "w-full")}>
-                <CardHeader className={cn(layout === 'list' ? "p-4" : "p-6")}>
-                    <CardTitle className={cn("truncate", layout === 'list' && "text-base font-semibold")}>{customerName}</CardTitle>
-                    <CardDescription className={cn(layout === 'list' && "text-xs")}>{invoice.invoiceId}</CardDescription>
-                </CardHeader>
-                <CardContent className={cn("flex-grow space-y-2", layout === 'list' ? "p-4 pt-0 md:flex md:items-center md:justify-between md:space-y-0" : "p-6 pt-0")}>
-                  <div className={cn("text-2xl font-bold", layout === 'list' && "text-base font-bold w-1/4")}>
-                    {currencyCode}{invoice.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </div>
-                  <div className={cn("text-sm text-muted-foreground", layout === 'list' && "text-xs w-1/4")}>
-                    <p>Date: {invoice.date}</p>
-                    <p>Due: {invoice.dueDate}</p>
-                  </div>
-                   <div className={cn("flex items-center justify-between", layout === 'list' && "w-auto")}>
-                        <Badge variant={statusVariantMap[invoice.status]} className="w-auto">
-                            {invoice.status}
-                        </Badge>
-                        <div className={cn(layout === 'grid' ? "flex" : "hidden")}>
-                            <ActionsMenu invoice={invoice} onSelectAction={handleSelectAction} />
-                        </div>
-                   </div>
-                </CardContent>
-            </div>
-             <div className={cn(layout === 'list' ? "flex items-center p-4" : "hidden")}>
-                <ActionsMenu invoice={invoice} onSelectAction={handleSelectAction} />
-            </div>
-
-          </Card>
-        )})}
-      </div>
 
        {/* View Details Dialog */}
       <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
