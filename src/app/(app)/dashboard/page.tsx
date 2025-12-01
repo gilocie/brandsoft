@@ -117,11 +117,20 @@ export default function DashboardPage() {
   const enabledModules = modules.filter(m => m.enabledKey === null || config.modules[m.enabledKey as keyof typeof config.modules]);
   const currencyCode = config.profile.defaultCurrency;
 
+  const getFontClass = (fontName?: string) => {
+    switch(fontName) {
+      case 'Poppins': return 'font-body';
+      case 'Belleza': return 'font-headline';
+      case 'Source Code Pro': return 'font-code';
+      default: return 'font-body';
+    }
+  };
+
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-headline font-bold">Welcome back, {config.brand.businessName}!</h1>
+        <h1 className={cn("text-3xl font-bold", getFontClass(config.brand.font))}>Welcome back, {config.brand.businessName}!</h1>
         <p className="text-muted-foreground">Here's a snapshot of your business activity.</p>
       </div>
 
