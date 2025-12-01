@@ -82,13 +82,13 @@
     @apply bg-background text-foreground;
   }
 
-  [data-sidebar="content"]::-webkit-scrollbar {
+  ::-webkit-scrollbar {
     width: 6px;
   }
-  [data-sidebar="content"]::-webkit-scrollbar-track {
+  ::-webkit-scrollbar-track {
     background: transparent;
   }
-  [data-sidebar="content"]::-webkit-scrollbar-thumb {
+  ::-webkit-scrollbar-thumb {
     background-color: hsl(var(--primary));
     border-radius: 10px;
   }
