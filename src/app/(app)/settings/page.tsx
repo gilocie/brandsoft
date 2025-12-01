@@ -5,7 +5,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useBrandsoft, type BrandsoftConfig } from '@/hooks/use-brandsoft.tsx';
+import { useBrandsoft, type BrandsoftConfig } from '@/hooks/use-brandsoft';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -27,7 +27,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState, useRef } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { UploadCloud, Paintbrush, Cog, CreditCard, SlidersHorizontal } from 'lucide-react';
+import { UploadCloud, Paintbrush, Cog, CreditCard, SlidersHorizontal, Image as ImageIcon, FileImage, Layers, Stamp } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -45,7 +45,10 @@ const settingsSchema = z.object({
   defaultCurrency: z.string().min(1, "Default currency is required"),
   brandsoftFooter: z.boolean().default(true),
   paymentDetails: z.string().optional(),
-  letterheadImage: z.string().optional(),
+  headerImage: z.string().optional(),
+  footerImage: z.string().optional(),
+  backgroundImage: z.string().optional(),
+  watermarkImage: z.string().optional(),
   footerContent: z.string().optional(),
   invoicePrefix: z.string().optional(),
   invoiceStartNumber: z.coerce.number().min(1, "Starting number must be at least 1").optional(),
@@ -53,14 +56,59 @@ const settingsSchema = z.object({
 
 type SettingsFormData = z.infer<typeof settingsSchema>;
 
+const ImageUploader = ({ form, fieldName, previewState, setPreviewState, label, description }: { form: any, fieldName: keyof SettingsFormData, previewState: string | null, setPreviewState: (url: string) => void, label: string, description: string }) => {
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const dataUrl = reader.result as string;
+                setPreviewState(dataUrl);
+                form.setValue(fieldName, dataUrl, { shouldDirty: true });
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    return (
+        <div className="space-y-4">
+            <div className="flex flex-col items-center justify-center space-y-2 rounded-md border border-dashed p-4 h-48 w-full">
+                {previewState ? (
+                    <img src={previewState} alt={`${label} preview`} className="max-h-full max-w-full object-contain"/>
+                ) : (
+                    <p className="text-sm text-muted-foreground">No {label.toLowerCase()} uploaded</p>
+                )}
+            </div>
+            <FormField control={form.control} name={fieldName} render={() => (
+                <FormItem>
+                    <FormControl>
+                        <div>
+                            <Input type="file" accept="image/*" className="hidden" ref={inputRef} onChange={handleImageChange} />
+                            <Button type="button" variant="outline" onClick={() => inputRef.current?.click()} className="w-full">
+                                <UploadCloud className="mr-2 h-4 w-4" /> Upload {label}
+                            </Button>
+                        </div>
+                    </FormControl>
+                     <FormDescription>{description}</FormDescription>
+                    <FormMessage />
+                </FormItem>
+            )} />
+        </div>
+    );
+};
+
 export default function SettingsPage() {
   const { config, saveConfig } = useBrandsoft();
   const { toast } = useToast();
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [letterheadPreview, setLetterheadPreview] = useState<string | null>(null);
+  const [headerPreview, setHeaderPreview] = useState<string | null>(null);
+  const [footerPreview, setFooterPreview] = useState<string | null>(null);
+  const [backgroundPreview, setBackgroundPreview] = useState<string | null>(null);
+  const [watermarkPreview, setWatermarkPreview] = useState<string | null>(null);
 
   const logoInputRef = useRef<HTMLInputElement>(null);
-  const letterheadInputRef = useRef<HTMLInputElement>(null);
   
   const form = useForm<SettingsFormData>({
     resolver: zodResolver(settingsSchema),
@@ -73,7 +121,10 @@ export default function SettingsPage() {
       defaultCurrency: 'USD',
       brandsoftFooter: true,
       paymentDetails: '',
-      letterheadImage: '',
+      headerImage: '',
+      footerImage: '',
+      backgroundImage: '',
+      watermarkImage: '',
       footerContent: '',
       invoicePrefix: 'INV-',
       invoiceStartNumber: 1,
@@ -91,28 +142,30 @@ export default function SettingsPage() {
             defaultCurrency: config.profile.defaultCurrency,
             brandsoftFooter: config.brand.brandsoftFooter,
             paymentDetails: config.profile.paymentDetails || '',
-            letterheadImage: config.brand.letterheadImage || '',
+            headerImage: config.brand.headerImage || '',
+            footerImage: config.brand.footerImage || '',
+            backgroundImage: config.brand.backgroundImage || '',
+            watermarkImage: config.brand.watermarkImage || '',
             footerContent: config.brand.footerContent || '',
             invoicePrefix: config.profile.invoicePrefix || 'INV-',
             invoiceStartNumber: config.profile.invoiceStartNumber || 1,
         });
         setLogoPreview(config.brand.logo);
-        setLetterheadPreview(config.brand.letterheadImage || null);
+        setHeaderPreview(config.brand.headerImage || null);
+        setFooterPreview(config.brand.footerImage || null);
+        setBackgroundPreview(config.brand.backgroundImage || null);
+        setWatermarkPreview(config.brand.watermarkImage || null);
     }
   }, [config, form]);
   
-  const handleImageChange = (
-    event: React.ChangeEvent<HTMLInputElement>, 
-    setter: (dataUrl: string) => void,
-    field: keyof SettingsFormData
-  ) => {
+  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
         const dataUrl = reader.result as string;
-        setter(dataUrl);
-        form.setValue(field, dataUrl, { shouldDirty: true });
+        setLogoPreview(dataUrl);
+        form.setValue('logo', dataUrl, { shouldDirty: true });
       };
       reader.readAsDataURL(file);
     }
@@ -131,7 +184,10 @@ export default function SettingsPage() {
           secondaryColor: data.secondaryColor || '#D87093',
           font: data.font || 'Poppins',
           brandsoftFooter: data.brandsoftFooter,
-          letterheadImage: data.letterheadImage || '',
+          headerImage: data.headerImage || '',
+          footerImage: data.footerImage || '',
+          backgroundImage: data.backgroundImage || '',
+          watermarkImage: data.watermarkImage || '',
           footerContent: data.footerContent || '',
         },
         profile: {
@@ -190,7 +246,7 @@ export default function SettingsPage() {
                                             <FormLabel>Logo</FormLabel>
                                             <FormControl>
                                                 <div>
-                                                    <Input type="file" accept="image/*" className="hidden" ref={logoInputRef} onChange={(e) => handleImageChange(e, setLogoPreview, 'logo')}/>
+                                                    <Input type="file" accept="image/*" className="hidden" ref={logoInputRef} onChange={handleLogoUpload}/>
                                                     <Button type="button" variant="outline" onClick={() => logoInputRef.current?.click()} className="w-full">
                                                         <UploadCloud className="mr-2 h-4 w-4" /> Upload Logo
                                                     </Button>
@@ -236,45 +292,71 @@ export default function SettingsPage() {
                     </Card>
                      <Card className="mt-6">
                         <CardHeader>
-                            <CardTitle>Letterhead & Footer</CardTitle>
-                            <CardDescription>Customize your document headers and footers.</CardDescription>
+                            <CardTitle>Letterhead & Document Images</CardTitle>
+                            <CardDescription>Customize headers, footers, and backgrounds for your documents.</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-6">
-                            <div className="space-y-4">
-                                <Label>Letterhead</Label>
-                                <div className="flex flex-col items-center justify-center space-y-2 rounded-md border border-dashed p-4 h-48 w-full">
-                                    {letterheadPreview ? (
-                                        <img src={letterheadPreview} alt="Letterhead preview" className="max-h-full max-w-full object-contain"/>
-                                    ) : (
-                                        <p className="text-sm text-muted-foreground">No letterhead uploaded</p>
-                                    )}
-                                </div>
-                                <FormField control={form.control} name="letterheadImage" render={() => (
-                                    <FormItem>
-                                        <FormControl>
-                                            <div>
-                                                <Input type="file" accept="image/*" className="hidden" ref={letterheadInputRef} onChange={(e) => handleImageChange(e, setLetterheadPreview, 'letterheadImage')} />
-                                                <Button type="button" variant="outline" onClick={() => letterheadInputRef.current?.click()} className="w-full">
-                                                    <UploadCloud className="mr-2 h-4 w-4" /> Upload Letterhead Image
-                                                </Button>
-                                            </div>
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )} />
-                            </div>
-                            <Separator />
+                        <CardContent>
+                             <Tabs defaultValue="header" className="w-full">
+                                <TabsList className="grid w-full grid-cols-4">
+                                    <TabsTrigger value="header"><ImageIcon className="mr-2 h-4 w-4" />Header</TabsTrigger>
+                                    <TabsTrigger value="footer"><FileImage className="mr-2 h-4 w-4" />Footer</TabsTrigger>
+                                    <TabsTrigger value="background"><Layers className="mr-2 h-4 w-4" />Background</TabsTrigger>
+                                    <TabsTrigger value="watermark"><Stamp className="mr-2 h-4 w-4" />Watermark</TabsTrigger>
+                                </TabsList>
+                                <TabsContent value="header" className="pt-4">
+                                     <ImageUploader 
+                                        form={form}
+                                        fieldName="headerImage"
+                                        previewState={headerPreview}
+                                        setPreviewState={setHeaderPreview}
+                                        label="Header Image"
+                                        description="Recommended: 2480x400px PNG/JPG for A4 headers."
+                                     />
+                                </TabsContent>
+                                <TabsContent value="footer" className="pt-4">
+                                      <ImageUploader 
+                                        form={form}
+                                        fieldName="footerImage"
+                                        previewState={footerPreview}
+                                        setPreviewState={setFooterPreview}
+                                        label="Footer Image"
+                                        description="Recommended: 2480x200px PNG/JPG for A4 footers."
+                                     />
+                                </TabsContent>
+                                <TabsContent value="background" className="pt-4">
+                                     <ImageUploader 
+                                        form={form}
+                                        fieldName="backgroundImage"
+                                        previewState={backgroundPreview}
+                                        setPreviewState={setBackgroundPreview}
+                                        label="Background Image"
+                                        description="Recommended: A4 aspect ratio (e.g., 2480x3508px). Use a subtle design."
+                                     />
+                                </TabsContent>
+                                <TabsContent value="watermark" className="pt-4">
+                                     <ImageUploader 
+                                        form={form}
+                                        fieldName="watermarkImage"
+                                        previewState={watermarkPreview}
+                                        setPreviewState={setWatermarkPreview}
+                                        label="Watermark Image"
+                                        description="A semi-transparent PNG image works best."
+                                     />
+                                </TabsContent>
+                            </Tabs>
+                            <Separator className="my-6" />
                             <FormField control={form.control} name="footerContent" render={({ field }) => (
-                                <FormItem><FormLabel>Custom Footer Content</FormLabel>
+                                <FormItem><FormLabel>Custom Footer Text</FormLabel>
                                 <FormControl><Textarea placeholder="e.g., Thank you for your business!" {...field} rows={3} /></FormControl>
-                                <FormDescription>This content will appear at the bottom of your documents, replacing the default footer.</FormDescription>
+                                <FormDescription>This text appears above the footer image or at the bottom of the page.</FormDescription>
                                 <FormMessage /></FormItem>
                             )} />
+                            <Separator className="my-6" />
                             <FormField control={form.control} name="brandsoftFooter" render={({ field }) => (
                                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                                     <div className="space-y-0.5">
                                         <FormLabel>Enable BrandSoft Footer</FormLabel>
-                                        <FormDescription>Show "Created by BrandSoft" on your documents. This appears below your custom footer.</FormDescription>
+                                        <FormDescription>Show "Created by BrandSoft" on your documents. This appears below all other footer content.</FormDescription>
                                     </div>
                                     <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                                 </FormItem>

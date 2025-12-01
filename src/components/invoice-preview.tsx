@@ -1,7 +1,8 @@
 
+
 'use client';
 
-import { BrandsoftConfig, Customer, Invoice } from '@/hooks/use-brandsoft.tsx';
+import { BrandsoftConfig, Customer, Invoice } from '@/hooks/use-brandsoft';
 import { format, parseISO } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
@@ -112,13 +113,13 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId }: Inv
         }
     } else if (invoiceData.tax && invoiceData.tax > 0 && subtotalAfterDiscount > 0) {
       taxAmount = invoiceData.tax;
-      const effectiveTaxRate = (taxAmount / subtotalAfterDiscount) * 100;
-      // Heuristic: if it looks like a flat rate, show it as currency.
-      // This isn't perfect but covers many cases. A stored taxType would be better.
-      if (effectiveTaxRate > 50 && Number.isInteger(taxAmount)) {
-          taxRateDisplay = formatCurrency(taxAmount);
+      if (invoiceData.taxType === 'percentage' && invoiceData.taxValue) {
+        taxRateDisplay = `${invoiceData.taxValue}%`;
+      } else if (invoiceData.taxType === 'flat' && invoiceData.taxValue) {
+        taxRateDisplay = formatCurrency(invoiceData.taxValue);
       } else {
-          taxRateDisplay = `${effectiveTaxRate.toFixed(2)}%`;
+         const effectiveTaxRate = (taxAmount / subtotalAfterDiscount) * 100;
+         taxRateDisplay = `${effectiveTaxRate.toFixed(2)}%`;
       }
     } else if (invoiceData.tax) {
         taxAmount = invoiceData.tax;
@@ -143,16 +144,26 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId }: Inv
     const isProductBased = (description: string) => {
         return !!config?.products.find(p => p.name === description);
     }
+    
+    const taxName = invoiceData.taxName || 'Tax';
 
     return (
         <div className="bg-gray-100 p-4 sm:p-8 rounded-lg">
-            <div className="w-full max-w-[8.5in] min-h-[11in] mx-auto bg-white shadow-lg p-8 sm:p-12 relative font-sans">
+            <div className="w-full max-w-[8.5in] min-h-[11in] mx-auto bg-white shadow-lg p-12 relative font-sans">
                 
-                 {invoiceData.status && <InvoiceStatusWatermark status={invoiceData.status} />}
+                 {config.brand.backgroundImage && (
+                    <img src={config.brand.backgroundImage} className="absolute inset-0 w-full h-full object-cover z-0" alt="background"/>
+                 )}
 
-                {config.brand.letterheadImage ? (
-                    <div className="absolute top-0 left-0 right-0 h-40">
-                         <img src={config.brand.letterheadImage} className="w-full h-full object-cover" alt="Letterhead"/>
+                 {config.brand.watermarkImage && (
+                    <img src={config.brand.watermarkImage} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0 opacity-10" alt="watermark" />
+                 )}
+                 
+                 {invoiceData.status && !config.brand.watermarkImage && <InvoiceStatusWatermark status={invoiceData.status} />}
+
+                {config.brand.headerImage ? (
+                    <div className="absolute top-0 left-0 right-0 h-40 z-10">
+                         <img src={config.brand.headerImage} className="w-full h-full object-cover" alt="Letterhead"/>
                     </div>
                 ) : (
                     <div className="absolute top-0 left-0 right-0 h-10" style={{backgroundColor: config.brand.primaryColor}}></div>
@@ -271,7 +282,7 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId }: Inv
                         )}
                         {taxAmount > 0 && (
                              <div className="flex justify-between">
-                                <span className="text-gray-600">{invoiceData.taxName || 'Tax'}</span>
+                                <span className="text-gray-600">{taxName}</span>
                                 <span className="font-medium">{formatCurrency(taxAmount)}</span>
                             </div>
                         )}
@@ -292,9 +303,14 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId }: Inv
                 
 
                 {/* Footer */}
-                <footer className="absolute bottom-0 left-0 right-0 z-10 text-center text-xs p-4" style={{backgroundColor: config.brand.secondaryColor, color: '#fff'}}>
-                    {config.brand.footerContent && <p className="mb-1">{config.brand.footerContent}</p>}
-                    {config.brand.brandsoftFooter && <p className="font-bold">Created by BrandSoft</p>}
+                <footer className="absolute bottom-0 left-0 right-0 z-10 p-4">
+                    {config.brand.footerImage && (
+                        <img src={config.brand.footerImage} className="w-full h-auto" alt="Footer"/>
+                    )}
+                    <div className="text-center text-xs mt-2" style={{color: config.brand.primaryColor}}>
+                         {config.brand.footerContent && <p className="mb-1">{config.brand.footerContent}</p>}
+                         {config.brand.brandsoftFooter && <p><span className="font-bold">Created by BrandSoft</span></p>}
+                    </div>
                 </footer>
             </div>
         </div>

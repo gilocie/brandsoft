@@ -66,7 +66,10 @@ export type BrandsoftConfig = {
     font: string;
     businessName: string;
     brandsoftFooter: boolean;
-    letterheadImage?: string;
+    headerImage?: string;
+    footerImage?: string;
+    backgroundImage?: string;
+    watermarkImage?: string;
     footerContent?: string;
   };
   profile: {
