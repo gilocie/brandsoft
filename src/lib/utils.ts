@@ -1,5 +1,7 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -52,3 +54,57 @@ export function hexToHsl(hex: string): { h: number, s: number, l: number } | nul
     l: Math.round(l * 100),
   };
 }
+
+export const downloadInvoiceAsPdf = async (invoiceId: string) => {
+    const invoiceElement = document.getElementById(`invoice-preview-${invoiceId}`);
+    if (!invoiceElement) {
+        console.error("Invoice element not found for PDF generation.");
+        return;
+    }
+
+    const canvas = await html2canvas(invoiceElement, {
+        scale: 2, // Higher scale for better quality
+        useCORS: true,
+    });
+
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF({
+        orientation: 'p',
+        unit: 'mm',
+        format: 'a4',
+    });
+
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
+    const canvasAspectRatio = canvasWidth / canvasHeight;
+    const pdfAspectRatio = pdfWidth / pdfHeight;
+
+    let finalCanvasWidth, finalCanvasHeight;
+
+    if (canvasAspectRatio > pdfAspectRatio) {
+        finalCanvasWidth = pdfWidth;
+        finalCanvasHeight = pdfWidth / canvasAspectRatio;
+    } else {
+        finalCanvasHeight = pdfHeight;
+        finalCanvasWidth = pdfHeight * canvasAspectRatio;
+    }
+    
+    const imgHeight = canvas.height * pdfWidth / canvas.width;
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+    heightLeft -= pdfHeight;
+
+    while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+        heightLeft -= pdfHeight;
+    }
+
+    pdf.save(`Invoice-${invoiceId}.pdf`);
+};
+

@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -49,7 +49,7 @@ import {
   Eye,
   CheckCircle2,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, downloadInvoiceAsPdf } from '@/lib/utils';
 import {
   ToggleGroup,
   ToggleGroupItem,
@@ -178,6 +178,7 @@ export default function InvoicesPage() {
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isMarkPaidOpen, setIsMarkPaidOpen] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
 
   const invoices = config?.invoices || [];
@@ -192,7 +193,7 @@ export default function InvoicesPage() {
   }), [invoices]);
 
 
-  const handleSelectAction = (action: 'view' | 'edit' | 'delete' | 'download' | 'send' | 'markPaid', invoice: Invoice) => {
+  const handleSelectAction = async (action: 'view' | 'edit' | 'delete' | 'download' | 'send' | 'markPaid', invoice: Invoice) => {
     setSelectedInvoice(invoice);
     switch (action) {
         case 'view':
@@ -208,8 +209,11 @@ export default function InvoicesPage() {
             setIsMarkPaidOpen(true);
             break;
         case 'download':
-            // Placeholder for download logic
-            alert(`Downloading PDF for ${invoice.invoiceId}`);
+            setIsDownloading(true);
+            // Wait for the next render cycle to ensure the offscreen element is available
+            setTimeout(() => {
+                downloadInvoiceAsPdf(invoice.invoiceId).finally(() => setIsDownloading(false));
+            }, 100);
             break;
         case 'send':
             // Placeholder for send logic
@@ -306,6 +310,20 @@ export default function InvoicesPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Off-screen renderer for PDF generation */}
+      {isDownloading && selectedInvoice && (
+        <div style={{ position: 'fixed', left: '-9999px', top: 0 }}>
+            <div id={`invoice-preview-${selectedInvoice.invoiceId}`}>
+                <InvoicePreview
+                    config={config}
+                    customer={selectedCustomer}
+                    invoiceData={selectedInvoice}
+                    invoiceId={selectedInvoice.invoiceId}
+                />
+            </div>
+        </div>
+      )}
       
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
@@ -346,5 +364,3 @@ export default function InvoicesPage() {
     </div>
   );
 }
-
-
