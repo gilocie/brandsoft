@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { BrandsoftConfig, Customer, Invoice } from '@/hooks/use-brandsoft.tsx';
@@ -41,6 +39,7 @@ export interface InvoicePreviewProps {
     customer: Customer | null;
     invoiceData: InvoiceData;
     invoiceId?: string;
+    forPdf?: boolean; // New prop to indicate PDF rendering mode
 }
 
 const InvoiceStatusWatermark = ({ status }: { status: Invoice['status'] }) => {
@@ -77,7 +76,7 @@ const InvoiceStatusWatermark = ({ status }: { status: Invoice['status'] }) => {
 };
 
 
-export function InvoicePreview({ config, customer, invoiceData, invoiceId }: InvoicePreviewProps) {
+export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPdf = false }: InvoicePreviewProps) {
 
     if (!config || !customer || !invoiceData) {
         return (
@@ -152,8 +151,16 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId }: Inv
     const taxName = invoiceData.taxName || 'Tax';
 
     return (
-        <div className="bg-gray-100 p-4 sm:p-8 rounded-lg">
-            <div id={`invoice-preview-${invoiceId}`} className="w-full max-w-[8.5in] min-h-[11in] mx-auto bg-white shadow-lg p-12 relative font-sans">
+        <div className={forPdf ? "" : "bg-gray-100 p-4 sm:p-8 rounded-lg"}>
+            <div 
+                id={`invoice-preview-${invoiceId}`} 
+                className={cn(
+                    "w-full max-w-[8.5in] mx-auto bg-white shadow-lg relative font-sans",
+                    forPdf ? "min-h-0" : "min-h-[11in]",
+                    forPdf ? "pb-32" : "p-12" // Add bottom padding for PDF to prevent footer overlap
+                )}
+                style={forPdf ? { padding: '48px', paddingBottom: '128px' } : {}}
+            >
                 
                  {config.brand.backgroundImage && (
                     <img src={config.brand.backgroundImage} className="absolute inset-0 w-full h-full object-cover z-0" alt="background"/>
@@ -255,7 +262,7 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId }: Inv
                 </section>
 
                 {/* Totals & Notes */}
-                <section className="relative z-10 mt-8 grid grid-cols-2 gap-8 items-start">
+                <section className="relative z-10 mt-8 grid grid-cols-2 gap-8 items-start mb-8">
                     <div className="text-sm">
                         {invoiceData.notes && (
                              <div>
@@ -303,8 +310,11 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId }: Inv
                 </section>
                 
 
-                {/* Footer */}
-                <footer className="absolute bottom-0 left-0 right-0 z-10">
+                {/* Footer - Changed from absolute to relative positioning */}
+                <footer className={cn(
+                    "relative z-10 mt-auto",
+                    forPdf && "absolute bottom-0 left-0 right-0"
+                )}>
                     {config.brand.footerImage && (
                         <img src={config.brand.footerImage} className="w-full h-auto" alt="Footer"/>
                     )}
@@ -325,14 +335,15 @@ export const downloadInvoiceAsPdf = async (props: InvoicePreviewProps) => {
     container.style.position = 'fixed';
     container.style.left = '-9999px';
     container.style.top = '0';
+    container.style.width = '816px'; // 8.5 inches at 96 DPI
     document.body.appendChild(container);
 
-    // Render the component using React's new root API
+    // Render the component using React's new root API with forPdf flag
     const root = createRoot(container);
-    root.render(<InvoicePreview {...props} />);
+    root.render(<InvoicePreview {...props} forPdf={true} />);
 
-    // Allow time for images to load
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Allow time for images to load and render to complete
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     const invoiceElement = container.querySelector(`#invoice-preview-${props.invoiceId}`);
     if (!invoiceElement) {
@@ -342,12 +353,15 @@ export const downloadInvoiceAsPdf = async (props: InvoicePreviewProps) => {
     }
 
     const canvas = await html2canvas(invoiceElement as HTMLElement, {
-        scale: 2, // Higher scale for better quality
+        scale: 2,
         useCORS: true,
-        allowTaint: true, // Allow cross-origin images to be rendered
+        allowTaint: true,
+        logging: false,
+        backgroundColor: '#ffffff'
     });
 
     // Clean up the temporary container
+    root.unmount();
     document.body.removeChild(container);
 
     const imgData = canvas.toDataURL('image/png');
@@ -358,18 +372,23 @@ export const downloadInvoiceAsPdf = async (props: InvoicePreviewProps) => {
     });
 
     const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const imgWidth = pdfWidth;
     const imgHeight = canvas.height * pdfWidth / canvas.width;
+
     let heightLeft = imgHeight;
     let position = 0;
 
-    pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
-    heightLeft -= pdf.internal.pageSize.getHeight();
+    // Add first page
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pdfHeight;
 
+    // Add additional pages if content overflows
     while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
+        position -= pdfHeight;
         pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
-        heightLeft -= pdf.internal.pageSize.getHeight();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pdfHeight;
     }
 
     pdf.save(`Invoice-${props.invoiceId}.pdf`);
