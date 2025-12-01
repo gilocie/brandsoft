@@ -39,7 +39,7 @@ export interface InvoicePreviewProps {
     customer: Customer | null;
     invoiceData: InvoiceData;
     invoiceId?: string;
-    forPdf?: boolean; // New prop to indicate PDF rendering mode
+    forPdf?: boolean;
 }
 
 const InvoiceStatusWatermark = ({ status }: { status: Invoice['status'] }) => {
@@ -67,7 +67,7 @@ const InvoiceStatusWatermark = ({ status }: { status: Invoice['status'] }) => {
     return (
         <div className={cn(
             "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0",
-            "text-[8rem] font-black tracking-widest leading-none transform -rotate-15 select-none",
+            "text-[8rem] font-black tracking-widest leading-none transform -rotate-15 select-none pointer-events-none",
             colorClass
         )}>
             {text}
@@ -156,10 +156,14 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                 id={`invoice-preview-${invoiceId}`} 
                 className={cn(
                     "w-full max-w-[8.5in] mx-auto bg-white shadow-lg relative font-sans",
-                    forPdf ? "min-h-0" : "min-h-[11in]",
-                    forPdf ? "pb-32" : "p-12" // Add bottom padding for PDF to prevent footer overlap
+                    forPdf ? "min-h-[11in]" : "min-h-[11in] p-12"
                 )}
-                style={forPdf ? { padding: '48px', paddingBottom: '128px' } : {}}
+                style={forPdf ? { 
+                    padding: '48px',
+                    paddingTop: config.brand.headerImage ? '100px' : '58px',
+                    paddingBottom: '100px',
+                    position: 'relative'
+                } : {}}
             >
                 
                  {config.brand.backgroundImage && (
@@ -167,21 +171,22 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                  )}
 
                  {config.brand.watermarkImage && (
-                    <img src={config.brand.watermarkImage} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0 opacity-10" alt="watermark" />
+                    <img src={config.brand.watermarkImage} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0 opacity-10 pointer-events-none" alt="watermark" />
                  )}
                  
                  {invoiceData.status && !config.brand.watermarkImage && <InvoiceStatusWatermark status={invoiceData.status} />}
 
+                {/* Header - Fixed positioning for PDF */}
                 {config.brand.headerImage ? (
                     <div className="absolute top-0 left-0 right-0 h-20 z-10">
                          <img src={config.brand.headerImage} className="w-full h-full object-cover" alt="Letterhead"/>
                     </div>
                 ) : (
-                    <div className="absolute top-0 left-0 right-0 h-10" style={{backgroundColor: config.brand.primaryColor}}></div>
+                    <div className="absolute top-0 left-0 right-0 h-10 z-10" style={{backgroundColor: config.brand.primaryColor}}></div>
                 )}
                 
-                {/* Header */}
-                <header className="relative z-10 flex justify-between items-start mb-12 pt-10">
+                {/* Main Content */}
+                <header className="relative z-10 flex justify-between items-start mb-8 pt-2">
                     <div className="flex items-center gap-4">
                         {config.brand.logo && (
                            <img src={config.brand.logo} alt={config.brand.businessName} className="h-16 w-16 sm:h-20 sm:w-20 object-contain" />
@@ -200,7 +205,7 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                 </header>
 
                 {/* Bill To & Dates */}
-                <section className="relative z-10 grid grid-cols-2 gap-8 mt-8 mb-12">
+                <section className="relative z-10 grid grid-cols-2 gap-8 mb-8">
                     <div>
                         <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">Bill To</h3>
                         <p className="font-bold text-lg">{customer.companyName || customer.name}</p>
@@ -210,15 +215,15 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                     </div>
                     <div className="text-right">
                          <div className="space-y-2">
-                           <div className="grid grid-cols-2">
+                           <div className="grid grid-cols-2 gap-2">
                                 <span className="text-sm font-semibold text-gray-500">INVOICE #</span>
                                 <span className="font-medium">{invoiceId || `${config.profile.invoicePrefix || 'INV-'}${String(config.profile.invoiceStartNumber || 1).padStart(3, '0')}`}</span>
                             </div>
-                            <div className="grid grid-cols-2">
+                            <div className="grid grid-cols-2 gap-2">
                                 <span className="text-sm font-semibold text-gray-500">DATE</span>
                                 <span className="font-medium">{format(invoiceDate || new Date(), 'MM/dd/yy')}</span>
                             </div>
-                             <div className="grid grid-cols-2">
+                             <div className="grid grid-cols-2 gap-2">
                                 <span className="text-sm font-semibold text-gray-500">DUE DATE</span>
                                 <span className="font-medium">{format(dueDate || new Date(), 'MM/dd/yy')}</span>
                             </div>
@@ -227,21 +232,21 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                 </section>
 
                 {/* Line Items Table */}
-                <section className="relative z-10 mt-8">
+                <section className="relative z-10 mb-8">
                     <Table>
                         <TableHeader>
                             <TableRow className="bg-transparent border-b-2 border-black">
-                                <TableHead className="w-1/2 text-black font-bold uppercase tracking-wider">Items</TableHead>
-                                <TableHead className="text-right text-black font-bold uppercase tracking-wider">Quantity</TableHead>
-                                <TableHead className="text-right text-black font-bold uppercase tracking-wider">Price</TableHead>
-                                <TableHead className="text-right text-black font-bold uppercase tracking-wider">Tax</TableHead>
-                                <TableHead className="text-right text-black font-bold uppercase tracking-wider">Amount</TableHead>
+                                <TableHead className="w-1/2 text-black font-bold uppercase tracking-wider text-xs">Items</TableHead>
+                                <TableHead className="text-right text-black font-bold uppercase tracking-wider text-xs">Quantity</TableHead>
+                                <TableHead className="text-right text-black font-bold uppercase tracking-wider text-xs">Price</TableHead>
+                                <TableHead className="text-right text-black font-bold uppercase tracking-wider text-xs">Tax</TableHead>
+                                <TableHead className="text-right text-black font-bold uppercase tracking-wider text-xs">Amount</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {invoiceData.lineItems?.map((item, index) => (
                                 <TableRow key={index} className="border-b border-gray-300">
-                                    <TableCell className="font-medium py-3 align-top">
+                                    <TableCell className="font-medium py-3 align-top text-sm">
                                         {item.description}
                                         {isProductBased(item.description) && config.products.find(p => p.name === item.description)?.description && (
                                             <p className="text-xs text-muted-foreground mt-1">
@@ -249,12 +254,12 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                                             </p>
                                         )}
                                     </TableCell>
-                                    <TableCell className="text-right py-3 align-top">{item.quantity}</TableCell>
-                                    <TableCell className="text-right py-3 align-top">{formatCurrency(item.price)}</TableCell>
-                                    <TableCell className="text-right py-3 align-top">
+                                    <TableCell className="text-right py-3 align-top text-sm">{item.quantity}</TableCell>
+                                    <TableCell className="text-right py-3 align-top text-sm">{formatCurrency(item.price)}</TableCell>
+                                    <TableCell className="text-right py-3 align-top text-sm">
                                        {taxRateDisplay}
                                     </TableCell>
-                                    <TableCell className="text-right py-3 align-top">{formatCurrency(item.quantity * item.price)}</TableCell>
+                                    <TableCell className="text-right py-3 align-top text-sm">{formatCurrency(item.quantity * item.price)}</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
@@ -262,46 +267,46 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                 </section>
 
                 {/* Totals & Notes */}
-                <section className="relative z-10 mt-8 grid grid-cols-2 gap-8 items-start mb-8">
+                <section className="relative z-10 grid grid-cols-2 gap-8 items-start mb-12">
                     <div className="text-sm">
                         {invoiceData.notes && (
                              <div>
                                 <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Notes</h3>
-                                <p className="text-gray-600 mt-1">{invoiceData.notes}</p>
+                                <p className="text-gray-600 mt-1 text-xs">{invoiceData.notes}</p>
                             </div>
                         )}
                          {config.profile.paymentDetails && (
                              <div className="mt-4">
                                 <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Payment Details</h3>
-                                <p className="text-gray-600 mt-1 whitespace-pre-wrap">{config.profile.paymentDetails}</p>
+                                <p className="text-gray-600 mt-1 whitespace-pre-wrap text-xs">{config.profile.paymentDetails}</p>
                             </div>
                         )}
                     </div>
-                    <div className="w-full space-y-2 text-sm text-right">
-                         <div className="flex justify-between">
+                    <div className="w-full space-y-2 text-sm">
+                         <div className="flex justify-between items-center">
                             <span className="text-gray-600">Subtotal</span>
                             <span className="font-medium">{formatCurrency(subtotal)}</span>
                         </div>
                          {discountAmount > 0 && (
-                            <div className="flex justify-between">
+                            <div className="flex justify-between items-center">
                                 <span className="text-gray-600">Discount</span>
                                 <span className="font-medium">- {formatCurrency(discountAmount)}</span>
                             </div>
                         )}
                         {taxAmount > 0 && (
-                             <div className="flex justify-between">
+                             <div className="flex justify-between items-center">
                                 <span className="text-gray-600">{taxName}</span>
                                 <span className="font-medium">{formatCurrency(taxAmount)}</span>
                             </div>
                         )}
                          {shippingAmount > 0 && (
-                            <div className="flex justify-between">
+                            <div className="flex justify-between items-center">
                                 <span className="text-gray-600">Shipping</span>
                                 <span className="font-medium">{formatCurrency(shippingAmount)}</span>
                             </div>
                         )}
                         <div className="pt-2">
-                           <div className="flex justify-between font-bold text-xl py-2 px-4 rounded" style={{backgroundColor: config.brand.primaryColor, color: '#fff'}}>
+                           <div className="flex items-center justify-between font-bold text-lg py-3 px-4 rounded" style={{backgroundColor: config.brand.primaryColor, color: '#fff'}}>
                                 <span>Total</span>
                                 <span>{formatCurrency(total)}</span>
                             </div>
@@ -310,15 +315,12 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                 </section>
                 
 
-                {/* Footer - Changed from absolute to relative positioning */}
-                <footer className={cn(
-                    "relative z-10 mt-auto",
-                    forPdf && "absolute bottom-0 left-0 right-0"
-                )}>
+                {/* Footer - Absolute positioning at bottom */}
+                <footer className="absolute bottom-0 left-0 right-0 z-10">
                     {config.brand.footerImage && (
                         <img src={config.brand.footerImage} className="w-full h-auto" alt="Footer"/>
                     )}
-                     <div className="text-center text-xs p-4" style={{backgroundColor: config.brand.secondaryColor, color: 'white'}}>
+                     <div className="text-center text-xs py-3 px-4" style={{backgroundColor: config.brand.secondaryColor, color: 'white'}}>
                          {config.brand.footerContent && <p className="mb-1">{config.brand.footerContent}</p>}
                          {config.brand.brandsoftFooter && <p><span className="font-bold">Created by BrandSoft</span></p>}
                     </div>
@@ -329,67 +331,76 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
 }
 
 export const downloadInvoiceAsPdf = async (props: InvoicePreviewProps) => {
-    // Create a temporary container for rendering
     const container = document.createElement('div');
     container.id = `pdf-container-${props.invoiceId}`;
     container.style.position = 'fixed';
     container.style.left = '-9999px';
     container.style.top = '0';
-    container.style.width = '816px'; // 8.5 inches at 96 DPI
+    container.style.width = '816px';
     document.body.appendChild(container);
 
-    // Render the component using React's new root API with forPdf flag
     const root = createRoot(container);
     root.render(<InvoicePreview {...props} forPdf={true} />);
 
-    // Allow time for images to load and render to complete
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
-    const invoiceElement = container.querySelector(`#invoice-preview-${props.invoiceId}`);
+    const invoiceElement = container.querySelector(`#invoice-preview-${props.invoiceId}`) as HTMLElement;
     if (!invoiceElement) {
         console.error("Invoice element not found for PDF generation.");
+        root.unmount();
         document.body.removeChild(container);
         return;
     }
 
-    const canvas = await html2canvas(invoiceElement as HTMLElement, {
+    const canvas = await html2canvas(invoiceElement, {
         scale: 2,
         useCORS: true,
         allowTaint: true,
         logging: false,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        width: 816,
+        height: invoiceElement.scrollHeight
     });
 
-    // Clean up the temporary container
     root.unmount();
     document.body.removeChild(container);
 
-    const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF({
         orientation: 'p',
-        unit: 'mm',
-        format: 'a4',
+        unit: 'px',
+        format: [816, 1056]
     });
 
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
     const imgWidth = pdfWidth;
-    const imgHeight = canvas.height * pdfWidth / canvas.width;
+    const imgHeight = (canvas.height * pdfWidth) / canvas.width;
 
-    let heightLeft = imgHeight;
-    let position = 0;
-
-    // Add first page
-    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-    heightLeft -= pdfHeight;
-
-    // Add additional pages if content overflows
-    while (heightLeft > 0) {
-        position -= pdfHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pdfHeight;
+    if (imgHeight <= pdfHeight) {
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, imgWidth, imgHeight);
+    } else {
+        const totalPages = Math.ceil(imgHeight / pdfHeight);
+        
+        for (let i = 0; i < totalPages; i++) {
+            if (i > 0) pdf.addPage();
+            
+            const srcY = (canvas.height / totalPages) * i;
+            const srcHeight = Math.min(canvas.height / totalPages, canvas.height - srcY);
+            
+            const pageCanvas = document.createElement('canvas');
+            pageCanvas.width = canvas.width;
+            pageCanvas.height = srcHeight;
+            
+            const ctx = pageCanvas.getContext('2d');
+            if (ctx) {
+                ctx.drawImage(canvas, 0, srcY, canvas.width, srcHeight, 0, 0, canvas.width, srcHeight);
+                const pageImg = pageCanvas.toDataURL('image/png');
+                const pageImgHeight = (srcHeight * pdfWidth) / canvas.width;
+                pdf.addImage(pageImg, 'PNG', 0, 0, pdfWidth, pageImgHeight);
+            }
+        }
     }
 
     pdf.save(`Invoice-${props.invoiceId}.pdf`);
 };
+    
