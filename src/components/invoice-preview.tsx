@@ -300,11 +300,11 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId }: Inv
                 
 
                 {/* Footer */}
-                <footer className="absolute bottom-0 left-0 right-0 z-10 p-4">
+                <footer className="absolute bottom-0 left-0 right-0 z-10">
                     {config.brand.footerImage && (
                         <img src={config.brand.footerImage} className="w-full h-auto" alt="Footer"/>
                     )}
-                     <div className="text-center text-xs mt-2" style={{color: config.brand.primaryColor}}>
+                     <div className="text-center text-xs p-4" style={{backgroundColor: config.brand.secondaryColor, color: 'white'}}>
                          {config.brand.footerContent && <p className="mb-1">{config.brand.footerContent}</p>}
                          {config.brand.brandsoftFooter && <p><span className="font-bold">Created by BrandSoft</span></p>}
                     </div>
@@ -313,3 +313,4 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId }: Inv
         </div>
     );
 }
+
