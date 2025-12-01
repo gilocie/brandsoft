@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { BrandsoftConfig, Customer, Invoice } from '@/hooks/use-brandsoft.tsx';
@@ -270,7 +269,7 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId }: Inv
                 
 
                 {/* Footer */}
-                <footer className="absolute bottom-8 left-8 right-8 z-10 text-center text-xs text-gray-400">
+                <footer className="absolute bottom-0 left-0 right-0 z-10 text-center text-xs text-white p-4" style={{backgroundColor: config.brand.secondaryColor}}>
                     {config.brand.footerContent && <p className="mb-1">{config.brand.footerContent}</p>}
                     {config.brand.brandsoftFooter && <p>Created by BrandSoft</p>}
                 </footer>
@@ -278,3 +277,5 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId }: Inv
         </div>
     );
 }
+
+    
