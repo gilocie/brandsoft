@@ -50,10 +50,11 @@ const settingsSchema = z.object({
   font: z.string().optional(),
   defaultCurrency: z.string().min(1, "Default currency is required"),
   brandsoftFooter: z.boolean().default(true),
-  // New fields
   paymentDetails: z.string().optional(),
   letterheadImage: z.string().optional(),
   footerContent: z.string().optional(),
+  invoicePrefix: z.string().optional(),
+  invoiceStartNumber: z.coerce.number().min(1, "Starting number must be at least 1").optional(),
 });
 
 type SettingsFormData = z.infer<typeof settingsSchema>;
@@ -80,6 +81,8 @@ export default function SettingsPage() {
       paymentDetails: '',
       letterheadImage: '',
       footerContent: '',
+      invoicePrefix: 'INV-',
+      invoiceStartNumber: 1,
     },
   });
   
@@ -96,6 +99,8 @@ export default function SettingsPage() {
             paymentDetails: config.profile.paymentDetails || '',
             letterheadImage: config.brand.letterheadImage || '',
             footerContent: config.brand.footerContent || '',
+            invoicePrefix: config.profile.invoicePrefix || 'INV-',
+            invoiceStartNumber: config.profile.invoiceStartNumber || 1,
         });
         setLogoPreview(config.brand.logo);
         setLetterheadPreview(config.brand.letterheadImage || null);
@@ -139,6 +144,8 @@ export default function SettingsPage() {
           ...config.profile,
           defaultCurrency: data.defaultCurrency,
           paymentDetails: data.paymentDetails || '',
+          invoicePrefix: data.invoicePrefix,
+          invoiceStartNumber: data.invoiceStartNumber,
         },
       };
       saveConfig(newConfig);
@@ -164,7 +171,7 @@ export default function SettingsPage() {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            <Accordion type="multiple" defaultValue={['item-1', 'item-2', 'item-3', 'item-4']} className="w-full">
+            <Accordion type="multiple" defaultValue={['item-1', 'item-2', 'item-3', 'item-4', 'item-5']} className="w-full">
               <AccordionItem value="item-1">
                 <AccordionTrigger className="text-xl font-headline">Brand Identity</AccordionTrigger>
                 <AccordionContent>
@@ -267,7 +274,31 @@ export default function SettingsPage() {
                     </Card>
                 </AccordionContent>
               </AccordionItem>
-              <AccordionItem value="item-4">
+               <AccordionItem value="item-4">
+                <AccordionTrigger className="text-xl font-headline">Document Numbering</AccordionTrigger>
+                <AccordionContent>
+                    <Card className="border-none shadow-none">
+                        <CardHeader className="p-2 pt-0">
+                            <CardDescription>Set prefixes and starting numbers for your documents.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-2 space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                 <FormField control={form.control} name="invoicePrefix" render={({ field }) => (
+                                    <FormItem><FormLabel>Invoice Prefix</FormLabel>
+                                    <FormControl><Input placeholder="INV-" {...field} /></FormControl>
+                                    <FormMessage /></FormItem>
+                                )} />
+                                 <FormField control={form.control} name="invoiceStartNumber" render={({ field }) => (
+                                    <FormItem><FormLabel>Next Invoice Number</FormLabel>
+                                    <FormControl><Input type="number" placeholder="101" {...field} /></FormControl>
+                                    <FormMessage /></FormItem>
+                                )} />
+                            </div>
+                        </CardContent>
+                    </Card>
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="item-5">
                 <AccordionTrigger className="text-xl font-headline">Letterhead & Footer</AccordionTrigger>
                 <AccordionContent>
                   <Card className="border-none shadow-none">

@@ -71,6 +71,8 @@ export type BrandsoftConfig = {
     taxNumber: string;
     defaultCurrency: string;
     paymentDetails?: string;
+    invoicePrefix?: string;
+    invoiceStartNumber?: number;
   };
   modules: {
     invoice: boolean;
@@ -355,19 +357,28 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
   const addInvoice = (invoiceData: Omit<Invoice, 'invoiceId'>): Invoice => {
     if (!config) throw new Error("Config not loaded");
     
-    const lastId = config.invoices.reduce((max, inv) => {
-        const idNum = parseInt(inv.invoiceId.replace('INV', ''), 10);
-        return idNum > max ? idNum : max;
-    }, 0);
+    let nextIdNumber = config.profile.invoiceStartNumber || 1;
+    const existingIds = new Set(config.invoices.map(inv => inv.invoiceId));
+    const prefix = config.profile.invoicePrefix || 'INV-';
+
+    let newInvoiceId = `${prefix}${String(nextIdNumber).padStart(3, '0')}`;
+    while(existingIds.has(newInvoiceId)) {
+        nextIdNumber++;
+        newInvoiceId = `${prefix}${String(nextIdNumber).padStart(3, '0')}`;
+    }
 
     const newInvoice: Invoice = {
       ...invoiceData,
-      invoiceId: `INV${String(lastId + 1).padStart(3, '0')}`,
+      invoiceId: newInvoiceId,
     };
     
     const newConfig: BrandsoftConfig = {
       ...config,
       invoices: [...config.invoices, newInvoice],
+      profile: {
+        ...config.profile,
+        invoiceStartNumber: nextIdNumber + 1,
+      }
     };
     saveConfig(newConfig, { redirect: false });
     return newInvoice;

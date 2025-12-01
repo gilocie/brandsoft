@@ -175,7 +175,7 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId }: Inv
                          <div className="grid grid-cols-2 sm:grid-cols-1 gap-2">
                            <div className="space-y-1 sm:mb-2">
                                 <p className="text-sm font-semibold text-gray-500">INVOICE #</p>
-                                <p className="font-medium">{invoiceId || `INV-XXXX`}</p>
+                                <p className="font-medium">{invoiceId || `${config.profile.invoicePrefix || 'INV-'}${String(config.profile.invoiceStartNumber || 1).padStart(3, '0')}`}</p>
                             </div>
                             <div className="space-y-1 sm:mb-2">
                                 <p className="text-sm font-semibold text-gray-500">DATE</p>
