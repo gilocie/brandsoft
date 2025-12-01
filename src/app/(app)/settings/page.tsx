@@ -27,7 +27,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState, useRef } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { UploadCloud, Paintbrush, Cog, CreditCard, SlidersHorizontal, Image as ImageIcon, FileImage, Layers, Stamp } from 'lucide-react';
+import { UploadCloud, Paintbrush, Cog, CreditCard, SlidersHorizontal, Image as ImageIcon, FileImage, Layers, Stamp, Trash2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -56,7 +56,7 @@ const settingsSchema = z.object({
 
 type SettingsFormData = z.infer<typeof settingsSchema>;
 
-const ImageUploader = ({ form, fieldName, previewState, setPreviewState, label, description }: { form: any, fieldName: keyof SettingsFormData, previewState: string | null, setPreviewState: (url: string) => void, label: string, description: string }) => {
+const ImageUploader = ({ form, fieldName, previewState, setPreviewState, label, description, aspect }: { form: any, fieldName: keyof SettingsFormData, previewState: string | null, setPreviewState: (url: string | null) => void, label: string, description: string, aspect: 'wide' | 'normal' }) => {
     const inputRef = useRef<HTMLInputElement>(null);
 
     const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -71,12 +71,25 @@ const ImageUploader = ({ form, fieldName, previewState, setPreviewState, label, 
             reader.readAsDataURL(file);
         }
     };
+    
+    const handleDeleteImage = () => {
+        setPreviewState(null);
+        form.setValue(fieldName, '', { shouldDirty: true });
+        if (inputRef.current) {
+            inputRef.current.value = '';
+        }
+    };
 
     return (
         <div className="space-y-4">
-            <div className="flex flex-col items-center justify-center space-y-2 rounded-md border border-dashed p-4 h-48 w-full">
+            <div className={`relative flex flex-col items-center justify-center space-y-2 rounded-md border border-dashed p-4 w-full ${aspect === 'wide' ? 'h-24' : 'h-48'}`}>
                 {previewState ? (
-                    <img src={previewState} alt={`${label} preview`} className="max-h-full max-w-full object-contain"/>
+                    <>
+                        <img src={previewState} alt={`${label} preview`} className="max-h-full max-w-full object-contain"/>
+                        <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-7 w-7" onClick={handleDeleteImage}>
+                           <Trash2 className="h-4 w-4" />
+                        </Button>
+                    </>
                 ) : (
                     <p className="text-sm text-muted-foreground">No {label.toLowerCase()} uploaded</p>
                 )}
@@ -311,6 +324,7 @@ export default function SettingsPage() {
                                         setPreviewState={setHeaderPreview}
                                         label="Header Image"
                                         description="Recommended: 2480x70px PNG/JPG for A4 headers."
+                                        aspect='wide'
                                      />
                                 </TabsContent>
                                 <TabsContent value="footer" className="pt-4">
@@ -321,6 +335,7 @@ export default function SettingsPage() {
                                         setPreviewState={setFooterPreview}
                                         label="Footer Image"
                                         description="Recommended: 2480x70px PNG/JPG for A4 footers."
+                                        aspect='wide'
                                      />
                                 </TabsContent>
                                 <TabsContent value="background" className="pt-4">
@@ -331,6 +346,7 @@ export default function SettingsPage() {
                                         setPreviewState={setBackgroundPreview}
                                         label="Background Image"
                                         description="Recommended: A4 aspect ratio (e.g., 2480x3508px). Use a subtle design."
+                                        aspect='normal'
                                      />
                                 </TabsContent>
                                 <TabsContent value="watermark" className="pt-4">
@@ -341,6 +357,7 @@ export default function SettingsPage() {
                                         setPreviewState={setWatermarkPreview}
                                         label="Watermark Image"
                                         description="A semi-transparent PNG image works best."
+                                        aspect='normal'
                                      />
                                 </TabsContent>
                             </Tabs>
@@ -443,3 +460,6 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+
+    
