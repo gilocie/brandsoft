@@ -204,15 +204,15 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                     {/* Bill To & Dates */}
                     <section className="relative z-10 grid grid-cols-2 gap-8 mb-4">
                         <div>
-                            {config.brand.showCustomerAddress && (
+                            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">Bill To</h3>
+                            <p className="font-bold text-lg">{customer.companyName || customer.name}</p>
+                            {config.brand.showCustomerAddress ? (
                                 <>
-                                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">Bill To</h3>
-                                    <p className="font-bold text-lg">{customer.companyName || customer.name}</p>
                                     {customer.companyName && <p className="text-gray-600">{customer.name}</p>}
                                     <p className="text-gray-600">{customer.address || customer.companyAddress || 'No address provided'}</p>
                                     <p className="text-gray-600">{customer.email}</p>
                                 </>
-                            )}
+                            ) : null}
                         </div>
                         <div className="text-right">
                             <div className="space-y-2">
@@ -412,4 +412,3 @@ export const downloadInvoiceAsPdf = async (props: InvoicePreviewProps) => {
 
     pdf.save(`Invoice-${props.invoiceId}.pdf`);
 };
-
