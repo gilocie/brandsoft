@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useBrandsoft, type Invoice } from "@/hooks/use-brandsoft.tsx";
@@ -19,16 +20,7 @@ const modules = [
   { title: "Template Marketplace", description: "Browse and manage templates.", icon: Library, href: "/templates", enabledKey: null },
 ];
 
-const currencySymbols: { [key: string]: string } = {
-  USD: '$',
-  EUR: '€',
-  GBP: '£',
-  JPY: '¥',
-  CAD: '$',
-  AUD: '$',
-};
-
-const StatCard = ({ title, value, icon: Icon, description, formatAsCurrency = false, variant, currencySymbol }: { title: string, value: string | number, icon: React.ElementType, description: string, formatAsCurrency?: boolean, variant?: "default" | "primary", currencySymbol?: string }) => (
+const StatCard = ({ title, value, icon: Icon, description, formatAsCurrency = false, variant, currencyCode }: { title: string, value: string | number, icon: React.ElementType, description: string, formatAsCurrency?: boolean, variant?: "default" | "primary", currencyCode?: string }) => (
     <Card className={cn(variant === 'primary' && "bg-primary text-primary-foreground")}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{title}</CardTitle>
@@ -36,7 +28,7 @@ const StatCard = ({ title, value, icon: Icon, description, formatAsCurrency = fa
         </CardHeader>
         <CardContent>
             <div className="text-2xl font-bold">
-                {formatAsCurrency && (currencySymbol || '$')}{typeof value === 'number' && formatAsCurrency ? value.toFixed(2) : value}
+                 {formatAsCurrency && (currencyCode || '$')}{typeof value === 'number' && formatAsCurrency ? value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : value}
             </div>
             <p className={cn("text-xs", variant === 'primary' ? "text-primary-foreground/80" : "text-muted-foreground")}>{description}</p>
         </CardContent>
@@ -123,7 +115,7 @@ export default function DashboardPage() {
   }
   
   const enabledModules = modules.filter(m => m.enabledKey === null || config.modules[m.enabledKey as keyof typeof config.modules]);
-  const currencySymbol = currencySymbols[config.profile.defaultCurrency] || config.profile.defaultCurrency;
+  const currencyCode = config.profile.defaultCurrency;
 
 
   return (
@@ -134,9 +126,9 @@ export default function DashboardPage() {
       </div>
 
        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-          <StatCard title="Total Revenue" value={stats.paidAmount} icon={DollarSign} description={`${stats.paidCount} paid invoices`} formatAsCurrency variant="primary" currencySymbol={currencySymbol} />
-          <StatCard title="Outstanding" value={stats.unpaidAmount} icon={FileClock} description={`${stats.unpaidCount + stats.overdueCount} unpaid invoices`} formatAsCurrency variant="primary" currencySymbol={currencySymbol} />
-          <StatCard title="Canceled" value={stats.canceledAmount} icon={FileX} description={`${stats.canceledCount} canceled invoices`} formatAsCurrency variant="primary" currencySymbol={currencySymbol} />
+          <StatCard title="Total Revenue" value={stats.paidAmount} icon={DollarSign} description={`${stats.paidCount} paid invoices`} formatAsCurrency variant="primary" currencyCode={currencyCode} />
+          <StatCard title="Outstanding" value={stats.unpaidAmount} icon={FileClock} description={`${stats.unpaidCount + stats.overdueCount} unpaid invoices`} formatAsCurrency variant="primary" currencyCode={currencyCode} />
+          <StatCard title="Canceled" value={stats.canceledAmount} icon={FileX} description={`${stats.canceledCount} canceled invoices`} formatAsCurrency variant="primary" currencyCode={currencyCode} />
           <StatCard title="Quotations Sent" value={stats.quotationsSent} icon={FileBarChart2} description="Total quotations issued" />
           <StatCard title="Receipts Issued" value={stats.receiptsIssued} icon={Receipt} description="Total receipts generated" />
           
