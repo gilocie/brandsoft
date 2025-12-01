@@ -177,7 +177,8 @@ export default function InvoicesPage() {
   
   const filteredInvoices = useMemo(() => ({
     all: invoices,
-    active: invoices.filter(inv => inv.status === 'Pending' || inv.status === 'Overdue'),
+    pending: invoices.filter(inv => inv.status === 'Pending'),
+    overdue: invoices.filter(inv => inv.status === 'Overdue'),
     paid: invoices.filter(inv => inv.status === 'Paid'),
     canceled: invoices.filter(inv => inv.status === 'Canceled'),
   }), [invoices]);
@@ -245,15 +246,19 @@ export default function InvoicesPage() {
        <Tabs defaultValue="all" className="space-y-4">
         <TabsList>
           <TabsTrigger value="all">All</TabsTrigger>
-          <TabsTrigger value="active">Active</TabsTrigger>
+          <TabsTrigger value="pending">Pending</TabsTrigger>
+          <TabsTrigger value="overdue">Overdue</TabsTrigger>
           <TabsTrigger value="paid">Paid</TabsTrigger>
           <TabsTrigger value="canceled">Canceled</TabsTrigger>
         </TabsList>
         <TabsContent value="all">
           <InvoiceList invoices={filteredInvoices.all} layout={layout} onSelectAction={handleSelectAction} currencyCode={currencyCode} />
         </TabsContent>
-        <TabsContent value="active">
-           <InvoiceList invoices={filteredInvoices.active} layout={layout} onSelectAction={handleSelectAction} currencyCode={currencyCode} />
+        <TabsContent value="pending">
+           <InvoiceList invoices={filteredInvoices.pending} layout={layout} onSelectAction={handleSelectAction} currencyCode={currencyCode} />
+        </TabsContent>
+         <TabsContent value="overdue">
+           <InvoiceList invoices={filteredInvoices.overdue} layout={layout} onSelectAction={handleSelectAction} currencyCode={currencyCode} />
         </TabsContent>
         <TabsContent value="paid">
             <InvoiceList invoices={filteredInvoices.paid} layout={layout} onSelectAction={handleSelectAction} currencyCode={currencyCode} />
@@ -304,3 +309,4 @@ export default function InvoicesPage() {
     </div>
   );
 }
+
