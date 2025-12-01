@@ -46,7 +46,8 @@ import {
   Trash2,
   FileDown,
   Send,
-  Eye
+  Eye,
+  CheckCircle2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -67,7 +68,7 @@ const statusVariantMap: {
   Draft: 'secondary',
 };
 
-const ActionsMenu = ({ invoice, onSelectAction }: { invoice: Invoice, onSelectAction: (action: 'view' | 'edit' | 'delete' | 'download' | 'send', invoice: Invoice) => void }) => (
+const ActionsMenu = ({ invoice, onSelectAction }: { invoice: Invoice, onSelectAction: (action: 'view' | 'edit' | 'delete' | 'download' | 'send' | 'markPaid', invoice: Invoice) => void }) => (
     <DropdownMenu>
         <DropdownMenuTrigger asChild>
         <Button variant="default" size="icon" className="h-8 w-8">
@@ -80,6 +81,12 @@ const ActionsMenu = ({ invoice, onSelectAction }: { invoice: Invoice, onSelectAc
                 <Eye className="mr-2 h-4 w-4" />
                 View Details
             </DropdownMenuItem>
+             {(invoice.status === 'Pending' || invoice.status === 'Overdue') && (
+                <DropdownMenuItem onClick={() => onSelectAction('markPaid', invoice)}>
+                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                    Mark As Paid
+                </DropdownMenuItem>
+            )}
             <DropdownMenuItem onClick={() => onSelectAction('edit', invoice)}>
                 <FilePenLine className="mr-2 h-4 w-4" />
                 Edit Invoice
@@ -165,11 +172,12 @@ const InvoiceList = ({invoices, layout, onSelectAction, currencyCode}: {invoices
 
 export default function InvoicesPage() {
   const [layout, setLayout] = useState<'grid' | 'list'>('grid');
-  const { config, deleteInvoice } = useBrandsoft();
+  const { config, deleteInvoice, updateInvoice } = useBrandsoft();
   const router = useRouter();
 
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isMarkPaidOpen, setIsMarkPaidOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
 
   const invoices = config?.invoices || [];
@@ -184,7 +192,7 @@ export default function InvoicesPage() {
   }), [invoices]);
 
 
-  const handleSelectAction = (action: 'view' | 'edit' | 'delete' | 'download' | 'send', invoice: Invoice) => {
+  const handleSelectAction = (action: 'view' | 'edit' | 'delete' | 'download' | 'send' | 'markPaid', invoice: Invoice) => {
     setSelectedInvoice(invoice);
     switch (action) {
         case 'view':
@@ -195,6 +203,9 @@ export default function InvoicesPage() {
             break;
         case 'delete':
             setIsDeleteOpen(true);
+            break;
+        case 'markPaid':
+            setIsMarkPaidOpen(true);
             break;
         case 'download':
             // Placeholder for download logic
@@ -215,6 +226,14 @@ export default function InvoicesPage() {
     }
   };
   
+  const handleMarkAsPaid = () => {
+    if (selectedInvoice) {
+      updateInvoice(selectedInvoice.invoiceId, { status: 'Paid' });
+      setIsMarkPaidOpen(false);
+      setSelectedInvoice(null);
+    }
+  };
+
   const selectedCustomer = config?.customers.find(c => c.name === selectedInvoice?.customer || c.id === selectedInvoice?.customerId) || null;
 
   return (
@@ -306,7 +325,26 @@ export default function InvoicesPage() {
             </AlertDialogFooter>
         </AlertDialogContent>
     </AlertDialog>
+    
+    {/* Mark as Paid Confirmation Dialog */}
+      <AlertDialog open={isMarkPaidOpen} onOpenChange={setIsMarkPaidOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Confirm Payment</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Are you sure you want to mark invoice "{selectedInvoice?.invoiceId}" as paid?
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleMarkAsPaid}>
+                    Mark as Paid
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
     </div>
   );
 }
+
 
