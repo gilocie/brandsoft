@@ -155,168 +155,167 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
             <div 
                 id={`invoice-preview-${invoiceId}`} 
                 className={cn(
-                    "w-full max-w-[8.5in] mx-auto bg-white shadow-lg relative font-sans",
+                    "w-full max-w-[8.5in] mx-auto bg-white shadow-lg relative font-sans flex flex-col",
                     forPdf ? "min-h-[11in]" : "min-h-[11in] p-12"
                 )}
                 style={forPdf ? { 
                     padding: '48px',
                     paddingTop: config.brand.headerImage ? '100px' : '58px',
-                    paddingBottom: '100px',
-                    position: 'relative'
+                    paddingBottom: '100px'
                 } : {}}
             >
-                
-                 {config.brand.backgroundImage && (
-                    <img src={config.brand.backgroundImage} className="absolute inset-0 w-full h-full object-cover z-0" alt="background"/>
-                 )}
+                <div className="flex-grow">
+                    {config.brand.backgroundImage && (
+                        <img src={config.brand.backgroundImage} className="absolute inset-0 w-full h-full object-cover z-0" alt="background"/>
+                    )}
 
-                 {config.brand.watermarkImage && (
-                    <img src={config.brand.watermarkImage} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0 opacity-10 pointer-events-none" alt="watermark" />
-                 )}
-                 
-                 {invoiceData.status && !config.brand.watermarkImage && <InvoiceStatusWatermark status={invoiceData.status} />}
+                    {config.brand.watermarkImage && (
+                        <img src={config.brand.watermarkImage} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0 opacity-10 pointer-events-none" alt="watermark" />
+                    )}
+                    
+                    {invoiceData.status && !config.brand.watermarkImage && <InvoiceStatusWatermark status={invoiceData.status} />}
 
-                {/* Header - Fixed positioning for PDF */}
-                {config.brand.headerImage ? (
-                    <div className="absolute top-0 left-0 right-0 h-20 z-10">
-                         <img src={config.brand.headerImage} className="w-full h-full object-cover" alt="Letterhead"/>
-                    </div>
-                ) : (
-                    <div className="absolute top-0 left-0 right-0 h-10 z-10" style={{backgroundColor: config.brand.primaryColor}}></div>
-                )}
-                
-                {/* Main Content */}
-                <header className="relative z-10 flex justify-between items-start mb-8 pt-2">
-                    <div className="flex items-center gap-4">
-                        {config.brand.logo && (
-                           <img src={config.brand.logo} alt={config.brand.businessName} className="h-16 w-16 sm:h-20 sm:w-20 object-contain" />
-                        )}
+                    {/* Header - Fixed positioning for PDF */}
+                    {config.brand.headerImage ? (
+                        <div className="absolute top-0 left-0 right-0 h-20 z-10">
+                            <img src={config.brand.headerImage} className="w-full h-full object-cover" alt="Letterhead"/>
+                        </div>
+                    ) : (
+                        <div className="absolute top-0 left-0 right-0 h-10 z-10" style={{backgroundColor: config.brand.primaryColor}}></div>
+                    )}
+                    
+                    {/* Main Content */}
+                    <header className="relative z-10 flex justify-between items-start mb-8 pt-2">
+                        <div className="flex items-center gap-4">
+                            {config.brand.logo && (
+                            <img src={config.brand.logo} alt={config.brand.businessName} className="h-16 w-16 sm:h-20 sm:w-20 object-contain" />
+                            )}
+                            <div>
+                                <h1 className="text-3xl sm:text-4xl font-bold" style={{color: config.brand.primaryColor}}>Invoice</h1>
+                            </div>
+                        </div>
+                        <div className="text-right text-sm text-gray-600">
+                            <p className="font-bold text-base text-black">{config.brand.businessName}</p>
+                            <p>{config.profile.address}</p>
+                            <p>{config.profile.email}</p>
+                            <p>{config.profile.phone}</p>
+                            {config.profile.website && <p>{config.profile.website}</p>}
+                        </div>
+                    </header>
+
+                    {/* Bill To & Dates */}
+                    <section className="relative z-10 grid grid-cols-2 gap-8 mb-8">
                         <div>
-                            <h1 className="text-3xl sm:text-4xl font-bold" style={{color: config.brand.primaryColor}}>Invoice</h1>
+                            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">Bill To</h3>
+                            <p className="font-bold text-lg">{customer.companyName || customer.name}</p>
+                            {customer.companyName && <p className="text-gray-600">{customer.name}</p>}
+                            <p className="text-gray-600">{customer.address || customer.companyAddress || 'No address provided'}</p>
+                            <p className="text-gray-600">{customer.email}</p>
                         </div>
-                    </div>
-                    <div className="text-right text-sm text-gray-600">
-                        <p className="font-bold text-base text-black">{config.brand.businessName}</p>
-                        <p>{config.profile.address}</p>
-                        <p>{config.profile.email}</p>
-                        <p>{config.profile.phone}</p>
-                        {config.profile.website && <p>{config.profile.website}</p>}
-                    </div>
-                </header>
-
-                {/* Bill To & Dates */}
-                <section className="relative z-10 grid grid-cols-2 gap-8 mb-8">
-                    <div>
-                        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">Bill To</h3>
-                        <p className="font-bold text-lg">{customer.companyName || customer.name}</p>
-                        {customer.companyName && <p className="text-gray-600">{customer.name}</p>}
-                        <p className="text-gray-600">{customer.address || customer.companyAddress || 'No address provided'}</p>
-                        <p className="text-gray-600">{customer.email}</p>
-                    </div>
-                    <div className="text-right">
-                         <div className="space-y-2">
-                           <div className="grid grid-cols-2 gap-2">
-                                <span className="text-sm font-semibold text-gray-500">INVOICE #</span>
-                                <span className="font-medium">{invoiceId || `${config.profile.invoicePrefix || 'INV-'}${String(config.profile.invoiceStartNumber || 1).padStart(3, '0')}`}</span>
-                            </div>
+                        <div className="text-right">
+                            <div className="space-y-2">
                             <div className="grid grid-cols-2 gap-2">
-                                <span className="text-sm font-semibold text-gray-500">DATE</span>
-                                <span className="font-medium">{format(invoiceDate || new Date(), 'MM/dd/yy')}</span>
-                            </div>
-                             <div className="grid grid-cols-2 gap-2">
-                                <span className="text-sm font-semibold text-gray-500">DUE DATE</span>
-                                <span className="font-medium">{format(dueDate || new Date(), 'MM/dd/yy')}</span>
+                                    <span className="text-sm font-semibold text-gray-500">INVOICE #</span>
+                                    <span className="font-medium">{invoiceId || `${config.profile.invoicePrefix || 'INV-'}${String(config.profile.invoiceStartNumber || 1).padStart(3, '0')}`}</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <span className="text-sm font-semibold text-gray-500">DATE</span>
+                                    <span className="font-medium">{format(invoiceDate || new Date(), 'MM/dd/yy')}</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <span className="text-sm font-semibold text-gray-500">DUE DATE</span>
+                                    <span className="font-medium">{format(dueDate || new Date(), 'MM/dd/yy')}</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </section>
+                    </section>
 
-                {/* Line Items Table */}
-                <section className="relative z-10 mb-8">
-                    <Table>
-                        <TableHeader>
-                            <TableRow className="bg-transparent border-b-2 border-black">
-                                <TableHead className="w-1/2 text-black font-bold uppercase tracking-wider text-xs">Items</TableHead>
-                                <TableHead className="text-right text-black font-bold uppercase tracking-wider text-xs">Quantity</TableHead>
-                                <TableHead className="text-right text-black font-bold uppercase tracking-wider text-xs">Price</TableHead>
-                                <TableHead className="text-right text-black font-bold uppercase tracking-wider text-xs">Tax</TableHead>
-                                <TableHead className="text-right text-black font-bold uppercase tracking-wider text-xs">Amount</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {invoiceData.lineItems?.map((item, index) => (
-                                <TableRow key={index} className="border-b border-gray-300">
-                                    <TableCell className="font-medium py-3 align-top text-sm">
-                                        {item.description}
-                                        {isProductBased(item.description) && config.products.find(p => p.name === item.description)?.description && (
-                                            <p className="text-xs text-muted-foreground mt-1">
-                                                {config.products.find(p => p.name === item.description)?.description}
-                                            </p>
-                                        )}
-                                    </TableCell>
-                                    <TableCell className="text-right py-3 align-top text-sm">{item.quantity}</TableCell>
-                                    <TableCell className="text-right py-3 align-top text-sm">{formatCurrency(item.price)}</TableCell>
-                                    <TableCell className="text-right py-3 align-top text-sm">
-                                       {taxRateDisplay}
-                                    </TableCell>
-                                    <TableCell className="text-right py-3 align-top text-sm">{formatCurrency(item.quantity * item.price)}</TableCell>
+                    {/* Line Items Table */}
+                    <section className="relative z-10 mb-8">
+                        <Table>
+                            <TableHeader>
+                                <TableRow className="bg-transparent border-b-2 border-black">
+                                    <TableHead className="w-1/2 text-black font-bold uppercase tracking-wider text-xs">Items</TableHead>
+                                    <TableHead className="text-right text-black font-bold uppercase tracking-wider text-xs">Quantity</TableHead>
+                                    <TableHead className="text-right text-black font-bold uppercase tracking-wider text-xs">Price</TableHead>
+                                    <TableHead className="text-right text-black font-bold uppercase tracking-wider text-xs">Tax</TableHead>
+                                    <TableHead className="text-right text-black font-bold uppercase tracking-wider text-xs">Amount</TableHead>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </section>
+                            </TableHeader>
+                            <TableBody>
+                                {invoiceData.lineItems?.map((item, index) => (
+                                    <TableRow key={index} className="border-b border-gray-300">
+                                        <TableCell className="font-medium py-3 align-top text-sm">
+                                            {item.description}
+                                            {isProductBased(item.description) && config.products.find(p => p.name === item.description)?.description && (
+                                                <p className="text-xs text-muted-foreground mt-1">
+                                                    {config.products.find(p => p.name === item.description)?.description}
+                                                </p>
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="text-right py-3 align-top text-sm">{item.quantity}</TableCell>
+                                        <TableCell className="text-right py-3 align-top text-sm">{formatCurrency(item.price)}</TableCell>
+                                        <TableCell className="text-right py-3 align-top text-sm">
+                                        {taxRateDisplay}
+                                        </TableCell>
+                                        <TableCell className="text-right py-3 align-top text-sm">{formatCurrency(item.quantity * item.price)}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </section>
 
-                {/* Totals & Notes */}
-                <section className="relative z-10 grid grid-cols-2 gap-8 items-start mb-12">
-                    <div className="text-sm">
-                        {invoiceData.notes && (
-                             <div>
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Notes</h3>
-                                <p className="text-gray-600 mt-1 text-xs">{invoiceData.notes}</p>
-                            </div>
-                        )}
-                         {config.profile.paymentDetails && (
-                             <div className="mt-4">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Payment Details</h3>
-                                <p className="text-gray-600 mt-1 whitespace-pre-wrap text-xs">{config.profile.paymentDetails}</p>
-                            </div>
-                        )}
-                    </div>
-                    <div className="w-full space-y-2 text-sm">
-                         <div className="flex justify-between items-center">
-                            <span className="text-gray-600">Subtotal</span>
-                            <span className="font-medium">{formatCurrency(subtotal)}</span>
+                    {/* Totals & Notes */}
+                    <section className="relative z-10 grid grid-cols-2 gap-8 items-start mb-12">
+                        <div className="text-sm">
+                            {invoiceData.notes && (
+                                <div>
+                                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Notes</h3>
+                                    <p className="text-gray-600 mt-1 text-xs">{invoiceData.notes}</p>
+                                </div>
+                            )}
+                            {config.profile.paymentDetails && (
+                                <div className="mt-4">
+                                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Payment Details</h3>
+                                    <p className="text-gray-600 mt-1 whitespace-pre-wrap text-xs">{config.profile.paymentDetails}</p>
+                                </div>
+                            )}
                         </div>
-                         {discountAmount > 0 && (
+                        <div className="w-full space-y-2 text-sm">
                             <div className="flex justify-between items-center">
-                                <span className="text-gray-600">Discount</span>
-                                <span className="font-medium">- {formatCurrency(discountAmount)}</span>
+                                <span className="text-gray-600">Subtotal</span>
+                                <span className="font-medium">{formatCurrency(subtotal)}</span>
                             </div>
-                        )}
-                        {taxAmount > 0 && (
-                             <div className="flex justify-between items-center">
-                                <span className="text-gray-600">{taxName}</span>
-                                <span className="font-medium">{formatCurrency(taxAmount)}</span>
-                            </div>
-                        )}
-                         {shippingAmount > 0 && (
-                            <div className="flex justify-between items-center">
-                                <span className="text-gray-600">Shipping</span>
-                                <span className="font-medium">{formatCurrency(shippingAmount)}</span>
-                            </div>
-                        )}
-                        <div className="pt-2">
-                           <div className="flex items-center justify-between font-bold text-lg py-3 px-4 rounded" style={{backgroundColor: config.brand.primaryColor, color: '#fff'}}>
-                                <span>Total</span>
-                                <span>{formatCurrency(total)}</span>
+                            {discountAmount > 0 && (
+                                <div className="flex justify-between items-center">
+                                    <span className="text-gray-600">Discount</span>
+                                    <span className="font-medium">- {formatCurrency(discountAmount)}</span>
+                                </div>
+                            )}
+                            {taxAmount > 0 && (
+                                <div className="flex justify-between items-center">
+                                    <span className="text-gray-600">{taxName}</span>
+                                    <span className="font-medium">{formatCurrency(taxAmount)}</span>
+                                </div>
+                            )}
+                            {shippingAmount > 0 && (
+                                <div className="flex justify-between items-center">
+                                    <span className="text-gray-600">Shipping</span>
+                                    <span className="font-medium">{formatCurrency(shippingAmount)}</span>
+                                </div>
+                            )}
+                            <div className="pt-2">
+                            <div className="flex items-center justify-between font-bold text-lg py-3 px-4 rounded" style={{backgroundColor: config.brand.primaryColor, color: '#fff'}}>
+                                    <span>Total</span>
+                                    <span>{formatCurrency(total)}</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </section>
-                
+                    </section>
+                </div>
 
-                {/* Footer - Absolute positioning at bottom */}
-                <footer className="absolute bottom-0 left-0 right-0 z-10">
+                {/* Footer - Renders at the bottom of the flex container */}
+                <footer className={cn("relative z-10", forPdf && "absolute bottom-0 left-0 right-0")}>
                     {config.brand.footerImage && (
                         <img src={config.brand.footerImage} className="w-full h-auto" alt="Footer"/>
                     )}
@@ -403,4 +402,3 @@ export const downloadInvoiceAsPdf = async (props: InvoicePreviewProps) => {
 
     pdf.save(`Invoice-${props.invoiceId}.pdf`);
 };
-    
