@@ -125,6 +125,10 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId }: Inv
     const invoiceDate = typeof rawInvoiceDate === 'string' ? parseISO(rawInvoiceDate) : rawInvoiceDate;
     const dueDate = typeof rawDueDate === 'string' ? parseISO(rawDueDate) : rawDueDate;
 
+    const isProductBased = (description: string) => {
+        return !!config?.products.find(p => p.name === description);
+    }
+
     return (
         <div className="bg-gray-100 p-4 sm:p-8 rounded-lg">
             <div className="w-full max-w-[8.5in] min-h-[11in] mx-auto bg-white shadow-lg p-8 sm:p-12 relative font-sans">
@@ -203,16 +207,23 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId }: Inv
                         <TableBody>
                             {invoiceData.lineItems?.map((item, index) => (
                                 <TableRow key={index} className="border-b border-gray-300">
-                                    <TableCell className="font-medium py-3">{item.description}</TableCell>
-                                    <TableCell className="text-right py-3">{item.quantity}</TableCell>
-                                    <TableCell className="text-right py-3">{formatCurrency(item.price)}</TableCell>
-                                    <TableCell className="text-right py-3">
+                                    <TableCell className="font-medium py-3 align-top">
+                                        {item.description}
+                                        {isProductBased(item.description) && config.products.find(p => p.name === item.description)?.description && (
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                                {config.products.find(p => p.name === item.description)?.description}
+                                            </p>
+                                        )}
+                                    </TableCell>
+                                    <TableCell className="text-right py-3 align-top">{item.quantity}</TableCell>
+                                    <TableCell className="text-right py-3 align-top">{formatCurrency(item.price)}</TableCell>
+                                    <TableCell className="text-right py-3 align-top">
                                        { (invoiceData.applyTax && invoiceData.taxValue) ?
                                            (invoiceData.taxType === 'percentage' ? `${invoiceData.taxValue}%` : formatCurrency(invoiceData.taxValue))
                                          : '0%'
                                        }
                                     </TableCell>
-                                    <TableCell className="text-right py-3">{formatCurrency(item.quantity * item.price)}</TableCell>
+                                    <TableCell className="text-right py-3 align-top">{formatCurrency(item.quantity * item.price)}</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
@@ -271,11 +282,9 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId }: Inv
                 {/* Footer */}
                 <footer className="absolute bottom-0 left-0 right-0 z-10 text-center text-xs text-white p-4" style={{backgroundColor: config.brand.secondaryColor}}>
                     {config.brand.footerContent && <p className="mb-1">{config.brand.footerContent}</p>}
-                    {config.brand.brandsoftFooter && <p>Created by BrandSoft</p>}
+                    {config.brand.brandsoftFooter && <p className="font-bold">Created by BrandSoft</p>}
                 </footer>
             </div>
         </div>
     );
 }
-
-    
