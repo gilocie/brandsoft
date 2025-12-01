@@ -5,7 +5,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useBrandsoft, type BrandsoftConfig } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type BrandsoftConfig } from '@/hooks/use-brandsoft.tsx';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -13,7 +13,6 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from '@/components/ui/card';
 import {
   Form,
@@ -34,12 +33,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 
 const settingsSchema = z.object({
@@ -171,99 +165,169 @@ export default function SettingsPage() {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            <Accordion type="multiple" defaultValue={['item-1', 'item-2', 'item-3', 'item-4', 'item-5']} className="w-full">
-              <AccordionItem value="item-1">
-                <AccordionTrigger className="text-xl font-headline">Brand Identity</AccordionTrigger>
-                <AccordionContent>
-                  <Card className="border-none shadow-none">
-                    <CardHeader className="p-2 pt-0">
-                      <CardDescription>Update your company's branding details.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4 p-2">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-                             <div className="space-y-4">
-                                <FormField control={form.control} name="businessName" render={({ field }) => (
-                                    <FormItem><FormLabel>Business Name</FormLabel><FormControl><Input placeholder="Your Company LLC" {...field} /></FormControl><FormMessage /></FormItem>
+            <Tabs defaultValue="branding" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="branding">Branding</TabsTrigger>
+                    <TabsTrigger value="general">General</TabsTrigger>
+                    <TabsTrigger value="payments">Payments</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="branding">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Brand Identity</CardTitle>
+                            <CardDescription>Update your company's branding details.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                                <div className="space-y-4">
+                                    <FormField control={form.control} name="businessName" render={({ field }) => (
+                                        <FormItem><FormLabel>Business Name</FormLabel><FormControl><Input placeholder="Your Company LLC" {...field} /></FormControl><FormMessage /></FormItem>
+                                    )} />
+                                    <FormField control={form.control} name="logo" render={() => (
+                                        <FormItem>
+                                            <FormLabel>Logo</FormLabel>
+                                            <FormControl>
+                                                <div>
+                                                    <Input type="file" accept="image/*" className="hidden" ref={logoInputRef} onChange={(e) => handleImageChange(e, setLogoPreview, 'logo')}/>
+                                                    <Button type="button" variant="outline" onClick={() => logoInputRef.current?.click()} className="w-full">
+                                                        <UploadCloud className="mr-2 h-4 w-4" /> Upload Logo
+                                                    </Button>
+                                                </div>
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )} />
+                                </div>
+                                <div className="flex flex-col items-center justify-center space-y-2 rounded-md border border-dashed p-4 h-full">
+                                    <Avatar className="h-24 w-24">
+                                        <AvatarImage src={logoPreview || undefined} alt={config?.brand.businessName} />
+                                        <AvatarFallback className="text-3xl">
+                                            {config?.brand.businessName?.charAt(0).toUpperCase()}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <p className="text-sm text-muted-foreground">Logo Preview</p>
+                                </div>
+                            </div>
+                            <FormField control={form.control} name="font" render={({ field }) => (
+                                <FormItem><FormLabel>Font</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl><SelectTrigger><SelectValue placeholder="Select a font" /></SelectTrigger></FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="Poppins">Poppins</SelectItem>
+                                        <SelectItem value="Belleza">Belleza</SelectItem>
+                                        <SelectItem value="Source Code Pro">Source Code Pro</SelectItem>
+                                        <SelectItem value="Arial">Arial</SelectItem>
+                                        <SelectItem value="Verdana">Verdana</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage /></FormItem>
+                            )} />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <FormField control={form.control} name="primaryColor" render={({ field }) => (
+                                <FormItem><FormLabel>Primary Color</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>
                                 )} />
-                                <FormField control={form.control} name="logo" render={() => (
+                                <FormField control={form.control} name="secondaryColor" render={({ field }) => (
+                                <FormItem><FormLabel>Accent Color</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>
+                                )} />
+                            </div>
+                        </CardContent>
+                    </Card>
+                     <Card className="mt-6">
+                        <CardHeader>
+                            <CardTitle>Letterhead & Footer</CardTitle>
+                            <CardDescription>Customize your document headers and footers.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <div className="space-y-4">
+                                <Label>Letterhead</Label>
+                                <div className="flex flex-col items-center justify-center space-y-2 rounded-md border border-dashed p-4 h-48 w-full">
+                                    {letterheadPreview ? (
+                                        <img src={letterheadPreview} alt="Letterhead preview" className="max-h-full max-w-full object-contain"/>
+                                    ) : (
+                                        <p className="text-sm text-muted-foreground">No letterhead uploaded</p>
+                                    )}
+                                </div>
+                                <FormField control={form.control} name="letterheadImage" render={() => (
                                     <FormItem>
-                                        <FormLabel>Logo</FormLabel>
                                         <FormControl>
                                             <div>
-                                                <Input type="file" accept="image/*" className="hidden" ref={logoInputRef} onChange={(e) => handleImageChange(e, setLogoPreview, 'logo')}/>
-                                                <Button type="button" variant="outline" onClick={() => logoInputRef.current?.click()} className="w-full">
-                                                    <UploadCloud className="mr-2 h-4 w-4" /> Upload Logo
+                                                <Input type="file" accept="image/*" className="hidden" ref={letterheadInputRef} onChange={(e) => handleImageChange(e, setLetterheadPreview, 'letterheadImage')} />
+                                                <Button type="button" variant="outline" onClick={() => letterheadInputRef.current?.click()} className="w-full">
+                                                    <UploadCloud className="mr-2 h-4 w-4" /> Upload Letterhead Image
                                                 </Button>
                                             </div>
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )} />
-                             </div>
-                             <div className="flex flex-col items-center justify-center space-y-2 rounded-md border border-dashed p-4 h-full">
-                                <Avatar className="h-24 w-24">
-                                    <AvatarImage src={logoPreview || undefined} alt={config?.brand.businessName} />
-                                    <AvatarFallback className="text-3xl">
-                                        {config?.brand.businessName?.charAt(0).toUpperCase()}
-                                    </AvatarFallback>
-                                </Avatar>
-                                <p className="text-sm text-muted-foreground">Logo Preview</p>
-                             </div>
-                        </div>
-                         <FormField control={form.control} name="font" render={({ field }) => (
-                            <FormItem><FormLabel>Font</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl><SelectTrigger><SelectValue placeholder="Select a font" /></SelectTrigger></FormControl>
-                                <SelectContent>
-                                    <SelectItem value="Poppins">Poppins</SelectItem>
-                                    <SelectItem value="Belleza">Belleza</SelectItem>
-                                    <SelectItem value="Source Code Pro">Source Code Pro</SelectItem>
-                                    <SelectItem value="Arial">Arial</SelectItem>
-                                    <SelectItem value="Verdana">Verdana</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <FormMessage /></FormItem>
-                         )} />
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormField control={form.control} name="primaryColor" render={({ field }) => (
-                            <FormItem><FormLabel>Primary Color</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>
-                            )} />
-                            <FormField control={form.control} name="secondaryColor" render={({ field }) => (
-                            <FormItem><FormLabel>Accent Color</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>
-                            )} />
-                        </div>
-                    </CardContent>
-                  </Card>
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="item-2">
-                <AccordionTrigger className="text-xl font-headline">Regional & Currency</AccordionTrigger>
-                <AccordionContent>
-                   <Card className="border-none shadow-none">
-                     <CardHeader className="p-2 pt-0">
-                        <CardDescription>Manage currency and regional formats.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="pt-6 p-2">
-                        <div className="max-w-md space-y-4">
-                            <FormField control={form.control} name="defaultCurrency" render={({ field }) => (
-                                <FormItem><FormLabel>Default Currency Code</FormLabel>
-                                <FormControl><Input placeholder="e.g. USD, MWK" {...field} /></FormControl>
-                                <FormDescription>Enter the 3-letter currency code for your documents.</FormDescription>
+                            </div>
+                            <Separator />
+                            <FormField control={form.control} name="footerContent" render={({ field }) => (
+                                <FormItem><FormLabel>Custom Footer Content</FormLabel>
+                                <FormControl><Textarea placeholder="e.g., Thank you for your business!" {...field} rows={3} /></FormControl>
+                                <FormDescription>This content will appear at the bottom of your documents, replacing the default footer.</FormDescription>
                                 <FormMessage /></FormItem>
                             )} />
-                        </div>
-                    </CardContent>
-                   </Card>
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="item-3">
-                <AccordionTrigger className="text-xl font-headline">Payment Settings</AccordionTrigger>
-                <AccordionContent>
-                    <Card className="border-none shadow-none">
-                        <CardHeader className="p-2 pt-0">
+                            <FormField control={form.control} name="brandsoftFooter" render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                                    <div className="space-y-0.5">
+                                        <FormLabel>Enable BrandSoft Footer</FormLabel>
+                                        <FormDescription>Show "Created by BrandSoft" on your documents. This appears below your custom footer.</FormDescription>
+                                    </div>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                </FormItem>
+                            )} />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="general">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Regional & Currency</CardTitle>
+                            <CardDescription>Manage currency and regional formats.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="max-w-md space-y-4">
+                                <FormField control={form.control} name="defaultCurrency" render={({ field }) => (
+                                    <FormItem><FormLabel>Default Currency Code</FormLabel>
+                                    <FormControl><Input placeholder="e.g. USD, MWK" {...field} /></FormControl>
+                                    <FormDescription>Enter the 3-letter currency code for your documents.</FormDescription>
+                                    <FormMessage /></FormItem>
+                                )} />
+                            </div>
+                        </CardContent>
+                    </Card>
+                     <Card className="mt-6">
+                        <CardHeader>
+                            <CardTitle>Document Numbering</CardTitle>
+                            <CardDescription>Set prefixes and starting numbers for your documents.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <FormField control={form.control} name="invoicePrefix" render={({ field }) => (
+                                    <FormItem><FormLabel>Invoice Prefix</FormLabel>
+                                    <FormControl><Input placeholder="INV-" {...field} /></FormControl>
+                                    <FormMessage /></FormItem>
+                                )} />
+                                    <FormField control={form.control} name="invoiceStartNumber" render={({ field }) => (
+                                    <FormItem><FormLabel>Next Invoice Number</FormLabel>
+                                    <FormControl><Input type="number" placeholder="101" {...field} /></FormControl>
+                                    <FormMessage /></FormItem>
+                                )} />
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                
+                <TabsContent value="payments">
+                     <Card>
+                        <CardHeader>
+                            <CardTitle>Payment Settings</CardTitle>
                             <CardDescription>Configure how you get paid.</CardDescription>
                         </CardHeader>
-                        <CardContent className="p-2">
+                        <CardContent>
                             <FormField control={form.control} name="paymentDetails" render={({ field }) => (
                                 <FormItem><FormLabel>Payment Instructions</FormLabel>
                                 <FormControl><Textarea placeholder="e.g., Bank Name, Account Number, PayPal email, etc." {...field} rows={4} /></FormControl>
@@ -272,84 +336,8 @@ export default function SettingsPage() {
                             )} />
                         </CardContent>
                     </Card>
-                </AccordionContent>
-              </AccordionItem>
-               <AccordionItem value="item-4">
-                <AccordionTrigger className="text-xl font-headline">Document Numbering</AccordionTrigger>
-                <AccordionContent>
-                    <Card className="border-none shadow-none">
-                        <CardHeader className="p-2 pt-0">
-                            <CardDescription>Set prefixes and starting numbers for your documents.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="p-2 space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                 <FormField control={form.control} name="invoicePrefix" render={({ field }) => (
-                                    <FormItem><FormLabel>Invoice Prefix</FormLabel>
-                                    <FormControl><Input placeholder="INV-" {...field} /></FormControl>
-                                    <FormMessage /></FormItem>
-                                )} />
-                                 <FormField control={form.control} name="invoiceStartNumber" render={({ field }) => (
-                                    <FormItem><FormLabel>Next Invoice Number</FormLabel>
-                                    <FormControl><Input type="number" placeholder="101" {...field} /></FormControl>
-                                    <FormMessage /></FormItem>
-                                )} />
-                            </div>
-                        </CardContent>
-                    </Card>
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="item-5">
-                <AccordionTrigger className="text-xl font-headline">Letterhead & Footer</AccordionTrigger>
-                <AccordionContent>
-                  <Card className="border-none shadow-none">
-                    <CardHeader className="p-2 pt-0">
-                        <CardDescription>Customize your document headers and footers.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6 p-2">
-                       <div className="space-y-4">
-                           <Label>Letterhead</Label>
-                            <div className="flex flex-col items-center justify-center space-y-2 rounded-md border border-dashed p-4 h-48 w-full">
-                                {letterheadPreview ? (
-                                    <img src={letterheadPreview} alt="Letterhead preview" className="max-h-full max-w-full object-contain"/>
-                                ) : (
-                                    <p className="text-sm text-muted-foreground">No letterhead uploaded</p>
-                                )}
-                            </div>
-                            <FormField control={form.control} name="letterheadImage" render={() => (
-                                <FormItem>
-                                    <FormControl>
-                                        <div>
-                                            <Input type="file" accept="image/*" className="hidden" ref={letterheadInputRef} onChange={(e) => handleImageChange(e, setLetterheadPreview, 'letterheadImage')} />
-                                            <Button type="button" variant="outline" onClick={() => letterheadInputRef.current?.click()} className="w-full">
-                                                <UploadCloud className="mr-2 h-4 w-4" /> Upload Letterhead Image
-                                            </Button>
-                                        </div>
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )} />
-                       </div>
-                       <Separator />
-                       <FormField control={form.control} name="footerContent" render={({ field }) => (
-                            <FormItem><FormLabel>Custom Footer Content</FormLabel>
-                            <FormControl><Textarea placeholder="e.g., Thank you for your business!" {...field} rows={3} /></FormControl>
-                            <FormDescription>This content will appear at the bottom of your documents, replacing the default footer.</FormDescription>
-                            <FormMessage /></FormItem>
-                        )} />
-                        <FormField control={form.control} name="brandsoftFooter" render={({ field }) => (
-                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                                <div className="space-y-0.5">
-                                    <FormLabel>Enable BrandSoft Footer</FormLabel>
-                                    <FormDescription>Show "Created by BrandSoft" on your documents. This appears below your custom footer.</FormDescription>
-                                </div>
-                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                            </FormItem>
-                        )} />
-                    </CardContent>
-                  </Card>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+                </TabsContent>
+            </Tabs>
             <div className="flex justify-start pt-8">
                 <Button type="submit">Save All Settings</Button>
             </div>
@@ -358,5 +346,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
-    
