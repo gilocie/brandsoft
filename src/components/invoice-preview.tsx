@@ -85,7 +85,7 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId }: Inv
     const currencyCode = invoiceData.currency || config.profile.defaultCurrency;
     const formatCurrency = (value: number) => `${currencyCode}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-    const subtotal = invoiceData.lineItems?.reduce((acc, item) => acc + (item.quantity * item.price), 0) || 0;
+    const subtotal = invoiceData.lineItems?.reduce((acc, item) => acc + (item.quantity * item.price), 0) || invoiceData.subtotal || 0;
     
     let discountAmount = 0;
     if (invoiceData.applyDiscount && invoiceData.discountValue) {
@@ -101,15 +101,30 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId }: Inv
     const subtotalAfterDiscount = subtotal - discountAmount;
     
     let taxAmount = 0;
+    let taxRateDisplay = '0%';
     if (invoiceData.applyTax && invoiceData.taxValue) {
         if (invoiceData.taxType === 'percentage') {
             taxAmount = subtotalAfterDiscount * (invoiceData.taxValue / 100);
+            taxRateDisplay = `${invoiceData.taxValue}%`;
         } else {
             taxAmount = invoiceData.taxValue;
+            taxRateDisplay = formatCurrency(invoiceData.taxValue);
         }
-    } else if (invoiceData.tax) {
+    } else if (invoiceData.tax && invoiceData.tax > 0 && subtotalAfterDiscount > 0) {
       taxAmount = invoiceData.tax;
+      const effectiveTaxRate = (taxAmount / subtotalAfterDiscount) * 100;
+      // Heuristic: if it looks like a flat rate, show it as currency.
+      // This isn't perfect but covers many cases. A stored taxType would be better.
+      if (effectiveTaxRate > 50 && Number.isInteger(taxAmount)) {
+          taxRateDisplay = formatCurrency(taxAmount);
+      } else {
+          taxRateDisplay = `${effectiveTaxRate.toFixed(2)}%`;
+      }
+    } else if (invoiceData.tax) {
+        taxAmount = invoiceData.tax;
+        taxRateDisplay = formatCurrency(taxAmount);
     }
+
 
     let shippingAmount = 0;
     if (invoiceData.applyShipping && invoiceData.shippingValue) {
@@ -171,7 +186,7 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId }: Inv
                         <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Bill To</h3>
                         <p className="font-bold text-lg">{customer.companyName || customer.name}</p>
                         {customer.companyName && <p className="text-gray-600">{customer.name}</p>}
-                        <p className="text-gray-600">{customer.address}</p>
+                        <p className="text-gray-600">{customer.address || customer.companyAddress || 'No address provided'}</p>
                         <p className="text-gray-600">{customer.email}</p>
                     </div>
                     <div className="text-left sm:text-right">
@@ -218,10 +233,7 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId }: Inv
                                     <TableCell className="text-right py-3 align-top">{item.quantity}</TableCell>
                                     <TableCell className="text-right py-3 align-top">{formatCurrency(item.price)}</TableCell>
                                     <TableCell className="text-right py-3 align-top">
-                                       { (invoiceData.applyTax && invoiceData.taxValue) ?
-                                           (invoiceData.taxType === 'percentage' ? `${invoiceData.taxValue}%` : formatCurrency(invoiceData.taxValue))
-                                         : '0%'
-                                       }
+                                       {taxRateDisplay}
                                     </TableCell>
                                     <TableCell className="text-right py-3 align-top">{formatCurrency(item.quantity * item.price)}</TableCell>
                                 </TableRow>
@@ -280,7 +292,7 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId }: Inv
                 
 
                 {/* Footer */}
-                <footer className="absolute bottom-0 left-0 right-0 z-10 text-center text-xs text-white p-4" style={{backgroundColor: config.brand.secondaryColor}}>
+                <footer className="absolute bottom-0 left-0 right-0 z-10 text-center text-xs p-4" style={{backgroundColor: config.brand.secondaryColor, color: '#fff'}}>
                     {config.brand.footerContent && <p className="mb-1">{config.brand.footerContent}</p>}
                     {config.brand.brandsoftFooter && <p className="font-bold">Created by BrandSoft</p>}
                 </footer>
