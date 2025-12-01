@@ -33,6 +33,7 @@ import { useBrandsoft } from "@/hooks/use-brandsoft.tsx";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard", enabledKey: null },
@@ -58,6 +59,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const getFontClass = (fontName?: string) => {
+    switch(fontName) {
+      case 'Poppins': return 'font-body';
+      case 'Belleza': return 'font-headline';
+      case 'Source Code Pro': return 'font-code';
+      default: return 'font-body';
+    }
+  };
+
   const visibleNavItems = getVisibleNavItems();
   const pageTitle = navItems.find(item => pathname.startsWith(item.href))?.label || "Dashboard";
 
@@ -66,10 +76,24 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <Sidebar>
         <SidebarHeader>
           <div className="flex items-center gap-2">
-            <BriefcaseBusiness className="h-6 w-6 text-primary-foreground" />
-            <h1 className="text-xl font-headline font-bold text-primary-foreground">
-              BrandSoft
-            </h1>
+            {config ? (
+                <Link href="/settings" className="flex items-center gap-2 text-primary-foreground">
+                    <Avatar className="h-8 w-8">
+                        <AvatarImage src={config.brand.logo} alt={config.brand.businessName} />
+                        <AvatarFallback>
+                            <BriefcaseBusiness className="h-5 w-5" />
+                        </AvatarFallback>
+                    </Avatar>
+                    <h1 className={cn("text-xl font-bold", getFontClass(config.brand.font))}>
+                        {config.brand.businessName}
+                    </h1>
+                </Link>
+            ) : (
+                <>
+                    <Skeleton className="h-8 w-8 rounded-full" />
+                    <Skeleton className="h-6 w-24" />
+                </>
+            )}
           </div>
         </SidebarHeader>
         <SidebarContent>
