@@ -120,12 +120,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <SidebarMenu>
             <SidebarMenuItem>
               {config ? (
-                <div className="flex items-center justify-center p-2 text-left">
-                  <Avatar className="h-9 w-9">
+                <div className="flex flex-col items-center justify-center p-2 text-center space-y-2">
+                  <Avatar className="h-12 w-12">
                     <AvatarFallback>
-                        <BriefcaseBusiness className="h-5 w-5 text-primary" />
+                        <BriefcaseBusiness className="h-8 w-8 text-primary" />
                     </AvatarFallback>
                   </Avatar>
+                  <p className="text-xs font-semibold text-sidebar-foreground/80">BrandSoft Studio</p>
                 </div>
               ) : (
                 <div className="flex items-center justify-center p-2">
