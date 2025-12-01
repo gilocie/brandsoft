@@ -77,14 +77,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <SidebarHeader>
           <div className="flex items-center gap-2">
             {config ? (
-                <Link href="/settings" className="flex items-center gap-2 text-primary-foreground">
+                <Link href="/settings" className="flex items-center gap-2 text-sidebar-foreground">
                     <Avatar className="h-8 w-8">
                         <AvatarImage src={config.brand.logo} alt={config.brand.businessName} />
                         <AvatarFallback>
                             <BriefcaseBusiness className="h-5 w-5" />
                         </AvatarFallback>
                     </Avatar>
-                    <h1 className={cn("text-xl font-bold", getFontClass(config.brand.font))}>
+                    <h1 className={cn("text-base font-bold", getFontClass(config.brand.font))}>
                         {config.brand.businessName}
                     </h1>
                 </Link>
