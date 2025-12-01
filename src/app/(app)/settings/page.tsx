@@ -27,7 +27,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState, useRef } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { UploadCloud } from 'lucide-react';
+import { UploadCloud, Paintbrush, Cog, CreditCard, SlidersHorizontal } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -166,10 +166,11 @@ export default function SettingsPage() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             <Tabs defaultValue="branding" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="branding">Branding</TabsTrigger>
-                    <TabsTrigger value="general">General</TabsTrigger>
-                    <TabsTrigger value="payments">Payments</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-4">
+                    <TabsTrigger value="branding"><Paintbrush className="mr-2 h-4 w-4" />Branding</TabsTrigger>
+                    <TabsTrigger value="general"><Cog className="mr-2 h-4 w-4" />General</TabsTrigger>
+                    <TabsTrigger value="payments"><CreditCard className="mr-2 h-4 w-4" />Payments</TabsTrigger>
+                    <TabsTrigger value="options"><SlidersHorizontal className="mr-2 h-4 w-4" />Options</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="branding">
@@ -334,6 +335,20 @@ export default function SettingsPage() {
                                 <FormDescription>This will appear on your invoices.</FormDescription>
                                 <FormMessage /></FormItem>
                             )} />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="options">
+                     <Card>
+                        <CardHeader>
+                            <CardTitle>Module Options</CardTitle>
+                            <CardDescription>Enable or disable specific application modules.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                           <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed bg-muted/40">
+                                <p className="text-muted-foreground">Feature toggles will be available here soon.</p>
+                            </div>
                         </CardContent>
                     </Card>
                 </TabsContent>
