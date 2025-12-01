@@ -106,13 +106,13 @@ export default function EditInvoicePage() {
         notes: invoiceToEdit.notes || '',
 
         applyDiscount: !!invoiceToEdit.discount,
-        discountType: invoiceToEdit.discount && invoiceToEdit.subtotal && invoiceToEdit.discount > 0 && invoiceToEdit.subtotal > 0 ? (invoiceToEdit.discount / invoiceToEdit.subtotal) < 1 ? 'percentage' : 'flat' : 'flat',
-        discountValue: invoiceToEdit.discount && invoiceToEdit.subtotal && (invoiceToEdit.discount / invoiceToEdit.subtotal) < 1 && invoiceToEdit.subtotal > 0 ? (invoiceToEdit.discount / invoiceToEdit.subtotal) * 100 : invoiceToEdit.discount || 0,
+        discountType: invoiceToEdit.discountType || 'flat',
+        discountValue: invoiceToEdit.discountValue || 0,
         
         applyTax: !!invoiceToEdit.tax,
-        taxType: 'flat', // Default to flat as it's harder to reverse engineer with discounts
-        taxValue: invoiceToEdit.tax || 0,
-        taxName: invoiceToEdit.tax ? 'Tax' : '',
+        taxType: invoiceToEdit.taxType || 'percentage',
+        taxValue: invoiceToEdit.taxValue || 0,
+        taxName: invoiceToEdit.taxName || 'Tax',
 
         applyShipping: !!invoiceToEdit.shipping,
         shippingValue: invoiceToEdit.shipping || 0,
@@ -194,7 +194,12 @@ export default function EditInvoicePage() {
         status: data.status,
         subtotal,
         discount: discountAmount,
+        discountType: data.discountType,
+        discountValue: data.discountValue,
         tax: taxAmount,
+        taxName: data.taxName,
+        taxType: data.taxType,
+        taxValue: data.taxValue,
         shipping,
         notes: data.notes,
         lineItems: data.lineItems,

@@ -47,7 +47,12 @@ export type Invoice = {
     status: 'Paid' | 'Pending' | 'Overdue' | 'Canceled' | 'Draft';
     subtotal?: number;
     discount?: number;
+    discountType?: 'percentage' | 'flat';
+    discountValue?: number;
     tax?: number;
+    taxName?: string;
+    taxType?: 'percentage' | 'flat';
+    taxValue?: number;
     shipping?: number;
     notes?: string;
     lineItems?: InvoiceLineItem[];
@@ -437,5 +442,3 @@ export function useBrandsoft() {
   }
   return context;
 }
-
-    
