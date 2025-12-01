@@ -1,3 +1,4 @@
+
 'use client';
 
 import { BrandsoftConfig, Customer, Invoice } from '@/hooks/use-brandsoft.tsx';
@@ -143,10 +144,6 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
     const rawDueDate = invoiceData.dueDate || invoiceData.date;
     const invoiceDate = typeof rawInvoiceDate === 'string' ? parseISO(rawInvoiceDate) : rawInvoiceDate;
     const dueDate = typeof rawDueDate === 'string' ? parseISO(rawDueDate) : rawDueDate;
-
-    const isProductBased = (description: string) => {
-        return !!config?.products.find(p => p.name === description);
-    }
     
     const taxName = invoiceData.taxName || 'Tax';
 
@@ -161,7 +158,8 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                 style={forPdf ? { 
                     padding: '48px',
                     paddingTop: config.brand.headerImage ? '100px' : '58px',
-                    paddingBottom: '100px'
+                    paddingBottom: '100px',
+                    position: 'relative'
                 } : {}}
             >
                 <div className="flex-grow">
@@ -204,13 +202,17 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                     </header>
 
                     {/* Bill To & Dates */}
-                    <section className="relative z-10 grid grid-cols-2 gap-8 mb-8">
+                    <section className="relative z-10 grid grid-cols-2 gap-8 mb-4">
                         <div>
-                            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">Bill To</h3>
-                            <p className="font-bold text-lg">{customer.companyName || customer.name}</p>
-                            {customer.companyName && <p className="text-gray-600">{customer.name}</p>}
-                            <p className="text-gray-600">{customer.address || customer.companyAddress || 'No address provided'}</p>
-                            <p className="text-gray-600">{customer.email}</p>
+                            {config.brand.showCustomerAddress && (
+                                <>
+                                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">Bill To</h3>
+                                    <p className="font-bold text-lg">{customer.companyName || customer.name}</p>
+                                    {customer.companyName && <p className="text-gray-600">{customer.name}</p>}
+                                    <p className="text-gray-600">{customer.address || customer.companyAddress || 'No address provided'}</p>
+                                    <p className="text-gray-600">{customer.email}</p>
+                                </>
+                            )}
                         </div>
                         <div className="text-right">
                             <div className="space-y-2">
@@ -235,32 +237,26 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                         <Table>
                             <TableHeader>
                                 <TableRow className="bg-transparent border-b-2 border-black">
-                                    <TableHead className="w-1/2 text-black font-bold uppercase tracking-wider text-xs">Items</TableHead>
-                                    <TableHead className="text-right text-black font-bold uppercase tracking-wider text-xs">Quantity</TableHead>
+                                    <TableHead className="w-2/5 text-black font-bold uppercase tracking-wider text-xs">Item</TableHead>
+                                    <TableHead className="w-2/5 text-black font-bold uppercase tracking-wider text-xs">Description</TableHead>
+                                    <TableHead className="text-right text-black font-bold uppercase tracking-wider text-xs">Qty</TableHead>
                                     <TableHead className="text-right text-black font-bold uppercase tracking-wider text-xs">Price</TableHead>
-                                    <TableHead className="text-right text-black font-bold uppercase tracking-wider text-xs">Tax</TableHead>
                                     <TableHead className="text-right text-black font-bold uppercase tracking-wider text-xs">Amount</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {invoiceData.lineItems?.map((item, index) => (
-                                    <TableRow key={index} className="border-b border-gray-300">
-                                        <TableCell className="font-medium py-3 align-top text-sm">
-                                            {item.description}
-                                            {isProductBased(item.description) && config.products.find(p => p.name === item.description)?.description && (
-                                                <p className="text-xs text-muted-foreground mt-1">
-                                                    {config.products.find(p => p.name === item.description)?.description}
-                                                </p>
-                                            )}
-                                        </TableCell>
-                                        <TableCell className="text-right py-3 align-top text-sm">{item.quantity}</TableCell>
-                                        <TableCell className="text-right py-3 align-top text-sm">{formatCurrency(item.price)}</TableCell>
-                                        <TableCell className="text-right py-3 align-top text-sm">
-                                        {taxRateDisplay}
-                                        </TableCell>
-                                        <TableCell className="text-right py-3 align-top text-sm">{formatCurrency(item.quantity * item.price)}</TableCell>
-                                    </TableRow>
-                                ))}
+                                {invoiceData.lineItems?.map((item, index) => {
+                                    const product = config?.products.find(p => p.name === item.description);
+                                    return (
+                                        <TableRow key={index} className="border-b border-gray-300">
+                                            <TableCell className="font-medium py-3 align-top text-sm">{product ? product.name : item.description}</TableCell>
+                                            <TableCell className="py-3 align-top text-sm text-muted-foreground">{product?.description || ''}</TableCell>
+                                            <TableCell className="text-right py-3 align-top text-sm">{item.quantity}</TableCell>
+                                            <TableCell className="text-right py-3 align-top text-sm">{formatCurrency(item.price)}</TableCell>
+                                            <TableCell className="text-right py-3 align-top text-sm">{formatCurrency(item.quantity * item.price)}</TableCell>
+                                        </TableRow>
+                                    )
+                                })}
                             </TableBody>
                         </Table>
                     </section>
@@ -314,14 +310,25 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                     </section>
                 </div>
 
-                {/* Footer - Renders at the bottom of the flex container */}
-                <footer className={cn("relative z-10", forPdf && "absolute bottom-0 left-0 right-0")}>
+                {/* Footer - Absolute positioning at bottom */}
+                <footer className={cn("absolute bottom-0 left-0 right-0 z-10", forPdf ? "" : "hidden")}>
                     {config.brand.footerImage && (
                         <img src={config.brand.footerImage} className="w-full h-auto" alt="Footer"/>
                     )}
                      <div className="text-center text-xs py-3 px-4" style={{backgroundColor: config.brand.secondaryColor, color: 'white'}}>
                          {config.brand.footerContent && <p className="mb-1">{config.brand.footerContent}</p>}
                          {config.brand.brandsoftFooter && <p><span className="font-bold">Created by BrandSoft</span></p>}
+                    </div>
+                </footer>
+                
+                 {/* Footer for non-PDF preview */}
+                <footer className={cn("mt-auto", forPdf ? "hidden" : "")}>
+                    {config.brand.footerImage && (
+                        <img src={config.brand.footerImage} className="w-full h-auto" alt="Footer"/>
+                    )}
+                    <div className="text-center text-xs py-3 px-4" style={{backgroundColor: config.brand.secondaryColor, color: 'white'}}>
+                        {config.brand.footerContent && <p className="mb-1">{config.brand.footerContent}</p>}
+                        {config.brand.brandsoftFooter && <p><span className="font-bold">Created by BrandSoft</span></p>}
                     </div>
                 </footer>
             </div>
@@ -350,6 +357,11 @@ export const downloadInvoiceAsPdf = async (props: InvoicePreviewProps) => {
         document.body.removeChild(container);
         return;
     }
+    
+    // Temporarily get header and footer to render them on each page
+    const headerClone = invoiceElement.querySelector('header')?.cloneNode(true) as HTMLElement | null;
+    const footerClone = invoiceElement.querySelector('footer.absolute')?.cloneNode(true) as HTMLElement | null;
+
 
     const canvas = await html2canvas(invoiceElement, {
         scale: 2,
@@ -375,30 +387,29 @@ export const downloadInvoiceAsPdf = async (props: InvoicePreviewProps) => {
     const imgWidth = pdfWidth;
     const imgHeight = (canvas.height * pdfWidth) / canvas.width;
 
-    if (imgHeight <= pdfHeight) {
-        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, imgWidth, imgHeight);
-    } else {
-        const totalPages = Math.ceil(imgHeight / pdfHeight);
-        
-        for (let i = 0; i < totalPages; i++) {
-            if (i > 0) pdf.addPage();
-            
-            const srcY = (canvas.height / totalPages) * i;
-            const srcHeight = Math.min(canvas.height / totalPages, canvas.height - srcY);
-            
-            const pageCanvas = document.createElement('canvas');
-            pageCanvas.width = canvas.width;
-            pageCanvas.height = srcHeight;
-            
-            const ctx = pageCanvas.getContext('2d');
-            if (ctx) {
-                ctx.drawImage(canvas, 0, srcY, canvas.width, srcHeight, 0, 0, canvas.width, srcHeight);
-                const pageImg = pageCanvas.toDataURL('image/png');
-                const pageImgHeight = (srcHeight * pdfWidth) / canvas.width;
-                pdf.addImage(pageImg, 'PNG', 0, 0, pdfWidth, pageImgHeight);
-            }
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, imgWidth, imgHeight);
+    heightLeft -= pdfHeight;
+
+    while (heightLeft > 0) {
+        position -= pdfHeight;
+        pdf.addPage();
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight);
+
+        if (headerClone) {
+            const headerCanvas = await html2canvas(headerClone, {backgroundColor: null});
+            pdf.addImage(headerCanvas.toDataURL('image/png'), 'PNG', 0, 0, pdfWidth, headerClone.offsetHeight);
         }
+        if (footerClone) {
+            const footerCanvas = await html2canvas(footerClone, {backgroundColor: null});
+            pdf.addImage(footerCanvas.toDataURL('image/png'), 'PNG', 0, pdfHeight - footerClone.offsetHeight, pdfWidth, footerClone.offsetHeight);
+        }
+        
+        heightLeft -= pdfHeight;
     }
 
     pdf.save(`Invoice-${props.invoiceId}.pdf`);
 };
+

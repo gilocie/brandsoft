@@ -71,6 +71,7 @@ export type BrandsoftConfig = {
     backgroundImage?: string;
     watermarkImage?: string;
     footerContent?: string;
+    showCustomerAddress: boolean;
   };
   profile: {
     address: string;
@@ -222,6 +223,9 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
         const parsedConfig = JSON.parse(configData);
         if (parsedConfig.brand.brandsoftFooter === undefined) {
           parsedConfig.brand.brandsoftFooter = true;
+        }
+        if (parsedConfig.brand.showCustomerAddress === undefined) {
+            parsedConfig.brand.showCustomerAddress = true;
         }
         if (!parsedConfig.invoices) {
             parsedConfig.invoices = initialInvoices;

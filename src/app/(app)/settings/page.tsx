@@ -27,7 +27,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState, useRef } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { UploadCloud, Paintbrush, Cog, CreditCard, SlidersHorizontal, Image as ImageIcon, FileImage, Layers, Stamp, Trash2 } from 'lucide-react';
+import { UploadCloud, Paintbrush, Cog, CreditCard, SlidersHorizontal, Image as ImageIcon, FileImage, Layers, Stamp, Trash2, LayoutTemplate } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -44,6 +44,7 @@ const settingsSchema = z.object({
   font: z.string().optional(),
   defaultCurrency: z.string().min(1, "Default currency is required"),
   brandsoftFooter: z.boolean().default(true),
+  showCustomerAddress: z.boolean().default(true),
   paymentDetails: z.string().optional(),
   headerImage: z.string().optional(),
   footerImage: z.string().optional(),
@@ -133,6 +134,7 @@ export default function SettingsPage() {
       font: 'Poppins',
       defaultCurrency: 'USD',
       brandsoftFooter: true,
+      showCustomerAddress: true,
       paymentDetails: '',
       headerImage: '',
       footerImage: '',
@@ -154,6 +156,7 @@ export default function SettingsPage() {
             font: config.brand.font,
             defaultCurrency: config.profile.defaultCurrency,
             brandsoftFooter: config.brand.brandsoftFooter,
+            showCustomerAddress: config.brand.showCustomerAddress,
             paymentDetails: config.profile.paymentDetails || '',
             headerImage: config.brand.headerImage || '',
             footerImage: config.brand.footerImage || '',
@@ -197,6 +200,7 @@ export default function SettingsPage() {
           secondaryColor: data.secondaryColor || '#D87093',
           font: data.font || 'Poppins',
           brandsoftFooter: data.brandsoftFooter,
+          showCustomerAddress: data.showCustomerAddress,
           headerImage: data.headerImage || '',
           footerImage: data.footerImage || '',
           backgroundImage: data.backgroundImage || '',
@@ -235,11 +239,12 @@ export default function SettingsPage() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             <Tabs defaultValue="branding" className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-5">
                     <TabsTrigger value="branding"><Paintbrush className="mr-2 h-4 w-4" />Branding</TabsTrigger>
                     <TabsTrigger value="general"><Cog className="mr-2 h-4 w-4" />General</TabsTrigger>
                     <TabsTrigger value="payments"><CreditCard className="mr-2 h-4 w-4" />Payments</TabsTrigger>
-                    <TabsTrigger value="options"><SlidersHorizontal className="mr-2 h-4 w-4" />Options</TabsTrigger>
+                    <TabsTrigger value="layout"><LayoutTemplate className="mr-2 h-4 w-4" />Layout</TabsTrigger>
+                    <TabsTrigger value="options"><SlidersHorizontal className="mr-2 h-4 w-4" />Modules</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="branding">
@@ -303,12 +308,25 @@ export default function SettingsPage() {
                             </div>
                         </CardContent>
                     </Card>
-                     <Card className="mt-6">
+                </TabsContent>
+                
+                <TabsContent value="layout">
+                     <Card>
                         <CardHeader>
-                            <CardTitle>Letterhead & Document Images</CardTitle>
-                            <CardDescription>Customize headers, footers, and backgrounds for your documents.</CardDescription>
+                            <CardTitle>Document & Layout</CardTitle>
+                            <CardDescription>Customize headers, footers, and content visibility.</CardDescription>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="space-y-6">
+                            <FormField control={form.control} name="showCustomerAddress" render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                                    <div className="space-y-0.5">
+                                        <FormLabel>Show Customer Address</FormLabel>
+                                        <FormDescription>Display the customer's billing address on invoices.</FormDescription>
+                                    </div>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                </FormItem>
+                            )} />
+                             <Separator />
                              <Tabs defaultValue="header" className="w-full">
                                 <TabsList className="grid w-full grid-cols-4">
                                     <TabsTrigger value="header"><ImageIcon className="mr-2 h-4 w-4" />Header</TabsTrigger>
@@ -361,14 +379,14 @@ export default function SettingsPage() {
                                      />
                                 </TabsContent>
                             </Tabs>
-                            <Separator className="my-6" />
+                            <Separator />
                             <FormField control={form.control} name="footerContent" render={({ field }) => (
                                 <FormItem><FormLabel>Custom Footer Text</FormLabel>
                                 <FormControl><Textarea placeholder="e.g., Thank you for your business!" {...field} rows={3} /></FormControl>
                                 <FormDescription>This text appears above the footer image or at the bottom of the page.</FormDescription>
                                 <FormMessage /></FormItem>
                             )} />
-                            <Separator className="my-6" />
+                            <Separator />
                             <FormField control={form.control} name="brandsoftFooter" render={({ field }) => (
                                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                                     <div className="space-y-0.5">
@@ -461,5 +479,3 @@ export default function SettingsPage() {
   );
 }
 
-
-    
