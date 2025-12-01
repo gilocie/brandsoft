@@ -2,7 +2,7 @@
 
 'use client';
 
-import { BrandsoftConfig, Customer, Invoice } from '@/hooks/use-brandsoft';
+import { BrandsoftConfig, Customer, Invoice } from '@/hooks/use-brandsoft.tsx';
 import { format, parseISO } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
@@ -162,7 +162,7 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId }: Inv
                  {invoiceData.status && !config.brand.watermarkImage && <InvoiceStatusWatermark status={invoiceData.status} />}
 
                 {config.brand.headerImage ? (
-                    <div className="absolute top-0 left-0 right-0 h-40 z-10">
+                    <div className="absolute top-0 left-0 right-0 h-20 z-10">
                          <img src={config.brand.headerImage} className="w-full h-full object-cover" alt="Letterhead"/>
                     </div>
                 ) : (
@@ -307,7 +307,7 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId }: Inv
                     {config.brand.footerImage && (
                         <img src={config.brand.footerImage} className="w-full h-auto" alt="Footer"/>
                     )}
-                    <div className="text-center text-xs mt-2" style={{color: config.brand.primaryColor}}>
+                     <div className="text-center text-xs mt-2" style={{color: config.brand.primaryColor}}>
                          {config.brand.footerContent && <p className="mb-1">{config.brand.footerContent}</p>}
                          {config.brand.brandsoftFooter && <p><span className="font-bold">Created by BrandSoft</span></p>}
                     </div>

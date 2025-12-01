@@ -5,7 +5,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useBrandsoft, type BrandsoftConfig } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type BrandsoftConfig } from '@/hooks/use-brandsoft.tsx';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -310,7 +310,7 @@ export default function SettingsPage() {
                                         previewState={headerPreview}
                                         setPreviewState={setHeaderPreview}
                                         label="Header Image"
-                                        description="Recommended: 2480x400px PNG/JPG for A4 headers."
+                                        description="Recommended: 2480x70px PNG/JPG for A4 headers."
                                      />
                                 </TabsContent>
                                 <TabsContent value="footer" className="pt-4">
@@ -320,7 +320,7 @@ export default function SettingsPage() {
                                         previewState={footerPreview}
                                         setPreviewState={setFooterPreview}
                                         label="Footer Image"
-                                        description="Recommended: 2480x200px PNG/JPG for A4 footers."
+                                        description="Recommended: 2480x70px PNG/JPG for A4 footers."
                                      />
                                 </TabsContent>
                                 <TabsContent value="background" className="pt-4">
