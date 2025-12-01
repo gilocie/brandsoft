@@ -70,7 +70,7 @@ const statusVariantMap: {
 const ActionsMenu = ({ invoice, onSelectAction }: { invoice: Invoice, onSelectAction: (action: 'view' | 'edit' | 'delete' | 'download' | 'send', invoice: Invoice) => void }) => (
     <DropdownMenu>
         <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary-foreground hover:bg-primary">
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:text-primary-foreground hover:bg-primary">
             <MoreHorizontal className="h-4 w-4" />
             <span className="sr-only">Actions</span>
         </Button>
