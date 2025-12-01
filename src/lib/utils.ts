@@ -1,9 +1,5 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
-import { InvoicePreview, type InvoicePreviewProps } from '@/components/invoice-preview';
-import { createRoot } from 'react-dom/client';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -56,62 +52,3 @@ export function hexToHsl(hex: string): { h: number, s: number, l: number } | nul
     l: Math.round(l * 100),
   };
 }
-
-export const downloadInvoiceAsPdf = async (props: InvoicePreviewProps) => {
-    // Create a temporary container for rendering
-    const container = document.createElement('div');
-    container.id = `pdf-container-${props.invoiceId}`;
-    container.style.position = 'fixed';
-    container.style.left = '-9999px';
-    container.style.top = '0';
-    document.body.appendChild(container);
-
-    // Render the component using React's new root API
-    const root = createRoot(container);
-    root.render(<InvoicePreview {...props} />);
-
-    // Allow time for images to load
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    const invoiceElement = container.querySelector(`#invoice-preview-${props.invoiceId}`);
-    if (!invoiceElement) {
-        console.error("Invoice element not found for PDF generation.");
-        document.body.removeChild(container);
-        return;
-    }
-
-    const canvas = await html2canvas(invoiceElement as HTMLElement, {
-        scale: 2, // Higher scale for better quality
-        useCORS: true,
-        allowTaint: true, // Allow cross-origin images to be rendered
-    });
-
-    // Clean up the temporary container
-    document.body.removeChild(container);
-
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF({
-        orientation: 'p',
-        unit: 'mm',
-        format: 'a4',
-    });
-
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const imgHeight = canvas.height * pdfWidth / canvas.width;
-    let heightLeft = imgHeight;
-    let position = 0;
-
-    pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
-    heightLeft -= pdf.internal.pageSize.getHeight();
-
-    while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
-        heightLeft -= pdf.internal.pageSize.getHeight();
-    }
-
-    pdf.save(`Invoice-${props.invoiceId}.pdf`);
-};
-
-    

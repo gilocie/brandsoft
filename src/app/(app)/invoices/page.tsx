@@ -49,14 +49,14 @@ import {
   Eye,
   CheckCircle2,
 } from 'lucide-react';
-import { cn, downloadInvoiceAsPdf } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@/components/ui/toggle-group"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useBrandsoft, type Customer, type Invoice } from '@/hooks/use-brandsoft.tsx';
-import { InvoicePreview } from '@/components/invoice-preview';
+import { InvoicePreview, downloadInvoiceAsPdf } from '@/components/invoice-preview';
 
 const statusVariantMap: {
   [key: string]: 'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'accent';
@@ -350,5 +350,3 @@ export default function InvoicesPage() {
     </div>
   );
 }
-
-    
