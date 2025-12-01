@@ -53,3 +53,6 @@ yarn.lock
 
 # prevent Firebase Studio from touching this file
 /package-web.json.lock
+
+# Local scripts not for GitHub
+update-web-deps.js
