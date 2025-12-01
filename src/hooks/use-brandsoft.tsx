@@ -40,6 +40,7 @@ export type InvoiceLineItem = {
 export type Invoice = {
     invoiceId: string;
     customer: string;
+    customerId?: string;
     date: string;
     dueDate: string;
     amount: number;
@@ -112,6 +113,7 @@ const initialInvoices: Invoice[] = [
   {
     invoiceId: 'INV001',
     customer: 'Liam Johnson',
+    customerId: 'CUST-1625243511000',
     date: '2023-06-23',
     dueDate: '2023-07-23',
     amount: 250.0,
@@ -125,6 +127,7 @@ const initialInvoices: Invoice[] = [
   {
     invoiceId: 'INV002',
     customer: 'Olivia Smith',
+    customerId: 'CUST-1625243512000',
     date: '2023-07-15',
     dueDate: '2023-08-15',
     amount: 150.0,
@@ -138,6 +141,7 @@ const initialInvoices: Invoice[] = [
   {
     invoiceId: 'INV003',
     customer: 'Noah Williams',
+    customerId: 'CUST-1625243513000',
     date: '2023-08-01',
     dueDate: '2023-09-01',
     amount: 350.0,
@@ -151,6 +155,7 @@ const initialInvoices: Invoice[] = [
   {
     invoiceId: 'INV004',
     customer: 'Emma Brown',
+    customerId: 'CUST-1625243514000',
     date: '2023-09-10',
     dueDate: '2023-10-10',
     amount: 450.0,
@@ -164,6 +169,7 @@ const initialInvoices: Invoice[] = [
   {
     invoiceId: 'INV005',
     customer: 'James Jones',
+    customerId: 'CUST-1625243515000',
     date: '2023-10-20',
     dueDate: '2023-11-20',
     amount: 550.0,
@@ -177,6 +183,7 @@ const initialInvoices: Invoice[] = [
    {
     invoiceId: 'INV006',
     customer: 'Sophia Garcia',
+    customerId: 'CUST-1625243516000',
     date: '2023-10-22',
     dueDate: '2023-11-22',
     amount: 300.0,

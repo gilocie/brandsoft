@@ -145,7 +145,7 @@ export default function InvoicesPage() {
     }
   };
   
-  const selectedCustomer = config?.customers.find(c => c.name === selectedInvoice?.customer) || null;
+  const selectedCustomer = config?.customers.find(c => c.name === selectedInvoice?.customer || c.id === selectedInvoice?.customerId) || null;
 
   return (
     <div className="container mx-auto space-y-6">
@@ -179,7 +179,11 @@ export default function InvoicesPage() {
             ? "grid md:grid-cols-2 lg:grid-cols-3" 
             : "flex flex-col"
       )}>
-        {invoices.map((invoice) => (
+        {invoices.map((invoice) => {
+          const customer = config?.customers.find(c => c.id === invoice.customerId || c.name === invoice.customer);
+          const customerName = customer?.companyName || customer?.name || invoice.customer;
+          
+          return (
           <Card key={invoice.invoiceId} className={cn(
             "flex flex-col",
             layout === 'list' && "flex-row items-center"
@@ -188,7 +192,7 @@ export default function InvoicesPage() {
                 <CardHeader className={cn(layout === 'list' && "p-4")}>
                   <div className="flex items-start justify-between">
                     <div>
-                      <CardTitle className={cn(layout === 'list' && "text-base font-semibold")}>{invoice.customer}</CardTitle>
+                      <CardTitle className={cn(layout === 'list' && "text-base font-semibold")}>{customerName}</CardTitle>
                       <CardDescription className={cn(layout === 'list' && "text-xs")}>{invoice.invoiceId}</CardDescription>
                     </div>
                      <div className={cn(layout === 'grid' ? "flex" : "hidden")}>
@@ -219,7 +223,7 @@ export default function InvoicesPage() {
               {/* The duplicate badge was here and has been removed */}
             </CardFooter>
           </Card>
-        ))}
+        )})}
       </div>
 
        {/* View Details Dialog */}
