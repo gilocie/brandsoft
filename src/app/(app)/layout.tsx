@@ -122,8 +122,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               {config ? (
                 <div className="flex items-center justify-center p-2 text-left">
                   <Avatar className="h-9 w-9">
-                    <AvatarImage src={config.brand.logo} alt={config.brand.businessName} />
-                    <AvatarFallback>{config.brand.businessName?.charAt(0).toUpperCase()}</AvatarFallback>
+                    <AvatarFallback>
+                        <BriefcaseBusiness className="h-5 w-5 text-primary" />
+                    </AvatarFallback>
                   </Avatar>
                 </div>
               ) : (
