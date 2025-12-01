@@ -173,10 +173,7 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId }: Inv
                 <header className="relative z-10 flex justify-between items-start mb-12 pt-10">
                     <div className="flex items-center gap-4">
                         {config.brand.logo && (
-                            <Avatar className="h-16 w-16 sm:h-20 sm:w-20">
-                                <AvatarImage src={config.brand.logo} alt={config.brand.businessName} />
-                                <AvatarFallback>{config.brand.businessName.charAt(0)}</AvatarFallback>
-                            </Avatar>
+                           <img src={config.brand.logo} alt={config.brand.businessName} className="h-16 w-16 sm:h-20 sm:w-20 object-contain" />
                         )}
                         <div>
                             <h1 className="text-3xl sm:text-4xl font-bold" style={{color: config.brand.primaryColor}}>Invoice</h1>
@@ -192,27 +189,27 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId }: Inv
                 </header>
 
                 {/* Bill To & Dates */}
-                <section className="relative z-10 grid sm:grid-cols-2 gap-8 mt-8 mb-12">
+                <section className="relative z-10 grid grid-cols-2 gap-8 mt-8 mb-12">
                     <div>
-                        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Bill To</h3>
+                        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">Bill To</h3>
                         <p className="font-bold text-lg">{customer.companyName || customer.name}</p>
                         {customer.companyName && <p className="text-gray-600">{customer.name}</p>}
                         <p className="text-gray-600">{customer.address || customer.companyAddress || 'No address provided'}</p>
                         <p className="text-gray-600">{customer.email}</p>
                     </div>
-                    <div className="text-left sm:text-right">
-                         <div className="grid grid-cols-2 sm:grid-cols-1 gap-2">
-                           <div className="space-y-1 sm:mb-2">
-                                <p className="text-sm font-semibold text-gray-500">INVOICE #</p>
-                                <p className="font-medium">{invoiceId || `${config.profile.invoicePrefix || 'INV-'}${String(config.profile.invoiceStartNumber || 1).padStart(3, '0')}`}</p>
+                    <div className="text-right">
+                         <div className="space-y-2">
+                           <div className="grid grid-cols-2">
+                                <span className="text-sm font-semibold text-gray-500">INVOICE #</span>
+                                <span className="font-medium">{invoiceId || `${config.profile.invoicePrefix || 'INV-'}${String(config.profile.invoiceStartNumber || 1).padStart(3, '0')}`}</span>
                             </div>
-                            <div className="space-y-1 sm:mb-2">
-                                <p className="text-sm font-semibold text-gray-500">DATE</p>
-                                <p className="font-medium">{format(invoiceDate || new Date(), 'MM/dd/yy')}</p>
+                            <div className="grid grid-cols-2">
+                                <span className="text-sm font-semibold text-gray-500">DATE</span>
+                                <span className="font-medium">{format(invoiceDate || new Date(), 'MM/dd/yy')}</span>
                             </div>
-                             <div className="space-y-1">
-                                <p className="text-sm font-semibold text-gray-500">INVOICE DUE DATE</p>
-                                <p className="font-medium">{format(dueDate || new Date(), 'MM/dd/yy')}</p>
+                             <div className="grid grid-cols-2">
+                                <span className="text-sm font-semibold text-gray-500">DUE DATE</span>
+                                <span className="font-medium">{format(dueDate || new Date(), 'MM/dd/yy')}</span>
                             </div>
                         </div>
                     </div>
