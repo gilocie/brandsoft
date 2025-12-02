@@ -310,6 +310,62 @@ const RulerGuide = ({ orientation, position }) => {
   );
 };
 
+const HorizontalRuler = ({ zoom, position }) => {
+    const rulerRef = useRef<HTMLDivElement>(null);
+    const [ticks, setTicks] = useState([]);
+
+    useEffect(() => {
+        if (!rulerRef.current) return;
+        const width = rulerRef.current.offsetWidth;
+        const newTicks = [];
+        const interval = zoom > 0.5 ? 50 : 100;
+        
+        for (let i = 0; i < width * (1/zoom) * 2; i += interval) {
+            newTicks.push(i);
+        }
+        setTicks(newTicks);
+    }, [zoom, position]);
+
+    return (
+        <div ref={rulerRef} className="absolute -top-6 left-0 h-6 w-full bg-gray-800 text-white text-xs" style={{ transform: `translateX(${-position.x * zoom}px)` }}>
+            {ticks.map(tick => (
+                <div key={`h-${tick}`} className="absolute top-0" style={{ left: tick * zoom }}>
+                    <div className="w-px h-1.5 bg-gray-500" />
+                    <span className="absolute -bottom-3 -translate-x-1/2">{tick}</span>
+                </div>
+            ))}
+        </div>
+    );
+};
+
+const VerticalRuler = ({ zoom, position }) => {
+    const rulerRef = useRef<HTMLDivElement>(null);
+    const [ticks, setTicks] = useState([]);
+
+    useEffect(() => {
+        if (!rulerRef.current) return;
+        const height = rulerRef.current.offsetHeight;
+        const newTicks = [];
+        const interval = zoom > 0.5 ? 50 : 100;
+        
+        for (let i = 0; i < height * (1/zoom) * 2; i += interval) {
+            newTicks.push(i);
+        }
+        setTicks(newTicks);
+
+    }, [zoom, position]);
+
+    return (
+        <div ref={rulerRef} className="absolute -left-6 top-0 w-6 h-full bg-gray-800 text-white text-xs" style={{ transform: `translateY(${-position.y * zoom}px)`}}>
+             {ticks.map(tick => (
+                <div key={`v-${tick}`} className="absolute left-0" style={{ top: tick * zoom }}>
+                    <div className="h-px w-1.5 bg-gray-500" />
+                    <span className="absolute -left-5 -translate-y-1/2" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>{tick}</span>
+                </div>
+            ))}
+        </div>
+    );
+};
 
 const Canvas = () => {
     const { elements, selectElement, zoom, canvasPosition, setCanvasPosition, rulers, guides, addGuide } = useCanvasStore();
@@ -374,35 +430,40 @@ const Canvas = () => {
     return (
         <main 
             ref={mainCanvasRef}
-            className="flex-1 bg-gray-200 flex items-center justify-center p-8 overflow-auto cursor-grab active:cursor-grabbing"
+            className="flex-1 bg-gray-200 flex items-center justify-center p-8 overflow-hidden relative cursor-grab active:cursor-grabbing"
             onMouseDown={handleCanvasPan}
             onClick={() => selectElement(null)}
         >
+             {/* Rulers */}
+            {rulers.visible && (
+                <>
+                    <div 
+                        className="absolute top-0 left-0 h-6 w-full cursor-ns-resize z-30"
+                        onMouseDown={(e) => handleRulerDrag('horizontal', e)}
+                    >
+                         <HorizontalRuler zoom={zoom} position={canvasPosition}/>
+                    </div>
+                    <div 
+                        className="absolute left-0 top-0 w-6 h-full cursor-ew-resize z-30"
+                        onMouseDown={(e) => handleRulerDrag('vertical', e)}
+                    >
+                        <VerticalRuler zoom={zoom} position={canvasPosition}/>
+                    </div>
+                    <div className="absolute top-0 left-0 h-6 w-6 bg-gray-800 z-30"/>
+                </>
+            )}
+
              <div 
                 ref={pageRef}
                 className="relative bg-white shadow-lg"
                 style={{ 
                     width: '8.5in', 
                     height: '11in',
-                    transform: `scale(${zoom}) translate(${canvasPosition.x / zoom}px, ${canvasPosition.y / zoom}px)`,
+                    transform: `translate(${canvasPosition.x}px, ${canvasPosition.y}px) scale(${zoom})`,
                     transformOrigin: 'center center'
                 }}
                 onMouseDown={(e) => e.stopPropagation()} // Stop propagation to not deselect when clicking on page
             >
-                {/* Rulers */}
-                {rulers.visible && (
-                    <>
-                        <div 
-                            className="absolute -top-6 left-0 h-6 w-full bg-gray-800 text-white text-xs cursor-ns-resize"
-                             onMouseDown={(e) => handleRulerDrag('horizontal', e)}
-                        />
-                        <div 
-                            className="absolute -left-6 top-0 w-6 h-full bg-gray-800 text-white text-xs cursor-ew-resize"
-                             onMouseDown={(e) => handleRulerDrag('vertical', e)}
-                        />
-                        <div className="absolute -top-6 -left-6 h-6 w-6 bg-gray-800"/>
-                    </>
-                )}
                 
                 {/* Guides */}
                 {guides.horizontal.map(guide => <RulerGuide key={guide.id} orientation="horizontal" position={guide.y} />)}
@@ -435,12 +496,13 @@ const Footer = () => {
     const handleZoomChange = (value: number[]) => {
         setZoom(value[0] / 100);
     }
+    
     return (
         <footer className="h-12 bg-black flex items-center justify-end px-4 z-20 text-white shrink-0">
              <div className="flex items-center gap-2">
                 <Minus className="h-4 w-4" />
                 <Slider 
-                    defaultValue={[100]} 
+                    value={[zoom * 100]}
                     max={300} 
                     step={10} 
                     className="w-32"
@@ -460,13 +522,9 @@ export default function DesignStudioPage() {
             <Header />
             <div className="flex flex-1 overflow-hidden">
                 <LeftSidebar />
-                <div className="flex flex-1 flex-col">
-                    <Canvas />
-                </div>
+                <Canvas />
             </div>
             <Footer />
         </div>
     );
 }
-
-    
