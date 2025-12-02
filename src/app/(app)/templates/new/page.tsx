@@ -80,9 +80,9 @@ export default function NewTemplatePage() {
     
   return (
     <TooltipProvider>
-    <div className="flex flex-col h-full max-h-[calc(100vh-120px)] bg-muted/30">
+    <div className="flex flex-col h-full max-h-screen bg-muted/30">
        {/* Header & Top Toolbar */}
-       <header className="flex h-14 items-center gap-4 border-b bg-background px-2 md:px-4">
+       <header className="flex h-14 items-center gap-4 border-b bg-background px-2 md:px-4 flex-shrink-0">
           <Button variant="ghost" size="icon" asChild className="h-9 w-9">
             <Link href="/templates">
                 <ArrowLeft className="h-5 w-5" />
