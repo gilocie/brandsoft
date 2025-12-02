@@ -318,7 +318,12 @@ const Canvas = () => {
     const dragStart = useRef({ x: 0, y: 0, canvasX: 0, canvasY: 0 });
 
     const handleCanvasPan = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (e.target !== mainCanvasRef.current) return;
+        if (e.target !== mainCanvasRef.current && !mainCanvasRef.current?.contains(e.target as Node)) {
+            selectElement(null);
+            return;
+        }
+
+        if (e.target !== e.currentTarget) return;
         
         e.preventDefault();
         dragStart.current = { x: e.clientX, y: e.clientY, canvasX: canvasPosition.x, canvasY: canvasPosition.y };
@@ -372,8 +377,9 @@ const Canvas = () => {
     return (
         <main 
             ref={mainCanvasRef}
-            className="flex-1 bg-gray-200 flex items-center justify-center p-8 overflow-hidden cursor-grab active:cursor-grabbing"
+            className="flex-1 bg-gray-200 flex items-center justify-center p-8 overflow-auto cursor-grab active:cursor-grabbing"
             onMouseDown={handleCanvasPan}
+            onClick={() => selectElement(null)}
         >
              <div 
                 ref={pageRef}
@@ -384,7 +390,7 @@ const Canvas = () => {
                     transform: `scale(${zoom}) translate(${canvasPosition.x / zoom}px, ${canvasPosition.y / zoom}px)`,
                     transformOrigin: 'center center'
                 }}
-                onClick={() => selectElement(null)}
+                onClick={(e) => e.stopPropagation()} // Stop propagation to not deselect when clicking on page
             >
                 {/* Rulers */}
                 {rulers.visible && (
@@ -450,9 +456,9 @@ const Footer = () => {
 
 export default function DesignStudioPage() {
     return (
-        <div className="flex flex-col h-screen w-screen bg-white text-gray-900 overflow-hidden">
+        <div className="flex flex-col h-screen w-screen bg-white text-gray-900">
             <Header />
-            <div className="flex flex-1">
+            <div className="flex flex-1 overflow-hidden">
                 <LeftSidebar />
                 <div className="flex flex-1 flex-col">
                     <Canvas />
