@@ -66,7 +66,7 @@ const ElementsPanel = ({ activeTool }: { activeTool: string | null }) => {
     if (!activeTool) return null;
 
     return (
-        <div className="w-80 bg-gray-100 border-l border-r border-gray-200 z-10">
+        <div className="w-56 bg-gray-100 border-l border-r border-gray-200 z-10">
             <ScrollArea className="h-full">
                 <PanelContent activeTool={activeTool} />
             </ScrollArea>
