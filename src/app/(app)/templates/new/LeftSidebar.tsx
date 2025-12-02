@@ -60,7 +60,7 @@ const LeftSidebar = () => {
                         <Button
                             key={tool.label}
                             variant="ghost" 
-                            className="w-16 h-16 flex-col text-white hover:bg-gray-800 hover:text-white" 
+                            className="w-16 h-16 flex-col text-white hover:bg-gray-800 hover:text-white px-2" 
                             onClick={tool.action}
                         >
                             <tool.icon className="h-5 w-5 mb-1" />
