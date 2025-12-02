@@ -4,7 +4,7 @@
 import React from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useCanvasStore } from '@/stores/canvas-store';
-import { RectangleHorizontal, Circle, Triangle, Star } from 'lucide-react';
+import { RectangleHorizontal, Circle, Triangle, Star, Square, Heart, Gem, Hexagon, ArrowRight } from 'lucide-react';
 
 const ShapeItem = ({ icon: Icon, addShape }: { icon: React.ElementType, addShape: () => void }) => (
     <div 
@@ -57,6 +57,56 @@ const ShapesPanel = () => {
             }
         });
     };
+    
+    const addSquare = () => {
+        addElement({
+            type: 'shape',
+            x: 125, y: 125, width: 100, height: 100, rotation: 0,
+            props: { backgroundColor: '#cccccc' }
+        });
+    };
+    
+    const addHeart = () => {
+         addElement({
+            type: 'shape',
+            x: 150, y: 150, width: 100, height: 100, rotation: 0,
+            props: { 
+                backgroundColor: '#cccccc',
+                clipPath: 'path("M10,30 A20,20,0,0,1,50,30 A20,20,0,0,1,90,30 Q90,60,50,90 Q10,60,10,30 Z")'
+            }
+        });
+    };
+    
+    const addDiamond = () => {
+         addElement({
+            type: 'shape',
+            x: 150, y: 150, width: 100, height: 100, rotation: 45,
+            props: { backgroundColor: '#cccccc' }
+        });
+    };
+    
+    const addHexagon = () => {
+        addElement({
+            type: 'shape',
+            x: 150, y: 150, width: 100, height: 115.47, rotation: 0,
+            props: { 
+                backgroundColor: '#cccccc',
+                clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)'
+            }
+        });
+    };
+    
+    const addArrow = () => {
+        addElement({
+            type: 'shape',
+            x: 150, y: 150, width: 150, height: 100, rotation: 0,
+            props: { 
+                backgroundColor: '#cccccc',
+                clipPath: 'polygon(0% 20%, 60% 20%, 60% 0%, 100% 50%, 60% 100%, 60% 80%, 0% 80%)'
+            }
+        });
+    };
+
 
     return (
         <div className="p-4">
@@ -66,6 +116,11 @@ const ShapesPanel = () => {
                 <ShapeItem icon={Circle} addShape={addCircle} />
                 <ShapeItem icon={Triangle} addShape={addTriangle} />
                 <ShapeItem icon={Star} addShape={addStar} />
+                <ShapeItem icon={Square} addShape={addSquare} />
+                <ShapeItem icon={Heart} addShape={addHeart} />
+                <ShapeItem icon={Gem} addShape={addDiamond} />
+                <ShapeItem icon={Hexagon} addShape={addHexagon} />
+                <ShapeItem icon={ArrowRight} addShape={addArrow} />
             </div>
         </div>
     );
