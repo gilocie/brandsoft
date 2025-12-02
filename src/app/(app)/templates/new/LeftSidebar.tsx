@@ -60,11 +60,11 @@ const LeftSidebar = () => {
                         <Button
                             key={tool.label}
                             variant="ghost" 
-                            className="w-16 h-16 flex-col text-white hover:bg-gray-800 hover:text-white px-2" 
+                            className="w-16 h-16 flex-col text-white hover:bg-gray-800 hover:text-white" 
                             onClick={tool.action}
                         >
                             <tool.icon className="h-5 w-5 mb-1" />
-                            <span className="text-xs px-1">{tool.label}</span>
+                            <span className="text-xs text-center">{tool.label}</span>
                         </Button>
                     ))}
                  </div>
