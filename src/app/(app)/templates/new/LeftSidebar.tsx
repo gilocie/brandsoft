@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
   LayoutTemplate,
   Shapes,
@@ -16,9 +16,13 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useCanvasStore } from '@/stores/canvas-store';
 import { cn } from '@/lib/utils';
 
-const LeftSidebar = () => {
+interface LeftSidebarProps {
+    activeTool: string | null;
+    setActiveTool: (tool: string | null) => void;
+}
+
+const LeftSidebar = ({ activeTool, setActiveTool }: LeftSidebarProps) => {
     const { addElement } = useCanvasStore();
-    const [activeTool, setActiveTool] = useState<string | null>(null);
 
     const handleToolClick = (label: string, action?: () => void) => {
         setActiveTool(label);
@@ -26,37 +30,13 @@ const LeftSidebar = () => {
             action();
         }
     }
-
-    const handleAddText = () => {
-        addElement({
-            type: 'text',
-            x: 100, y: 100, width: 200, height: 50, rotation: 0,
-            props: { text: "Your Text Here", fontSize: 24, color: '#000000', fontFamily: 'Arial' }
-        });
-    };
     
-    const handleAddImage = () => {
-         addElement({
-            type: 'image',
-            x: 150, y: 150, width: 150, height: 100, rotation: 0,
-            props: { src: 'https://picsum.photos/seed/placeholder/200/300' }
-        });
-    }
-    
-    const handleAddShape = () => {
-         addElement({
-            type: 'shape',
-            x: 200, y: 200, width: 100, height: 100, rotation: 0,
-            props: { backgroundColor: '#cccccc' }
-        });
-    }
-
     const tools = [
         { icon: LayoutTemplate, label: 'Templates' },
-        { icon: Shapes, label: 'Elements', action: handleAddShape },
+        { icon: Shapes, label: 'Shapes' },
         { icon: UploadCloud, label: 'Uploads' },
-        { icon: Type, label: 'Text', action: handleAddText },
-        { icon: ImageIcon, label: 'Images', action: handleAddImage },
+        { icon: Type, label: 'Text' },
+        { icon: ImageIcon, label: 'Images' },
         { icon: Palette, label: 'Styles' },
         { icon: MoreHorizontal, label: 'More' },
     ];
@@ -73,7 +53,7 @@ const LeftSidebar = () => {
                                 "w-full h-16 flex-col text-white hover:bg-gray-800 hover:text-white",
                                 activeTool === tool.label && "bg-primary text-primary-foreground hover:bg-primary/90"
                             )}
-                            onClick={() => handleToolClick(tool.label, tool.action)}
+                            onClick={() => handleToolClick(tool.label)}
                         >
                             <tool.icon className="h-5 w-5 mb-1" />
                             <span className="text-xs text-center">{tool.label}</span>
