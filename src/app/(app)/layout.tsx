@@ -29,14 +29,14 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useBrandsoft } from "@/hooks/use-brandsoft.tsx";
+import { useBrandsoft } from '@/hooks/use-brandsoft.tsx';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", enabledKey: null },
+  { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard", enabledKey: null },
   { href: "/invoices", icon: FileText, label: "Invoices", enabledKey: "invoice" },
   { href: "/customers", icon: Users, label: "Customers", enabledKey: "invoice" },
   { href: "/products", icon: Package, label: "Products", enabledKey: "invoice" },
