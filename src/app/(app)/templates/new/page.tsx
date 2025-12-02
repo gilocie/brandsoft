@@ -318,13 +318,10 @@ const Canvas = () => {
     const dragStart = useRef({ x: 0, y: 0, canvasX: 0, canvasY: 0 });
 
     const handleCanvasPan = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (e.target !== mainCanvasRef.current && !mainCanvasRef.current?.contains(e.target as Node)) {
-            selectElement(null);
+        if (e.target !== mainCanvasRef.current) {
             return;
         }
 
-        if (e.target !== e.currentTarget) return;
-        
         e.preventDefault();
         dragStart.current = { x: e.clientX, y: e.clientY, canvasX: canvasPosition.x, canvasY: canvasPosition.y };
 
@@ -390,7 +387,7 @@ const Canvas = () => {
                     transform: `scale(${zoom}) translate(${canvasPosition.x / zoom}px, ${canvasPosition.y / zoom}px)`,
                     transformOrigin: 'center center'
                 }}
-                onClick={(e) => e.stopPropagation()} // Stop propagation to not deselect when clicking on page
+                onMouseDown={(e) => e.stopPropagation()} // Stop propagation to not deselect when clicking on page
             >
                 {/* Rulers */}
                 {rulers.visible && (
@@ -432,39 +429,16 @@ const Canvas = () => {
     );
 };
 
-
-const Footer = () => {
-    const { zoom, setZoom } = useCanvasStore();
-
-    return (
-        <footer className="h-10 bg-black border-t border-gray-800 flex items-center justify-end px-4 z-20 text-white shrink-0">
-             <div className="flex items-center gap-2">
-                 <Button variant="ghost" size="icon" onClick={() => setZoom(zoom - 0.1)} className="text-white hover:bg-gray-800 hover:text-white"><Minus /></Button>
-                 <Slider 
-                    value={[zoom * 100]} 
-                    onValueChange={(val) => setZoom(val[0] / 100)} 
-                    max={200} 
-                    step={1} 
-                    className="w-24 [&>span:first-child]:bg-gray-700 [&>span:first-child>span]:bg-white" 
-                 />
-                 <Button variant="ghost" size="icon" onClick={() => setZoom(zoom + 0.1)} className="text-white hover:bg-gray-800 hover:text-white"><Maximize /></Button>
-                 <span className="text-sm font-medium w-12 text-center">{Math.round(zoom * 100)}%</span>
-            </div>
-        </footer>
-    )
-}
-
 export default function DesignStudioPage() {
     return (
         <div className="flex flex-col h-screen w-screen bg-white text-gray-900">
             <Header />
             <div className="flex flex-1 overflow-hidden">
                 <LeftSidebar />
-                <div className="flex flex-1 flex-col">
+                <div className="flex flex-1 flex-col overflow-hidden">
                     <Canvas />
                 </div>
             </div>
-            <Footer />
         </div>
     );
 }
