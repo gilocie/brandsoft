@@ -5,6 +5,8 @@ import React from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useCanvasStore } from '@/stores/canvas-store';
 import { RectangleHorizontal, Circle, Triangle, Star, Square, Heart, Gem, Hexagon, ArrowRight } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+
 
 const ShapeItem = ({ icon: Icon, addShape }: { icon: React.ElementType, addShape: () => void }) => (
     <div 
@@ -126,11 +128,94 @@ const ShapesPanel = () => {
     );
 }
 
+const invoiceFields = [
+    {
+        category: 'Business',
+        fields: [
+            { name: 'Business Name', value: '{{brand.businessName}}' },
+            { name: 'Business Logo', value: '{{brand.logo}}', type: 'image' },
+            { name: 'Business Address', value: '{{brand.address}}' },
+            { name: 'Business Phone', value: '{{brand.phone}}' },
+            { name: 'Business Email', value: '{{brand.email}}' },
+            { name: 'Business Website', value: '{{brand.website}}' },
+        ]
+    },
+    {
+        category: 'Customer',
+        fields: [
+            { name: 'Customer Name', value: '{{customer.name}}' },
+            { name: 'Customer Email', value: '{{customer.email}}' },
+            { name: 'Customer Phone', value: '{{customer.phone}}' },
+            { name: 'Customer Address', value: '{{customer.address}}' },
+            { name: 'Company Name', value: '{{customer.companyName}}' },
+        ]
+    },
+    {
+        category: 'Invoice',
+        fields: [
+            { name: 'Invoice ID', value: '{{invoice.id}}' },
+            { name: 'Invoice Date', value: '{{invoice.date}}' },
+            { name: 'Due Date', value: '{{invoice.dueDate}}' },
+            { name: 'Total Amount', value: '{{invoice.total}}' },
+            { name: 'Subtotal', value: '{{invoice.subtotal}}' },
+            { name: 'Tax Amount', value: '{{invoice.tax}}' },
+            { name: 'Discount Amount', value: '{{invoice.discount}}' },
+            { name: 'Shipping Amount', value: '{{invoice.shipping}}' },
+        ]
+    },
+    {
+        category: 'Line Items',
+        fields: [
+             { name: 'Items Table', value: '{{invoice.items}}', type: 'table' },
+        ]
+    }
+];
+
+const FieldsPanel = () => {
+    const { addElement } = useCanvasStore();
+
+    const addField = (name: string, value: string) => {
+        addElement({
+            type: 'text',
+            x: 50, y: 50, width: 150, height: 20, rotation: 0,
+            props: { text: value, fontSize: 14, color: '#000000' }
+        });
+    }
+
+    return (
+        <div className="p-2">
+            <h3 className="text-sm font-medium text-gray-500 mb-2 px-2">Text &amp; Dynamic Fields</h3>
+             <Accordion type="multiple" defaultValue={['Business', 'Customer', 'Invoice']} className="w-full">
+                {invoiceFields.map(group => (
+                    <AccordionItem value={group.category} key={group.category}>
+                        <AccordionTrigger className="text-xs font-medium py-2 px-2 hover:bg-gray-200 rounded-md">
+                            {group.category}
+                        </AccordionTrigger>
+                        <AccordionContent>
+                           <div className="flex flex-col gap-1 pt-2">
+                             {group.fields.map(field => (
+                                <div key={field.name}
+                                     className="text-xs p-2 rounded-md cursor-pointer hover:bg-gray-300"
+                                     onClick={() => addField(field.name, field.value)}
+                                >
+                                    {field.name}
+                                </div>
+                             ))}
+                           </div>
+                        </AccordionContent>
+                    </AccordionItem>
+                ))}
+            </Accordion>
+        </div>
+    )
+}
+
 const PanelContent = ({ activeTool }: { activeTool: string | null }) => {
     switch(activeTool) {
         case 'Shapes':
             return <ShapesPanel />;
-        // Add cases for other tools here
+        case 'Text & Fields':
+            return <FieldsPanel />;
         default:
             return (
                 <div className="p-4">

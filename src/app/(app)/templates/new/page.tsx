@@ -7,6 +7,7 @@ import LeftSidebar from './LeftSidebar';
 import ElementsPanel from './ElementsPanel';
 import Canvas from './Canvas';
 import Footer from './Footer';
+import RightSidebar from './RightSidebar';
 
 export default function DesignStudioPage() {
     const [activeTool, setActiveTool] = useState<string | null>('Shapes');
@@ -18,6 +19,7 @@ export default function DesignStudioPage() {
                 <LeftSidebar activeTool={activeTool} setActiveTool={setActiveTool} />
                 <ElementsPanel activeTool={activeTool} />
                 <Canvas />
+                <RightSidebar />
             </div>
             <Footer />
         </div>

@@ -22,20 +22,16 @@ interface LeftSidebarProps {
 }
 
 const LeftSidebar = ({ activeTool, setActiveTool }: LeftSidebarProps) => {
-    const { addElement } = useCanvasStore();
 
-    const handleToolClick = (label: string, action?: () => void) => {
-        setActiveTool(label);
-        if (action) {
-            action();
-        }
+    const handleToolClick = (label: string) => {
+        setActiveTool(prev => prev === label ? null : label);
     }
     
     const tools = [
         { icon: LayoutTemplate, label: 'Templates' },
         { icon: Shapes, label: 'Shapes' },
         { icon: UploadCloud, label: 'Uploads' },
-        { icon: Type, label: 'Text' },
+        { icon: Type, label: 'Text & Fields' },
         { icon: ImageIcon, label: 'Images' },
         { icon: Palette, label: 'Styles' },
         { icon: MoreHorizontal, label: 'More' },
