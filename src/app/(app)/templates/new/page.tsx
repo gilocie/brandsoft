@@ -307,11 +307,17 @@ const Footer = () => {
     const { zoom, setZoom } = useCanvasStore();
 
     return (
-        <footer className="h-10 bg-white border-t flex items-center justify-end px-4 z-20">
+        <footer className="h-10 bg-black border-t border-gray-800 flex items-center justify-end px-4 z-20 text-white">
              <div className="flex items-center gap-2">
-                 <Button variant="ghost" size="icon" onClick={() => setZoom(zoom - 0.1)}><Minus /></Button>
-                 <Slider value={[zoom * 100]} onValueChange={(val) => setZoom(val[0] / 100)} max={200} step={1} className="w-24" />
-                 <Button variant="ghost" size="icon" onClick={() => setZoom(zoom + 0.1)}><Maximize /></Button>
+                 <Button variant="ghost" size="icon" onClick={() => setZoom(zoom - 0.1)} className="text-white hover:bg-gray-800 hover:text-white"><Minus /></Button>
+                 <Slider 
+                    value={[zoom * 100]} 
+                    onValueChange={(val) => setZoom(val[0] / 100)} 
+                    max={200} 
+                    step={1} 
+                    className="w-24 [&>span:first-child]:bg-gray-700 [&>span:first-child>span]:bg-white" 
+                 />
+                 <Button variant="ghost" size="icon" onClick={() => setZoom(zoom + 0.1)} className="text-white hover:bg-gray-800 hover:text-white"><Maximize /></Button>
                  <span className="text-sm font-medium w-12 text-center">{Math.round(zoom * 100)}%</span>
             </div>
         </footer>
