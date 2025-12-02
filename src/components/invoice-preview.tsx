@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { BrandsoftConfig, Customer, Invoice } from '@/hooks/use-brandsoft';
@@ -7,8 +8,8 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { cn } from '@/lib/utils';
 import jsPDF from 'jspdf';
-import { createRoot } from 'react-dom/client';
 import html2canvas from 'html2canvas';
+import { createRoot } from 'react-dom/client';
 
 
 // This props definition is intentionally verbose to support both
@@ -131,13 +132,8 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
     }
 
 
-    let shippingAmount = 0;
-    if (invoiceData.applyShipping && invoiceData.shippingValue) {
-      shippingAmount = invoiceData.shippingValue;
-    } else if (invoiceData.shipping) {
-      shippingAmount = invoiceData.shipping;
-    }
-
+    const shippingAmount = Number(invoiceData.applyShipping && invoiceData.shippingValue ? invoiceData.shippingValue : (invoiceData.shipping || 0));
+    
     const total = subtotalAfterDiscount + taxAmount + shippingAmount;
     
     const rawInvoiceDate = invoiceData.invoiceDate || invoiceData.date;
@@ -264,7 +260,7 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                     </section>
 
                     {/* Totals & Notes */}
-                    <section className="relative z-10 grid grid-cols-2 gap-8 items-start mb-12">
+                    <section className="relative z-10 grid grid-cols-2 gap-8 items-start mb-12 mt-8">
                         <div className="text-sm">
                             {invoiceData.notes && (
                                 <div>
@@ -303,8 +299,8 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                                 </div>
                             )}
                             <div className="pt-2">
-                            <div className="flex items-center justify-between font-bold text-lg py-3 px-4 rounded" style={{backgroundColor: config.brand.primaryColor, color: '#fff'}}>
-                                    <span>Total</span>
+                            <div className="flex items-center justify-center font-bold text-lg py-3 px-4 rounded" style={{backgroundColor: config.brand.primaryColor, color: '#fff'}}>
+                                    <span className="mr-4">Total</span>
                                     <span>{formatCurrency(total)}</span>
                                 </div>
                             </div>
@@ -403,3 +399,4 @@ export const downloadInvoiceAsPdf = async (props: InvoicePreviewProps) => {
 
     pdf.save(`Invoice-${props.invoiceId}.pdf`);
 };
+
