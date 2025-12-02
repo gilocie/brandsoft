@@ -20,7 +20,7 @@ const ToolbarButton = ({ icon: Icon, label, onClick }: { icon: React.ElementType
 
 
 export default function NewTemplatePage() {
-    const [selectedTool, setSelectedTool] = useState<'text' | 'image' | 'shape' | null>(null);
+    const [selectedTool, setSelectedTool] = useState<'text' | 'image' | 'shape' | null>('text');
     
   return (
     <div className="flex flex-col h-full max-h-[calc(100vh-120px)] bg-muted/30">
@@ -57,7 +57,7 @@ export default function NewTemplatePage() {
                     <div className="w-full h-full relative" id="canvas">
                         {/* Elements will be rendered here */}
                          <div className="absolute top-20 left-20 p-2 border border-dashed border-primary cursor-move">
-                            <p className="text-4xl font-headline" style={{color: '#9400D3'}}>Your Company</p>
+                            <p className="text-4xl font-headline" style={{color: 'hsl(var(--primary))'}}>Your Company</p>
                         </div>
                         <div className="absolute top-40 left-20 p-2 border border-dashed border-transparent cursor-move">
                             <p className="text-lg">This is a sample text element. You can drag it around.</p>
@@ -72,24 +72,32 @@ export default function NewTemplatePage() {
                     <CardHeader>
                         <CardTitle>Properties</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                         <div className="space-y-2">
-                            <Label htmlFor="text-content">Text</Label>
-                            <Input id="text-content" defaultValue="Your Company" />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="font-size">Font Size</Label>
-                            <Input id="font-size" type="number" defaultValue="36" />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="font-color">Color</Label>
-                            <Input id="font-color" type="color" defaultValue="#9400D3" className="p-1" />
-                        </div>
-                         <Separator />
-                        <Button variant="destructive" className="w-full">
-                            <Trash2 className="mr-2 h-4 w-4" /> Delete Element
-                        </Button>
-                    </CardContent>
+                    {selectedTool ? (
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="text-content">Text</Label>
+                                <Input id="text-content" defaultValue="Your Company" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="font-size">Font Size</Label>
+                                <Input id="font-size" type="number" defaultValue="36" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="font-color">Color</Label>
+                                <Input id="font-color" type="color" defaultValue={'#9400D3'} className="p-1" />
+                            </div>
+                            <Separator />
+                            <Button variant="destructive" className="w-full">
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete Element
+                            </Button>
+                        </CardContent>
+                    ) : (
+                        <CardContent>
+                            <div className="flex flex-col items-center justify-center text-center text-muted-foreground h-40">
+                                <p>Select an element on the canvas to see its properties.</p>
+                            </div>
+                        </CardContent>
+                    )}
                 </Card>
             </aside>
        </div>
