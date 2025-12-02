@@ -198,20 +198,24 @@ const LeftSidebar = () => {
     ];
     
     return (
-        <aside className="w-20 bg-[#18191a] flex flex-col items-center py-4 space-y-1 z-10">
-            {tools.map(tool => (
-                <TooltipProvider key={tool.label}>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button variant="ghost" className="w-16 h-16 flex-col text-white hover:bg-gray-700 hover:text-white" onClick={tool.action}>
-                                <tool.icon className="h-6 w-6" />
-                                <span className="text-xs mt-1">{tool.label}</span>
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="right"><p>{tool.label}</p></TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
-            ))}
+        <aside className="w-20 bg-black flex flex-col z-10">
+            <ScrollArea className="flex-1">
+                 <div className="flex flex-col items-center py-4 space-y-1">
+                    {tools.map(tool => (
+                        <TooltipProvider key={tool.label}>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="ghost" className="w-16 h-16 flex-col text-white hover:bg-gray-800 hover:text-white" onClick={tool.action}>
+                                        <tool.icon className="h-6 w-6" />
+                                        <span className="text-xs mt-1">{tool.label}</span>
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="right"><p>{tool.label}</p></TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    ))}
+                 </div>
+            </ScrollArea>
         </aside>
     );
 };
