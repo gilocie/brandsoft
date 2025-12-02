@@ -14,26 +14,31 @@ const templateCategories = [
   {
     value: 'invoice',
     label: 'Invoices',
+    singular: 'Invoice',
     description: 'Browse and manage your invoice templates.',
   },
   {
     value: 'quotation',
     label: 'Quotations',
+    singular: 'Quotation',
     description: 'Browse and manage your quotation templates.',
   },
   {
     value: 'certificate',
     label: 'Certificates',
+    singular: 'Certificate',
     description: 'Browse and manage your certificate templates.',
   },
   {
     value: 'id-card',
     label: 'ID Cards',
+    singular: 'ID Card',
     description: 'Browse and manage your ID card templates.',
   },
   {
     value: 'marketing',
     label: 'Marketing',
+    singular: 'Marketing',
     description: 'Browse and manage your marketing material templates.',
   },
 ];
@@ -75,7 +80,7 @@ export default function TemplatesPage() {
                   <p className="mb-4 text-muted-foreground">No {cat.label.toLowerCase()} templates yet.</p>
                   <Button asChild>
                     <Link href="/templates/new">
-                      <Palette className="mr-2 h-4 w-4" /> Design Template
+                      <Palette className="mr-2 h-4 w-4" /> Design {cat.singular} Template
                     </Link>
                   </Button>
                 </div>
