@@ -178,14 +178,14 @@ export default function NewTemplatePage() {
                         <PropertiesSection title="Fill">
                             <div className="flex items-center gap-2">
                                 <Input id="font-color" type="color" defaultValue={'#9400D3'} className="p-1 h-8 w-8" />
-                                <Input value="#9400D3" className="h-8" />
+                                <Input defaultValue="#9400D3" className="h-8" />
                             </div>
                         </PropertiesSection>
 
                         <PropertiesSection title="Stroke">
                             <div className="flex items-center gap-2">
                                 <Input id="stroke-color" type="color" defaultValue={'#000000'} className="p-1 h-8 w-8" />
-                                <Input value="#000000" className="h-8" />
+                                <Input defaultValue="#000000" className="h-8" />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="stroke-width">Width</Label>
