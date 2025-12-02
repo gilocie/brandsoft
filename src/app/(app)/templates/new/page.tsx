@@ -25,7 +25,7 @@ export default function NewTemplatePage() {
   return (
     <div className="flex flex-col h-full max-h-[calc(100vh-120px)] bg-muted/30">
         {/* Header */}
-       <header className="flex h-14 items-center gap-4 border-b bg-background px-4 md:px-6 sticky top-0 z-20">
+       <header className="flex h-14 items-center gap-4 border-b bg-background px-4 md:px-6">
           <Button variant="outline" size="sm" asChild>
             <Link href="/templates">
                 <ArrowLeft className="mr-2 h-4 w-4" />
