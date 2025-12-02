@@ -70,7 +70,7 @@ const RulerGuide = ({ id, orientation, position }: { id: string; orientation: 'h
       const startPos = orientation === 'horizontal' ? e.clientY : e.clientX;
   
       const handleMouseMove = (moveEvent: MouseEvent) => {
-        const currentPos = orientation === 'horizontal' ? moveEvent.clientY : moveEvent.clientX;
+        const currentPos = orientation === 'horizontal' ? moveEvent.clientY : e.clientX;
         const delta = (currentPos - startPos) / zoom;
         updateGuide(id, orientation === 'horizontal' ? { y: position + delta } : { x: position + delta });
       };
