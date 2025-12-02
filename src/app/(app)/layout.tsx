@@ -50,6 +50,11 @@ const navItems = [
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { config } = useBrandsoft();
+  const isTemplateDesignerPage = pathname === '/templates/new';
+
+  if (isTemplateDesignerPage) {
+    return <div className="h-screen w-screen">{children}</div>;
+  }
 
   const getVisibleNavItems = () => {
     if (!config) return [];
@@ -70,11 +75,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const visibleNavItems = getVisibleNavItems();
   const pageTitle = navItems.find(item => pathname.startsWith(item.href))?.label || "Dashboard";
-  const isTemplateDesignerPage = pathname === '/templates/new';
-
-  if (isTemplateDesignerPage) {
-    return <div className="h-screen w-screen">{children}</div>;
-  }
 
   return (
     <SidebarProvider>
