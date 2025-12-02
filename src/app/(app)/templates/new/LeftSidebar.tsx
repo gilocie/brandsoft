@@ -9,7 +9,8 @@ import {
   ImageIcon,
   Palette,
   MoreHorizontal,
-  UploadCloud
+  UploadCloud,
+  Type,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -17,17 +18,14 @@ import { cn } from '@/lib/utils';
 
 interface LeftSidebarProps {
     activeTool: string | null;
-    setActiveTool: (tool: string | null) => void;
+    onToolClick: (tool: string) => void;
 }
 
-const LeftSidebar = ({ activeTool, setActiveTool }: LeftSidebarProps) => {
+const LeftSidebar = ({ activeTool, onToolClick }: LeftSidebarProps) => {
 
-    const handleToolClick = (label: string) => {
-        setActiveTool(prev => prev === label ? null : label);
-    }
-    
     const tools = [
         { icon: Braces, label: 'Fields' },
+        { icon: Type, label: 'Text' },
         { icon: Shapes, label: 'Shapes' },
         { icon: LayoutTemplate, label: 'Templates' },
         { icon: UploadCloud, label: 'Uploads' },
@@ -48,7 +46,7 @@ const LeftSidebar = ({ activeTool, setActiveTool }: LeftSidebarProps) => {
                                 "w-full h-16 flex-col text-white hover:bg-gray-800 hover:text-white",
                                 activeTool === tool.label && "bg-primary text-primary-foreground hover:bg-primary/90"
                             )}
-                            onClick={() => handleToolClick(tool.label)}
+                            onClick={() => onToolClick(tool.label)}
                         >
                             <tool.icon className="h-5 w-5 mb-1" />
                             <span className="text-xs text-center">{tool.label}</span>
