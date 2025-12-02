@@ -14,6 +14,9 @@ export default function DesignStudioPage() {
     const [activeTool, setActiveTool] = useState<string | null>('Fields');
     const { addElement, selectedElementId } = useCanvasStore();
     const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
+
+    const [elementsPanelPosition, setElementsPanelPosition] = useState({ x: 112, y: 16 });
+    const [rightSidebarPosition, setRightSidebarPosition] = useState({ x: 16, y: 16 });
     
     const panelTools = ['Fields', 'Shapes', 'Templates', 'Uploads', 'Images', 'Styles', 'More'];
 
@@ -48,8 +51,19 @@ export default function DesignStudioPage() {
                 <LeftSidebar activeTool={activeTool} onToolClick={handleToolClick} />
                 <div className="relative flex-1">
                     <Canvas onPageDoubleClick={() => setIsRightSidebarOpen(v => !v)} />
-                    <ElementsPanel activeTool={activeTool} onClose={() => setActiveTool(null)} />
-                    {isRightSidebarOpen && <RightSidebar onCollapse={() => setIsRightSidebarOpen(false)} />}
+                    <ElementsPanel 
+                        activeTool={activeTool} 
+                        onClose={() => setActiveTool(null)} 
+                        position={elementsPanelPosition}
+                        setPosition={setElementsPanelPosition}
+                    />
+                    {isRightSidebarOpen && (
+                        <RightSidebar 
+                            onCollapse={() => setIsRightSidebarOpen(false)} 
+                            position={rightSidebarPosition}
+                            setPosition={setRightSidebarPosition}
+                        />
+                    )}
                 </div>
             </div>
             <Footer />

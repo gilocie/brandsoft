@@ -149,9 +149,40 @@ const InputWithLabel = ({ label, ...props }: { label: string } & React.Component
     </div>
 );
 
+interface RightSidebarProps {
+    onCollapse: () => void;
+    position: { x: number; y: number };
+    setPosition: (position: { x: number; y: number }) => void;
+}
 
-const RightSidebar = ({ onCollapse }: { onCollapse: () => void }) => {
+const RightSidebar = ({ onCollapse, position, setPosition }: RightSidebarProps) => {
     const { selectedElementId, deleteElement } = useCanvasStore();
+
+    const dragStartPos = React.useRef({ x: 0, y: 0 });
+    const panelStartPos = React.useRef({ x: 0, y: 0 });
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+        dragStartPos.current = { x: e.clientX, y: e.clientY };
+        panelStartPos.current = position;
+        e.preventDefault();
+
+        const handleMouseMove = (moveEvent: MouseEvent) => {
+            const dx = moveEvent.clientX - dragStartPos.current.x;
+            const dy = moveEvent.clientY - dragStartPos.current.y;
+            setPosition({
+                x: panelStartPos.current.x + dx,
+                y: panelStartPos.current.y + dy,
+            });
+        };
+
+        const handleMouseUp = () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+    };
     
     const handleDelete = () => {
         if(selectedElementId) {
@@ -174,18 +205,22 @@ const RightSidebar = ({ onCollapse }: { onCollapse: () => void }) => {
     ) : <PagePanel />;
 
     return (
-        <aside className="absolute top-4 right-4 w-64 z-20">
-             <Card className="h-[70vh] flex flex-col">
-                <div className="p-2 border-b flex items-center justify-end bg-primary rounded-t-lg">
-                    <Button variant="ghost" size="icon" onClick={onCollapse} className="text-primary-foreground hover:bg-primary/80 hover:text-primary-foreground">
-                        <PanelRightClose className="h-4 w-4" />
-                    </Button>
-                </div>
-                <ScrollArea className="flex-grow">
-                   {content}
-                </ScrollArea>
-             </Card>
-        </aside>
+        <Card 
+            className="absolute w-64 z-20 h-[70vh] flex flex-col"
+            style={{ top: position.y, right: position.x }}
+        >
+            <div 
+                className="p-2 border-b flex items-center justify-end bg-primary rounded-t-lg cursor-grab active:cursor-grabbing"
+                onMouseDown={handleMouseDown}
+            >
+                <Button variant="ghost" size="icon" onClick={onCollapse} className="text-primary-foreground hover:bg-primary/80 hover:text-primary-foreground cursor-pointer">
+                    <PanelRightClose className="h-4 w-4" />
+                </Button>
+            </div>
+            <ScrollArea className="flex-grow">
+               {content}
+            </ScrollArea>
+        </Card>
     )
 }
 

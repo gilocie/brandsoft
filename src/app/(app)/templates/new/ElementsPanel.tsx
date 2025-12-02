@@ -247,15 +247,54 @@ const PanelContent = ({ activeTool }: { activeTool: string | null }) => {
     }
 }
 
+interface ElementsPanelProps {
+    activeTool: string | null;
+    onClose: () => void;
+    position: { x: number; y: number };
+    setPosition: (position: { x: number; y: number }) => void;
+}
 
-const ElementsPanel = ({ activeTool, onClose }: { activeTool: string | null, onClose: () => void }) => {
+
+const ElementsPanel = ({ activeTool, onClose, position, setPosition }: ElementsPanelProps) => {
     if (!activeTool) return null;
 
+    const dragStartPos = React.useRef({ x: 0, y: 0 });
+    const panelStartPos = React.useRef({ x: 0, y: 0 });
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+        dragStartPos.current = { x: e.clientX, y: e.clientY };
+        panelStartPos.current = position;
+        e.preventDefault();
+
+        const handleMouseMove = (moveEvent: MouseEvent) => {
+            const dx = moveEvent.clientX - dragStartPos.current.x;
+            const dy = moveEvent.clientY - dragStartPos.current.y;
+            setPosition({
+                x: panelStartPos.current.x + dx,
+                y: panelStartPos.current.y + dy,
+            });
+        };
+
+        const handleMouseUp = () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+    };
+
     return (
-        <Card className={cn("absolute top-4 left-28 w-64 z-20 h-[70vh] flex flex-col")}>
-            <CardHeader className="p-2 border-b flex flex-row items-center justify-between bg-primary rounded-t-lg text-primary-foreground">
+        <Card 
+            className="absolute w-64 z-20 h-[70vh] flex flex-col"
+            style={{ top: position.y, left: position.x }}
+        >
+            <CardHeader 
+                className="p-2 border-b flex flex-row items-center justify-between bg-primary rounded-t-lg text-primary-foreground cursor-grab active:cursor-grabbing"
+                onMouseDown={handleMouseDown}
+            >
                 <h3 className="text-sm font-medium pl-2">{activeTool}</h3>
-                <Button variant="ghost" size="icon" onClick={onClose} className="text-primary-foreground hover:bg-primary/80 hover:text-primary-foreground h-7 w-7">
+                <Button variant="ghost" size="icon" onClick={onClose} className="text-primary-foreground hover:bg-primary/80 hover:text-primary-foreground h-7 w-7 cursor-pointer">
                     <X className="h-4 w-4" />
                 </Button>
             </CardHeader>
