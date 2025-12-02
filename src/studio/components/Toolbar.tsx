@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
-    ArrowLeft,
+    X,
     Undo2,
     Redo2,
     ZoomIn,
@@ -38,11 +38,19 @@ const HeaderToolButton = ({ icon: Icon, label, shortcut }: { icon: React.Element
 export default function Toolbar() {
     return (
         <header className="flex h-14 items-center gap-4 border-b bg-background px-2 md:px-4 flex-shrink-0">
-            <Button variant="ghost" size="icon" asChild className="h-9 w-9">
-                <Link href="/templates">
-                    <ArrowLeft className="h-5 w-5" />
-                </Link>
-            </Button>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                     <Button variant="ghost" size="icon" asChild className="h-9 w-9">
+                        <Link href="/templates">
+                            <X className="h-5 w-5" />
+                        </Link>
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                    <p>Close Designer</p>
+                </TooltipContent>
+            </Tooltip>
+
             <Separator orientation="vertical" className="h-6" />
             <Input defaultValue="Untitled Design" className="max-w-xs mx-auto text-center font-semibold border-none focus-visible:ring-0 shadow-none" />
             <Separator orientation="vertical" className="h-6" />

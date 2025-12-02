@@ -10,7 +10,7 @@ import Toolbar from './components/Toolbar';
 export default function DesignStudio() {
     return (
         <TooltipProvider>
-            <div className="flex flex-col h-full max-h-screen bg-muted/30">
+            <div className="flex flex-col h-screen w-screen bg-muted/30">
                 <Toolbar />
                 <div className="flex flex-1 overflow-hidden">
                     <ElementsPanel />

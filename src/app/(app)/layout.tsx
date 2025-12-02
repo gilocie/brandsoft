@@ -72,6 +72,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pageTitle = navItems.find(item => pathname.startsWith(item.href))?.label || "Dashboard";
   const isTemplateDesignerPage = pathname === '/templates/new';
 
+  if (isTemplateDesignerPage) {
+    return <div className="h-screen w-screen">{children}</div>;
+  }
+
   return (
     <SidebarProvider>
       <Sidebar>
@@ -139,27 +143,23 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        {!isTemplateDesignerPage && (
-          <header className="flex h-14 items-center gap-4 border-b bg-background/95 backdrop-blur-sm sticky top-0 px-4 md:px-6 z-10">
-            <SidebarTrigger className="md:hidden" />
-            <h1 className="text-lg font-semibold font-headline flex-1">
-              {pageTitle}
-            </h1>
-            <Button variant="ghost" size="icon" asChild>
-              <Link href="/settings">
-                <Settings className="h-5 w-5" />
-                <span className="sr-only">Settings</span>
-              </Link>
-            </Button>
-          </header>
-        )}
+        <header className="flex h-14 items-center gap-4 border-b bg-background/95 backdrop-blur-sm sticky top-0 px-4 md:px-6 z-10">
+          <SidebarTrigger className="md:hidden" />
+          <h1 className="text-lg font-semibold font-headline flex-1">
+            {pageTitle}
+          </h1>
+          <Button variant="ghost" size="icon" asChild>
+            <Link href="/settings">
+              <Settings className="h-5 w-5" />
+              <span className="sr-only">Settings</span>
+            </Link>
+          </Button>
+        </header>
         <div className="flex-1 flex flex-col">
-            <main className={cn("flex-1", !isTemplateDesignerPage && "p-4 md:p-6")}>{children}</main>
-            {!isTemplateDesignerPage && (
-              <footer className="p-4 pb-4 text-center text-sm text-muted-foreground sticky bottom-0 bg-background">
-                © {new Date().getFullYear()} BrandSoft. All rights reserved.
-              </footer>
-            )}
+            <main className="flex-1 p-4 md:p-6">{children}</main>
+            <footer className="p-4 pb-4 text-center text-sm text-muted-foreground sticky bottom-0 bg-background">
+              © {new Date().getFullYear()} BrandSoft. All rights reserved.
+            </footer>
         </div>
       </SidebarInset>
     </SidebarProvider>
