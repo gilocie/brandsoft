@@ -53,18 +53,18 @@ const LeftSidebar = () => {
     ];
     
     return (
-        <aside className="w-32 bg-black flex flex-col z-10">
+        <aside className="w-20 bg-black flex flex-col z-10">
             <ScrollArea className="flex-1">
-                 <div className="flex flex-col p-4 space-y-2">
+                 <div className="flex flex-col items-center p-2 space-y-2">
                     {tools.map(tool => (
                         <Button
                             key={tool.label}
                             variant="ghost" 
-                            className="w-full h-12 flex justify-start items-center text-white hover:bg-gray-800 hover:text-white px-4" 
+                            className="w-16 h-16 flex-col text-white hover:bg-gray-800 hover:text-white" 
                             onClick={tool.action}
                         >
-                            <tool.icon className="h-5 w-5 mr-4" />
-                            <span className="text-sm">{tool.label}</span>
+                            <tool.icon className="h-5 w-5 mb-1" />
+                            <span className="text-xs">{tool.label}</span>
                         </Button>
                     ))}
                  </div>
