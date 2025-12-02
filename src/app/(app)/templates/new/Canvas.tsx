@@ -5,7 +5,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useCanvasStore, type CanvasElement as CanvasElementType } from '@/stores/canvas-store';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Copy, PlusSquare, RefreshCcw } from 'lucide-react';
 
 const CanvasElement = ({ element }: { element: CanvasElementType }) => {
     const { updateElement, selectElement, commitHistory, selectedElementId, zoom } = useCanvasStore();
@@ -163,6 +163,21 @@ const Canvas = ({ onPageDoubleClick }: { onPageDoubleClick: () => void }) => {
     const mainCanvasRef = useRef<HTMLDivElement>(null);
     const pageRef = useRef<HTMLDivElement>(null);
     const dragStart = useRef({ x: 0, y: 0, canvasX: 0, canvasY: 0 });
+    
+    const centerCanvas = () => {
+         if(mainCanvasRef.current) {
+            const canvasRect = mainCanvasRef.current.getBoundingClientRect();
+            const pageWidthInPixels = pageDetails.width * 96; // Approximate conversion
+            const pageHeightInPixels = pageDetails.height * 96;
+
+            setCanvasPosition({
+                x: (canvasRect.width / 2) - (pageWidthInPixels / 2),
+                y: (canvasRect.height / 2) - (pageHeightInPixels / 2)
+            });
+            setZoom(1);
+        }
+    }
+
 
     const handleCanvasPan = (e: React.MouseEvent<HTMLDivElement>) => {
         if (e.target !== mainCanvasRef.current && e.target !== pageRef.current) return;
@@ -286,16 +301,7 @@ const Canvas = ({ onPageDoubleClick }: { onPageDoubleClick: () => void }) => {
     
     // Center canvas on initial load
     useEffect(() => {
-        if(mainCanvasRef.current) {
-            const canvasRect = mainCanvasRef.current.getBoundingClientRect();
-            const pageWidthInPixels = pageDetails.width * 96; // Approximate conversion
-            const pageHeightInPixels = pageDetails.height * 96;
-
-            setCanvasPosition({
-                x: (canvasRect.width / 2) - (pageWidthInPixels / 2),
-                y: (canvasRect.height / 2) - (pageHeightInPixels / 2)
-            })
-        }
+        centerCanvas();
     }, []);
     
     const handleCanvasClick = (e: React.MouseEvent) => {
@@ -303,6 +309,9 @@ const Canvas = ({ onPageDoubleClick }: { onPageDoubleClick: () => void }) => {
             selectElement(null);
         }
     }
+    
+    const pageX = canvasPosition.x;
+    const pageY = canvasPosition.y;
 
     return (
         <main 
@@ -327,13 +336,13 @@ const Canvas = ({ onPageDoubleClick }: { onPageDoubleClick: () => void }) => {
                         className="absolute top-0 left-6 h-6 w-[calc(100%-1.5rem)] bg-gray-800 text-white text-xs z-30 cursor-crosshair"
                         onMouseDown={(e) => handleRulerDrag('horizontal', e)}
                     >
-                         <Ruler orientation="horizontal" zoom={zoom} canvasPosition={{ x: canvasPosition.x, y: 0 }} />
+                         <Ruler orientation="horizontal" zoom={zoom} canvasPosition={{ x: canvasPosition.x - (rulers.visible ? 24 : 0), y: 0 }} />
                     </div>
                     <div 
                         className="absolute left-0 top-6 w-6 h-[calc(100%-1.5rem)] bg-gray-800 text-white text-xs z-30 cursor-crosshair"
                         onMouseDown={(e) => handleRulerDrag('vertical', e)}
                     >
-                        <Ruler orientation="vertical" zoom={zoom} canvasPosition={{ y: canvasPosition.y, x: 0 }} />
+                        <Ruler orientation="vertical" zoom={zoom} canvasPosition={{ y: canvasPosition.y - (rulers.visible ? 24 : 0), x: 0 }} />
                     </div>
                     <div className="absolute top-0 left-0 h-6 w-6 bg-gray-800 z-30"/>
                 </>
@@ -346,6 +355,18 @@ const Canvas = ({ onPageDoubleClick }: { onPageDoubleClick: () => void }) => {
                     transformOrigin: 'top left',
                 }}
             >
+                <div 
+                    className="absolute z-30 flex items-center gap-1"
+                    style={{
+                       top: '-36px',
+                       right: '0'
+                    }}
+                >
+                    <Button variant="ghost" size="icon" className="h-8 w-8 bg-white/80 backdrop-blur-sm shadow-md hover:bg-white"><Copy className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 bg-white/80 backdrop-blur-sm shadow-md hover:bg-white"><PlusSquare className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" onClick={centerCanvas} className="h-8 w-8 bg-white/80 backdrop-blur-sm shadow-md hover:bg-white"><RefreshCcw className="h-4 w-4" /></Button>
+                </div>
+
 
                 <div
                     ref={pageRef}
@@ -386,5 +407,3 @@ const Canvas = ({ onPageDoubleClick }: { onPageDoubleClick: () => void }) => {
 };
 
 export default Canvas;
-
-    
