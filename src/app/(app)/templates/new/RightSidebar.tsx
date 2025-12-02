@@ -170,7 +170,7 @@ const RightSidebar = ({ onCollapse, position, setPosition }: RightSidebarProps) 
             const dx = moveEvent.clientX - dragStartPos.current.x;
             const dy = moveEvent.clientY - dragStartPos.current.y;
             setPosition({
-                x: panelStartPos.current.x + dx,
+                x: panelStartPos.current.x - dx,
                 y: panelStartPos.current.y + dy,
             });
         };
@@ -213,7 +213,7 @@ const RightSidebar = ({ onCollapse, position, setPosition }: RightSidebarProps) 
                 className="p-2 border-b flex items-center justify-end bg-primary rounded-t-lg cursor-grab active:cursor-grabbing"
                 onMouseDown={handleMouseDown}
             >
-                <Button variant="ghost" size="icon" onClick={onCollapse} className="text-primary-foreground hover:bg-primary/80 hover:text-primary-foreground cursor-pointer">
+                <Button variant="ghost" size="icon" onClick={onCollapse} className="text-primary-foreground hover:bg-primary/80 hover:text-primary-foreground cursor-pointer h-7 w-7">
                     <PanelRightClose className="h-4 w-4" />
                 </Button>
             </div>
