@@ -10,6 +10,9 @@ export interface CanvasElementProps {
     backgroundColor?: string;
     borderRadius?: string;
     clipPath?: string;
+    borderBottom?: string;
+    borderLeft?: string;
+    borderRight?: string;
 }
 
 export interface CanvasElement {

@@ -4,7 +4,7 @@
 import React from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useCanvasStore } from '@/stores/canvas-store';
-import { Rectangle, Circle, Triangle, Star } from 'lucide-react';
+import { RectangleHorizontal, Circle, Triangle, Star } from 'lucide-react';
 
 const ShapeItem = ({ icon: Icon, addShape }: { icon: React.ElementType, addShape: () => void }) => (
     <div 
@@ -39,8 +39,10 @@ const ShapesPanel = () => {
             type: 'shape',
             x: 150, y: 150, width: 100, height: 100, rotation: 0,
             props: { 
-                backgroundColor: '#cccccc',
-                clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)'
+                backgroundColor: 'transparent',
+                borderBottom: '100px solid #cccccc',
+                borderLeft: '50px solid transparent',
+                borderRight: '50px solid transparent',
             }
         });
     };
@@ -60,7 +62,7 @@ const ShapesPanel = () => {
         <div className="p-4">
             <h3 className="text-sm font-medium text-gray-500 mb-4">Shapes</h3>
             <div className="grid grid-cols-2 gap-4">
-                <ShapeItem icon={Rectangle} addShape={addRectangle} />
+                <ShapeItem icon={RectangleHorizontal} addShape={addRectangle} />
                 <ShapeItem icon={Circle} addShape={addCircle} />
                 <ShapeItem icon={Triangle} addShape={addTriangle} />
                 <ShapeItem icon={Star} addShape={addStar} />
