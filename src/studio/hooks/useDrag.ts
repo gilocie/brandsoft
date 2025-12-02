@@ -1,50 +1,52 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
-// This is a placeholder for a custom drag hook.
-// A full implementation would handle mouse/touch events, calculate positions,
-// and update the element's state, likely integrating with a state manager like Zustand.
-
-interface DragState {
-  isDragging: boolean;
-  startX: number;
-  startY: number;
+interface UseDragProps {
+  onDrag: (x: number, y: number) => void;
 }
 
-export function useDrag() {
-  const [dragState, setDragState] = useState<DragState>({
-    isDragging: false,
-    startX: 0,
-    startY: 0,
-  });
+export function useDrag({ onDrag }: UseDragProps) {
+  const [isDragging, setIsDragging] = useState(false);
+  const [startPos, setStartPos] = useState({ x: 0, y: 0 });
+  const [elementStartPos, setElementStartPos] = useState({ x: 0, y: 0 });
 
-  const onDragStart = useCallback((e: React.MouseEvent) => {
+  const onDragStart = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
-    setDragState({
-      isDragging: true,
-      startX: e.clientX,
-      startY: e.clientY,
+    setIsDragging(true);
+    
+    const targetElement = e.currentTarget;
+    const parent = targetElement.offsetParent as HTMLElement;
+    
+    // Position relative to parent
+    const initialX = targetElement.offsetLeft;
+    const initialY = targetElement.offsetTop;
+
+    setStartPos({
+      x: e.clientX,
+      y: e.clientY,
     });
-  }, []);
-
-  const onDrag = useCallback((e: React.MouseEvent) => {
-    if (!dragState.isDragging) return;
-    // In a real implementation, you would calculate the delta
-    // and call the state manager's update function here.
-  }, [dragState.isDragging]);
-
-  const onDragEnd = useCallback(() => {
-    setDragState({
-      isDragging: false,
-      startX: 0,
-      startY: 0,
+    setElementStartPos({
+      x: initialX,
+      y: initialY,
     });
-  }, []);
 
-  return {
-    onDragStart,
-    onDrag,
-    onDragEnd,
-    isDragging: dragState.isDragging,
-  };
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+        const deltaX = moveEvent.clientX - e.clientX;
+        const deltaY = moveEvent.clientY - e.clientY;
+        const newX = initialX + deltaX;
+        const newY = initialY + deltaY;
+        onDrag(newX, newY);
+    };
+
+    const handleMouseUp = () => {
+        setIsDragging(false);
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }, [onDrag]);
+
+  return { onDragStart, isDragging };
 }

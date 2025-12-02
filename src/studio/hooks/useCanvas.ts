@@ -56,7 +56,40 @@ interface CanvasState {
 
 // Create the Zustand store
 export const useCanvas = create<CanvasState>((set) => ({
-  elements: [],
+  elements: [
+    {
+        id: 'el_1',
+        type: 'text',
+        x: 80,
+        y: 80,
+        width: 300,
+        height: 60,
+        rotation: 0,
+        text: 'Your Company',
+        fontFamily: 'Belleza',
+        fontSize: 36,
+        color: 'hsl(var(--primary))',
+        bold: false,
+        italic: false,
+        underline: false,
+    },
+    {
+        id: 'el_2',
+        type: 'text',
+        x: 80,
+        y: 160,
+        width: 400,
+        height: 30,
+        rotation: 0,
+        text: 'This is a sample text element. You can drag it around.',
+        fontFamily: 'Poppins',
+        fontSize: 16,
+        color: '#000000',
+        bold: false,
+        italic: false,
+        underline: false,
+    }
+  ],
   selectedElementId: null,
   canvasSize: { width: 816, height: 1056 }, // A4 at 96 DPI
 

@@ -32,7 +32,7 @@ const VariableElement = ({ label, variable }: { label: string, variable: string 
 
 export default function ElementsPanel() {
     return (
-        <aside className="w-60 flex-shrink-0 border-r bg-background p-2 space-y-4">
+        <aside className="w-[200px] flex-shrink-0 border-r bg-background p-2 space-y-4">
              <div>
                 <h3 className="text-sm font-semibold mb-2 px-2">Static Elements</h3>
                 <nav className="grid grid-cols-2 gap-1">
