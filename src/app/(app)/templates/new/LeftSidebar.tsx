@@ -64,7 +64,7 @@ const LeftSidebar = () => {
                             onClick={tool.action}
                         >
                             <tool.icon className="h-5 w-5 mb-1" />
-                            <span className="text-xs">{tool.label}</span>
+                            <span className="text-xs px-1">{tool.label}</span>
                         </Button>
                     ))}
                  </div>
