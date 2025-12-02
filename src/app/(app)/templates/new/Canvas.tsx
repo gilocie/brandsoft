@@ -260,7 +260,7 @@ const Canvas = ({ onPageDoubleClick }: { onPageDoubleClick: () => void }) => {
         const mouseX = e.clientX - rect.left;
         const mouseY = e.clientY - rect.top;
 
-        if (e.ctrlKey || e.metaKey) { // Zoom
+        if (e.ctrlKey || e.metaKey || e.altKey) { // Zoom
             const zoomFactor = 1 - e.deltaY * 0.001;
             const newZoom = Math.max(0.1, Math.min(5, zoom * zoomFactor));
 
@@ -336,13 +336,13 @@ const Canvas = ({ onPageDoubleClick }: { onPageDoubleClick: () => void }) => {
                         className="absolute top-0 left-6 h-6 w-[calc(100%-1.5rem)] bg-gray-800 text-white text-xs z-30 cursor-crosshair"
                         onMouseDown={(e) => handleRulerDrag('horizontal', e)}
                     >
-                         <Ruler orientation="horizontal" zoom={zoom} canvasPosition={{ x: canvasPosition.x - (rulers.visible ? 24 : 0), y: 0 }} />
+                         <Ruler orientation="horizontal" zoom={zoom} canvasPosition={{ x: canvasPosition.x, y: 0 }} />
                     </div>
                     <div 
                         className="absolute left-0 top-6 w-6 h-[calc(100%-1.5rem)] bg-gray-800 text-white text-xs z-30 cursor-crosshair"
                         onMouseDown={(e) => handleRulerDrag('vertical', e)}
                     >
-                        <Ruler orientation="vertical" zoom={zoom} canvasPosition={{ y: canvasPosition.y - (rulers.visible ? 24 : 0), x: 0 }} />
+                        <Ruler orientation="vertical" zoom={zoom} canvasPosition={{ y: canvasPosition.y, x: 0 }} />
                     </div>
                     <div className="absolute top-0 left-0 h-6 w-6 bg-gray-800 z-30"/>
                 </>

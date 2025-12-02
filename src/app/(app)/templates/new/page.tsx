@@ -11,7 +11,7 @@ import RightSidebar from './RightSidebar';
 import { useCanvasStore } from '@/stores/canvas-store';
 
 export default function DesignStudioPage() {
-    const [activeTool, setActiveTool] = useState<string | null>('Fields');
+    const [activeTool, setActiveTool] = useState<string | null>(null);
     const { addElement, selectedElementId } = useCanvasStore();
     const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
 
@@ -30,9 +30,10 @@ export default function DesignStudioPage() {
                 height: 30,
                 rotation: 0,
                 props: { text: 'Your text here', fontSize: 24, color: '#000000' }
-            });
+            }, {select: true });
             // Don't open a panel for direct actions
             setActiveTool(null);
+            setIsRightSidebarOpen(true);
         } else if (panelTools.includes(tool)) {
             setActiveTool(prev => prev === tool ? null : tool);
         }
@@ -41,8 +42,6 @@ export default function DesignStudioPage() {
     React.useEffect(() => {
         if(selectedElementId) {
             setIsRightSidebarOpen(true);
-        } else {
-            setIsRightSidebarOpen(false);
         }
     }, [selectedElementId]);
 
