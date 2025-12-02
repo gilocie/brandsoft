@@ -372,7 +372,7 @@ const Canvas = ({ onPageDoubleClick }: { onPageDoubleClick: () => void }) => {
             x,
             y,
         };
-        addElement(newElement, {select: true });
+        addElement(newElement, {select: false });
     };
     
     const resetView = () => {
