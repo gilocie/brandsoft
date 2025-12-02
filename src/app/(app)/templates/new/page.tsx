@@ -297,7 +297,7 @@ const CanvasElement = ({ element }) => {
     );
 };
 
-const RulerGuide = ({ orientation, position, zoom, canvasPosition }) => {
+const RulerGuide = ({ orientation, position }) => {
   const style = orientation === 'horizontal' 
     ? { top: position, left: 0, width: '100%', height: '1px' }
     : { left: position, top: 0, height: '100%', width: '1px' };
@@ -317,7 +317,10 @@ const Canvas = () => {
     const dragStart = useRef({ x: 0, y: 0, canvasX: 0, canvasY: 0 });
 
     const handleCanvasPan = (e) => {
-        if (e.target !== mainCanvasRef.current) return;
+        if (e.target !== mainCanvasRef.current && !mainCanvasRef.current.contains(e.target as Node)) return;
+        if (e.target.closest('.relative.bg-white')) return; // Don't pan if clicking on the page itself
+        
+        e.preventDefault();
         dragStart.current = { x: e.clientX, y: e.clientY, canvasX: canvasPosition.x, canvasY: canvasPosition.y };
 
         const handleMouseMove = (moveEvent) => {
@@ -368,7 +371,7 @@ const Canvas = () => {
     return (
         <main 
             ref={mainCanvasRef}
-            className="flex-1 bg-gray-200 flex items-center justify-center p-8 overflow-auto cursor-grab active:cursor-grabbing"
+            className="flex-1 bg-gray-200 flex items-center justify-center p-8 overflow-hidden cursor-grab active:cursor-grabbing"
             onMouseDown={handleCanvasPan}
         >
              <div 
@@ -397,8 +400,8 @@ const Canvas = () => {
                 )}
                 
                 {/* Guides */}
-                {guides.horizontal.map(guide => <RulerGuide key={guide.id} orientation="horizontal" position={guide.y} zoom={zoom} canvasPosition={canvasPosition} />)}
-                {guides.vertical.map(guide => <RulerGuide key={guide.id} orientation="vertical" position={guide.x} zoom={zoom} canvasPosition={canvasPosition} />)}
+                {guides.horizontal.map(guide => <RulerGuide key={guide.id} orientation="horizontal" position={guide.y} />)}
+                {guides.vertical.map(guide => <RulerGuide key={guide.id} orientation="vertical" position={guide.x} />)}
                 
                 {/* Elements */}
                 {elements.map(el => (
