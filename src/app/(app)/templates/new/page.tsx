@@ -13,17 +13,14 @@ import {
   LayoutTemplate,
   Shapes,
   Type,
-  Image as ImageIcon,
+  ImageIcon,
   Palette,
   MoreHorizontal,
   Plus,
-  Copy,
-  Trash2,
-  Maximize,
   Minus,
-  Move,
-  RotateCw,
-  X
+  Maximize,
+  Ruler,
+  Check
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -34,14 +31,19 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useBrandsoft } from '@/hooks/use-brandsoft';
 import { cn } from '@/lib/utils';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
-// Main state management store for the canvas using Zustand
+
+// --- Main State Management (Zustand) ---
 const useCanvasStore = create((set, get) => ({
   elements: [],
   selectedElementId: null,
   history: [[]],
   historyIndex: 0,
   zoom: 1,
+  canvasPosition: { x: 0, y: 0 },
+  rulers: { visible: false },
+  guides: { horizontal: [], vertical: [] },
 
   addElement: (element) => {
     const newElement = { ...element, id: Date.now().toString() };
@@ -70,6 +72,21 @@ const useCanvasStore = create((set, get) => ({
   selectElement: (id) => set({ selectedElementId: id }),
   
   setZoom: (zoom) => set({ zoom: Math.max(0.1, Math.min(3, zoom)) }),
+
+  setCanvasPosition: (position) => set({ canvasPosition: position }),
+  
+  toggleRulers: () => set(state => ({ rulers: { ...state.rulers, visible: !state.rulers.visible } })),
+
+  addGuide: (orientation, position) => {
+    set(state => {
+      const id = `guide-${orientation}-${Date.now()}`;
+      if (orientation === 'horizontal') {
+        return { guides: { ...state.guides, horizontal: [...state.guides.horizontal, { id, y: position }]}};
+      } else {
+        return { guides: { ...state.guides, vertical: [...state.guides.vertical, { id, x: position }]}};
+      }
+    });
+  },
 
   commitHistory: () => {
     set(state => {
@@ -112,10 +129,10 @@ const useCanvasStore = create((set, get) => ({
 }));
 
 
-// --- Sub-Components for the Design Studio ---
+// --- Components ---
 
 const Header = () => {
-    const { undo, redo, historyIndex, history } = useCanvasStore();
+    const { undo, redo, historyIndex, history, rulers, toggleRulers } = useCanvasStore();
     const canUndo = historyIndex > 0;
     const canRedo = historyIndex < history.length - 1;
     const { config } = useBrandsoft();
@@ -127,7 +144,18 @@ const Header = () => {
                     <Link href="/templates"><ChevronLeft className="mr-2 h-4 w-4" /> Home</Link>
                 </Button>
                 <Separator orientation="vertical" className="h-6 bg-gray-700" />
-                <Button variant="ghost" size="sm" className="text-white hover:bg-gray-800 hover:text-white"><File className="mr-2 h-4 w-4" /> File</Button>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                         <Button variant="ghost" size="sm" className="text-white hover:bg-gray-800 hover:text-white"><File className="mr-2 h-4 w-4" /> File</Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56 bg-black text-white border-gray-700">
+                        <DropdownMenuCheckboxItem checked={rulers.visible} onCheckedChange={toggleRulers}>
+                            <Ruler className="mr-2 h-4 w-4" />
+                            <span>Show Rulers</span>
+                             {rulers.visible && <Check className="ml-auto h-4 w-4"/>}
+                        </DropdownMenuCheckboxItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
                 <Button variant="ghost" size="sm" className="text-white hover:bg-gray-800 hover:text-white">Resize</Button>
             </div>
             <div className="flex-1 text-center text-sm text-gray-400">
@@ -269,22 +297,110 @@ const CanvasElement = ({ element }) => {
     );
 };
 
+const RulerGuide = ({ orientation, position, zoom, canvasPosition }) => {
+  const style = orientation === 'horizontal' 
+    ? { top: position, left: 0, width: '100%', height: '1px' }
+    : { left: position, top: 0, height: '100%', width: '1px' };
+
+  return (
+    <div
+      style={style}
+      className="absolute bg-blue-400 z-20 pointer-events-none"
+    />
+  );
+};
+
 
 const Canvas = () => {
-    const { elements, selectElement, zoom } = useCanvasStore();
+    const { elements, selectElement, zoom, canvasPosition, setCanvasPosition, rulers, guides, addGuide } = useCanvasStore();
+    const mainCanvasRef = useRef(null);
+    const dragStart = useRef({ x: 0, y: 0, canvasX: 0, canvasY: 0 });
+
+    const handleCanvasPan = (e) => {
+        if (e.target !== mainCanvasRef.current) return;
+        dragStart.current = { x: e.clientX, y: e.clientY, canvasX: canvasPosition.x, canvasY: canvasPosition.y };
+
+        const handleMouseMove = (moveEvent) => {
+            const dx = moveEvent.clientX - dragStart.current.x;
+            const dy = moveEvent.clientY - dragStart.current.y;
+            setCanvasPosition({ x: dragStart.current.canvasX + dx, y: dragStart.current.canvasY + dy });
+        };
+        const handleMouseUp = () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+    };
+
+    const handleRulerDrag = (orientation, startEvent) => {
+        startEvent.preventDefault();
+        const canvasRect = mainCanvasRef.current.querySelector('.relative.bg-white').getBoundingClientRect();
+        
+        const handleMouseMove = (moveEvent) => {
+            let position;
+            if (orientation === 'horizontal') {
+                position = (moveEvent.clientY - canvasRect.top) / zoom;
+            } else {
+                position = (moveEvent.clientX - canvasRect.left) / zoom;
+            }
+            // A temporary guide could be shown here
+        };
+
+        const handleMouseUp = (upEvent) => {
+            let finalPosition;
+            if (orientation === 'horizontal') {
+                finalPosition = (upEvent.clientY - canvasRect.top) / zoom;
+            } else {
+                finalPosition = (upEvent.clientX - canvasRect.left) / zoom;
+            }
+             if(finalPosition > 0) { // Simple check to not add guides outside canvas
+                addGuide(orientation, finalPosition);
+            }
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+    };
 
     return (
-        <main className="flex-1 bg-gray-200 flex items-center justify-center p-8 overflow-auto">
+        <main 
+            ref={mainCanvasRef}
+            className="flex-1 bg-gray-200 flex items-center justify-center p-8 overflow-auto cursor-grab active:cursor-grabbing"
+            onMouseDown={handleCanvasPan}
+        >
              <div 
                 className="relative bg-white shadow-lg"
                 style={{ 
                     width: '8.5in', 
                     height: '11in',
-                    transform: `scale(${zoom})`,
+                    transform: `scale(${zoom}) translate(${canvasPosition.x / zoom}px, ${canvasPosition.y / zoom}px)`,
                     transformOrigin: 'center center'
                 }}
                 onClick={() => selectElement(null)}
             >
+                {/* Rulers */}
+                {rulers.visible && (
+                    <>
+                        <div 
+                            className="absolute -top-6 left-0 h-6 w-full bg-gray-800 text-white text-xs cursor-ns-resize"
+                             onMouseDown={(e) => handleRulerDrag('horizontal', e)}
+                        />
+                        <div 
+                            className="absolute -left-6 top-0 w-6 h-full bg-gray-800 text-white text-xs cursor-ew-resize"
+                             onMouseDown={(e) => handleRulerDrag('vertical', e)}
+                        />
+                        <div className="absolute -top-6 -left-6 h-6 w-6 bg-gray-800"/>
+                    </>
+                )}
+                
+                {/* Guides */}
+                {guides.horizontal.map(guide => <RulerGuide key={guide.id} orientation="horizontal" position={guide.y} zoom={zoom} canvasPosition={canvasPosition} />)}
+                {guides.vertical.map(guide => <RulerGuide key={guide.id} orientation="vertical" position={guide.x} zoom={zoom} canvasPosition={canvasPosition} />)}
+                
+                {/* Elements */}
                 {elements.map(el => (
                     <CanvasElement key={el.id} element={el} />
                 ))}
@@ -300,7 +416,6 @@ const Canvas = () => {
                 <div className="absolute -bottom-12 left-1/2 -translate-x-1/2">
                     <Button variant="outline" className="bg-white"><Plus className="mr-2 h-4 w-4" /> Add page</Button>
                 </div>
-                
             </div>
         </main>
     );
@@ -338,10 +453,7 @@ export default function DesignStudioPage() {
                     <Canvas />
                     <Footer />
                 </div>
-                {/* No right properties panel in this layout to match the image */}
             </div>
         </div>
     );
 }
-
-    
