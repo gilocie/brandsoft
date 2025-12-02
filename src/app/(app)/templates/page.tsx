@@ -7,7 +7,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
-import { PlusCircle } from 'lucide-react';
+import { Palette } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 const templateCategories = [
@@ -50,7 +50,7 @@ export default function TemplatesPage() {
         </div>
         <Button asChild>
           <Link href="/templates/new">
-            <PlusCircle className="mr-2 h-4 w-4" /> Create New Template
+            <Palette className="mr-2 h-4 w-4" /> Create New Template
           </Link>
         </Button>
       </div>
@@ -75,7 +75,7 @@ export default function TemplatesPage() {
                   <p className="mb-4 text-muted-foreground">No {cat.label.toLowerCase()} templates yet.</p>
                   <Button asChild>
                     <Link href="/templates/new">
-                      <PlusCircle className="mr-2 h-4 w-4" /> Design Template
+                      <Palette className="mr-2 h-4 w-4" /> Design Template
                     </Link>
                   </Button>
                 </div>
