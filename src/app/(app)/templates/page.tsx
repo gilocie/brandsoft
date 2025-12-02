@@ -71,8 +71,13 @@ export default function TemplatesPage() {
                 <CardDescription>{cat.description}</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex h-60 items-center justify-center rounded-lg border-2 border-dashed">
-                  <p className="text-muted-foreground">No {cat.label.toLowerCase()} templates yet.</p>
+                <div className="flex h-60 flex-col items-center justify-center rounded-lg border-2 border-dashed">
+                  <p className="mb-4 text-muted-foreground">No {cat.label.toLowerCase()} templates yet.</p>
+                  <Button asChild>
+                    <Link href="/templates/new">
+                      <PlusCircle className="mr-2 h-4 w-4" /> Design Template
+                    </Link>
+                  </Button>
                 </div>
               </CardContent>
             </Card>
