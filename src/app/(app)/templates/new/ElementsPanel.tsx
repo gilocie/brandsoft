@@ -6,11 +6,13 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useCanvasStore } from '@/stores/canvas-store';
 import { 
     RectangleHorizontal, Circle, Triangle, Star, Square, Heart, Gem, Hexagon, ArrowRight,
-    Building2, Image as ImageIcon, MapPin, Phone, Mail, Globe, User, Receipt, CalendarDays, Hash, Type
+    Building2, Image as ImageIcon, MapPin, Phone, Mail, Globe, User, Receipt, CalendarDays, Hash, Type, X
 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
+import { Card, CardHeader } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 const ShapeItem = ({ icon: Icon, addShape }: { icon: React.ElementType, addShape: () => void }) => (
     <div 
@@ -45,6 +47,8 @@ const ShapesPanel = () => {
             type: 'shape',
             x: 150, y: 150, width: 100, height: 100, rotation: 0,
             props: { 
+                width: 0,
+                height: 0,
                 backgroundColor: 'transparent',
                 borderBottom: '100px solid #cccccc',
                 borderLeft: '50px solid transparent',
@@ -206,7 +210,6 @@ const FieldsPanel = () => {
 
     return (
         <div className="p-2">
-            <h3 className="text-sm font-medium text-gray-500 my-2 px-2">Dynamic Fields</h3>
              <Accordion type="multiple" defaultValue={['Business', 'Customer', 'Invoice']} className="w-full">
                 {invoiceFields.map(group => (
                     <AccordionItem value={group.category} key={group.category}>
@@ -236,7 +239,6 @@ const PanelContent = ({ activeTool }: { activeTool: string | null }) => {
         default:
             return (
                 <div className="p-4">
-                    <h3 className="text-sm font-medium text-gray-500 mb-4">{activeTool}</h3>
                      <div className="flex h-40 items-center justify-center text-center text-sm text-gray-400">
                         <p>No items available for this tool yet.</p>
                     </div>
@@ -246,15 +248,21 @@ const PanelContent = ({ activeTool }: { activeTool: string | null }) => {
 }
 
 
-const ElementsPanel = ({ activeTool }: { activeTool: string | null }) => {
+const ElementsPanel = ({ activeTool, onClose }: { activeTool: string | null, onClose: () => void }) => {
     if (!activeTool) return null;
 
     return (
-        <div className="w-64 bg-gray-100 border-l border-r border-gray-200 z-10">
-            <ScrollArea className="h-full">
+        <Card className={cn("absolute top-4 left-28 w-64 z-20 h-[70vh] flex flex-col")}>
+            <CardHeader className="p-2 border-b flex flex-row items-center justify-between bg-primary rounded-t-lg text-primary-foreground">
+                <h3 className="text-sm font-medium pl-2">{activeTool}</h3>
+                <Button variant="ghost" size="icon" onClick={onClose} className="text-primary-foreground hover:bg-primary/80 hover:text-primary-foreground h-7 w-7">
+                    <X className="h-4 w-4" />
+                </Button>
+            </CardHeader>
+            <ScrollArea className="flex-grow">
                 <PanelContent activeTool={activeTool} />
             </ScrollArea>
-        </div>
+        </Card>
     );
 };
 
