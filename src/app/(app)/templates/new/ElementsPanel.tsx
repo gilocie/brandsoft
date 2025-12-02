@@ -184,7 +184,7 @@ const FieldsPanel = () => {
 
     return (
         <div className="p-2">
-            <h3 className="text-sm font-medium text-gray-500 mb-2 px-2">Text &amp; Dynamic Fields</h3>
+            <h3 className="text-sm font-medium text-gray-500 mb-2 px-2">Text & Dynamic Fields</h3>
              <Accordion type="multiple" defaultValue={['Business', 'Customer', 'Invoice']} className="w-full">
                 {invoiceFields.map(group => (
                     <AccordionItem value={group.category} key={group.category}>
@@ -214,7 +214,7 @@ const PanelContent = ({ activeTool }: { activeTool: string | null }) => {
     switch(activeTool) {
         case 'Shapes':
             return <ShapesPanel />;
-        case 'Text & Fields':
+        case 'Fields':
             return <FieldsPanel />;
         default:
             return (

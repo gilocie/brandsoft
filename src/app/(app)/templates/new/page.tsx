@@ -10,7 +10,7 @@ import Footer from './Footer';
 import RightSidebar from './RightSidebar';
 
 export default function DesignStudioPage() {
-    const [activeTool, setActiveTool] = useState<string | null>('Shapes');
+    const [activeTool, setActiveTool] = useState<string | null>('Fields');
 
     return (
         <div className="flex flex-col h-screen w-screen bg-white text-gray-900">

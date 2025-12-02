@@ -28,10 +28,10 @@ const LeftSidebar = ({ activeTool, setActiveTool }: LeftSidebarProps) => {
     }
     
     const tools = [
-        { icon: LayoutTemplate, label: 'Templates' },
+        { icon: Type, label: 'Fields' },
         { icon: Shapes, label: 'Shapes' },
+        { icon: LayoutTemplate, label: 'Templates' },
         { icon: UploadCloud, label: 'Uploads' },
-        { icon: Type, label: 'Text & Fields' },
         { icon: ImageIcon, label: 'Images' },
         { icon: Palette, label: 'Styles' },
         { icon: MoreHorizontal, label: 'More' },
