@@ -80,7 +80,7 @@ export default function TemplatesPage() {
                   <p className="mb-4 text-muted-foreground">No {cat.label.toLowerCase()} templates yet.</p>
                   <Button asChild>
                     <Link href="/templates/new">
-                      <Palette className="mr-2 h-4 w-4" /> Design {cat.singular} Template
+                      <Palette className="mr-2 h-4 w-4" /> Design {cat.singular}
                     </Link>
                   </Button>
                 </div>
