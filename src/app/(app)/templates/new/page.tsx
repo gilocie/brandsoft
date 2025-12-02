@@ -228,13 +228,13 @@ const LeftSidebar = () => {
     return (
         <aside className="w-20 bg-black flex flex-col z-10">
             <ScrollArea className="flex-1">
-                 <div className="flex flex-col items-center py-4 space-y-1">
+                 <div className="flex flex-col items-center py-4 space-y-2">
                     {tools.map(tool => (
                         <TooltipProvider key={tool.label}>
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <Button variant="ghost" className="w-16 h-16 flex-col text-white hover:bg-gray-800 hover:text-white" onClick={tool.action}>
-                                        <tool.icon className="h-6 w-6" />
+                                    <Button variant="ghost" className="w-14 h-14 flex-col text-white hover:bg-gray-800 hover:text-white" onClick={tool.action}>
+                                        <tool.icon className="h-5 w-5" />
                                         <span className="text-xs mt-1">{tool.label}</span>
                                     </Button>
                                 </TooltipTrigger>
@@ -381,7 +381,7 @@ const Canvas = () => {
     const dragStart = useRef({ x: 0, y: 0, canvasX: 0, canvasY: 0 });
 
     const handleCanvasPan = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (e.target !== mainCanvasRef.current) {
+        if (e.target !== mainCanvasRef.current && e.target !== pageRef.current?.parentNode) {
             return;
         }
 
@@ -478,33 +478,38 @@ const Canvas = () => {
             )}
 
              <div 
-                ref={pageRef}
-                className="relative bg-white shadow-lg"
-                style={{ 
-                    width: '8.5in', 
-                    height: '11in',
+                className="relative cursor-default"
+                style={{
                     transform: `translate(${canvasPosition.x}px, ${canvasPosition.y}px) scale(${zoom})`,
                     transformOrigin: 'center center'
                 }}
                 onMouseDown={(e) => e.stopPropagation()} // Stop propagation to not deselect when clicking on page
             >
-                
-                {/* Guides */}
-                {guides.horizontal.map(guide => <RulerGuide key={guide.id} orientation="horizontal" position={guide.y} />)}
-                {guides.vertical.map(guide => <RulerGuide key={guide.id} orientation="vertical" position={guide.x} />)}
-                
-                {/* Elements */}
-                {elements.map(el => (
-                    <CanvasElement key={el.id} element={el} />
-                ))}
+                <div
+                    ref={pageRef}
+                    className="relative bg-white shadow-lg"
+                    style={{ 
+                        width: '8.5in', 
+                        height: '11in',
+                    }}
+                >
+                    {/* Guides */}
+                    {guides.horizontal.map(guide => <RulerGuide key={guide.id} orientation="horizontal" position={guide.y} />)}
+                    {guides.vertical.map(guide => <RulerGuide key={guide.id} orientation="vertical" position={guide.x} />)}
+                    
+                    {/* Elements */}
+                    {elements.map(el => (
+                        <CanvasElement key={el.id} element={el} />
+                    ))}
 
-                 {elements.length === 0 && (
-                    <div className="absolute inset-0 flex items-center justify-center text-gray-400 pointer-events-none">
-                        <div className="text-center">
-                            <p>Click an element from the left panel to add it</p>
+                    {elements.length === 0 && (
+                        <div className="absolute inset-0 flex items-center justify-center text-gray-400 pointer-events-none">
+                            <div className="text-center">
+                                <p>Click an element from the left panel to add it</p>
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
                 
                 <div className="absolute -bottom-12 left-1/2 -translate-x-1/2">
                     <Button variant="outline" className="bg-white"><Plus className="mr-2 h-4 w-4" /> Add page</Button>
@@ -552,3 +557,5 @@ export default function DesignStudioPage() {
         </div>
     );
 }
+
+    
