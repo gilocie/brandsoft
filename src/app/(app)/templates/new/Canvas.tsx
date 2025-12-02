@@ -395,12 +395,17 @@ const Canvas = ({ onPageDoubleClick }: { onPageDoubleClick: () => void }) => {
                         </div>
                     )}
                 </div>
-            </div>
-             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30">
-                <Button variant="outline" className="bg-white shadow-md"><Plus className="mr-2 h-4 w-4" /> Add page</Button>
+
+                 <div 
+                    className="absolute bottom-[-48px] left-1/2 -translate-x-1/2 z-30"
+                 >
+                    <Button variant="outline" className="bg-white shadow-md"><Plus className="mr-2 h-4 w-4" /> Add page</Button>
+                </div>
             </div>
         </main>
     );
 };
 
 export default Canvas;
+
+    
