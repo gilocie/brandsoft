@@ -118,11 +118,20 @@ interface BrandsoftContextType {
 
 const BrandsoftContext = createContext<BrandsoftContextType | undefined>(undefined);
 
+const initialCustomers: Customer[] = [
+    { id: 'CUST-1625243511000', name: 'Liam Johnson', email: 'liam@example.com', address: '123 Main St, Anytown, USA' },
+    { id: 'CUST-1625243512000', name: 'Olivia Smith', email: 'olivia@example.com', companyName: 'Smith Designs', companyAddress: '456 Oak Ave, Anytown, USA' },
+    { id: 'CUST-1625243513000', name: 'Noah Williams', email: 'noah@example.com', address: '789 Pine Ln, Anytown, USA' },
+    { id: 'CUST-1625243514000', name: 'Emma Brown', email: 'emma@example.com', companyName: 'Brown & Co.', companyAddress: '321 Elm Rd, Anytown, USA' },
+    { id: 'CUST-1625243515000', name: 'James Jones', email: 'james@example.com', address: '654 Maple Dr, Anytown, USA' },
+    { id: 'CUST-1625243516000', name: 'Sophia Garcia', email: 'sophia@example.com', address: '987 Birch Ct, Anytown, USA' },
+];
+
+
 const initialInvoices: Invoice[] = [
   {
     invoiceId: 'INV001',
     customer: 'Liam Johnson',
-    customerId: 'CUST-1625243511000',
     date: '2023-06-23',
     dueDate: '2023-07-23',
     amount: 250.0,
@@ -136,7 +145,6 @@ const initialInvoices: Invoice[] = [
   {
     invoiceId: 'INV002',
     customer: 'Olivia Smith',
-    customerId: 'CUST-1625243512000',
     date: '2023-07-15',
     dueDate: '2023-08-15',
     amount: 150.0,
@@ -150,7 +158,6 @@ const initialInvoices: Invoice[] = [
   {
     invoiceId: 'INV003',
     customer: 'Noah Williams',
-    customerId: 'CUST-1625243513000',
     date: '2023-08-01',
     dueDate: '2023-09-01',
     amount: 350.0,
@@ -164,7 +171,6 @@ const initialInvoices: Invoice[] = [
   {
     invoiceId: 'INV004',
     customer: 'Emma Brown',
-    customerId: 'CUST-1625243514000',
     date: '2023-09-10',
     dueDate: '2023-10-10',
     amount: 450.0,
@@ -178,7 +184,6 @@ const initialInvoices: Invoice[] = [
   {
     invoiceId: 'INV005',
     customer: 'James Jones',
-    customerId: 'CUST-1625243515000',
     date: '2023-10-20',
     dueDate: '2023-11-20',
     amount: 550.0,
@@ -192,7 +197,6 @@ const initialInvoices: Invoice[] = [
    {
     invoiceId: 'INV006',
     customer: 'Sophia Garcia',
-    customerId: 'CUST-1625243516000',
     date: '2023-10-22',
     dueDate: '2023-11-22',
     amount: 300.0,
@@ -229,6 +233,9 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
         }
         if (!parsedConfig.invoices) {
             parsedConfig.invoices = initialInvoices;
+        }
+         if (!parsedConfig.customers || parsedConfig.customers.length === 0) {
+            parsedConfig.customers = initialCustomers;
         }
         setConfig(parsedConfig);
       }

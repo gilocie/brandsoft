@@ -1,11 +1,12 @@
 
+
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
 import { useForm, Control } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useBrandsoft, type BrandsoftConfig, type Invoice } from '@/hooks/use-brandsoft.tsx';
+import { useBrandsoft, type BrandsoftConfig, type Invoice, type Customer } from '@/hooks/use-brandsoft';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
@@ -50,6 +51,15 @@ const step3Schema = z.object({
 const formSchema = step1Schema.merge(step2Schema).merge(step3Schema);
 
 type FormData = z.infer<typeof formSchema>;
+
+const initialCustomers: Customer[] = [
+    { id: 'CUST-1625243511000', name: 'Liam Johnson', email: 'liam@example.com', address: '123 Main St, Anytown, USA' },
+    { id: 'CUST-1625243512000', name: 'Olivia Smith', email: 'olivia@example.com', companyName: 'Smith Designs', companyAddress: '456 Oak Ave, Anytown, USA' },
+    { id: 'CUST-1625243513000', name: 'Noah Williams', email: 'noah@example.com', address: '789 Pine Ln, Anytown, USA' },
+    { id: 'CUST-1625243514000', name: 'Emma Brown', email: 'emma@example.com', companyName: 'Brown & Co.', companyAddress: '321 Elm Rd, Anytown, USA' },
+    { id: 'CUST-1625243515000', name: 'James Jones', email: 'james@example.com', address: '654 Maple Dr, Anytown, USA' },
+    { id: 'CUST-1625243516000', name: 'Sophia Garcia', email: 'sophia@example.com', address: '987 Birch Ct, Anytown, USA' },
+];
 
 const initialInvoices: Invoice[] = [
   {
@@ -191,6 +201,7 @@ export default function SetupPage() {
         secondaryColor: data.secondaryColor || '#D87093',
         font: data.font || 'Poppins',
         brandsoftFooter: data.brandsoftFooter,
+        showCustomerAddress: true,
       },
       profile: {
         address: data.address,
@@ -207,7 +218,7 @@ export default function SetupPage() {
         quotation: data.quotation,
         marketing: data.marketing,
       },
-      customers: [],
+      customers: initialCustomers,
       products: [],
       invoices: initialInvoices,
       currencies: ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD'],

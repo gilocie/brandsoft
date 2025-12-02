@@ -55,7 +55,7 @@ import {
   ToggleGroupItem,
 } from "@/components/ui/toggle-group"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useBrandsoft, type Customer, type Invoice } from '@/hooks/use-brandsoft.tsx';
+import { useBrandsoft, type Customer, type Invoice } from '@/hooks/use-brandsoft';
 import { InvoicePreview, downloadInvoiceAsPdf } from '@/components/invoice-preview';
 
 const statusVariantMap: {
@@ -129,7 +129,7 @@ const InvoiceList = ({invoices, layout, onSelectAction, currencyCode}: {invoices
                 : "flex flex-col"
           )}>
             {invoices.map((invoice) => {
-              const customer = config?.customers.find(c => c.id === invoice.customerId || c.name === invoice.customer);
+              const customer = config?.customers.find(c => c.name === invoice.customer);
               const customerName = customer?.companyName || customer?.name || invoice.customer;
               
               return (
@@ -208,7 +208,7 @@ export default function InvoicesPage() {
             setIsMarkPaidOpen(true);
             break;
         case 'download':
-            const customer = config?.customers.find(c => c.name === invoice.customer || c.id === invoice.customerId) || null;
+            const customer = config?.customers.find(c => c.name === invoice.customer) || null;
             if (config && customer) {
                 await downloadInvoiceAsPdf({ config, customer, invoiceData: invoice, invoiceId: invoice.invoiceId });
             } else {
@@ -238,7 +238,7 @@ export default function InvoicesPage() {
     }
   };
 
-  const selectedCustomer = config?.customers.find(c => c.name === selectedInvoice?.customer || c.id === selectedInvoice?.customerId) || null;
+  const selectedCustomer = config?.customers.find(c => c.name === selectedInvoice?.customer) || null;
 
   return (
     <div className="container mx-auto space-y-6">
