@@ -1,7 +1,7 @@
 
 'use client';
 
-import { BrandsoftConfig, Customer, Invoice } from '@/hooks/use-brandsoft.tsx';
+import { BrandsoftConfig, Customer, Invoice } from '@/hooks/use-brandsoft';
 import { format, parseISO } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
