@@ -62,7 +62,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   historyIndex: 0,
   zoom: 1,
   canvasPosition: { x: 0, y: 0 },
-  rulers: { visible: false },
+  rulers: { visible: true },
   guides: { horizontal: [], vertical: [] },
 
   addElement: (element) => {

@@ -12,7 +12,7 @@ import { useCanvasStore } from '@/stores/canvas-store';
 
 export default function DesignStudioPage() {
     const [activeTool, setActiveTool] = useState<string | null>('Fields');
-    const { addElement } = useCanvasStore();
+    const { addElement, selectedElementId } = useCanvasStore();
     
     const panelTools = ['Fields', 'Shapes', 'Templates', 'Uploads', 'Images', 'Styles', 'More'];
 
@@ -41,7 +41,7 @@ export default function DesignStudioPage() {
                 <LeftSidebar activeTool={activeTool} onToolClick={handleToolClick} />
                 <ElementsPanel activeTool={activeTool} />
                 <Canvas />
-                <RightSidebar />
+                {selectedElementId && <RightSidebar />}
             </div>
             <Footer />
         </div>
