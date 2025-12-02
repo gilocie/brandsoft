@@ -88,7 +88,7 @@ const HorizontalRuler = ({ zoom, canvasPosition }: { zoom: number, canvasPositio
     }, [zoom, canvasPosition.x, rulerRef.current?.offsetWidth]);
 
     return (
-        <div ref={rulerRef} className="absolute -top-6 left-0 h-6 w-full bg-gray-800 text-white text-xs overflow-hidden">
+        <div ref={rulerRef} className="absolute top-0 left-0 h-6 w-full bg-gray-800 text-white text-xs overflow-hidden">
              <div className="absolute top-0 h-full" style={{ left: canvasPosition.x * zoom }}>
                 {ticks.map(tick => (
                     <div key={`h-${tick}`} className="absolute top-0 h-full" style={{ left: tick * zoom }}>
@@ -120,7 +120,7 @@ const VerticalRuler = ({ zoom, canvasPosition }: { zoom: number, canvasPosition:
     }, [zoom, canvasPosition.y, rulerRef.current?.offsetHeight]);
 
     return (
-        <div ref={rulerRef} className="absolute -left-6 top-0 w-6 h-full bg-gray-800 text-white text-xs overflow-hidden">
+        <div ref={rulerRef} className="absolute left-0 top-0 w-6 h-full bg-gray-800 text-white text-xs overflow-hidden">
             <div className="absolute left-0 w-full" style={{ top: canvasPosition.y * zoom }}>
                 {ticks.map(tick => (
                     <div key={`v-${tick}`} className="absolute left-0 w-full" style={{ top: tick * zoom }}>
@@ -140,7 +140,8 @@ const Canvas = () => {
     const dragStart = useRef({ x: 0, y: 0, canvasX: 0, canvasY: 0 });
 
     const handleCanvasPan = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (e.target !== mainCanvasRef.current && !(pageRef.current && pageRef.current.parentNode === e.target)) {
+        const isPageOrElement = pageRef.current?.contains(e.target as Node) || (e.target as HTMLElement).closest('[data-element-id]');
+        if (isPageOrElement && !(e.target === pageRef.current)) {
             return;
         }
 
@@ -212,7 +213,7 @@ const Canvas = () => {
     return (
         <main 
             ref={mainCanvasRef}
-            className="flex-1 bg-gray-200 flex items-center justify-center p-8 overflow-hidden relative cursor-grab active:cursor-grabbing"
+            className="flex-1 bg-gray-200 p-8 overflow-hidden relative cursor-grab active:cursor-grabbing"
             onMouseDown={handleCanvasPan}
             onClick={() => selectElement(null)}
             onWheel={handleWheel}
@@ -221,13 +222,13 @@ const Canvas = () => {
             {rulers.visible && (
                 <>
                     <div 
-                        className="absolute top-0 left-0 h-6 w-full cursor-ns-resize z-30"
+                        className="absolute top-0 left-6 h-6 w-[calc(100%-1.5rem)] cursor-ns-resize z-30"
                         onMouseDown={(e) => handleRulerDrag('horizontal', e)}
                     >
                          <HorizontalRuler zoom={zoom} canvasPosition={canvasPosition}/>
                     </div>
                     <div 
-                        className="absolute left-0 top-0 w-6 h-full cursor-ew-resize z-30"
+                        className="absolute left-0 top-6 w-6 h-[calc(100%-1.5rem)] cursor-ew-resize z-30"
                         onMouseDown={(e) => handleRulerDrag('vertical', e)}
                     >
                         <VerticalRuler zoom={zoom} canvasPosition={canvasPosition}/>
@@ -237,41 +238,54 @@ const Canvas = () => {
             )}
 
              <div 
-                className="relative cursor-default"
-                style={{
-                    transform: `translate(${canvasPosition.x}px, ${canvasPosition.y}px) scale(${zoom})`,
-                    transformOrigin: 'center center'
+                className="relative cursor-default flex items-center justify-center"
+                 style={{
+                    width: '100%',
+                    height: '100%',
                 }}
                 onMouseDown={(e) => e.stopPropagation()} // Stop propagation to not deselect when clicking on page
             >
                 <div
-                    ref={pageRef}
-                    className="relative bg-white shadow-lg"
-                    style={{ 
-                        width: '8.5in', 
-                        height: '11in',
+                    className="absolute"
+                    style={{
+                        transform: `translate(${canvasPosition.x}px, ${canvasPosition.y}px) scale(${zoom})`,
+                        transformOrigin: 'top left',
+                        left: '50%',
+                        top: '50%',
+                        marginLeft: `-${(8.5/2)}in`,
+                        marginTop: `-${(11/2)}in`,
                     }}
                 >
-                    {/* Guides */}
-                    {guides.horizontal.map(guide => <RulerGuide key={guide.id} orientation="horizontal" position={guide.y!} />)}
-                    {guides.vertical.map(guide => <RulerGuide key={guide.id} orientation="vertical" position={guide.x!} />)}
-                    
-                    {/* Elements */}
-                    {elements.map(el => (
-                        <CanvasElement key={el.id} element={el} />
-                    ))}
 
-                    {elements.length === 0 && (
-                        <div className="absolute inset-0 flex items-center justify-center text-gray-400 pointer-events-none">
-                            <div className="text-center">
-                                <p>Click an element from the left panel to add it</p>
+                    <div
+                        ref={pageRef}
+                        className="relative bg-white shadow-lg"
+                        style={{ 
+                            width: '8.5in', 
+                            height: '11in',
+                        }}
+                    >
+                        {/* Guides */}
+                        {guides.horizontal.map(guide => <RulerGuide key={guide.id} orientation="horizontal" position={guide.y!} />)}
+                        {guides.vertical.map(guide => <RulerGuide key={guide.id} orientation="vertical" position={guide.x!} />)}
+                        
+                        {/* Elements */}
+                        {elements.map(el => (
+                            <CanvasElement key={el.id} element={el} />
+                        ))}
+
+                        {elements.length === 0 && (
+                            <div className="absolute inset-0 flex items-center justify-center text-gray-400 pointer-events-none">
+                                <div className="text-center">
+                                    <p>Click an element from the left panel to add it</p>
+                                </div>
                             </div>
-                        </div>
-                    )}
-                </div>
-                
-                <div className="absolute -bottom-12 left-1/2 -translate-x-1/2">
-                    <Button variant="outline" className="bg-white"><Plus className="mr-2 h-4 w-4" /> Add page</Button>
+                        )}
+                    </div>
+                    
+                    <div className="absolute -bottom-12 left-1/2 -translate-x-1/2">
+                        <Button variant="outline" className="bg-white"><Plus className="mr-2 h-4 w-4" /> Add page</Button>
+                    </div>
                 </div>
             </div>
         </main>
