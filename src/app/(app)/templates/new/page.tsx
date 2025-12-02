@@ -13,6 +13,7 @@ import { useCanvasStore } from '@/stores/canvas-store';
 export default function DesignStudioPage() {
     const [activeTool, setActiveTool] = useState<string | null>('Fields');
     const { addElement, selectedElementId } = useCanvasStore();
+    const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
     
     const panelTools = ['Fields', 'Shapes', 'Templates', 'Uploads', 'Images', 'Styles', 'More'];
 
@@ -33,6 +34,12 @@ export default function DesignStudioPage() {
             setActiveTool(prev => prev === tool ? null : tool);
         }
     };
+    
+    React.useEffect(() => {
+        if(selectedElementId) {
+            setIsRightSidebarOpen(true);
+        }
+    }, [selectedElementId]);
 
     return (
         <div className="flex flex-col h-screen w-screen bg-white text-gray-900">
@@ -40,8 +47,8 @@ export default function DesignStudioPage() {
             <div className="flex flex-1 overflow-hidden">
                 <LeftSidebar activeTool={activeTool} onToolClick={handleToolClick} />
                 <ElementsPanel activeTool={activeTool} />
-                <Canvas />
-                <RightSidebar />
+                <Canvas onPageDoubleClick={() => setIsRightSidebarOpen(v => !v)} />
+                {isRightSidebarOpen && <RightSidebar onCollapse={() => setIsRightSidebarOpen(false)} />}
             </div>
             <Footer />
         </div>

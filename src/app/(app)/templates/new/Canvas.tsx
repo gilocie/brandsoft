@@ -158,7 +158,7 @@ const Ruler = ({ orientation, zoom, canvasPosition }: { orientation: 'horizontal
 };
 
 
-const Canvas = () => {
+const Canvas = ({ onPageDoubleClick }: { onPageDoubleClick: () => void }) => {
     const { elements, selectElement, zoom, setZoom, canvasPosition, setCanvasPosition, rulers, guides, addGuide, pageDetails, updatePageDetails, commitHistory } = useCanvasStore();
     const mainCanvasRef = useRef<HTMLDivElement>(null);
     const pageRef = useRef<HTMLDivElement>(null);
@@ -289,6 +289,11 @@ const Canvas = () => {
             className="flex-1 bg-gray-200 overflow-hidden relative cursor-grab active:cursor-grabbing"
             onMouseDown={handleCanvasPan}
             onClick={handleCanvasClick}
+            onDoubleClick={(e) => {
+                 if (e.target === mainCanvasRef.current || e.target === pageRef.current) {
+                    onPageDoubleClick();
+                }
+            }}
             onWheel={handleWheel}
             onContextMenu={(e) => e.preventDefault()}
         >

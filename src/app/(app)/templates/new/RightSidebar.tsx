@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Trash2, UploadCloud } from 'lucide-react';
+import { Trash2, UploadCloud, PanelRightClose } from 'lucide-react';
 import {
   Accordion,
   AccordionContent,
@@ -149,7 +149,7 @@ const InputWithLabel = ({ label, ...props }: { label: string } & React.Component
 );
 
 
-const RightSidebar = () => {
+const RightSidebar = ({ onCollapse }: { onCollapse: () => void }) => {
     const { selectedElementId, deleteElement } = useCanvasStore();
     
     const handleDelete = () => {
@@ -157,31 +157,30 @@ const RightSidebar = () => {
             deleteElement(selectedElementId);
         }
     }
-
-    if (!selectedElementId) {
-        return (
-            <aside className="w-64 bg-gray-100 border-l border-gray-200 z-10">
-                 <ScrollArea className="h-full">
-                    <PagePanel />
-                 </ScrollArea>
-            </aside>
-        )
-    }
+    
+    const content = selectedElementId ? (
+         <div className="space-y-4 py-4">
+            <PositionPanel />
+            <Separator />
+            <TextPanel />
+            <Separator />
+            <div className="px-4">
+                <Button variant="destructive" size="sm" className="w-full" onClick={handleDelete}>
+                    <Trash2 className="mr-2 h-4 w-4" /> Delete Element
+                </Button>
+            </div>
+        </div>
+    ) : <PagePanel />;
 
     return (
         <aside className="w-64 bg-gray-100 border-l border-gray-200 z-10">
+             <div className="p-2 border-b flex items-center justify-end">
+                <Button variant="ghost" size="icon" onClick={onCollapse}>
+                    <PanelRightClose className="h-4 w-4" />
+                </Button>
+            </div>
             <ScrollArea className="h-full">
-                <div className="space-y-4 py-4">
-                    <PositionPanel />
-                    <Separator />
-                    <TextPanel />
-                    <Separator />
-                        <div className="px-4">
-                        <Button variant="destructive" size="sm" className="w-full" onClick={handleDelete}>
-                            <Trash2 className="mr-2 h-4 w-4" /> Delete Element
-                        </Button>
-                    </div>
-                </div>
+               {content}
             </ScrollArea>
         </aside>
     )
