@@ -64,7 +64,7 @@ export interface CanvasElementProps {
 
 export interface CanvasElement {
     id: string;
-    type: 'text' | 'image' | 'shape';
+    type: 'text' | 'image' | 'shape' | 'group';
     x: number;
     y: number;
     width: number;
@@ -75,6 +75,8 @@ export interface CanvasElement {
     locked?: boolean;
     linkedElementId?: string | null;
     isLinkedChild?: boolean;
+    groupId?: string | null;
+    childIds?: string[];
 }
 
 export interface Guide {
@@ -113,6 +115,14 @@ export interface TemplateSettings {
     editableFields: string[];
 }
 
+export interface SelectionBox {
+    startX: number;
+    startY: number;
+    endX: number;
+    endY: number;
+    isSelecting: boolean;
+}
+
 // ============ DEFAULTS ============
 const defaultBackground: BackgroundSettings = {
     opacity: 1, blur: 0, grayscale: 0, brightness: 100, contrast: 100, saturate: 100,
@@ -131,6 +141,8 @@ const defaultTemplateSettings: TemplateSettings = {
 interface CanvasState {
     elements: CanvasElement[];
     selectedElementId: string | null;
+    selectedElementIds: string[];
+    selectionBox: SelectionBox | null;
     history: { elements: CanvasElement[]; pageDetails: PageDetails }[];
     historyIndex: number;
     zoom: number;
@@ -151,10 +163,21 @@ interface CanvasState {
     selectElement: (id: string | null) => void;
     moveElement: (id: string, direction: 'up' | 'down' | 'left' | 'right', amount?: number) => void;
 
+    // Multi-select
+    selectMultipleElements: (ids: string[]) => void;
+    addToSelection: (id: string) => void;
+    removeFromSelection: (id: string) => void;
+    clearSelection: () => void;
+    setSelectionBox: (box: SelectionBox | null) => void;
+    getElementsInSelectionBox: (box: SelectionBox) => string[];
+    groupSelectedElements: () => void;
+    ungroupElement: (groupId: string) => void;
+
     // Linking
     linkElements: (parentId: string, childId: string) => void;
     unlinkElement: (elementId: string) => void;
     getLinkedElements: (elementId: string) => CanvasElement[];
+    linkSelectedElements: () => void;
 
     // Layers
     bringToFront: (id: string) => void;
@@ -198,6 +221,8 @@ let nextZIndex = 1;
 export const useCanvasStore = create<CanvasState>((set, get) => ({
     elements: [],
     selectedElementId: null,
+    selectedElementIds: [],
+    selectionBox: null,
     pageDetails: { ...defaultPageDetails },
     history: [{ elements: [], pageDetails: { ...defaultPageDetails } }],
     historyIndex: 0,
@@ -219,6 +244,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
         set((state) => ({
             elements: [...state.elements, newElement],
             selectedElementId: options?.select !== false ? newElement.id : state.selectedElementId,
+            selectedElementIds: options?.select !== false ? [newElement.id] : state.selectedElementIds,
         }));
         get().commitHistory();
     },
@@ -235,6 +261,9 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
                 if (el.linkedElementId === id && (deltaX !== 0 || deltaY !== 0)) {
                     return { ...el, x: el.x + deltaX, y: el.y + deltaY };
                 }
+                if (el.groupId === id && (deltaX !== 0 || deltaY !== 0)) {
+                    return { ...el, x: el.x + deltaX, y: el.y + deltaY };
+                }
                 return el;
             }),
         }));
@@ -247,10 +276,23 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     },
 
     deleteElement: (id) => {
-        set((state) => ({
-            elements: state.elements.filter((el) => el.id !== id).map(el => el.linkedElementId === id ? { ...el, linkedElementId: null, isLinkedChild: false } : el),
-            selectedElementId: state.selectedElementId === id ? null : state.selectedElementId,
-        }));
+        set((state) => {
+            const element = state.elements.find(el => el.id === id);
+            let elementsToDelete = [id];
+            
+            // If it's a group, delete all children
+            if (element?.type === 'group' && element.childIds) {
+                elementsToDelete = [...elementsToDelete, ...element.childIds];
+            }
+
+            return {
+                elements: state.elements
+                    .filter((el) => !elementsToDelete.includes(el.id))
+                    .map(el => el.linkedElementId === id ? { ...el, linkedElementId: null, isLinkedChild: false } : el),
+                selectedElementId: state.selectedElementId === id ? null : state.selectedElementId,
+                selectedElementIds: state.selectedElementIds.filter(i => !elementsToDelete.includes(i)),
+            };
+        });
         get().commitHistory();
     },
 
@@ -261,14 +303,17 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
             ...element,
             id: `element-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             x: element.x + 20, y: element.y + 20, zIndex: nextZIndex++,
-            linkedElementId: null, isLinkedChild: false,
+            linkedElementId: null, isLinkedChild: false, groupId: null,
             props: { ...element.props, isTemplateField: false, templateFieldType: undefined, templateFieldName: undefined },
         };
-        set((state) => ({ elements: [...state.elements, newElement], selectedElementId: newElement.id }));
+        set((state) => ({ elements: [...state.elements, newElement], selectedElementId: newElement.id, selectedElementIds: [newElement.id] }));
         get().commitHistory();
     },
 
-    selectElement: (id) => set({ selectedElementId: id }),
+    selectElement: (id) => set({ 
+        selectedElementId: id, 
+        selectedElementIds: id ? [id] : [] 
+    }),
 
     moveElement: (id, direction, amount = 1) => {
         const element = get().elements.find(el => el.id === id);
@@ -283,21 +328,146 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
         get().updateElement(id, updates);
     },
 
+    // Multi-select methods
+    selectMultipleElements: (ids) => set({ 
+        selectedElementIds: ids,
+        selectedElementId: ids.length === 1 ? ids[0] : (ids.length > 0 ? ids[0] : null),
+    }),
+
+    addToSelection: (id) => set((state) => {
+        if (state.selectedElementIds.includes(id)) return {};
+        const newIds = [...state.selectedElementIds, id];
+        return { 
+            selectedElementIds: newIds,
+            selectedElementId: newIds[0],
+        };
+    }),
+
+    removeFromSelection: (id) => set((state) => {
+        const newIds = state.selectedElementIds.filter(i => i !== id);
+        return { 
+            selectedElementIds: newIds,
+            selectedElementId: newIds.length > 0 ? newIds[0] : null,
+        };
+    }),
+
+    clearSelection: () => set({ selectedElementId: null, selectedElementIds: [] }),
+
+    setSelectionBox: (box) => set({ selectionBox: box }),
+
+    getElementsInSelectionBox: (box) => {
+        const { elements } = get();
+        const minX = Math.min(box.startX, box.endX);
+        const maxX = Math.max(box.startX, box.endX);
+        const minY = Math.min(box.startY, box.endY);
+        const maxY = Math.max(box.startY, box.endY);
+
+        return elements.filter(el => {
+            const elRight = el.x + el.width;
+            const elBottom = el.y + el.height;
+            return el.x < maxX && elRight > minX && el.y < maxY && elBottom > minY;
+        }).map(el => el.id);
+    },
+
+    groupSelectedElements: () => {
+        const { selectedElementIds, elements } = get();
+        if (selectedElementIds.length < 2) return;
+
+        const selectedElements = elements.filter(el => selectedElementIds.includes(el.id));
+        
+        // Calculate bounding box
+        const minX = Math.min(...selectedElements.map(el => el.x));
+        const minY = Math.min(...selectedElements.map(el => el.y));
+        const maxX = Math.max(...selectedElements.map(el => el.x + el.width));
+        const maxY = Math.max(...selectedElements.map(el => el.y + el.height));
+
+        const groupId = `group-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+        const groupElement: CanvasElement = {
+            id: groupId,
+            type: 'group',
+            x: minX,
+            y: minY,
+            width: maxX - minX,
+            height: maxY - minY,
+            rotation: 0,
+            props: { opacity: 1 },
+            zIndex: nextZIndex++,
+            childIds: selectedElementIds,
+        };
+
+        set((state) => ({
+            elements: [
+                ...state.elements.map(el => 
+                    selectedElementIds.includes(el.id) 
+                        ? { ...el, groupId, x: el.x - minX, y: el.y - minY }
+                        : el
+                ),
+                groupElement
+            ],
+            selectedElementId: groupId,
+            selectedElementIds: [groupId],
+        }));
+        get().commitHistory();
+    },
+
+    ungroupElement: (groupId) => {
+        const { elements } = get();
+        const group = elements.find(el => el.id === groupId);
+        if (!group || group.type !== 'group' || !group.childIds) return;
+
+        set((state) => ({
+            elements: state.elements
+                .filter(el => el.id !== groupId)
+                .map(el => 
+                    group.childIds!.includes(el.id)
+                        ? { ...el, groupId: null, x: el.x + group.x, y: el.y + group.y }
+                        : el
+                ),
+            selectedElementId: null,
+            selectedElementIds: group.childIds!,
+        }));
+        get().commitHistory();
+    },
+
     linkElements: (parentId, childId) => {
         set((state) => ({
-            elements: state.elements.map(el => el.id === childId ? { ...el, linkedElementId: parentId, isLinkedChild: true } : el),
+            elements: state.elements.map(el =>
+                el.id === childId ? { ...el, linkedElementId: parentId, isLinkedChild: true } : el
+            ),
         }));
         get().commitHistory();
     },
 
     unlinkElement: (elementId) => {
         set((state) => ({
-            elements: state.elements.map(el => el.id === elementId ? { ...el, linkedElementId: null, isLinkedChild: false } : el),
+            elements: state.elements.map(el =>
+                el.id === elementId ? { ...el, linkedElementId: null, isLinkedChild: false } : el
+            ),
         }));
         get().commitHistory();
     },
 
     getLinkedElements: (elementId) => get().elements.filter(el => el.linkedElementId === elementId),
+
+    linkSelectedElements: () => {
+        const { selectedElementIds, elements } = get();
+        if (selectedElementIds.length < 2) return;
+
+        // Find the first shape to be the parent
+        const selectedElements = elements.filter(el => selectedElementIds.includes(el.id));
+        const parentElement = selectedElements.find(el => el.type === 'shape') || selectedElements[0];
+        const childElements = selectedElements.filter(el => el.id !== parentElement.id);
+
+        set((state) => ({
+            elements: state.elements.map(el =>
+                childElements.some(child => child.id === el.id)
+                    ? { ...el, linkedElementId: parentElement.id, isLinkedChild: true }
+                    : el
+            ),
+        }));
+        get().commitHistory();
+    },
 
     bringToFront: (id) => {
         set((state) => ({ elements: state.elements.map((el) => el.id === id ? { ...el, zIndex: nextZIndex++ } : el) }));
@@ -407,7 +577,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
         set((state) => {
             if (state.historyIndex <= 0) return {};
             const prev = state.history[state.historyIndex - 1];
-            return { elements: JSON.parse(JSON.stringify(prev.elements)), pageDetails: JSON.parse(JSON.stringify(prev.pageDetails)), historyIndex: state.historyIndex - 1, selectedElementId: null };
+            return { elements: JSON.parse(JSON.stringify(prev.elements)), pageDetails: JSON.parse(JSON.stringify(prev.pageDetails)), historyIndex: state.historyIndex - 1, selectedElementId: null, selectedElementIds: [] };
         });
     },
 
@@ -415,7 +585,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
         set((state) => {
             if (state.historyIndex >= state.history.length - 1) return {};
             const next = state.history[state.historyIndex + 1];
-            return { elements: JSON.parse(JSON.stringify(next.elements)), pageDetails: JSON.parse(JSON.stringify(next.pageDetails)), historyIndex: state.historyIndex + 1, selectedElementId: null };
+            return { elements: JSON.parse(JSON.stringify(next.elements)), pageDetails: JSON.parse(JSON.stringify(next.pageDetails)), historyIndex: state.historyIndex + 1, selectedElementId: null, selectedElementIds: [] };
         });
     },
 

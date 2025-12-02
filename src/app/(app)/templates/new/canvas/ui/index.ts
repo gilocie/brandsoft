@@ -5,3 +5,4 @@ export * from './LinkIndicator';
 export * from './Ruler';
 export * from './RulerGuide';
 export * from './PageBackground';
+export * from './SelectionBox';

@@ -11,20 +11,35 @@ import { ColorInput, SliderWithLabel } from '../components';
 import { GOOGLE_FONTS, FONT_WEIGHTS } from '../../canvas/utils';
 
 export const TextStylePanel = () => {
-    const { selectedElementId, elements, updateElementProps, commitHistory } = useCanvasStore();
+    const { selectedElementId, elements, updateElement, updateElementProps, commitHistory } = useCanvasStore();
     const element = elements.find(el => el.id === selectedElementId && el.type === 'text');
 
     if (!element) return null;
+
+    // Handle font size change - also update bounding box
+    const handleFontSizeChange = (newSize: number) => {
+        const oldSize = element.props.fontSize || 14;
+        const scale = newSize / oldSize;
+
+        // Update font size
+        updateElementProps(element.id, { fontSize: newSize });
+
+        // Scale bounding box proportionally
+        updateElement(element.id, {
+            width: Math.max(40, element.width * scale),
+            height: Math.max(30, element.height * scale),
+        });
+    };
 
     return (
         <AccordionItem value="text-style">
             <AccordionTrigger className="text-xs font-medium py-2 px-3 hover:no-underline">
                 Text Style
             </AccordionTrigger>
-            <AccordionContent className="px-3 pb-3 space-y-4">
+            <AccordionContent className="px-3 pb-3 space-y-3">
                 {/* Font Family */}
-                <div className="space-y-1.5">
-                    <Label className="text-xs">Font Family</Label>
+                <div className="space-y-1">
+                    <Label className="text-xs">Font</Label>
                     <Select
                         value={element.props.fontFamily || 'Arial'}
                         onValueChange={(v) => {
@@ -32,15 +47,13 @@ export const TextStylePanel = () => {
                             commitHistory();
                         }}
                     >
-                        <SelectTrigger className="h-8 text-xs">
+                        <SelectTrigger className="h-7 text-xs">
                             <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="max-h-[300px]">
+                        <SelectContent className="max-h-[250px]">
                             <SelectItem value="Arial">Arial</SelectItem>
                             <SelectItem value="Helvetica">Helvetica</SelectItem>
                             <SelectItem value="Times New Roman">Times New Roman</SelectItem>
-                            <SelectItem value="Georgia">Georgia</SelectItem>
-                            <SelectItem value="Courier New">Courier New</SelectItem>
                             {GOOGLE_FONTS.map((font) => (
                                 <SelectItem key={font} value={font} style={{ fontFamily: font }}>
                                     {font}
@@ -50,74 +63,74 @@ export const TextStylePanel = () => {
                     </Select>
                 </div>
 
-                {/* Font Weight */}
-                <div className="space-y-1.5">
-                    <Label className="text-xs">Font Weight</Label>
-                    <Select
-                        value={String(element.props.fontWeight || 400)}
-                        onValueChange={(v) => {
-                            updateElementProps(element.id, { fontWeight: Number(v) });
-                            commitHistory();
-                        }}
-                    >
-                        <SelectTrigger className="h-8 text-xs">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {FONT_WEIGHTS.map(({ value, label }) => (
-                                <SelectItem key={value} value={String(value)}>
-                                    {label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                {/* Font Weight & Size Row */}
+                <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                        <Label className="text-xs">Weight</Label>
+                        <Select
+                            value={String(element.props.fontWeight || 400)}
+                            onValueChange={(v) => {
+                                updateElementProps(element.id, { fontWeight: Number(v) });
+                                commitHistory();
+                            }}
+                        >
+                            <SelectTrigger className="h-7 text-xs">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {FONT_WEIGHTS.map(({ value, label }) => (
+                                    <SelectItem key={value} value={String(value)}>
+                                        {label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-1">
+                        <Label className="text-xs">Align</Label>
+                        <ToggleGroup
+                            type="single"
+                            value={element.props.textAlign || 'center'}
+                            onValueChange={(v) => {
+                                if (v) {
+                                    updateElementProps(element.id, { textAlign: v as 'left' | 'center' | 'right' });
+                                    commitHistory();
+                                }
+                            }}
+                            className="justify-start"
+                        >
+                            <ToggleGroupItem value="left" size="sm" className="h-7 w-7 p-0">
+                                <AlignLeft className="h-3 w-3" />
+                            </ToggleGroupItem>
+                            <ToggleGroupItem value="center" size="sm" className="h-7 w-7 p-0">
+                                <AlignCenter className="h-3 w-3" />
+                            </ToggleGroupItem>
+                            <ToggleGroupItem value="right" size="sm" className="h-7 w-7 p-0">
+                                <AlignRight className="h-3 w-3" />
+                            </ToggleGroupItem>
+                        </ToggleGroup>
+                    </div>
                 </div>
 
-                {/* Font Size */}
+                {/* Font Size - Updates bounding box */}
                 <SliderWithLabel
-                    label="Font Size"
+                    label="Size"
                     value={element.props.fontSize || 14}
                     min={8}
                     max={200}
                     unit="px"
-                    onChange={(v) => updateElementProps(element.id, { fontSize: v })}
+                    onChange={handleFontSizeChange}
                     onCommit={commitHistory}
                     showInput
                 />
 
                 {/* Text Color */}
                 <ColorInput
-                    label="Text Color"
+                    label="Color"
                     value={element.props.color || '#000000'}
                     onChange={(v) => updateElementProps(element.id, { color: v })}
                     onBlur={commitHistory}
                 />
-
-                {/* Text Alignment */}
-                <div className="space-y-1.5">
-                    <Label className="text-xs">Alignment</Label>
-                    <ToggleGroup
-                        type="single"
-                        value={element.props.textAlign || 'center'}
-                        onValueChange={(v) => {
-                            if (v) {
-                                updateElementProps(element.id, { textAlign: v as 'left' | 'center' | 'right' });
-                                commitHistory();
-                            }
-                        }}
-                        className="justify-start"
-                    >
-                        <ToggleGroupItem value="left" size="sm" className="h-8 w-8">
-                            <AlignLeft className="h-4 w-4" />
-                        </ToggleGroupItem>
-                        <ToggleGroupItem value="center" size="sm" className="h-8 w-8">
-                            <AlignCenter className="h-4 w-4" />
-                        </ToggleGroupItem>
-                        <ToggleGroupItem value="right" size="sm" className="h-8 w-8">
-                            <AlignRight className="h-4 w-4" />
-                        </ToggleGroupItem>
-                    </ToggleGroup>
-                </div>
 
                 {/* Line Height */}
                 <SliderWithLabel
@@ -132,7 +145,7 @@ export const TextStylePanel = () => {
 
                 {/* Letter Spacing */}
                 <SliderWithLabel
-                    label="Letter Spacing"
+                    label="Spacing"
                     value={element.props.letterSpacing || 0}
                     min={-5}
                     max={20}
