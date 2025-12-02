@@ -7,8 +7,8 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { cn } from '@/lib/utils';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import { createRoot } from 'react-dom/client';
+import html2canvas from 'html2canvas';
 
 
 // This props definition is intentionally verbose to support both
@@ -40,7 +40,7 @@ export interface InvoicePreviewProps {
     customer: Customer | null;
     invoiceData: InvoiceData;
     invoiceId?: string;
-    forPdf?: boolean;
+    forPdf?: boolean; // New prop to indicate PDF rendering mode
 }
 
 const InvoiceStatusWatermark = ({ status }: { status: Invoice['status'] }) => {
@@ -241,6 +241,7 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                                     <TableHead className="w-2/5 text-black font-bold uppercase tracking-wider text-xs">Description</TableHead>
                                     <TableHead className="text-right text-black font-bold uppercase tracking-wider text-xs">Qty</TableHead>
                                     <TableHead className="text-right text-black font-bold uppercase tracking-wider text-xs">Price</TableHead>
+                                    <TableHead className="text-right text-black font-bold uppercase tracking-wider text-xs">Tax</TableHead>
                                     <TableHead className="text-right text-black font-bold uppercase tracking-wider text-xs">Amount</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -253,6 +254,7 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                                             <TableCell className="py-3 align-top text-sm text-muted-foreground">{product?.description || ''}</TableCell>
                                             <TableCell className="text-right py-3 align-top text-sm">{item.quantity}</TableCell>
                                             <TableCell className="text-right py-3 align-top text-sm">{formatCurrency(item.price)}</TableCell>
+                                            <TableCell className="text-right py-3 align-top text-sm">{taxRateDisplay}</TableCell>
                                             <TableCell className="text-right py-3 align-top text-sm">{formatCurrency(item.quantity * item.price)}</TableCell>
                                         </TableRow>
                                     )
@@ -311,24 +313,13 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                 </div>
 
                 {/* Footer - Absolute positioning at bottom */}
-                <footer className={cn("absolute bottom-0 left-0 right-0 z-10", forPdf ? "" : "hidden")}>
+                <footer className={cn("mt-auto", forPdf ? "absolute bottom-0 left-0 right-0 z-10" : "")}>
                     {config.brand.footerImage && (
                         <img src={config.brand.footerImage} className="w-full h-auto" alt="Footer"/>
                     )}
                      <div className="text-center text-xs py-3 px-4" style={{backgroundColor: config.brand.secondaryColor, color: 'white'}}>
                          {config.brand.footerContent && <p className="mb-1">{config.brand.footerContent}</p>}
                          {config.brand.brandsoftFooter && <p><span className="font-bold">Created by BrandSoft</span></p>}
-                    </div>
-                </footer>
-                
-                 {/* Footer for non-PDF preview */}
-                <footer className={cn("mt-auto", forPdf ? "hidden" : "")}>
-                    {config.brand.footerImage && (
-                        <img src={config.brand.footerImage} className="w-full h-auto" alt="Footer"/>
-                    )}
-                    <div className="text-center text-xs py-3 px-4" style={{backgroundColor: config.brand.secondaryColor, color: 'white'}}>
-                        {config.brand.footerContent && <p className="mb-1">{config.brand.footerContent}</p>}
-                        {config.brand.brandsoftFooter && <p><span className="font-bold">Created by BrandSoft</span></p>}
                     </div>
                 </footer>
             </div>
