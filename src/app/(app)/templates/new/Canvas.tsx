@@ -13,24 +13,60 @@ const CanvasElement = ({ element }: { element: CanvasElementType }) => {
     const isSelected = selectedElementId === element.id;
 
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-        // Prevent event from bubbling up to the canvas and deselecting
         e.stopPropagation();
-
-        // Select the element if not already selected
         if (!isSelected) {
             selectElement(element.id);
         }
-
         const startPos = { x: e.clientX, y: e.clientY };
         const startElementPos = { x: element.x, y: element.y };
 
         const handleMouseMove = (moveEvent: MouseEvent) => {
             const dx = (moveEvent.clientX - startPos.x) / zoom;
             const dy = (moveEvent.clientY - startPos.y) / zoom;
-            updateElement(element.id, { 
-                x: startElementPos.x + dx, 
-                y: startElementPos.y + dy 
-            });
+            updateElement(element.id, { x: startElementPos.x + dx, y: startElementPos.y + dy });
+        };
+
+        const handleMouseUp = () => {
+            commitHistory();
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+    };
+
+    const handleResizeHandleMouseDown = (e: React.MouseEvent<HTMLDivElement>, handle: string) => {
+        e.stopPropagation();
+        const startPos = { x: e.clientX, y: e.clientY };
+        const originalElement = { ...element };
+
+        const handleMouseMove = (moveEvent: MouseEvent) => {
+            const dx = (moveEvent.clientX - startPos.x) / zoom;
+            const dy = (moveEvent.clientY - startPos.y) / zoom;
+
+            let newX = originalElement.x;
+            let newY = originalElement.y;
+            let newWidth = originalElement.width;
+            let newHeight = originalElement.height;
+
+            if (handle.includes('right')) {
+                newWidth = originalElement.width + dx;
+            }
+            if (handle.includes('left')) {
+                newWidth = originalElement.width - dx;
+                newX = originalElement.x + dx;
+            }
+            if (handle.includes('bottom')) {
+                newHeight = originalElement.height + dy;
+            }
+            if (handle.includes('top')) {
+                newHeight = originalElement.height - dy;
+                newY = originalElement.y + dy;
+            }
+
+            if (newWidth > 0 && newHeight > 0) {
+                 updateElement(element.id, { x: newX, y: newY, width: newWidth, height: newHeight });
+            }
         };
 
         const handleMouseUp = () => {
@@ -42,6 +78,34 @@ const CanvasElement = ({ element }: { element: CanvasElementType }) => {
         document.addEventListener('mousemove', handleMouseMove);
         document.addEventListener('mouseup', handleMouseUp);
     };
+
+    const renderHandle = (handle: string, cursor: string) => (
+        <div
+            className="absolute bg-white border border-blue-500 rounded-full"
+            style={{
+                width: '10px',
+                height: '10px',
+                cursor: cursor,
+                ...getHandlePosition(handle),
+            }}
+            onMouseDown={(e) => handleResizeHandleMouseDown(e, handle)}
+        />
+    );
+
+    const getHandlePosition = (handle: string) => {
+        switch (handle) {
+            case 'top-left': return { top: '-5px', left: '-5px' };
+            case 'top-center': return { top: '-5px', left: '50%', transform: 'translateX(-50%)' };
+            case 'top-right': return { top: '-5px', right: '-5px' };
+            case 'middle-left': return { top: '50%', left: '-5px', transform: 'translateY(-50%)' };
+            case 'middle-right': return { top: '50%', right: '-5px', transform: 'translateY(-50%)' };
+            case 'bottom-left': return { bottom: '-5px', left: '-5px' };
+            case 'bottom-center': return { bottom: '-5px', left: '50%', transform: 'translateX(-50%)' };
+            case 'bottom-right': return { bottom: '-5px', right: '-5px' };
+            default: return {};
+        }
+    }
+
 
     return (
         <div
@@ -55,25 +119,27 @@ const CanvasElement = ({ element }: { element: CanvasElementType }) => {
                 transform: `rotate(${element.rotation}deg)`,
                 cursor: 'grab',
             }}
-            className="active:cursor-grabbing"
+            className="active:cursor-grabbing group"
         >
-            {isSelected && (
-                 <div className="absolute inset-0 border-2 border-blue-500 pointer-events-none">
-                    {/* Resize handles */}
-                    <div className="absolute -top-1 -left-1 w-2 h-2 bg-white border border-blue-500 rounded-full cursor-nwse-resize" />
-                    <div className="absolute -top-1 right-1/2 -translate-x-1/2 w-2 h-2 bg-white border border-blue-500 rounded-full cursor-ns-resize" />
-                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-white border border-blue-500 rounded-full cursor-nesw-resize" />
-                    <div className="absolute top-1/2 -translate-y-1/2 -right-1 w-2 h-2 bg-white border border-blue-500 rounded-full cursor-ew-resize" />
-                    <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-white border border-blue-500 rounded-full cursor-nwse-resize" />
-                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white border border-blue-500 rounded-full cursor-ns-resize" />
-                    <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-white border border-blue-500 rounded-full cursor-nesw-resize" />
-                    <div className="absolute top-1/2 -translate-y-1/2 -left-1 w-2 h-2 bg-white border border-blue-500 rounded-full cursor-ew-resize" />
-                 </div>
-            )}
-
-            {element.type === 'text' && <p style={{ ...element.props, width: '100%', height: '100%' }}>{element.props.text}</p>}
+            <div style={{...element.props}} className="w-full h-full flex items-center justify-center">
+                 {element.type === 'text' && <p>{element.props.text}</p>}
+            </div>
+           
             {element.type === 'image' && <img src={element.props.src} alt="canvas element" className="w-full h-full object-cover" />}
             {element.type === 'shape' && <div className="w-full h-full" style={{...element.props}}/>}
+
+             {isSelected && (
+                 <div className="absolute inset-0 border-2 border-blue-500 pointer-events-none">
+                    {renderHandle('top-left', 'nwse-resize')}
+                    {renderHandle('top-center', 'ns-resize')}
+                    {renderHandle('top-right', 'nesw-resize')}
+                    {renderHandle('middle-left', 'ew-resize')}
+                    {renderHandle('middle-right', 'ew-resize')}
+                    {renderHandle('bottom-left', 'nesw-resize')}
+                    {renderHandle('bottom-center', 'ns-resize')}
+                    {renderHandle('bottom-right', 'nwse-resize')}
+                 </div>
+            )}
         </div>
     );
 };
@@ -459,5 +525,3 @@ const Canvas = ({ onPageDoubleClick }: { onPageDoubleClick: () => void }) => {
 };
 
 export default Canvas;
-
-    
