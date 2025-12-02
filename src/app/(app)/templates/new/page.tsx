@@ -226,7 +226,7 @@ const LeftSidebar = () => {
     ];
     
     return (
-        <aside className="w-64 bg-black flex flex-col z-10">
+        <aside className="w-32 bg-black flex flex-col z-10">
             <ScrollArea className="flex-1">
                  <div className="flex flex-col p-4 space-y-2">
                     {tools.map(tool => (
@@ -555,6 +555,3 @@ export default function DesignStudioPage() {
         </div>
     );
 }
-
-
-    
