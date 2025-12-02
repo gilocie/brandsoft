@@ -310,7 +310,7 @@ const RulerGuide = ({ orientation, position }) => {
   );
 };
 
-const HorizontalRuler = ({ zoom, position }) => {
+const HorizontalRuler = ({ zoom, canvasPosition }) => {
     const rulerRef = useRef<HTMLDivElement>(null);
     const [ticks, setTicks] = useState([]);
 
@@ -318,27 +318,31 @@ const HorizontalRuler = ({ zoom, position }) => {
         if (!rulerRef.current) return;
         const width = rulerRef.current.offsetWidth;
         const newTicks = [];
-        const interval = zoom > 0.5 ? 50 : 100;
+        // Adjust interval based on zoom level for readability
+        const interval = zoom > 0.8 ? 50 : (zoom > 0.3 ? 100 : 200);
+        const start = -Math.round(canvasPosition.x / (interval * zoom)) * interval;
         
-        for (let i = 0; i < width * (1/zoom) * 2; i += interval) {
-            newTicks.push(i);
+        for (let i = start - interval * 5; i < start + width / zoom + interval * 5; i += interval) {
+             if (i >= 0) newTicks.push(i);
         }
         setTicks(newTicks);
-    }, [zoom, position]);
+    }, [zoom, canvasPosition.x]);
 
     return (
-        <div ref={rulerRef} className="absolute -top-6 left-0 h-6 w-full bg-gray-800 text-white text-xs" style={{ transform: `translateX(${-position.x * zoom}px)` }}>
-            {ticks.map(tick => (
-                <div key={`h-${tick}`} className="absolute top-0" style={{ left: tick * zoom }}>
-                    <div className="w-px h-1.5 bg-gray-500" />
-                    <span className="absolute -bottom-3 -translate-x-1/2">{tick}</span>
-                </div>
-            ))}
+        <div ref={rulerRef} className="absolute -top-6 left-0 h-6 w-full bg-gray-800 text-white text-xs overflow-hidden">
+             <div className="absolute top-0 h-full" style={{ left: canvasPosition.x * zoom }}>
+                {ticks.map(tick => (
+                    <div key={`h-${tick}`} className="absolute top-0 h-full" style={{ left: tick * zoom }}>
+                        <div className="w-px h-1.5 bg-gray-500" />
+                        <span className="absolute top-2 -translate-x-1/2">{tick}</span>
+                    </div>
+                ))}
+            </div>
         </div>
     );
 };
 
-const VerticalRuler = ({ zoom, position }) => {
+const VerticalRuler = ({ zoom, canvasPosition }) => {
     const rulerRef = useRef<HTMLDivElement>(null);
     const [ticks, setTicks] = useState([]);
 
@@ -346,29 +350,32 @@ const VerticalRuler = ({ zoom, position }) => {
         if (!rulerRef.current) return;
         const height = rulerRef.current.offsetHeight;
         const newTicks = [];
-        const interval = zoom > 0.5 ? 50 : 100;
+        const interval = zoom > 0.8 ? 50 : (zoom > 0.3 ? 100 : 200);
+        const start = -Math.round(canvasPosition.y / (interval * zoom)) * interval;
         
-        for (let i = 0; i < height * (1/zoom) * 2; i += interval) {
-            newTicks.push(i);
+        for (let i = start - interval * 5; i < start + height / zoom + interval * 5; i += interval) {
+             if (i >= 0) newTicks.push(i);
         }
         setTicks(newTicks);
 
-    }, [zoom, position]);
+    }, [zoom, canvasPosition.y]);
 
     return (
-        <div ref={rulerRef} className="absolute -left-6 top-0 w-6 h-full bg-gray-800 text-white text-xs" style={{ transform: `translateY(${-position.y * zoom}px)`}}>
-             {ticks.map(tick => (
-                <div key={`v-${tick}`} className="absolute left-0" style={{ top: tick * zoom }}>
-                    <div className="h-px w-1.5 bg-gray-500" />
-                    <span className="absolute -left-5 -translate-y-1/2" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>{tick}</span>
-                </div>
-            ))}
+        <div ref={rulerRef} className="absolute -left-6 top-0 w-6 h-full bg-gray-800 text-white text-xs overflow-hidden">
+            <div className="absolute left-0 w-full" style={{ top: canvasPosition.y * zoom }}>
+                {ticks.map(tick => (
+                    <div key={`v-${tick}`} className="absolute left-0 w-full" style={{ top: tick * zoom }}>
+                        <div className="h-px w-1.5 bg-gray-500 ml-auto" />
+                        <span className="absolute left-1 -translate-y-1/2" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>{tick}</span>
+                    </div>
+                ))}
+            </div>
         </div>
     );
 };
 
 const Canvas = () => {
-    const { elements, selectElement, zoom, canvasPosition, setCanvasPosition, rulers, guides, addGuide } = useCanvasStore();
+    const { elements, selectElement, zoom, setZoom, canvasPosition, setCanvasPosition, rulers, guides, addGuide } = useCanvasStore();
     const mainCanvasRef = useRef<HTMLDivElement>(null);
     const pageRef = useRef<HTMLDivElement>(null);
     const dragStart = useRef({ x: 0, y: 0, canvasX: 0, canvasY: 0 });
@@ -427,12 +434,29 @@ const Canvas = () => {
         document.addEventListener('mouseup', handleMouseUp);
     };
 
+    const handleWheel = (e: React.WheelEvent) => {
+        e.preventDefault();
+
+        if (e.altKey) {
+            // Zooming
+            const newZoom = zoom - e.deltaY * 0.001;
+            setZoom(newZoom);
+        } else {
+            // Panning
+            setCanvasPosition({
+                x: canvasPosition.x - e.deltaX,
+                y: canvasPosition.y - e.deltaY
+            });
+        }
+    };
+
     return (
         <main 
             ref={mainCanvasRef}
             className="flex-1 bg-gray-200 flex items-center justify-center p-8 overflow-hidden relative cursor-grab active:cursor-grabbing"
             onMouseDown={handleCanvasPan}
             onClick={() => selectElement(null)}
+            onWheel={handleWheel}
         >
              {/* Rulers */}
             {rulers.visible && (
@@ -441,13 +465,13 @@ const Canvas = () => {
                         className="absolute top-0 left-0 h-6 w-full cursor-ns-resize z-30"
                         onMouseDown={(e) => handleRulerDrag('horizontal', e)}
                     >
-                         <HorizontalRuler zoom={zoom} position={canvasPosition}/>
+                         <HorizontalRuler zoom={zoom} canvasPosition={canvasPosition}/>
                     </div>
                     <div 
                         className="absolute left-0 top-0 w-6 h-full cursor-ew-resize z-30"
                         onMouseDown={(e) => handleRulerDrag('vertical', e)}
                     >
-                        <VerticalRuler zoom={zoom} position={canvasPosition}/>
+                        <VerticalRuler zoom={zoom} canvasPosition={canvasPosition}/>
                     </div>
                     <div className="absolute top-0 left-0 h-6 w-6 bg-gray-800 z-30"/>
                 </>

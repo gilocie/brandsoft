@@ -43,16 +43,3 @@ next-env.d.ts
 firebase-debug.log
 firestore-debug.log
 
-# ELECTRON – prevent electron from ever syncing
-electron/
-
-# PREVENT remote package.json from syncing
-package.json
-package-lock.json
-yarn.lock
-
-# prevent Firebase Studio from touching this file
-/package-web.json.lock
-
-# Local scripts not for GitHub
-update-web-deps.js
