@@ -314,11 +314,12 @@ const RulerGuide = ({ orientation, position }) => {
 const Canvas = () => {
     const { elements, selectElement, zoom, canvasPosition, setCanvasPosition, rulers, guides, addGuide } = useCanvasStore();
     const mainCanvasRef = useRef(null);
+    const pageRef = useRef(null);
     const dragStart = useRef({ x: 0, y: 0, canvasX: 0, canvasY: 0 });
 
     const handleCanvasPan = (e) => {
-        if (e.target !== mainCanvasRef.current && !mainCanvasRef.current.contains(e.target as Node)) return;
-        if (e.target.closest('.relative.bg-white')) return; // Don't pan if clicking on the page itself
+        // Only pan if the mousedown is on the gray background, not the white page
+        if (e.target !== mainCanvasRef.current) return;
         
         e.preventDefault();
         dragStart.current = { x: e.clientX, y: e.clientY, canvasX: canvasPosition.x, canvasY: canvasPosition.y };
@@ -338,7 +339,8 @@ const Canvas = () => {
 
     const handleRulerDrag = (orientation, startEvent) => {
         startEvent.preventDefault();
-        const canvasRect = mainCanvasRef.current.querySelector('.relative.bg-white').getBoundingClientRect();
+        if (!pageRef.current) return;
+        const canvasRect = pageRef.current.getBoundingClientRect();
         
         const handleMouseMove = (moveEvent) => {
             let position;
@@ -375,6 +377,7 @@ const Canvas = () => {
             onMouseDown={handleCanvasPan}
         >
              <div 
+                ref={pageRef}
                 className="relative bg-white shadow-lg"
                 style={{ 
                     width: '8.5in', 
