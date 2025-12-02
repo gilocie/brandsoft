@@ -8,6 +8,8 @@ export interface CanvasElementProps {
     fontFamily?: string;
     src?: string;
     backgroundColor?: string;
+    borderRadius?: string;
+    clipPath?: string;
 }
 
 export interface CanvasElement {

@@ -4,13 +4,14 @@
 import React from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useCanvasStore } from '@/stores/canvas-store';
+import { Rectangle, Circle, Triangle, Star } from 'lucide-react';
 
-const ShapeItem = ({ label, addShape }: { label: string, addShape: () => void }) => (
+const ShapeItem = ({ icon: Icon, addShape }: { icon: React.ElementType, addShape: () => void }) => (
     <div 
         className="h-24 bg-gray-200 rounded-md flex items-center justify-center cursor-pointer hover:bg-gray-300 transition-colors"
         onClick={addShape}
     >
-        <div className="text-sm text-gray-600">{label}</div>
+        <Icon className="h-10 w-10 text-gray-600" />
     </div>
 );
 
@@ -32,13 +33,37 @@ const ShapesPanel = () => {
             props: { backgroundColor: '#cccccc', borderRadius: '50%' }
         });
     }
+    
+    const addTriangle = () => {
+        addElement({
+            type: 'shape',
+            x: 150, y: 150, width: 100, height: 100, rotation: 0,
+            props: { 
+                backgroundColor: '#cccccc',
+                clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)'
+            }
+        });
+    };
+
+    const addStar = () => {
+        addElement({
+            type: 'shape',
+            x: 150, y: 150, width: 100, height: 100, rotation: 0,
+            props: {
+                backgroundColor: '#cccccc',
+                clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)'
+            }
+        });
+    };
 
     return (
         <div className="p-4">
             <h3 className="text-sm font-medium text-gray-500 mb-4">Shapes</h3>
             <div className="grid grid-cols-2 gap-4">
-                <ShapeItem label="Rectangle" addShape={addRectangle} />
-                <ShapeItem label="Circle" addShape={addCircle} />
+                <ShapeItem icon={Rectangle} addShape={addRectangle} />
+                <ShapeItem icon={Circle} addShape={addCircle} />
+                <ShapeItem icon={Triangle} addShape={addTriangle} />
+                <ShapeItem icon={Star} addShape={addStar} />
             </div>
         </div>
     );
