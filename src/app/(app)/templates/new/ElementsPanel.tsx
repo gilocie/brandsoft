@@ -6,10 +6,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useCanvasStore } from '@/stores/canvas-store';
 import { 
     RectangleHorizontal, Circle, Triangle, Star, Square, Heart, Gem, Hexagon, ArrowRight,
-    Building2, Image as ImageIcon, MapPin, Phone, Mail, Globe, User, Receipt, CalendarDays, Hash
+    Building2, Image as ImageIcon, MapPin, Phone, Mail, Globe, User, Receipt, CalendarDays, Hash, Type
 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Button } from '@/components/ui/button';
 
 const ShapeItem = ({ icon: Icon, addShape }: { icon: React.ElementType, addShape: () => void }) => (
     <div 
@@ -249,7 +250,7 @@ const ElementsPanel = ({ activeTool }: { activeTool: string | null }) => {
     if (!activeTool) return null;
 
     return (
-        <div className="w-56 bg-gray-100 border-l border-r border-gray-200 z-10">
+        <div className="w-64 bg-gray-100 border-l border-r border-gray-200 z-10">
             <ScrollArea className="h-full">
                 <PanelContent activeTool={activeTool} />
             </ScrollArea>

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 
 const CanvasElement = ({ element }: { element: CanvasElementType }) => {
-    const { updateElement, selectElement, commitHistory, selectedElementId } = useCanvasStore();
+    const { updateElement, selectElement, commitHistory, selectedElementId, zoom } = useCanvasStore();
     const isSelected = selectedElementId === element.id;
 
     const dragStartPos = useRef({ x: 0, y: 0 });
@@ -19,8 +19,8 @@ const CanvasElement = ({ element }: { element: CanvasElementType }) => {
         dragStartPos.current = { x: e.clientX, y: e.clientY };
 
         const handleMouseMove = (moveEvent: MouseEvent) => {
-            const dx = moveEvent.clientX - dragStartPos.current.x;
-            const dy = moveEvent.clientY - dragStartPos.current.y;
+            const dx = (moveEvent.clientX - dragStartPos.current.x) / zoom;
+            const dy = (moveEvent.clientY - dragStartPos.current.y) / zoom;
             dragStartPos.current = { x: moveEvent.clientX, y: moveEvent.clientY };
             updateElement(element.id, { x: element.x + dx, y: element.y + dy });
         };
@@ -57,7 +57,7 @@ const CanvasElement = ({ element }: { element: CanvasElementType }) => {
 };
 
 const RulerGuide = ({ id, orientation, position }: { id: string; orientation: 'horizontal' | 'vertical'; position: number }) => {
-    const { updateGuide, deleteGuide, commitHistory } = useCanvasStore();
+    const { updateGuide, deleteGuide, commitHistory, zoom } = useCanvasStore();
     const rulerSize = 24; // Corresponds to w-6/h-6 on rulers
 
     const style = orientation === 'horizontal' 
@@ -70,7 +70,7 @@ const RulerGuide = ({ id, orientation, position }: { id: string; orientation: 'h
   
       const handleMouseMove = (moveEvent: MouseEvent) => {
         const currentPos = orientation === 'horizontal' ? moveEvent.clientY : moveEvent.clientX;
-        const delta = currentPos - startPos;
+        const delta = (currentPos - startPos) / zoom;
         updateGuide(id, orientation === 'horizontal' ? { y: position + delta } : { x: position + delta });
       };
   
@@ -165,19 +165,15 @@ const Canvas = () => {
     const dragStart = useRef({ x: 0, y: 0, canvasX: 0, canvasY: 0 });
 
     const handleCanvasPan = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (e.button !== 1 && e.button !== 2 && !(e.button === 0 && e.altKey)) {
-            // Only pan with middle mouse, right-click, or alt+left-click
-            // If the target is the canvas itself (the gray area), allow primary-click pan.
-            if(e.target !== mainCanvasRef.current) return;
-        }
-
+        if (e.target !== mainCanvasRef.current && e.target !== pageRef.current) return;
+        
         e.preventDefault();
         dragStart.current = { x: e.clientX, y: e.clientY, canvasX: canvasPosition.x, canvasY: canvasPosition.y };
 
         const handleMouseMove = (moveEvent: MouseEvent) => {
             const dx = moveEvent.clientX - dragStart.current.x;
             const dy = moveEvent.clientY - dragStart.current.y;
-            setCanvasPosition({ x: dragStart.current.canvasX + dx / zoom, y: dragStart.current.canvasY + dy / zoom });
+            setCanvasPosition({ x: dragStart.current.canvasX + dx, y: dragStart.current.canvasY + dy });
         };
         const handleMouseUp = () => {
             document.removeEventListener('mousemove', handleMouseMove);
@@ -269,22 +265,30 @@ const Canvas = () => {
     
     // Center canvas on initial load
     useEffect(() => {
-        if(mainCanvasRef.current && pageRef.current) {
+        if(mainCanvasRef.current) {
             const canvasRect = mainCanvasRef.current.getBoundingClientRect();
-            const pageRect = pageRef.current.getBoundingClientRect();
+            const pageWidthInPixels = pageDetails.width * 96; // Approximate conversion
+            const pageHeightInPixels = pageDetails.height * 96;
+
             setCanvasPosition({
-                x: (canvasRect.width / 2) - (pageRect.width / 2),
-                y: (canvasRect.height / 2) - (pageRect.height / 2)
+                x: (canvasRect.width / 2) - (pageWidthInPixels / 2),
+                y: (canvasRect.height / 2) - (pageHeightInPixels / 2)
             })
         }
     }, []);
+    
+    const handleCanvasClick = (e: React.MouseEvent) => {
+        if (e.target === mainCanvasRef.current || e.target === pageRef.current) {
+            selectElement(null);
+        }
+    }
 
     return (
         <main 
             ref={mainCanvasRef}
             className="flex-1 bg-gray-200 overflow-hidden relative cursor-grab active:cursor-grabbing"
             onMouseDown={handleCanvasPan}
-            onClick={() => selectElement(null)}
+            onClick={handleCanvasClick}
             onWheel={handleWheel}
             onContextMenu={(e) => e.preventDefault()}
         >
@@ -292,13 +296,13 @@ const Canvas = () => {
             {rulers.visible && (
                 <>
                     <div 
-                        className="absolute top-0 left-6 h-6 w-[calc(100%-1.5rem)] bg-gray-800 text-white text-xs z-30 cursor-ns-resize"
+                        className="absolute top-0 left-6 h-6 w-[calc(100%-1.5rem)] bg-gray-800 text-white text-xs z-30"
                         onMouseDown={(e) => handleRulerDrag('horizontal', e)}
                     >
                          <Ruler orientation="horizontal" zoom={zoom} canvasPosition={{ x: canvasPosition.x, y: 0 }} />
                     </div>
                     <div 
-                        className="absolute left-0 top-6 w-6 h-[calc(100%-1.5rem)] bg-gray-800 text-white text-xs z-30 cursor-ew-resize"
+                        className="absolute left-0 top-6 w-6 h-[calc(100%-1.5rem)] bg-gray-800 text-white text-xs z-30"
                         onMouseDown={(e) => handleRulerDrag('vertical', e)}
                     >
                         <Ruler orientation="vertical" zoom={zoom} canvasPosition={{ y: canvasPosition.y, x: 0 }} />
@@ -323,7 +327,6 @@ const Canvas = () => {
                         height: `${pageDetails.height}${pageDetails.unit}`,
                         backgroundColor: pageDetails.backgroundColor
                     }}
-                     onClick={(e) => e.stopPropagation()} // Stop propagation to not deselect when clicking on page
                 >
                     {pageDetails.backgroundImage && (
                         <img src={pageDetails.backgroundImage} className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none" alt="background"/>

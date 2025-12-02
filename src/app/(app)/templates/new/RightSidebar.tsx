@@ -158,24 +158,30 @@ const RightSidebar = () => {
         }
     }
 
+    if (!selectedElementId) {
+        return (
+            <aside className="w-64 bg-gray-100 border-l border-gray-200 z-10">
+                 <ScrollArea className="h-full">
+                    <PagePanel />
+                 </ScrollArea>
+            </aside>
+        )
+    }
+
     return (
         <aside className="w-64 bg-gray-100 border-l border-gray-200 z-10">
             <ScrollArea className="h-full">
-                {selectedElementId ? (
-                    <div className="space-y-4 py-4">
-                        <PositionPanel />
-                        <Separator />
-                        <TextPanel />
-                        <Separator />
-                         <div className="px-4">
-                           <Button variant="destructive" size="sm" className="w-full" onClick={handleDelete}>
-                                <Trash2 className="mr-2 h-4 w-4" /> Delete Element
-                           </Button>
-                        </div>
+                <div className="space-y-4 py-4">
+                    <PositionPanel />
+                    <Separator />
+                    <TextPanel />
+                    <Separator />
+                        <div className="px-4">
+                        <Button variant="destructive" size="sm" className="w-full" onClick={handleDelete}>
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete Element
+                        </Button>
                     </div>
-                ) : (
-                   <PagePanel />
-                )}
+                </div>
             </ScrollArea>
         </aside>
     )

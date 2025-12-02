@@ -41,7 +41,7 @@ export default function DesignStudioPage() {
                 <LeftSidebar activeTool={activeTool} onToolClick={handleToolClick} />
                 <ElementsPanel activeTool={activeTool} />
                 <Canvas />
-                {selectedElementId && <RightSidebar />}
+                <RightSidebar />
             </div>
             <Footer />
         </div>
