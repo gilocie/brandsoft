@@ -4,8 +4,12 @@
 import React from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useCanvasStore } from '@/stores/canvas-store';
-import { RectangleHorizontal, Circle, Triangle, Star, Square, Heart, Gem, Hexagon, ArrowRight } from 'lucide-react';
+import { 
+    RectangleHorizontal, Circle, Triangle, Star, Square, Heart, Gem, Hexagon, ArrowRight,
+    Building2, Image as ImageIcon, MapPin, Phone, Mail, Globe, User, Receipt, CalendarDays, Hash
+} from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const ShapeItem = ({ icon: Icon, addShape }: { icon: React.ElementType, addShape: () => void }) => (
     <div 
@@ -131,41 +135,41 @@ const invoiceFields = [
     {
         category: 'Business',
         fields: [
-            { name: 'Business Name', value: '{{brand.businessName}}' },
-            { name: 'Business Logo', value: '{{brand.logo}}', type: 'image' },
-            { name: 'Business Address', value: '{{brand.address}}' },
-            { name: 'Business Phone', value: '{{brand.phone}}' },
-            { name: 'Business Email', value: '{{brand.email}}' },
-            { name: 'Business Website', value: '{{brand.website}}' },
+            { name: 'Business Name', value: '{{brand.businessName}}', icon: Building2 },
+            { name: 'Business Logo', value: '{{brand.logo}}', type: 'image', icon: ImageIcon },
+            { name: 'Business Address', value: '{{brand.address}}', icon: MapPin },
+            { name: 'Business Phone', value: '{{brand.phone}}', icon: Phone },
+            { name: 'Business Email', value: '{{brand.email}}', icon: Mail },
+            { name: 'Business Website', value: '{{brand.website}}', icon: Globe },
         ]
     },
     {
         category: 'Customer',
         fields: [
-            { name: 'Customer Name', value: '{{customer.name}}' },
-            { name: 'Customer Email', value: '{{customer.email}}' },
-            { name: 'Customer Phone', value: '{{customer.phone}}' },
-            { name: 'Customer Address', value: '{{customer.address}}' },
-            { name: 'Company Name', value: '{{customer.companyName}}' },
+            { name: 'Customer Name', value: '{{customer.name}}', icon: User },
+            { name: 'Customer Email', value: '{{customer.email}}', icon: Mail },
+            { name: 'Customer Phone', value: '{{customer.phone}}', icon: Phone },
+            { name: 'Customer Address', value: '{{customer.address}}', icon: MapPin },
+            { name: 'Company Name', value: '{{customer.companyName}}', icon: Building2 },
         ]
     },
     {
         category: 'Invoice',
         fields: [
-            { name: 'Invoice ID', value: '{{invoice.id}}' },
-            { name: 'Invoice Date', value: '{{invoice.date}}' },
-            { name: 'Due Date', value: '{{invoice.dueDate}}' },
-            { name: 'Total Amount', value: '{{invoice.total}}' },
-            { name: 'Subtotal', value: '{{invoice.subtotal}}' },
-            { name: 'Tax Amount', value: '{{invoice.tax}}' },
-            { name: 'Discount Amount', value: '{{invoice.discount}}' },
-            { name: 'Shipping Amount', value: '{{invoice.shipping}}' },
+            { name: 'Invoice ID', value: '{{invoice.id}}', icon: Hash },
+            { name: 'Invoice Date', value: '{{invoice.date}}', icon: CalendarDays },
+            { name: 'Due Date', value: '{{invoice.dueDate}}', icon: CalendarDays },
+            { name: 'Total Amount', value: '{{invoice.total}}', icon: Receipt },
+            { name: 'Subtotal', value: '{{invoice.subtotal}}', icon: Receipt },
+            { name: 'Tax Amount', value: '{{invoice.tax}}', icon: Receipt },
+            { name: 'Discount Amount', value: '{{invoice.discount}}', icon: Receipt },
+            { name: 'Shipping Amount', value: '{{invoice.shipping}}', icon: Receipt },
         ]
     },
     {
         category: 'Line Items',
         fields: [
-             { name: 'Items Table', value: '{{invoice.items}}', type: 'table' },
+             { name: 'Items Table', value: '{{invoice.items}}', type: 'table', icon: Building2 },
         ]
     }
 ];
@@ -173,13 +177,31 @@ const invoiceFields = [
 const FieldsPanel = () => {
     const { addElement } = useCanvasStore();
 
-    const addDynamicField = (name: string, value: string) => {
+    const addDynamicField = (value: string) => {
         addElement({
             type: 'text',
             x: 50, y: 50, width: 150, height: 20, rotation: 0,
             props: { text: value, fontSize: 14, color: '#000000' }
         });
     }
+
+    const FieldIcon = ({ field }: { field: typeof invoiceFields[0]['fields'][0] }) => (
+        <TooltipProvider>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <div 
+                        className="h-16 bg-gray-200 rounded-md flex items-center justify-center cursor-pointer hover:bg-gray-300 transition-colors"
+                        onClick={() => addDynamicField(field.value)}
+                    >
+                        <field.icon className="h-6 w-6 text-gray-700" />
+                    </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                    <p>{field.name}</p>
+                </TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
+    );
 
     return (
         <div className="p-2">
@@ -191,14 +213,9 @@ const FieldsPanel = () => {
                             {group.category}
                         </AccordionTrigger>
                         <AccordionContent>
-                           <div className="flex flex-col gap-1 pt-2">
+                           <div className="grid grid-cols-3 gap-2 pt-2">
                              {group.fields.map(field => (
-                                <div key={field.name}
-                                     className="text-xs p-2 rounded-md cursor-pointer hover:bg-gray-300"
-                                     onClick={() => addDynamicField(field.name, field.value)}
-                                >
-                                    {field.name}
-                                </div>
+                                <FieldIcon key={field.name} field={field} />
                              ))}
                            </div>
                         </AccordionContent>
