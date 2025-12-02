@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Trash2, UploadCloud, PanelRightClose } from 'lucide-react';
+import { Trash2, UploadCloud, X } from 'lucide-react';
 import {
   Accordion,
   AccordionContent,
@@ -210,11 +210,12 @@ const RightSidebar = ({ onCollapse, position, setPosition }: RightSidebarProps) 
             style={{ top: position.y, right: position.x }}
         >
             <div 
-                className="p-2 border-b flex items-center justify-end bg-primary rounded-t-lg cursor-grab active:cursor-grabbing"
+                className="p-2 border-b flex items-center justify-between bg-primary rounded-t-lg cursor-grab active:cursor-grabbing"
                 onMouseDown={handleMouseDown}
             >
+                <div />
                 <Button variant="ghost" size="icon" onClick={onCollapse} className="text-primary-foreground hover:bg-primary/80 hover:text-primary-foreground cursor-pointer h-7 w-7">
-                    <PanelRightClose className="h-4 w-4" />
+                    <X className="h-4 w-4" />
                 </Button>
             </div>
             <ScrollArea className="flex-grow">
