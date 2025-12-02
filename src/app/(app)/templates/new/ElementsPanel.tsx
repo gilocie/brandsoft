@@ -6,6 +6,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useCanvasStore } from '@/stores/canvas-store';
 import { RectangleHorizontal, Circle, Triangle, Star, Square, Heart, Gem, Hexagon, ArrowRight } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Button } from '@/components/ui/button';
+import { Type } from 'lucide-react';
 
 
 const ShapeItem = ({ icon: Icon, addShape }: { icon: React.ElementType, addShape: () => void }) => (
@@ -174,7 +176,7 @@ const invoiceFields = [
 const FieldsPanel = () => {
     const { addElement } = useCanvasStore();
 
-    const addField = (name: string, value: string) => {
+    const addDynamicField = (name: string, value: string) => {
         addElement({
             type: 'text',
             x: 50, y: 50, width: 150, height: 20, rotation: 0,
@@ -182,9 +184,23 @@ const FieldsPanel = () => {
         });
     }
 
+    const addStaticText = () => {
+        addElement({
+            type: 'text',
+            x: 50, y: 50, width: 150, height: 20, rotation: 0,
+            props: { text: 'Your text here', fontSize: 14, color: '#000000' }
+        });
+    };
+
     return (
         <div className="p-2">
-            <h3 className="text-sm font-medium text-gray-500 mb-2 px-2">Text & Dynamic Fields</h3>
+            <div className="p-2">
+                <Button variant="outline" className="w-full" onClick={addStaticText}>
+                    <Type className="mr-2 h-4 w-4" />
+                    Add a text box
+                </Button>
+            </div>
+            <h3 className="text-sm font-medium text-gray-500 my-2 px-2">Dynamic Fields</h3>
              <Accordion type="multiple" defaultValue={['Business', 'Customer', 'Invoice']} className="w-full">
                 {invoiceFields.map(group => (
                     <AccordionItem value={group.category} key={group.category}>
@@ -196,7 +212,7 @@ const FieldsPanel = () => {
                              {group.fields.map(field => (
                                 <div key={field.name}
                                      className="text-xs p-2 rounded-md cursor-pointer hover:bg-gray-300"
-                                     onClick={() => addField(field.name, field.value)}
+                                     onClick={() => addDynamicField(field.name, field.value)}
                                 >
                                     {field.name}
                                 </div>

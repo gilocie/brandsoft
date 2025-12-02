@@ -5,7 +5,7 @@ import React from 'react';
 import {
   LayoutTemplate,
   Shapes,
-  Type,
+  Braces,
   ImageIcon,
   Palette,
   MoreHorizontal,
@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useCanvasStore } from '@/stores/canvas-store';
 import { cn } from '@/lib/utils';
 
 interface LeftSidebarProps {
@@ -28,7 +27,7 @@ const LeftSidebar = ({ activeTool, setActiveTool }: LeftSidebarProps) => {
     }
     
     const tools = [
-        { icon: Type, label: 'Fields' },
+        { icon: Braces, label: 'Fields' },
         { icon: Shapes, label: 'Shapes' },
         { icon: LayoutTemplate, label: 'Templates' },
         { icon: UploadCloud, label: 'Uploads' },
