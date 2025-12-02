@@ -5,25 +5,32 @@ import React, { useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useCanvasStore, type CanvasElement as CanvasElementType } from '@/stores/canvas-store';
 import { Button } from '@/components/ui/button';
-import { Plus, SlidersHorizontal, RefreshCcw, RefreshCw } from 'lucide-react';
+import { Plus, SlidersHorizontal, RefreshCcw, RefreshCw, PlusSquare, Copy } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const CanvasElement = ({ element }: { element: CanvasElementType }) => {
     const { updateElement, selectElement, commitHistory, selectedElementId, zoom } = useCanvasStore();
     const isSelected = selectedElementId === element.id;
 
-    const dragStartPos = useRef({ x: 0, y: 0 });
-
-    const handleDragStart = (e: React.MouseEvent) => {
+    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+        // Prevent event from bubbling up to the canvas and deselecting
         e.stopPropagation();
-        selectElement(element.id);
-        dragStartPos.current = { x: e.clientX, y: e.clientY };
+
+        // Select the element if not already selected
+        if (!isSelected) {
+            selectElement(element.id);
+        }
+
+        const startPos = { x: e.clientX, y: e.clientY };
+        const startElementPos = { x: element.x, y: element.y };
 
         const handleMouseMove = (moveEvent: MouseEvent) => {
-            const dx = (moveEvent.clientX - dragStartPos.current.x) / zoom;
-            const dy = (moveEvent.clientY - dragStartPos.current.y) / zoom;
-            dragStartPos.current = { x: moveEvent.clientX, y: moveEvent.clientY };
-            updateElement(element.id, { x: element.x + dx, y: element.y + dy });
+            const dx = (moveEvent.clientX - startPos.x) / zoom;
+            const dy = (moveEvent.clientY - startPos.y) / zoom;
+            updateElement(element.id, { 
+                x: startElementPos.x + dx, 
+                y: startElementPos.y + dy 
+            });
         };
 
         const handleMouseUp = () => {
@@ -38,7 +45,7 @@ const CanvasElement = ({ element }: { element: CanvasElementType }) => {
 
     return (
         <div
-            onMouseDown={handleDragStart}
+            onMouseDown={handleMouseDown}
             style={{
                 position: 'absolute',
                 left: element.x,
@@ -285,7 +292,7 @@ const Canvas = ({ onPageDoubleClick }: { onPageDoubleClick: () => void }) => {
             x,
             y,
         };
-        addElement(newElement, { select: true });
+        addElement(newElement, {select: true });
     };
     
     // Center canvas on initial load
@@ -434,3 +441,5 @@ const Canvas = ({ onPageDoubleClick }: { onPageDoubleClick: () => void }) => {
 };
 
 export default Canvas;
+
+    
