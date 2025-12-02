@@ -226,21 +226,19 @@ const LeftSidebar = () => {
     ];
     
     return (
-        <aside className="w-20 bg-black flex flex-col z-10">
+        <aside className="w-64 bg-black flex flex-col z-10">
             <ScrollArea className="flex-1">
-                 <div className="flex flex-col items-center py-4 space-y-2">
+                 <div className="flex flex-col p-4 space-y-2">
                     {tools.map(tool => (
-                        <TooltipProvider key={tool.label}>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button variant="ghost" className="w-14 h-14 flex-col text-white hover:bg-gray-800 hover:text-white" onClick={tool.action}>
-                                        <tool.icon className="h-5 w-5" />
-                                        <span className="text-xs mt-1">{tool.label}</span>
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent side="right"><p>{tool.label}</p></TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
+                        <Button
+                            key={tool.label}
+                            variant="ghost" 
+                            className="w-full h-12 flex justify-start items-center text-white hover:bg-gray-800 hover:text-white px-4" 
+                            onClick={tool.action}
+                        >
+                            <tool.icon className="h-5 w-5 mr-4" />
+                            <span className="text-sm">{tool.label}</span>
+                        </Button>
                     ))}
                  </div>
             </ScrollArea>
@@ -326,7 +324,7 @@ const HorizontalRuler = ({ zoom, canvasPosition }) => {
              if (i >= 0) newTicks.push(i);
         }
         setTicks(newTicks);
-    }, [zoom, canvasPosition.x]);
+    }, [zoom, canvasPosition.x, rulerRef.current?.offsetWidth]);
 
     return (
         <div ref={rulerRef} className="absolute -top-6 left-0 h-6 w-full bg-gray-800 text-white text-xs overflow-hidden">
@@ -358,7 +356,7 @@ const VerticalRuler = ({ zoom, canvasPosition }) => {
         }
         setTicks(newTicks);
 
-    }, [zoom, canvasPosition.y]);
+    }, [zoom, canvasPosition.y, rulerRef.current?.offsetHeight]);
 
     return (
         <div ref={rulerRef} className="absolute -left-6 top-0 w-6 h-full bg-gray-800 text-white text-xs overflow-hidden">
@@ -381,7 +379,7 @@ const Canvas = () => {
     const dragStart = useRef({ x: 0, y: 0, canvasX: 0, canvasY: 0 });
 
     const handleCanvasPan = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (e.target !== mainCanvasRef.current && e.target !== pageRef.current?.parentNode) {
+        if (e.target !== mainCanvasRef.current && !(pageRef.current && pageRef.current.parentNode === e.target)) {
             return;
         }
 
@@ -557,5 +555,6 @@ export default function DesignStudioPage() {
         </div>
     );
 }
+
 
     
