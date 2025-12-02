@@ -295,8 +295,7 @@ const Canvas = ({ onPageDoubleClick }: { onPageDoubleClick: () => void }) => {
         addElement(newElement, {select: true });
     };
     
-    // Center canvas on initial load
-    useEffect(() => {
+    const resetView = () => {
         if(mainCanvasRef.current) {
             const canvasRect = mainCanvasRef.current.getBoundingClientRect();
             const pageWidthInPixels = pageDetails.width * 96; // Approximate conversion
@@ -308,6 +307,11 @@ const Canvas = ({ onPageDoubleClick }: { onPageDoubleClick: () => void }) => {
             });
             setZoom(1);
         }
+    }
+    
+    // Center canvas on initial load
+    useEffect(() => {
+        resetView();
     }, []);
     
     const handleCanvasClick = (e: React.MouseEvent) => {
