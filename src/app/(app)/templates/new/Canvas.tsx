@@ -53,10 +53,24 @@ const CanvasElement = ({ element }: { element: CanvasElementType }) => {
                 width: element.width,
                 height: element.height,
                 transform: `rotate(${element.rotation}deg)`,
-                cursor: 'grab'
+                cursor: 'grab',
             }}
-            className={cn(isSelected && 'outline outline-2 outline-blue-500 outline-offset-2')}
+            className="active:cursor-grabbing"
         >
+            {isSelected && (
+                 <div className="absolute inset-0 border-2 border-blue-500 pointer-events-none">
+                    {/* Resize handles */}
+                    <div className="absolute -top-1 -left-1 w-2 h-2 bg-white border border-blue-500 rounded-full cursor-nwse-resize" />
+                    <div className="absolute -top-1 right-1/2 -translate-x-1/2 w-2 h-2 bg-white border border-blue-500 rounded-full cursor-ns-resize" />
+                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-white border border-blue-500 rounded-full cursor-nesw-resize" />
+                    <div className="absolute top-1/2 -translate-y-1/2 -right-1 w-2 h-2 bg-white border border-blue-500 rounded-full cursor-ew-resize" />
+                    <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-white border border-blue-500 rounded-full cursor-nwse-resize" />
+                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white border border-blue-500 rounded-full cursor-ns-resize" />
+                    <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-white border border-blue-500 rounded-full cursor-nesw-resize" />
+                    <div className="absolute top-1/2 -translate-y-1/2 -left-1 w-2 h-2 bg-white border border-blue-500 rounded-full cursor-ew-resize" />
+                 </div>
+            )}
+
             {element.type === 'text' && <p style={{ ...element.props, width: '100%', height: '100%' }}>{element.props.text}</p>}
             {element.type === 'image' && <img src={element.props.src} alt="canvas element" className="w-full h-full object-cover" />}
             {element.type === 'shape' && <div className="w-full h-full" style={{...element.props}}/>}
@@ -362,14 +376,14 @@ const Canvas = ({ onPageDoubleClick }: { onPageDoubleClick: () => void }) => {
                     transformOrigin: 'top left',
                 }}
             >
-                <TooltipProvider>
-                    <div 
-                        className="absolute z-30 flex items-center gap-1"
-                        style={{
-                        top: '-36px',
-                        right: '0'
-                        }}
-                    >
+                <div 
+                    className="absolute z-30 flex items-center gap-1"
+                    style={{
+                    top: '-36px',
+                    right: '0'
+                    }}
+                >
+                    <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button variant="default" size="icon" onClick={undo} disabled={!canUndo} className="h-8 w-8 shadow-md">
@@ -400,8 +414,8 @@ const Canvas = ({ onPageDoubleClick }: { onPageDoubleClick: () => void }) => {
                                 <p>Toggle Properties</p>
                             </TooltipContent>
                         </Tooltip>
-                    </div>
-                </TooltipProvider>
+                    </TooltipProvider>
+                </div>
 
                 <div
                     ref={pageRef}
