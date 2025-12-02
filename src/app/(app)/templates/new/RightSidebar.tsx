@@ -16,6 +16,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card } from '@/components/ui/card';
 
 
 const PositionPanel = () => {
@@ -173,15 +174,17 @@ const RightSidebar = ({ onCollapse }: { onCollapse: () => void }) => {
     ) : <PagePanel />;
 
     return (
-        <aside className="w-64 bg-gray-100 border-l border-gray-200 z-10">
-             <div className="p-2 border-b flex items-center justify-end">
-                <Button variant="ghost" size="icon" onClick={onCollapse}>
-                    <PanelRightClose className="h-4 w-4" />
-                </Button>
-            </div>
-            <ScrollArea className="h-full">
-               {content}
-            </ScrollArea>
+        <aside className="absolute top-4 right-4 w-64 z-20">
+             <Card className="h-[70vh] flex flex-col">
+                <div className="p-2 border-b flex items-center justify-end bg-primary rounded-t-lg">
+                    <Button variant="ghost" size="icon" onClick={onCollapse} className="text-primary-foreground hover:bg-primary/80 hover:text-primary-foreground">
+                        <PanelRightClose className="h-4 w-4" />
+                    </Button>
+                </div>
+                <ScrollArea className="flex-grow">
+                   {content}
+                </ScrollArea>
+             </Card>
         </aside>
     )
 }

@@ -47,8 +47,10 @@ export default function DesignStudioPage() {
             <div className="flex flex-1 overflow-hidden">
                 <LeftSidebar activeTool={activeTool} onToolClick={handleToolClick} />
                 <ElementsPanel activeTool={activeTool} />
-                <Canvas onPageDoubleClick={() => setIsRightSidebarOpen(v => !v)} />
-                {isRightSidebarOpen && <RightSidebar onCollapse={() => setIsRightSidebarOpen(false)} />}
+                <div className="relative flex-1">
+                    <Canvas onPageDoubleClick={() => setIsRightSidebarOpen(v => !v)} />
+                    {isRightSidebarOpen && <RightSidebar onCollapse={() => setIsRightSidebarOpen(false)} />}
+                </div>
             </div>
             <Footer />
         </div>
