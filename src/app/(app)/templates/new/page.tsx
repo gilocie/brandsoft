@@ -13,7 +13,7 @@ import { useCanvasStore } from '@/stores/canvas-store';
 export default function DesignStudioPage() {
     const [activeTool, setActiveTool] = useState<string | null>('Fields');
     const { addElement, selectedElementId } = useCanvasStore();
-    const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
+    const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
 
     const [elementsPanelPosition, setElementsPanelPosition] = useState({ x: 112, y: 16 });
     const [rightSidebarPosition, setRightSidebarPosition] = useState({ x: 16, y: 16 });
@@ -41,6 +41,8 @@ export default function DesignStudioPage() {
     React.useEffect(() => {
         if(selectedElementId) {
             setIsRightSidebarOpen(true);
+        } else {
+            setIsRightSidebarOpen(false);
         }
     }, [selectedElementId]);
 

@@ -159,7 +159,7 @@ const Ruler = ({ orientation, zoom, canvasPosition }: { orientation: 'horizontal
 
 
 const Canvas = ({ onPageDoubleClick }: { onPageDoubleClick: () => void }) => {
-    const { elements, selectElement, zoom, setZoom, canvasPosition, setCanvasPosition, rulers, guides, addGuide, pageDetails, updatePageDetails, commitHistory } = useCanvasStore();
+    const { elements, addElement, selectElement, zoom, setZoom, canvasPosition, setCanvasPosition, rulers, guides, addGuide, pageDetails, updatePageDetails, commitHistory } = useCanvasStore();
     const mainCanvasRef = useRef<HTMLDivElement>(null);
     const pageRef = useRef<HTMLDivElement>(null);
     const dragStart = useRef({ x: 0, y: 0, canvasX: 0, canvasY: 0 });
@@ -262,6 +262,27 @@ const Canvas = ({ onPageDoubleClick }: { onPageDoubleClick: () => void }) => {
             });
         }
     };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        if (!mainCanvasRef.current) return;
+        const dataString = e.dataTransfer.getData('application/json');
+        if (!dataString) return;
+
+        const elementData = JSON.parse(dataString);
+        
+        const rect = mainCanvasRef.current.getBoundingClientRect();
+        
+        const x = (e.clientX - rect.left - canvasPosition.x) / zoom;
+        const y = (e.clientY - rect.top - canvasPosition.y) / zoom;
+        
+        const newElement = {
+            ...elementData,
+            x,
+            y,
+        };
+        addElement(newElement, { select: true });
+    };
     
     // Center canvas on initial load
     useEffect(() => {
@@ -296,6 +317,8 @@ const Canvas = ({ onPageDoubleClick }: { onPageDoubleClick: () => void }) => {
             }}
             onWheel={handleWheel}
             onContextMenu={(e) => e.preventDefault()}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={handleDrop}
         >
              {/* Rulers */}
             {rulers.visible && (

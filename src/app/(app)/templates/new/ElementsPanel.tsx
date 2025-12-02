@@ -3,7 +3,6 @@
 
 import React from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useCanvasStore } from '@/stores/canvas-store';
 import { 
     RectangleHorizontal, Circle, Triangle, Star, Square, Heart, Gem, Hexagon, ArrowRight,
     Building2, Image as ImageIcon, MapPin, Phone, Mail, Globe, User, Receipt, CalendarDays, Hash, Type, X
@@ -12,125 +11,45 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
 
-const ShapeItem = ({ icon: Icon, addShape }: { icon: React.ElementType, addShape: () => void }) => (
+const handleDragStart = (e: React.DragEvent, data: any) => {
+    e.dataTransfer.setData('application/json', JSON.stringify(data));
+};
+
+const ShapeItem = ({ icon: Icon, shapeData }: { icon: React.ElementType, shapeData: any }) => (
     <div 
-        className="h-24 bg-gray-200 rounded-md flex items-center justify-center cursor-pointer hover:bg-gray-300 transition-colors"
-        onClick={addShape}
+        className="h-24 bg-gray-200 rounded-md flex items-center justify-center cursor-grab hover:bg-gray-300 transition-colors"
+        draggable
+        onDragStart={(e) => handleDragStart(e, shapeData)}
     >
         <Icon className="h-10 w-10 text-gray-600" />
     </div>
 );
 
 const ShapesPanel = () => {
-    const { addElement } = useCanvasStore();
-
-    const addRectangle = () => {
-        addElement({
-            type: 'shape',
-            x: 100, y: 100, width: 150, height: 100, rotation: 0,
-            props: { backgroundColor: '#cccccc' }
-        });
-    }
-    
-    const addCircle = () => {
-         addElement({
-            type: 'shape',
-            x: 150, y: 150, width: 100, height: 100, rotation: 0,
-            props: { backgroundColor: '#cccccc', borderRadius: '50%' }
-        });
-    }
-    
-    const addTriangle = () => {
-        addElement({
-            type: 'shape',
-            x: 150, y: 150, width: 100, height: 100, rotation: 0,
-            props: { 
-                width: 0,
-                height: 0,
-                backgroundColor: 'transparent',
-                borderBottom: '100px solid #cccccc',
-                borderLeft: '50px solid transparent',
-                borderRight: '50px solid transparent',
-            }
-        });
-    };
-
-    const addStar = () => {
-        addElement({
-            type: 'shape',
-            x: 150, y: 150, width: 100, height: 100, rotation: 0,
-            props: {
-                backgroundColor: '#cccccc',
-                clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)'
-            }
-        });
-    };
-    
-    const addSquare = () => {
-        addElement({
-            type: 'shape',
-            x: 125, y: 125, width: 100, height: 100, rotation: 0,
-            props: { backgroundColor: '#cccccc' }
-        });
-    };
-    
-    const addHeart = () => {
-         addElement({
-            type: 'shape',
-            x: 150, y: 150, width: 100, height: 100, rotation: 0,
-            props: { 
-                backgroundColor: '#cccccc',
-                clipPath: 'path("M10,30 A20,20,0,0,1,50,30 A20,20,0,0,1,90,30 Q90,60,50,90 Q10,60,10,30 Z")'
-            }
-        });
-    };
-    
-    const addDiamond = () => {
-         addElement({
-            type: 'shape',
-            x: 150, y: 150, width: 100, height: 100, rotation: 45,
-            props: { backgroundColor: '#cccccc' }
-        });
-    };
-    
-    const addHexagon = () => {
-        addElement({
-            type: 'shape',
-            x: 150, y: 150, width: 100, height: 115.47, rotation: 0,
-            props: { 
-                backgroundColor: '#cccccc',
-                clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)'
-            }
-        });
-    };
-    
-    const addArrow = () => {
-        addElement({
-            type: 'shape',
-            x: 150, y: 150, width: 150, height: 100, rotation: 0,
-            props: { 
-                backgroundColor: '#cccccc',
-                clipPath: 'polygon(0% 20%, 60% 20%, 60% 0%, 100% 50%, 60% 100%, 60% 80%, 0% 80%)'
-            }
-        });
-    };
-
+    const rectangleData = { type: 'shape', width: 150, height: 100, rotation: 0, props: { backgroundColor: '#cccccc' } };
+    const circleData = { type: 'shape', width: 100, height: 100, rotation: 0, props: { backgroundColor: '#cccccc', borderRadius: '50%' } };
+    const triangleData = { type: 'shape', width: 100, height: 100, rotation: 0, props: { width: 0, height: 0, backgroundColor: 'transparent', borderBottom: '100px solid #cccccc', borderLeft: '50px solid transparent', borderRight: '50px solid transparent' } };
+    const starData = { type: 'shape', width: 100, height: 100, rotation: 0, props: { backgroundColor: '#cccccc', clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)' } };
+    const squareData = { type: 'shape', width: 100, height: 100, rotation: 0, props: { backgroundColor: '#cccccc' } };
+    const heartData = { type: 'shape', width: 100, height: 100, rotation: 0, props: { backgroundColor: '#cccccc', clipPath: 'path("M10,30 A20,20,0,0,1,50,30 A20,20,0,0,1,90,30 Q90,60,50,90 Q10,60,10,30 Z")' } };
+    const diamondData = { type: 'shape', width: 100, height: 100, rotation: 45, props: { backgroundColor: '#cccccc' } };
+    const hexagonData = { type: 'shape', width: 100, height: 115.47, rotation: 0, props: { backgroundColor: '#cccccc', clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' } };
+    const arrowData = { type: 'shape', width: 150, height: 100, rotation: 0, props: { backgroundColor: '#cccccc', clipPath: 'polygon(0% 20%, 60% 20%, 60% 0%, 100% 50%, 60% 100%, 60% 80%, 0% 80%)' } };
 
     return (
         <div className="p-4">
             <h3 className="text-sm font-medium text-gray-500 mb-4">Shapes</h3>
             <div className="grid grid-cols-2 gap-4">
-                <ShapeItem icon={RectangleHorizontal} addShape={addRectangle} />
-                <ShapeItem icon={Circle} addShape={addCircle} />
-                <ShapeItem icon={Triangle} addShape={addTriangle} />
-                <ShapeItem icon={Star} addShape={addStar} />
-                <ShapeItem icon={Square} addShape={addSquare} />
-                <ShapeItem icon={Heart} addShape={addHeart} />
-                <ShapeItem icon={Gem} addShape={addDiamond} />
-                <ShapeItem icon={Hexagon} addShape={addHexagon} />
-                <ShapeItem icon={ArrowRight} addShape={addArrow} />
+                <ShapeItem icon={RectangleHorizontal} shapeData={rectangleData} />
+                <ShapeItem icon={Circle} shapeData={circleData} />
+                <ShapeItem icon={Triangle} shapeData={triangleData} />
+                <ShapeItem icon={Star} shapeData={starData} />
+                <ShapeItem icon={Square} shapeData={squareData} />
+                <ShapeItem icon={Heart} shapeData={heartData} />
+                <ShapeItem icon={Gem} shapeData={diamondData} />
+                <ShapeItem icon={Hexagon} shapeData={hexagonData} />
+                <ShapeItem icon={ArrowRight} shapeData={arrowData} />
             </div>
         </div>
     );
@@ -180,23 +99,20 @@ const invoiceFields = [
 ];
 
 const FieldsPanel = () => {
-    const { addElement } = useCanvasStore();
-
-    const addDynamicField = (value: string) => {
-        addElement({
-            type: 'text',
-            x: 50, y: 50, width: 150, height: 20, rotation: 0,
-            props: { text: value, fontSize: 14, color: '#000000' }
-        });
-    }
+    const fieldData = (value: string) => ({
+        type: 'text',
+        width: 150, height: 20, rotation: 0,
+        props: { text: value, fontSize: 14, color: '#000000' }
+    });
 
     const FieldIcon = ({ field }: { field: typeof invoiceFields[0]['fields'][0] }) => (
         <TooltipProvider>
             <Tooltip>
                 <TooltipTrigger asChild>
                     <div 
-                        className="h-16 bg-gray-200 rounded-md flex items-center justify-center cursor-pointer hover:bg-gray-300 transition-colors"
-                        onClick={() => addDynamicField(field.value)}
+                        className="h-16 bg-gray-200 rounded-md flex items-center justify-center cursor-grab hover:bg-gray-300 transition-colors"
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, fieldData(field.value))}
                     >
                         <field.icon className="h-6 w-6 text-gray-700" />
                     </div>

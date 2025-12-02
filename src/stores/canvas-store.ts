@@ -51,7 +51,7 @@ interface CanvasState {
   guides: { horizontal: Guide[]; vertical: Guide[] };
   pageDetails: PageDetails;
 
-  addElement: (element: Omit<CanvasElement, 'id'>) => void;
+  addElement: (element: Omit<CanvasElement, 'id'>, options?: { select?: boolean }) => void;
   updateElement: (id: string, updates: Partial<CanvasElement>) => void;
   deleteElement: (id: string) => void;
   selectElement: (id: string | null) => void;
@@ -83,10 +83,11 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   rulers: { visible: true },
   guides: { horizontal: [], vertical: [] },
 
-  addElement: (element) => {
+  addElement: (element, options) => {
     const newElement = { ...element, id: Date.now().toString() };
     set((state) => ({
       elements: [...state.elements, newElement],
+      selectedElementId: options?.select ? newElement.id : state.selectedElementId,
     }));
     get().commitHistory();
   },
