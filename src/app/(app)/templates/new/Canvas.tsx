@@ -309,9 +309,6 @@ const Canvas = ({ onPageDoubleClick }: { onPageDoubleClick: () => void }) => {
             selectElement(null);
         }
     }
-    
-    const pageX = canvasPosition.x;
-    const pageY = canvasPosition.y;
 
     return (
         <main 

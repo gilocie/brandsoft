@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from './Header';
 import LeftSidebar from './LeftSidebar';
 import ElementsPanel from './ElementsPanel';
@@ -39,7 +39,7 @@ export default function DesignStudioPage() {
         }
     };
     
-    React.useEffect(() => {
+    useEffect(() => {
         if(selectedElementId) {
             setIsRightSidebarOpen(true);
         }
@@ -50,9 +50,9 @@ export default function DesignStudioPage() {
             <Header />
             <div className="flex flex-1 overflow-hidden">
                 <LeftSidebar activeTool={activeTool} onToolClick={handleToolClick} />
-                <div className="relative flex-1">
+                <div className="relative flex-1 flex flex-col">
                     <Canvas onPageDoubleClick={() => setIsRightSidebarOpen(v => !v)} />
-                    <ElementsPanel 
+                     <ElementsPanel 
                         activeTool={activeTool} 
                         onClose={() => setActiveTool(null)} 
                         position={elementsPanelPosition}
