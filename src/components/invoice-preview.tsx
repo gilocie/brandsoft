@@ -153,7 +153,7 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                 )}
                 style={forPdf ? { 
                     padding: '48px',
-                    paddingTop: config.brand.headerImage ? '100px' : '58px',
+                    paddingTop: config.brand.headerImage ? '100px' : '48px',
                     paddingBottom: '100px',
                     position: 'relative'
                 } : {}}
@@ -260,7 +260,7 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                     </section>
 
                     {/* Totals & Notes */}
-                    <section className="relative z-10 grid grid-cols-2 gap-8 items-start mb-12 mt-8">
+                    <section className="relative z-10 grid grid-cols-2 gap-8 items-start mb-12 mt-auto">
                         <div className="text-sm">
                             {invoiceData.notes && (
                                 <div>
@@ -299,7 +299,7 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                                 </div>
                             )}
                             <div className="pt-2">
-                            <div className="flex items-center justify-center font-bold text-lg py-3 px-4 rounded" style={{backgroundColor: config.brand.primaryColor, color: '#fff'}}>
+                            <div className="flex items-center justify-between font-bold text-lg py-3 px-4 rounded" style={{backgroundColor: config.brand.primaryColor, color: '#fff'}}>
                                     <span className="mr-4">Total</span>
                                     <span>{formatCurrency(total)}</span>
                                 </div>
@@ -399,4 +399,5 @@ export const downloadInvoiceAsPdf = async (props: InvoicePreviewProps) => {
 
     pdf.save(`Invoice-${props.invoiceId}.pdf`);
 };
+
 
