@@ -56,93 +56,119 @@ const CanvasElement = ({ element }: { element: CanvasElementType }) => {
     );
 };
 
-const RulerGuide = ({ orientation, position }: { orientation: 'horizontal' | 'vertical', position: number }) => {
-  const style = orientation === 'horizontal' 
-    ? { top: position, left: 0, width: '100%', height: '1px' }
-    : { left: position, top: 0, height: '100%', width: '1px' };
+const RulerGuide = ({ id, orientation, position }: { id: string; orientation: 'horizontal' | 'vertical'; position: number }) => {
+    const { updateGuide, deleteGuide, commitHistory } = useCanvasStore();
+    const rulerSize = 24; // Corresponds to w-6/h-6 on rulers
 
-  return (
-    <div
-      style={style}
-      className="absolute bg-blue-400 z-20 pointer-events-none"
-    />
-  );
-};
+    const style = orientation === 'horizontal' 
+      ? { top: position, left: 0, width: '100%', height: '1px', cursor: 'ns-resize' }
+      : { left: position, top: 0, height: '100%', width: '1px', cursor: 'ew-resize' };
+  
+    const handleMouseDown = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      const startPos = orientation === 'horizontal' ? e.clientY : e.clientX;
+  
+      const handleMouseMove = (moveEvent: MouseEvent) => {
+        const currentPos = orientation === 'horizontal' ? moveEvent.clientY : moveEvent.clientX;
+        const delta = currentPos - startPos;
+        updateGuide(id, orientation === 'horizontal' ? { y: position + delta } : { x: position + delta });
+      };
+  
+      const handleMouseUp = (upEvent: MouseEvent) => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+  
+        const finalPos = orientation === 'horizontal' ? upEvent.clientY : upEvent.clientX;
+        if (finalPos < rulerSize) {
+          deleteGuide(id);
+        }
+        commitHistory();
+      };
+  
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    };
+  
+    return (
+      <div
+        style={style}
+        className="absolute bg-blue-400 z-20"
+        onMouseDown={handleMouseDown}
+      />
+    );
+  };
+  
 
-const HorizontalRuler = ({ zoom, canvasPosition }: { zoom: number, canvasPosition: { x: number, y: number } }) => {
+const Ruler = ({ orientation, zoom, canvasPosition }: { orientation: 'horizontal' | 'vertical', zoom: number, canvasPosition: {x: number, y:number} }) => {
     const rulerRef = useRef<HTMLDivElement>(null);
     const [ticks, setTicks] = useState<number[]>([]);
 
     useEffect(() => {
         if (!rulerRef.current) return;
-        const width = rulerRef.current.offsetWidth;
-        const newTicks: number[] = [];
-        // Adjust interval based on zoom level for readability
-        const interval = zoom > 0.8 ? 50 : (zoom > 0.3 ? 100 : 200);
-        const start = -Math.round(canvasPosition.x / (interval * zoom)) * interval;
         
-        for (let i = start - interval * 5; i < start + width / zoom + interval * 5; i += interval) {
-             if (i >= 0) newTicks.push(i);
+        const size = orientation === 'horizontal' ? rulerRef.current.offsetWidth : rulerRef.current.offsetHeight;
+        const newTicks = [];
+        
+        const baseIntervals = [1, 2, 5, 10, 25, 50, 100, 200, 500, 1000];
+        const minPixelsPerTick = 40;
+        let interval = baseIntervals[0];
+        for(const i of baseIntervals) {
+            if (i * zoom > minPixelsPerTick) {
+                interval = i;
+                break;
+            }
+        }
+
+        const startValue = -Math.round((orientation === 'horizontal' ? canvasPosition.x : canvasPosition.y) / zoom);
+
+        const firstTick = Math.floor(startValue / interval) * interval;
+        const lastTick = startValue + Math.ceil(size / zoom);
+
+        for (let i = firstTick; i < lastTick; i += interval) {
+             newTicks.push(i);
         }
         setTicks(newTicks);
-    }, [zoom, canvasPosition.x, rulerRef.current?.offsetWidth]);
+
+    }, [zoom, canvasPosition, orientation, rulerRef.current?.offsetWidth, rulerRef.current?.offsetHeight]);
+
+    const getTickPosition = (tick: number) => {
+        const offset = (orientation === 'horizontal' ? canvasPosition.x : canvasPosition.y);
+        return (tick * zoom) + offset;
+    }
 
     return (
-        <div ref={rulerRef} className="absolute top-0 left-0 h-6 w-full bg-gray-800 text-white text-xs overflow-hidden">
-             <div className="absolute top-0 h-full" style={{ left: canvasPosition.x * zoom }}>
-                {ticks.map(tick => (
-                    <div key={`h-${tick}`} className="absolute top-0 h-full" style={{ left: tick * zoom }}>
-                        <div className="w-px h-1.5 bg-gray-500" />
-                        <span className="absolute top-2 -translate-x-1/2">{tick}</span>
-                    </div>
-                ))}
-            </div>
+        <div ref={rulerRef} className="absolute inset-0 overflow-hidden">
+            {ticks.map(tick => (
+                <div key={tick} className="absolute" style={orientation === 'horizontal' ? { top: 0, left: getTickPosition(tick), height: '100%'} : { left: 0, top: getTickPosition(tick), width: '100%'}}>
+                    {orientation === 'horizontal' ? (
+                        <>
+                            <div className="w-px h-1.5 bg-gray-500" />
+                            <span className="absolute top-2 -translate-x-1/2 text-gray-400">{tick}</span>
+                        </>
+                    ) : (
+                         <>
+                            <div className="h-px w-1.5 bg-gray-500 ml-auto" />
+                            <span className="absolute left-1 -translate-y-1/2 text-gray-400" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>{tick}</span>
+                        </>
+                    )}
+                </div>
+            ))}
         </div>
     );
 };
 
-const VerticalRuler = ({ zoom, canvasPosition }: { zoom: number, canvasPosition: { x: number, y: number } }) => {
-    const rulerRef = useRef<HTMLDivElement>(null);
-    const [ticks, setTicks] = useState<number[]>([]);
-
-    useEffect(() => {
-        if (!rulerRef.current) return;
-        const height = rulerRef.current.offsetHeight;
-        const newTicks: number[] = [];
-        const interval = zoom > 0.8 ? 50 : (zoom > 0.3 ? 100 : 200);
-        const start = -Math.round(canvasPosition.y / (interval * zoom)) * interval;
-        
-        for (let i = start - interval * 5; i < start + height / zoom + interval * 5; i += interval) {
-             if (i >= 0) newTicks.push(i);
-        }
-        setTicks(newTicks);
-
-    }, [zoom, canvasPosition.y, rulerRef.current?.offsetHeight]);
-
-    return (
-        <div ref={rulerRef} className="absolute left-0 top-0 w-6 h-full bg-gray-800 text-white text-xs overflow-hidden">
-            <div className="absolute left-0 w-full" style={{ top: canvasPosition.y * zoom }}>
-                {ticks.map(tick => (
-                    <div key={`v-${tick}`} className="absolute left-0 w-full" style={{ top: tick * zoom }}>
-                        <div className="h-px w-1.5 bg-gray-500 ml-auto" />
-                        <span className="absolute left-1 -translate-y-1/2" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>{tick}</span>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-};
 
 const Canvas = () => {
-    const { elements, selectElement, zoom, setZoom, canvasPosition, setCanvasPosition, rulers, guides, addGuide } = useCanvasStore();
+    const { elements, selectElement, zoom, setZoom, canvasPosition, setCanvasPosition, rulers, guides, addGuide, pageDetails, updatePageDetails, commitHistory } = useCanvasStore();
     const mainCanvasRef = useRef<HTMLDivElement>(null);
     const pageRef = useRef<HTMLDivElement>(null);
     const dragStart = useRef({ x: 0, y: 0, canvasX: 0, canvasY: 0 });
 
     const handleCanvasPan = (e: React.MouseEvent<HTMLDivElement>) => {
-        const isPageOrElement = pageRef.current?.contains(e.target as Node) || (e.target as HTMLElement).closest('[data-element-id]');
-        if (isPageOrElement && !(e.target === pageRef.current)) {
-            return;
+        if (e.button !== 1 && e.button !== 2 && !(e.button === 0 && e.altKey)) {
+            // Only pan with middle mouse, right-click, or alt+left-click
+            // If the target is the canvas itself (the gray area), allow primary-click pan.
+            if(e.target !== mainCanvasRef.current) return;
         }
 
         e.preventDefault();
@@ -151,7 +177,7 @@ const Canvas = () => {
         const handleMouseMove = (moveEvent: MouseEvent) => {
             const dx = moveEvent.clientX - dragStart.current.x;
             const dy = moveEvent.clientY - dragStart.current.y;
-            setCanvasPosition({ x: dragStart.current.canvasX + dx, y: dragStart.current.canvasY + dy });
+            setCanvasPosition({ x: dragStart.current.canvasX + dx / zoom, y: dragStart.current.canvasY + dy / zoom });
         };
         const handleMouseUp = () => {
             document.removeEventListener('mousemove', handleMouseMove);
@@ -164,28 +190,51 @@ const Canvas = () => {
     const handleRulerDrag = (orientation: 'horizontal' | 'vertical', startEvent: React.MouseEvent) => {
         startEvent.preventDefault();
         if (!pageRef.current) return;
-        const canvasRect = pageRef.current.getBoundingClientRect();
+        const pageRect = pageRef.current.getBoundingClientRect();
         
-        const handleMouseMove = (moveEvent: MouseEvent) => {
-            let position;
-            if (orientation === 'horizontal') {
-                position = (moveEvent.clientY - canvasRect.top) / zoom;
+        let tempGuide: HTMLDivElement | null = null;
+        if(mainCanvasRef.current) {
+            tempGuide = document.createElement('div');
+            tempGuide.style.position = 'absolute';
+            tempGuide.style.backgroundColor = 'rgba(0, 150, 255, 0.5)';
+            if(orientation === 'horizontal') {
+                tempGuide.style.width = '100%';
+                tempGuide.style.height = '1px';
+                tempGuide.style.left = '0';
+                tempGuide.style.top = `${startEvent.clientY}px`;
             } else {
-                position = (moveEvent.clientX - canvasRect.left) / zoom;
+                tempGuide.style.width = '1px';
+                tempGuide.style.height = '100%';
+                tempGuide.style.top = '0';
+                tempGuide.style.left = `${startEvent.clientX}px`;
             }
-            // A temporary guide could be shown here
+            mainCanvasRef.current.appendChild(tempGuide);
+        }
+
+        const handleMouseMove = (moveEvent: MouseEvent) => {
+            if(tempGuide) {
+                 if (orientation === 'horizontal') {
+                    tempGuide.style.top = `${moveEvent.clientY}px`;
+                } else {
+                    tempGuide.style.left = `${moveEvent.clientX}px`;
+                }
+            }
         };
 
         const handleMouseUp = (upEvent: MouseEvent) => {
+            if(tempGuide && mainCanvasRef.current) {
+                mainCanvasRef.current.removeChild(tempGuide);
+            }
+            
             let finalPosition;
             if (orientation === 'horizontal') {
-                finalPosition = (upEvent.clientY - canvasRect.top) / zoom;
+                finalPosition = (upEvent.clientY - pageRect.top) / zoom;
             } else {
-                finalPosition = (upEvent.clientX - canvasRect.left) / zoom;
+                finalPosition = (upEvent.clientX - pageRect.left) / zoom;
             }
-             if(finalPosition > 0) { // Simple check to not add guides outside canvas
-                addGuide(orientation, finalPosition);
-            }
+            
+            addGuide(orientation, finalPosition);
+            commitHistory();
             document.removeEventListener('mousemove', handleMouseMove);
             document.removeEventListener('mouseup', handleMouseUp);
         };
@@ -196,97 +245,110 @@ const Canvas = () => {
 
     const handleWheel = (e: React.WheelEvent) => {
         e.preventDefault();
+        const rect = mainCanvasRef.current!.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
 
-        if (e.altKey) {
-            // Zooming
-            const newZoom = zoom - e.deltaY * 0.001;
+        if (e.ctrlKey || e.metaKey) { // Zoom
+            const zoomFactor = 1 - e.deltaY * 0.001;
+            const newZoom = Math.max(0.1, Math.min(5, zoom * zoomFactor));
+
+            const newPosX = mouseX - (mouseX - canvasPosition.x) * zoomFactor;
+            const newPosY = mouseY - (mouseY - canvasPosition.y) * zoomFactor;
+
             setZoom(newZoom);
-        } else {
-            // Panning
+            setCanvasPosition({x: newPosX, y: newPosY});
+
+        } else { // Pan
             setCanvasPosition({
                 x: canvasPosition.x - e.deltaX,
                 y: canvasPosition.y - e.deltaY
             });
         }
     };
+    
+    // Center canvas on initial load
+    useEffect(() => {
+        if(mainCanvasRef.current && pageRef.current) {
+            const canvasRect = mainCanvasRef.current.getBoundingClientRect();
+            const pageRect = pageRef.current.getBoundingClientRect();
+            setCanvasPosition({
+                x: (canvasRect.width / 2) - (pageRect.width / 2),
+                y: (canvasRect.height / 2) - (pageRect.height / 2)
+            })
+        }
+    }, []);
 
     return (
         <main 
             ref={mainCanvasRef}
-            className="flex-1 bg-gray-200 p-8 overflow-hidden relative cursor-grab active:cursor-grabbing"
+            className="flex-1 bg-gray-200 overflow-hidden relative cursor-grab active:cursor-grabbing"
             onMouseDown={handleCanvasPan}
             onClick={() => selectElement(null)}
             onWheel={handleWheel}
+            onContextMenu={(e) => e.preventDefault()}
         >
              {/* Rulers */}
             {rulers.visible && (
                 <>
                     <div 
-                        className="absolute top-0 left-6 h-6 w-[calc(100%-1.5rem)] cursor-ns-resize z-30"
+                        className="absolute top-0 left-6 h-6 w-[calc(100%-1.5rem)] bg-gray-800 text-white text-xs z-30 cursor-ns-resize"
                         onMouseDown={(e) => handleRulerDrag('horizontal', e)}
                     >
-                         <HorizontalRuler zoom={zoom} canvasPosition={canvasPosition}/>
+                         <Ruler orientation="horizontal" zoom={zoom} canvasPosition={{ x: canvasPosition.x, y: 0 }} />
                     </div>
                     <div 
-                        className="absolute left-0 top-6 w-6 h-[calc(100%-1.5rem)] cursor-ew-resize z-30"
+                        className="absolute left-0 top-6 w-6 h-[calc(100%-1.5rem)] bg-gray-800 text-white text-xs z-30 cursor-ew-resize"
                         onMouseDown={(e) => handleRulerDrag('vertical', e)}
                     >
-                        <VerticalRuler zoom={zoom} canvasPosition={canvasPosition}/>
+                        <Ruler orientation="vertical" zoom={zoom} canvasPosition={{ y: canvasPosition.y, x: 0 }} />
                     </div>
                     <div className="absolute top-0 left-0 h-6 w-6 bg-gray-800 z-30"/>
                 </>
             )}
 
-             <div 
-                className="relative cursor-default flex items-center justify-center"
-                 style={{
-                    width: '100%',
-                    height: '100%',
+            <div
+                className="absolute"
+                style={{
+                    transform: `translate(${canvasPosition.x}px, ${canvasPosition.y}px) scale(${zoom})`,
+                    transformOrigin: 'top left',
                 }}
-                onMouseDown={(e) => e.stopPropagation()} // Stop propagation to not deselect when clicking on page
             >
+
                 <div
-                    className="absolute"
-                    style={{
-                        transform: `translate(${canvasPosition.x}px, ${canvasPosition.y}px) scale(${zoom})`,
-                        transformOrigin: 'top left',
-                        left: '50%',
-                        top: '50%',
-                        marginLeft: `-${(8.5/2)}in`,
-                        marginTop: `-${(11/2)}in`,
+                    ref={pageRef}
+                    className="relative bg-white shadow-lg overflow-hidden"
+                    style={{ 
+                        width: `${pageDetails.width}${pageDetails.unit}`, 
+                        height: `${pageDetails.height}${pageDetails.unit}`,
+                        backgroundColor: pageDetails.backgroundColor
                     }}
+                     onClick={(e) => e.stopPropagation()} // Stop propagation to not deselect when clicking on page
                 >
+                    {pageDetails.backgroundImage && (
+                        <img src={pageDetails.backgroundImage} className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none" alt="background"/>
+                    )}
 
-                    <div
-                        ref={pageRef}
-                        className="relative bg-white shadow-lg"
-                        style={{ 
-                            width: '8.5in', 
-                            height: '11in',
-                        }}
-                    >
-                        {/* Guides */}
-                        {guides.horizontal.map(guide => <RulerGuide key={guide.id} orientation="horizontal" position={guide.y!} />)}
-                        {guides.vertical.map(guide => <RulerGuide key={guide.id} orientation="vertical" position={guide.x!} />)}
-                        
-                        {/* Elements */}
-                        {elements.map(el => (
-                            <CanvasElement key={el.id} element={el} />
-                        ))}
-
-                        {elements.length === 0 && (
-                            <div className="absolute inset-0 flex items-center justify-center text-gray-400 pointer-events-none">
-                                <div className="text-center">
-                                    <p>Click an element from the left panel to add it</p>
-                                </div>
-                            </div>
-                        )}
-                    </div>
+                    {/* Guides */}
+                    {guides.horizontal.map(guide => <RulerGuide key={guide.id} id={guide.id} orientation="horizontal" position={guide.y!} />)}
+                    {guides.vertical.map(guide => <RulerGuide key={guide.id} id={guide.id} orientation="vertical" position={guide.x!} />)}
                     
-                    <div className="absolute -bottom-12 left-1/2 -translate-x-1/2">
-                        <Button variant="outline" className="bg-white"><Plus className="mr-2 h-4 w-4" /> Add page</Button>
-                    </div>
+                    {/* Elements */}
+                    {elements.map(el => (
+                        <CanvasElement key={el.id} element={el} />
+                    ))}
+
+                    {elements.length === 0 && (
+                        <div className="absolute inset-0 flex items-center justify-center text-gray-400 pointer-events-none">
+                            <div className="text-center">
+                                <p>Click an element from the left panel to add it</p>
+                            </div>
+                        </div>
+                    )}
                 </div>
+            </div>
+             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30">
+                <Button variant="outline" className="bg-white shadow-md"><Plus className="mr-2 h-4 w-4" /> Add page</Button>
             </div>
         </main>
     );

@@ -32,15 +32,24 @@ export interface Guide {
     x?: number;
 }
 
+export interface PageDetails {
+    width: number;
+    height: number;
+    unit: 'in' | 'px' | 'cm';
+    backgroundColor: string;
+    backgroundImage?: string;
+}
+
 interface CanvasState {
   elements: CanvasElement[];
   selectedElementId: string | null;
-  history: CanvasElement[][];
+  history: { elements: CanvasElement[]; pageDetails: PageDetails }[];
   historyIndex: number;
   zoom: number;
   canvasPosition: { x: number; y: number };
   rulers: { visible: boolean };
   guides: { horizontal: Guide[]; vertical: Guide[] };
+  pageDetails: PageDetails;
 
   addElement: (element: Omit<CanvasElement, 'id'>) => void;
   updateElement: (id: string, updates: Partial<CanvasElement>) => void;
@@ -50,6 +59,9 @@ interface CanvasState {
   setCanvasPosition: (position: { x: number; y: number }) => void;
   toggleRulers: () => void;
   addGuide: (orientation: 'horizontal' | 'vertical', position: number) => void;
+  updateGuide: (id: string, updates: Partial<Guide>) => void;
+  deleteGuide: (id: string) => void;
+  updatePageDetails: (updates: Partial<PageDetails>) => void;
   commitHistory: () => void;
   undo: () => void;
   redo: () => void;
@@ -58,7 +70,13 @@ interface CanvasState {
 export const useCanvasStore = create<CanvasState>((set, get) => ({
   elements: [],
   selectedElementId: null,
-  history: [[]],
+  pageDetails: {
+    width: 8.5,
+    height: 11,
+    unit: 'in',
+    backgroundColor: '#FFFFFF',
+  },
+  history: [{ elements: [], pageDetails: { width: 8.5, height: 11, unit: 'in', backgroundColor: '#FFFFFF' } }],
   historyIndex: 0,
   zoom: 1,
   canvasPosition: { x: 0, y: 0 },
@@ -91,7 +109,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
 
   selectElement: (id) => set({ selectedElementId: id }),
   
-  setZoom: (zoom) => set({ zoom: Math.max(0.1, Math.min(3, zoom)) }),
+  setZoom: (zoom) => set({ zoom }),
 
   setCanvasPosition: (position) => set({ canvasPosition: position }),
   
@@ -108,10 +126,34 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     });
   },
 
+  updateGuide: (id, updates) => {
+    set((state) => ({
+      guides: {
+        horizontal: state.guides.horizontal.map(g => g.id === id ? { ...g, ...updates } : g),
+        vertical: state.guides.vertical.map(g => g.id === id ? { ...g, ...updates } : g),
+      }
+    }))
+  },
+
+  deleteGuide: (id) => {
+      set(state => ({
+          guides: {
+              horizontal: state.guides.horizontal.filter(g => g.id !== id),
+              vertical: state.guides.vertical.filter(g => g.id !== id),
+          }
+      }))
+  },
+
+  updatePageDetails: (updates) => {
+    set(state => ({
+        pageDetails: { ...state.pageDetails, ...updates }
+    }));
+  },
+
   commitHistory: () => {
     set(state => {
       const newHistory = state.history.slice(0, state.historyIndex + 1);
-      newHistory.push(state.elements);
+      newHistory.push({ elements: state.elements, pageDetails: state.pageDetails });
       return {
         history: newHistory,
         historyIndex: newHistory.length - 1
@@ -123,8 +165,10 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     set(state => {
       if (state.historyIndex > 0) {
         const newIndex = state.historyIndex - 1;
+        const previousState = state.history[newIndex];
         return {
-          elements: state.history[newIndex],
+          elements: previousState.elements,
+          pageDetails: previousState.pageDetails,
           historyIndex: newIndex,
           selectedElementId: null
         };
@@ -137,8 +181,10 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     set(state => {
       if (state.historyIndex < state.history.length - 1) {
         const newIndex = state.historyIndex + 1;
+        const nextState = state.history[newIndex];
         return {
-          elements: state.history[newIndex],
+          elements: nextState.elements,
+          pageDetails: nextState.pageDetails,
           historyIndex: newIndex,
           selectedElementId: null
         };
