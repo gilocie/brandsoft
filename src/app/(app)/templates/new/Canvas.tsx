@@ -271,10 +271,10 @@ const Canvas = ({ onPageDoubleClick }: { onPageDoubleClick: () => void }) => {
 
         const elementData = JSON.parse(dataString);
         
-        const rect = mainCanvasRef.current.getBoundingClientRect();
+        const rect = pageRef.current!.getBoundingClientRect();
         
-        const x = (e.clientX - rect.left - canvasPosition.x) / zoom;
-        const y = (e.clientY - rect.top - canvasPosition.y) / zoom;
+        const x = (e.clientX - rect.left) / zoom;
+        const y = (e.clientY - rect.top) / zoom;
         
         const newElement = {
             ...elementData,
@@ -324,13 +324,13 @@ const Canvas = ({ onPageDoubleClick }: { onPageDoubleClick: () => void }) => {
             {rulers.visible && (
                 <>
                     <div 
-                        className="absolute top-0 left-6 h-6 w-[calc(100%-1.5rem)] bg-gray-800 text-white text-xs z-30"
+                        className="absolute top-0 left-6 h-6 w-[calc(100%-1.5rem)] bg-gray-800 text-white text-xs z-30 cursor-crosshair"
                         onMouseDown={(e) => handleRulerDrag('horizontal', e)}
                     >
                          <Ruler orientation="horizontal" zoom={zoom} canvasPosition={{ x: canvasPosition.x, y: 0 }} />
                     </div>
                     <div 
-                        className="absolute left-0 top-6 w-6 h-[calc(100%-1.5rem)] bg-gray-800 text-white text-xs z-30"
+                        className="absolute left-0 top-6 w-6 h-[calc(100%-1.5rem)] bg-gray-800 text-white text-xs z-30 cursor-crosshair"
                         onMouseDown={(e) => handleRulerDrag('vertical', e)}
                     >
                         <Ruler orientation="vertical" zoom={zoom} canvasPosition={{ y: canvasPosition.y, x: 0 }} />
@@ -372,7 +372,7 @@ const Canvas = ({ onPageDoubleClick }: { onPageDoubleClick: () => void }) => {
                     {elements.length === 0 && (
                         <div className="absolute inset-0 flex items-center justify-center text-gray-400 pointer-events-none">
                             <div className="text-center">
-                                <p>Click an element from the left panel to add it</p>
+                                <p>Drag an element from a panel to add it</p>
                             </div>
                         </div>
                     )}
@@ -386,3 +386,5 @@ const Canvas = ({ onPageDoubleClick }: { onPageDoubleClick: () => void }) => {
 };
 
 export default Canvas;
+
+    
