@@ -37,7 +37,7 @@ const PositionPanel = () => {
                 <InputWithLabel label="X" value={element.x.toFixed(0)} onChange={e => handleChange('x', e.target.value)} onBlur={handleCommit} />
                 <InputWithLabel label="Y" value={element.y.toFixed(0)} onChange={e => handleChange('y', e.target.value)} onBlur={handleCommit} />
                 <InputWithLabel label="W" value={element.width.toFixed(0)} onChange={e => handleChange('width', e.target.value)} onBlur={handleCommit} />
-                <InputWithLabel label="H" value={element.height.toFixed(0)} onChange_e => handleChange('height', e.target.value)} onBlur={handleCommit} />
+                <InputWithLabel label="H" value={element.height.toFixed(0)} onChange={e => handleChange('height', e.target.value)} onBlur={handleCommit} />
                 <InputWithLabel label="Angle" value={element.rotation.toFixed(0)} onChange={e => handleChange('rotation', e.target.value)} onBlur={handleCommit} />
             </div>
         </div>
