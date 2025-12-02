@@ -16,7 +16,11 @@ export const TextElement = ({ element, isSelected }: TextElementProps) => {
 
     useEffect(() => {
         const newSize = getCurrentFontSize();
-        if (Math.abs(newSize - baseFontSize) > 1) updateElementProps(element.id, { fontSize: Math.round(newSize) });
+        if (Math.abs(newSize - baseFontSize) > 1) {
+             // This logic seems recursive and might cause issues. 
+             // Let's rely on manual font size adjustment from the sidebar for now.
+             // updateElementProps(element.id, { fontSize: Math.round(newSize) });
+        }
     }, [element.height, baseFontSize, element.id, getCurrentFontSize, updateElementProps]);
 
     const measureText = (text: string, fontSize: number) => {
