@@ -1,7 +1,7 @@
 
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   LayoutTemplate,
   Shapes,
@@ -14,9 +14,18 @@ import {
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useCanvasStore } from '@/stores/canvas-store';
+import { cn } from '@/lib/utils';
 
 const LeftSidebar = () => {
     const { addElement } = useCanvasStore();
+    const [activeTool, setActiveTool] = useState<string | null>(null);
+
+    const handleToolClick = (label: string, action?: () => void) => {
+        setActiveTool(label);
+        if (action) {
+            action();
+        }
+    }
 
     const handleAddText = () => {
         addElement({
@@ -54,14 +63,17 @@ const LeftSidebar = () => {
     
     return (
         <aside className="w-24 bg-black flex flex-col z-10">
-            <ScrollArea className="flex-1">
+            <ScrollArea>
                  <div className="flex flex-col items-center p-2 space-y-2">
                     {tools.map(tool => (
                         <Button
                             key={tool.label}
                             variant="ghost" 
-                            className="w-full h-16 flex-col text-white hover:bg-gray-800 hover:text-white" 
-                            onClick={tool.action}
+                            className={cn(
+                                "w-full h-16 flex-col text-white hover:bg-gray-800 hover:text-white",
+                                activeTool === tool.label && "bg-primary text-primary-foreground hover:bg-primary/90"
+                            )}
+                            onClick={() => handleToolClick(tool.label, tool.action)}
                         >
                             <tool.icon className="h-5 w-5 mb-1" />
                             <span className="text-xs text-center">{tool.label}</span>
