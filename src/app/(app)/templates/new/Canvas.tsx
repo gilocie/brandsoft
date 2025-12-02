@@ -121,12 +121,12 @@ const CanvasElement = ({ element }: { element: CanvasElementType }) => {
             }}
             className="active:cursor-grabbing group"
         >
-            <div style={{...element.props}} className="w-full h-full flex items-center justify-center p-1 box-border">
+            <div style={{...element.props, fontSize: element.props.fontSize ? `${element.props.fontSize}px` : 'inherit' }} className="w-full h-full flex items-center justify-center p-1 box-border">
                  {element.type === 'text' && <p className="w-full h-full">{element.props.text}</p>}
             </div>
            
             {element.type === 'image' && <img src={element.props.src} alt="canvas element" className="w-full h-full object-cover" />}
-            {element.type === 'shape' && <div className="w-full h-full" style={{...element.props}}/>}
+            {element.type === 'shape' && <div className="w-full h-full" style={{backgroundColor: element.props.backgroundColor, borderRadius: element.props.borderRadius}}/>}
 
              {isSelected && (
                  <div className="absolute inset-0 border-2 border-blue-500 pointer-events-none">
@@ -529,3 +529,5 @@ const Canvas = ({ onPageDoubleClick }: { onPageDoubleClick: () => void }) => {
 };
 
 export default Canvas;
+
+    
