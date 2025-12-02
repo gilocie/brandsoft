@@ -33,7 +33,6 @@ export default function DesignStudioPage() {
             }, {select: true });
             // Don't open a panel for direct actions
             setActiveTool(null);
-            setIsRightSidebarOpen(true);
         } else if (panelTools.includes(tool)) {
             setActiveTool(prev => prev === tool ? null : tool);
         }

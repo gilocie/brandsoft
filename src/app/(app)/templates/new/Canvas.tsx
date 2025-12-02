@@ -5,7 +5,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useCanvasStore, type CanvasElement as CanvasElementType } from '@/stores/canvas-store';
 import { Button } from '@/components/ui/button';
-import { Plus, SlidersHorizontal, RefreshCcw, RefreshCw, PlusSquare, Copy } from 'lucide-react';
+import { PlusSquare, Copy, RefreshCcw, RefreshCw, SlidersHorizontal } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const CanvasElement = ({ element }: { element: CanvasElementType }) => {
@@ -121,8 +121,8 @@ const CanvasElement = ({ element }: { element: CanvasElementType }) => {
             }}
             className="active:cursor-grabbing group"
         >
-            <div style={{...element.props}} className="w-full h-full flex items-center justify-center">
-                 {element.type === 'text' && <p>{element.props.text}</p>}
+            <div style={{...element.props}} className="w-full h-full flex items-center justify-center p-1 box-border">
+                 {element.type === 'text' && <p className="w-full h-full">{element.props.text}</p>}
             </div>
            
             {element.type === 'image' && <img src={element.props.src} alt="canvas element" className="w-full h-full object-cover" />}
@@ -376,10 +376,11 @@ const Canvas = ({ onPageDoubleClick }: { onPageDoubleClick: () => void }) => {
     };
     
     const resetView = () => {
-        if(mainCanvasRef.current) {
+        if(mainCanvasRef.current && pageRef.current) {
             const canvasRect = mainCanvasRef.current.getBoundingClientRect();
-            const pageWidthInPixels = pageDetails.width * 96; // Approximate conversion
-            const pageHeightInPixels = pageDetails.height * 96;
+            
+            const pageWidthInPixels = pageRef.current.offsetWidth;
+            const pageHeightInPixels = pageRef.current.offsetHeight;
 
             setCanvasPosition({
                 x: (canvasRect.width / 2) - (pageWidthInPixels / 2),
@@ -450,7 +451,7 @@ const Canvas = ({ onPageDoubleClick }: { onPageDoubleClick: () => void }) => {
                     }}
                 >
                     <TooltipProvider>
-                        <Tooltip>
+                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button variant="default" size="icon" onClick={undo} disabled={!canUndo} className="h-8 w-8 shadow-md">
                                     <RefreshCcw className="h-4 w-4" />
@@ -515,9 +516,12 @@ const Canvas = ({ onPageDoubleClick }: { onPageDoubleClick: () => void }) => {
                 </div>
 
                  <div 
-                    className="absolute bottom-[-48px] left-1/2 -translate-x-1/2 z-30"
+                    className="absolute left-1/2 -translate-x-1/2 z-30"
+                     style={{
+                        top: `calc(${pageDetails.height}${pageDetails.unit} + 16px)`
+                    }}
                  >
-                    <Button variant="outline" className="bg-white shadow-md"><Plus className="mr-2 h-4 w-4" /> Add page</Button>
+                    <Button variant="outline" className="bg-white shadow-md"><PlusSquare className="mr-2 h-4 w-4" /> Add page</Button>
                 </div>
             </div>
         </main>
