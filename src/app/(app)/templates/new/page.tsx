@@ -138,7 +138,7 @@ const Header = () => {
     const { config } = useBrandsoft();
 
     return (
-        <header className="h-16 bg-black border-b border-gray-800 flex items-center justify-between px-4 z-20 text-white">
+        <header className="h-16 bg-black border-b border-gray-800 flex items-center justify-between px-4 z-20 text-white shrink-0">
              <div className="flex items-center gap-2">
                 <Button variant="ghost" size="sm" asChild className="text-white hover:bg-gray-800 hover:text-white">
                     <Link href="/templates"><ChevronLeft className="mr-2 h-4 w-4" /> Home</Link>
@@ -313,18 +313,17 @@ const RulerGuide = ({ orientation, position }) => {
 
 const Canvas = () => {
     const { elements, selectElement, zoom, canvasPosition, setCanvasPosition, rulers, guides, addGuide } = useCanvasStore();
-    const mainCanvasRef = useRef(null);
-    const pageRef = useRef(null);
+    const mainCanvasRef = useRef<HTMLDivElement>(null);
+    const pageRef = useRef<HTMLDivElement>(null);
     const dragStart = useRef({ x: 0, y: 0, canvasX: 0, canvasY: 0 });
 
-    const handleCanvasPan = (e) => {
-        // Only pan if the mousedown is on the gray background, not the white page
+    const handleCanvasPan = (e: React.MouseEvent<HTMLDivElement>) => {
         if (e.target !== mainCanvasRef.current) return;
         
         e.preventDefault();
         dragStart.current = { x: e.clientX, y: e.clientY, canvasX: canvasPosition.x, canvasY: canvasPosition.y };
 
-        const handleMouseMove = (moveEvent) => {
+        const handleMouseMove = (moveEvent: MouseEvent) => {
             const dx = moveEvent.clientX - dragStart.current.x;
             const dy = moveEvent.clientY - dragStart.current.y;
             setCanvasPosition({ x: dragStart.current.canvasX + dx, y: dragStart.current.canvasY + dy });
@@ -337,12 +336,12 @@ const Canvas = () => {
         document.addEventListener('mouseup', handleMouseUp);
     };
 
-    const handleRulerDrag = (orientation, startEvent) => {
+    const handleRulerDrag = (orientation: 'horizontal' | 'vertical', startEvent: React.MouseEvent) => {
         startEvent.preventDefault();
         if (!pageRef.current) return;
         const canvasRect = pageRef.current.getBoundingClientRect();
         
-        const handleMouseMove = (moveEvent) => {
+        const handleMouseMove = (moveEvent: MouseEvent) => {
             let position;
             if (orientation === 'horizontal') {
                 position = (moveEvent.clientY - canvasRect.top) / zoom;
@@ -352,7 +351,7 @@ const Canvas = () => {
             // A temporary guide could be shown here
         };
 
-        const handleMouseUp = (upEvent) => {
+        const handleMouseUp = (upEvent: MouseEvent) => {
             let finalPosition;
             if (orientation === 'horizontal') {
                 finalPosition = (upEvent.clientY - canvasRect.top) / zoom;
@@ -432,7 +431,7 @@ const Footer = () => {
     const { zoom, setZoom } = useCanvasStore();
 
     return (
-        <footer className="h-10 bg-black border-t border-gray-800 flex items-center justify-end px-4 z-20 text-white">
+        <footer className="h-10 bg-black border-t border-gray-800 flex items-center justify-end px-4 z-20 text-white shrink-0">
              <div className="flex items-center gap-2">
                  <Button variant="ghost" size="icon" onClick={() => setZoom(zoom - 0.1)} className="text-white hover:bg-gray-800 hover:text-white"><Minus /></Button>
                  <Slider 
@@ -451,15 +450,15 @@ const Footer = () => {
 
 export default function DesignStudioPage() {
     return (
-        <div className="flex flex-col h-screen w-screen bg-white text-gray-900">
+        <div className="flex flex-col h-screen w-screen bg-white text-gray-900 overflow-hidden">
             <Header />
-            <div className="flex flex-1 overflow-hidden">
+            <div className="flex flex-1">
                 <LeftSidebar />
                 <div className="flex flex-1 flex-col">
                     <Canvas />
-                    <Footer />
                 </div>
             </div>
+            <Footer />
         </div>
     );
 }
