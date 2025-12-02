@@ -5,7 +5,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useCanvasStore, type CanvasElement as CanvasElementType } from '@/stores/canvas-store';
 import { Button } from '@/components/ui/button';
-import { Plus, Copy, PlusSquare, RefreshCcw } from 'lucide-react';
+import { Plus, SlidersHorizontal, RefreshCcw, RefreshCw } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const CanvasElement = ({ element }: { element: CanvasElementType }) => {
@@ -160,25 +160,13 @@ const Ruler = ({ orientation, zoom, canvasPosition }: { orientation: 'horizontal
 
 
 const Canvas = ({ onPageDoubleClick }: { onPageDoubleClick: () => void }) => {
-    const { elements, addElement, selectElement, zoom, setZoom, canvasPosition, setCanvasPosition, rulers, guides, addGuide, pageDetails, updatePageDetails, commitHistory } = useCanvasStore();
+    const { elements, addElement, selectElement, zoom, setZoom, canvasPosition, setCanvasPosition, rulers, guides, addGuide, pageDetails, commitHistory, undo, redo, historyIndex, history } = useCanvasStore();
     const mainCanvasRef = useRef<HTMLDivElement>(null);
     const pageRef = useRef<HTMLDivElement>(null);
     const dragStart = useRef({ x: 0, y: 0, canvasX: 0, canvasY: 0 });
     
-    const centerCanvas = () => {
-         if(mainCanvasRef.current) {
-            const canvasRect = mainCanvasRef.current.getBoundingClientRect();
-            const pageWidthInPixels = pageDetails.width * 96; // Approximate conversion
-            const pageHeightInPixels = pageDetails.height * 96;
-
-            setCanvasPosition({
-                x: (canvasRect.width / 2) - (pageWidthInPixels / 2),
-                y: (canvasRect.height / 2) - (pageHeightInPixels / 2)
-            });
-            setZoom(1);
-        }
-    }
-
+    const canUndo = historyIndex > 0;
+    const canRedo = historyIndex < history.length - 1;
 
     const handleCanvasPan = (e: React.MouseEvent<HTMLDivElement>) => {
         if (e.target !== mainCanvasRef.current && e.target !== pageRef.current) return;
@@ -302,7 +290,17 @@ const Canvas = ({ onPageDoubleClick }: { onPageDoubleClick: () => void }) => {
     
     // Center canvas on initial load
     useEffect(() => {
-        centerCanvas();
+        if(mainCanvasRef.current) {
+            const canvasRect = mainCanvasRef.current.getBoundingClientRect();
+            const pageWidthInPixels = pageDetails.width * 96; // Approximate conversion
+            const pageHeightInPixels = pageDetails.height * 96;
+
+            setCanvasPosition({
+                x: (canvasRect.width / 2) - (pageWidthInPixels / 2),
+                y: (canvasRect.height / 2) - (pageHeightInPixels / 2)
+            });
+            setZoom(1);
+        }
     }, []);
     
     const handleCanvasClick = (e: React.MouseEvent) => {
@@ -363,32 +361,32 @@ const Canvas = ({ onPageDoubleClick }: { onPageDoubleClick: () => void }) => {
                     >
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button variant="default" size="icon" className="h-8 w-8 shadow-md">
-                                    <Copy className="h-4 w-4" />
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Duplicate Page</p>
-                            </TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button variant="default" size="icon" className="h-8 w-8 shadow-md">
-                                    <PlusSquare className="h-4 w-4" />
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Add Page</p>
-                            </TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button variant="default" size="icon" onClick={centerCanvas} className="h-8 w-8 shadow-md">
+                                <Button variant="default" size="icon" onClick={undo} disabled={!canUndo} className="h-8 w-8 shadow-md">
                                     <RefreshCcw className="h-4 w-4" />
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                                <p>Reset View</p>
+                                <p>Undo (Ctrl+Z)</p>
+                            </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="default" size="icon" onClick={redo} disabled={!canRedo} className="h-8 w-8 shadow-md">
+                                    <RefreshCw className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Redo (Ctrl+Y)</p>
+                            </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="default" size="icon" onClick={onPageDoubleClick} className="h-8 w-8 shadow-md">
+                                    <SlidersHorizontal className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Toggle Properties</p>
                             </TooltipContent>
                         </Tooltip>
                     </div>
@@ -436,5 +434,3 @@ const Canvas = ({ onPageDoubleClick }: { onPageDoubleClick: () => void }) => {
 };
 
 export default Canvas;
-
-    
