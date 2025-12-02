@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { useCanvasStore, type CanvasElement as CanvasElementType } from '@/stores/canvas-store';
 import { Button } from '@/components/ui/button';
 import { Plus, Copy, PlusSquare, RefreshCcw } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const CanvasElement = ({ element }: { element: CanvasElementType }) => {
     const { updateElement, selectElement, commitHistory, selectedElementId, zoom } = useCanvasStore();
@@ -352,18 +353,46 @@ const Canvas = ({ onPageDoubleClick }: { onPageDoubleClick: () => void }) => {
                     transformOrigin: 'top left',
                 }}
             >
-                <div 
-                    className="absolute z-30 flex items-center gap-1"
-                    style={{
-                       top: '-36px',
-                       right: '0'
-                    }}
-                >
-                    <Button variant="ghost" size="icon" className="h-8 w-8 bg-white/80 backdrop-blur-sm shadow-md hover:bg-white"><Copy className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 bg-white/80 backdrop-blur-sm shadow-md hover:bg-white"><PlusSquare className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon" onClick={centerCanvas} className="h-8 w-8 bg-white/80 backdrop-blur-sm shadow-md hover:bg-white"><RefreshCcw className="h-4 w-4" /></Button>
-                </div>
-
+                <TooltipProvider>
+                    <div 
+                        className="absolute z-30 flex items-center gap-1"
+                        style={{
+                        top: '-36px',
+                        right: '0'
+                        }}
+                    >
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="default" size="icon" className="h-8 w-8 shadow-md">
+                                    <Copy className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Duplicate Page</p>
+                            </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="default" size="icon" className="h-8 w-8 shadow-md">
+                                    <PlusSquare className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Add Page</p>
+                            </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="default" size="icon" onClick={centerCanvas} className="h-8 w-8 shadow-md">
+                                    <RefreshCcw className="h-4 w-4" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Reset View</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </div>
+                </TooltipProvider>
 
                 <div
                     ref={pageRef}
