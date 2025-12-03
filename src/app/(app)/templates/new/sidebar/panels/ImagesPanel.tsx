@@ -20,7 +20,7 @@ const ImageItem = ({ image }: { image: { name: string; src: any } }) => {
 
     return (
         <div
-            className="bg-gray-200 rounded-md flex items-center justify-center cursor-grab hover:bg-gray-300 transition-colors overflow-hidden aspect-video relative"
+            className="bg-gray-200 rounded-md flex items-center justify-center cursor-grab hover:bg-gray-300 transition-colors overflow-hidden aspect-square relative"
             draggable
             onDragStart={(e) => handleDragStart(e, imageData)}
         >
