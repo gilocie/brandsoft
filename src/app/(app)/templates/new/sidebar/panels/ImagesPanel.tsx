@@ -2,13 +2,13 @@
 
 import React, { useMemo } from 'react';
 import { useCanvasStore } from '@/stores/canvas-store';
-import { PlaceHolderImages, ImagePlaceholder } from '@/lib/placeholder-images';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 const handleDragStart = (e: React.DragEvent, data: any) => {
     e.dataTransfer.setData('application/json', JSON.stringify(data));
 };
 
-const ImageItem = ({ image }: { image: ImagePlaceholder }) => {
+const ImageItem = ({ image }: { image: typeof PlaceHolderImages[0] }) => {
     const imageData = {
         type: 'image',
         width: 300,
@@ -19,7 +19,7 @@ const ImageItem = ({ image }: { image: ImagePlaceholder }) => {
 
     return (
         <div
-            className="bg-gray-200 rounded-md flex items-center justify-center cursor-grab hover:bg-gray-300 transition-colors overflow-hidden"
+            className="bg-gray-200 rounded-md flex items-center justify-center cursor-grab hover:bg-gray-300 transition-colors overflow-hidden aspect-video"
             draggable
             onDragStart={(e) => handleDragStart(e, imageData)}
         >
@@ -34,15 +34,19 @@ const ImageItem = ({ image }: { image: ImagePlaceholder }) => {
 };
 
 export const ImagesPanel = () => {
-    const { templateSettings } = useCanvasStore();
-    
-    // The category of the template currently being edited.
-    // Note: this seems to be missing from the store, so I'll mock it for now.
-    // In a real scenario, this would come from the template being edited.
-    const currentCategory = 'invoice'; // Mock data, replace with `templateSettings.category` when available
+    const { pages, currentPageIndex } = useCanvasStore();
+    const currentPage = pages[currentPageIndex];
+    // This is a placeholder as templateSettings isn't fully implemented in the store for category tracking.
+    // To make this truly dynamic, the template's category needs to be saved and accessed here.
+    const currentCategory = 'invoice'; // Mock data, replace with real store data when available
 
     const filteredImages = useMemo(() => {
         const categoriesToShow: string[] = [];
+        
+        if (!currentCategory) {
+            return PlaceHolderImages;
+        }
+
         if (currentCategory === 'invoice' || currentCategory === 'quotation') {
             categoriesToShow.push('invoice', 'quotation');
         } else if (currentCategory === 'certificate') {
