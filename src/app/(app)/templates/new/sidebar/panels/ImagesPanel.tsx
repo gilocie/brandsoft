@@ -20,17 +20,18 @@ const ImageItem = ({ image }: { image: { name: string; src: any } }) => {
 
     return (
         <div
-            className="bg-gray-200 rounded-md flex items-center justify-center cursor-grab hover:bg-gray-300 transition-colors overflow-hidden aspect-square relative"
+            className="bg-gray-200 rounded-md flex items-center justify-center cursor-grab hover:bg-gray-300 transition-colors overflow-hidden relative"
             draggable
             onDragStart={(e) => handleDragStart(e, imageData)}
         >
             <NextImage 
                 src={image.src} 
                 alt={image.name} 
-                layout="fill"
-                objectFit="cover"
+                layout="responsive"
+                width={image.src.width}
+                height={image.src.height}
+                objectFit="contain"
                 unoptimized
-                style={{ padding: '3px' }}
             />
         </div>
     );
@@ -48,7 +49,7 @@ export const ImagesPanel = () => {
     return (
         <div className="p-4">
             <h3 className="text-sm font-medium text-gray-500 mb-4">Backgrounds</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
                 {backgroundImages.map((image, index) => (
                     <ImageItem key={`${image.name}-${index}`} image={image} />
                 ))}
