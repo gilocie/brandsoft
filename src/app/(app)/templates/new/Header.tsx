@@ -43,11 +43,16 @@ const Header = ({ onSaveTemplate }: HeaderProps) => {
                          <Button variant="ghost" size="sm" className="text-white hover:bg-gray-800 hover:text-white"><File className="mr-2 h-4 w-4" /> File</Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-56 bg-black text-white border-gray-700">
+                        <DropdownMenuItem onClick={onSaveTemplate}>Save</DropdownMenuItem>
+                        <DropdownMenuItem>Save As</DropdownMenuItem>
+                        <DropdownMenuItem>Export</DropdownMenuItem>
+                        <DropdownMenuSeparator className="bg-gray-700"/>
                         <DropdownMenuCheckboxItem checked={rulers.visible} onCheckedChange={toggleRulers}>
                             <Ruler className="mr-2 h-4 w-4" />
                             <span>Show Rulers</span>
                              {rulers.visible && <Check className="ml-auto h-4 w-4"/>}
                         </DropdownMenuCheckboxItem>
+                         <DropdownMenuItem>Options</DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
                 <DropdownMenu>
@@ -68,13 +73,12 @@ const Header = ({ onSaveTemplate }: HeaderProps) => {
                     </DropdownMenuContent>
                 </DropdownMenu>
             </div>
-            <div className="flex-1 text-center text-sm text-gray-400">
-                <button className="hover:bg-gray-800 px-3 py-1 rounded-md">Untitled design</button>
-            </div>
-            <div className="flex items-center gap-2">
-                 <Button variant="outline" size="sm" className="text-white bg-transparent border-gray-600 hover:bg-gray-800 hover:text-white" onClick={onSaveTemplate}>
+            <div className="flex-1 text-center">
+                 <Button variant="ghost" size="sm" className="text-white hover:bg-gray-800 hover:text-white" onClick={onSaveTemplate}>
                     <Save className="mr-2 h-4 w-4" /> Save As Template
                 </Button>
+            </div>
+            <div className="flex items-center gap-2">
                  <Button className="bg-primary hover:bg-primary/90 text-primary-foreground"><Share className="mr-2 h-4 w-4" /> Share</Button>
                  <Avatar className="h-9 w-9">
                     <AvatarImage src={config?.brand.logo} />
