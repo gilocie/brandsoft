@@ -191,18 +191,28 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
 
     const PresetButton = ({ preset, isCustom }: { preset: CustomPreset, isCustom: boolean }) => {
         const Icon = iconMap[preset.icon] || File;
+        const isSelected = activePreset === preset.name;
+        
         return (
              <div className="relative group/preset">
                 <button
                     type="button"
                     className={cn(
                         "w-full flex items-center gap-3 p-2 rounded-md text-left",
-                        activePreset === preset.name ? 'bg-primary/10 text-primary font-semibold' : 'hover:bg-muted'
+                        isSelected
+                          ? "bg-primary/10 text-primary font-semibold"
+                          : "hover:bg-muted"
                     )}
                     onClick={() => handlePresetSelect(preset)}
                 >
-                    <div className="p-2 rounded-md bg-muted/50 border">
-                        <Icon className="h-5 w-5 shrink-0 text-muted-foreground" />
+                    <div className={cn(
+                        "p-2 rounded-md bg-muted/50 border",
+                        isSelected && "bg-primary/20 border-primary/30"
+                    )}>
+                        <Icon className={cn(
+                            "h-5 w-5 shrink-0 text-muted-foreground",
+                            isSelected && "text-primary"
+                        )} />
                     </div>
                     <div>
                         <p className="text-sm">{preset.name}</p>
@@ -226,9 +236,9 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-3xl p-0">
+            <DialogContent className="max-w-3xl p-0 flex flex-col h-full max-h-[500px]">
                  <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
                         <div className="border-b px-6 py-4">
                             <DialogTitle>New Document</DialogTitle>
                             <DialogDescription>
@@ -236,7 +246,7 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
                             </DialogDescription>
                         </div>
                         
-                        <div className="grid grid-cols-3 h-[400px]">
+                        <div className="grid grid-cols-3 flex-1 min-h-0">
                             {/* Left Column */}
                             <div className="col-span-1 border-r">
                                 <ScrollArea className="h-full">
