@@ -241,11 +241,11 @@ const TemplateCard = ({ template }: { template: BrandsoftTemplate }) => {
                         {/* Scrollable content area */}
                         <div className="flex-1 overflow-y-auto min-h-0">
                             {template.category === 'invoice' && config?.invoices && (
-                                <div className="space-y-2">
+                                <div>
                                      <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2 sticky top-0 bg-background py-3 px-6 z-10 border-b">
                                         <FileJson className="h-4 w-4" /> Live Preview Data
                                      </h3>
-                                     <div className="px-6">
+                                     <div className="px-6 pb-4">
                                      <Accordion type="multiple" className="w-full">
                                         {Object.entries(invoices).map(([status, invs]) => invs.length > 0 && (
                                             <AccordionItem value={status} key={status}>
