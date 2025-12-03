@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -13,7 +14,7 @@ import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/comp
 import { Palette, Trash2, Pencil, Eye, FileJson } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useBrandsoft, type BrandsoftTemplate, type Invoice, type Customer } from '@/hooks/use-brandsoft';
-import { getBackgroundCSS, Page, CanvasElement } from '@/stores/canvas-store';
+import { getBackgroundCSS, getBackgroundStyle, Page, CanvasElement } from '@/stores/canvas-store';
 import { cn } from '@/lib/utils';
 import { useCanvasStore } from '@/stores/canvas-store';
 import { useRouter } from 'next/navigation';
@@ -205,8 +206,9 @@ const TemplateCard = ({ template }: { template: BrandsoftTemplate }) => {
         </Card>
         
         <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
-            <DialogContent className="max-w-5xl p-0 h-[85vh] flex flex-col overflow-hidden">
+            <DialogContent className="max-w-5xl p-0 flex flex-col overflow-hidden">
                 <div className="grid grid-cols-1 md:grid-cols-3 h-full w-full">
+                    
                     <div className="md:col-span-2 bg-muted/50 rounded-l-lg flex items-center justify-center p-4 md:p-8 overflow-hidden h-full relative">
                         <div className="aspect-[8.5/11] w-full max-w-md max-h-full overflow-hidden shadow-xl bg-white ring-1 ring-black/5">
                             <TemplatePreview
@@ -215,12 +217,14 @@ const TemplateCard = ({ template }: { template: BrandsoftTemplate }) => {
                             />
                         </div>
                     </div>
+
                     <div className="md:col-span-1 flex flex-col h-full border-l bg-background">
                         <div className="flex-1 overflow-y-auto p-6">
                             <DialogHeader className="text-left mb-4">
                                 <DialogTitle className="text-2xl font-bold">{template.name}</DialogTitle>
                                 <DialogDescription>{template.description || 'Perfect for your business'}</DialogDescription>
                             </DialogHeader>
+                            
                             <div className="space-y-4 text-sm">
                                 <div className="bg-muted/40 p-4 rounded-lg space-y-2 border">
                                     <p className="flex justify-between"><strong>Category:</strong> <span className="capitalize">{template.category}</span></p>
@@ -256,6 +260,7 @@ const TemplateCard = ({ template }: { template: BrandsoftTemplate }) => {
                                 </div>
                             )}
                         </div>
+                        
                         <div className="p-6 pt-4 border-t bg-background mt-auto">
                             <DialogFooter className="flex-col gap-3 sm:space-x-0">
                                <Button className="w-full" onClick={handleSetAsDefault}>Use this template</Button>
@@ -267,7 +272,7 @@ const TemplateCard = ({ template }: { template: BrandsoftTemplate }) => {
             </DialogContent>
         </Dialog>
         
-        <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+         <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>Delete Template</DialogTitle>
