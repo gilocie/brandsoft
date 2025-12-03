@@ -1,22 +1,20 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useCanvasStore } from '@/stores/canvas-store';
 import { Loader2 } from 'lucide-react';
-import { placeholderImages, type PlaceholderImage } from '@/lib/placeholder-images.json';
 
 const handleDragStart = (e: React.DragEvent, data: any) => {
     e.dataTransfer.setData('application/json', JSON.stringify(data));
 };
 
-const ImageItem = ({ image }: { image: PlaceholderImage }) => {
+const ImageItem = ({ image }: { image: { src: any, name: string } }) => {
     const imageData = {
         type: 'image',
         width: 300,
         height: 200,
         rotation: 0,
-        props: { src: image.imageUrl }
+        props: { src: image.src.default }
     };
 
     return (
@@ -26,10 +24,9 @@ const ImageItem = ({ image }: { image: PlaceholderImage }) => {
             onDragStart={(e) => handleDragStart(e, imageData)}
         >
             <img 
-                src={image.imageUrl} 
-                alt={image.description} 
+                src={image.src.default} 
+                alt={image.name} 
                 className="w-full h-full object-cover"
-                data-ai-hint={image.imageHint}
             />
         </div>
     );
@@ -37,22 +34,46 @@ const ImageItem = ({ image }: { image: PlaceholderImage }) => {
 
 export const ImagesPanel = () => {
     const { templateSettings } = useCanvasStore();
-    const [images, setImages] = useState<PlaceholderImage[]>([]);
+    const [images, setImages] = useState<{ name: string; src: any }[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     const currentCategory = templateSettings?.category || 'invoice';
 
     useEffect(() => {
-        setIsLoading(true);
-        const filteredImages = placeholderImages.filter(img => {
-            if (currentCategory === 'invoice' || currentCategory === 'quotation') {
-                return img.category === 'invoice' || img.category === 'quotation';
-            }
-            return img.category === currentCategory;
-        });
+        let isMounted = true;
         
-        setImages(filteredImages);
-        setIsLoading(false);
+        const loadImages = async () => {
+            setIsLoading(true);
+            try {
+                let imageModule;
+                if (currentCategory === 'invoice' || currentCategory === 'quotation') {
+                    imageModule = await import('@/lib/invoice-images');
+                } else if (currentCategory === 'certificate') {
+                    imageModule = await import('@/lib/certificate-images');
+                } else {
+                     if (isMounted) setImages([]);
+                     return;
+                }
+                
+                if (isMounted) {
+                    setImages(imageModule.default);
+                }
+
+            } catch (error) {
+                console.error("Could not load images for category:", currentCategory, error);
+                 if (isMounted) {
+                    setImages([]);
+                 }
+            } finally {
+                if (isMounted) {
+                    setIsLoading(false);
+                }
+            }
+        };
+
+        loadImages();
+        
+        return () => { isMounted = false; };
     }, [currentCategory]);
 
 
@@ -76,8 +97,8 @@ export const ImagesPanel = () => {
         <div className="p-4">
             <h3 className="text-sm font-medium text-gray-500 mb-4">Backgrounds</h3>
             <div className="grid grid-cols-2 gap-4">
-                {images.map((image) => (
-                    <ImageItem key={image.id} image={image} />
+                {images.map((image, index) => (
+                    <ImageItem key={`${image.name}-${index}`} image={image} />
                 ))}
             </div>
         </div>
