@@ -149,6 +149,7 @@ const Canvas = ({ onPageDoubleClick }: CanvasProps) => {
     }, []);
 
     const currentPage = pages[currentPageIndex];
+
     if (!currentPage) {
         return (
              <main
