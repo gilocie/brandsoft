@@ -146,13 +146,12 @@ const Canvas = ({ onPageDoubleClick }: CanvasProps) => {
     const resetView = () => {
         if (!mainCanvasRef.current || !pageRef.current) return;
         const canvasRect = mainCanvasRef.current.getBoundingClientRect();
-        const scaleFactor = Math.min(
-            (canvasRect.width - 80) / pageRef.current.offsetWidth,
-            (canvasRect.height - 120) / pageRef.current.offsetHeight,
-            1
-        );
+        const scaleFactor = 0.8; // Set a fixed zoom level of 80%
         setZoom(scaleFactor);
-        setCanvasPosition({ x: (canvasRect.width - pageRef.current.offsetWidth * scaleFactor) / 2, y: (canvasRect.height - pageRef.current.offsetHeight * scaleFactor) / 2 });
+        setCanvasPosition({
+            x: (canvasRect.width - pageRef.current.offsetWidth * scaleFactor) / 2,
+            y: 40 // Provide a top margin
+        });
     };
     
     useEffect(() => {
