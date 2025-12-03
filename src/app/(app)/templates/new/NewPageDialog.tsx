@@ -12,7 +12,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { ColorInput } from './sidebar/components';
 import { File, Image as ImageIcon, BookOpen, Newspaper, Contact, Bookmark, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -104,8 +103,6 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
             backgroundColor: '#FFFFFF',
         },
     });
-
-    const watchedBackgroundColor = form.watch('backgroundColor');
 
     const handlePresetSelect = (preset: CustomPreset) => {
         setActivePreset(preset.name);
@@ -201,8 +198,8 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
                     )}
                     onClick={() => handlePresetSelect(preset)}
                 >
-                    <div className="p-2 rounded-md" style={{ backgroundColor: watchedBackgroundColor }}>
-                        <Icon className="h-5 w-5 shrink-0" style={{ color: 'white' }} />
+                    <div className="p-2 rounded-md bg-muted">
+                        <Icon className="h-5 w-5 shrink-0 text-muted-foreground" />
                     </div>
                     <div>
                         <p className="text-sm">{preset.name}</p>
@@ -226,7 +223,7 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-2xl max-h-[500px] flex flex-col">
+            <DialogContent className="max-w-3xl">
                 <DialogHeader>
                     <DialogTitle>New Document</DialogTitle>
                     <DialogDescription>
@@ -235,11 +232,12 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
                 </DialogHeader>
                 
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="h-full flex-1 flex flex-col min-h-0">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 py-1 flex-grow min-h-0">
-                            <div className="col-span-1 flex flex-col gap-4">
-                                <h3 className="text-sm font-medium text-muted-foreground px-2 shrink-0">Presets</h3>
-                                <ScrollArea className="flex-grow pr-4">
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="mt-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            {/* Left Column - Presets */}
+                            <div className="col-span-1">
+                                <h3 className="text-sm font-medium text-muted-foreground mb-3">Presets</h3>
+                                <ScrollArea className="h-72 pr-4 -mr-4">
                                     <div className="space-y-1">
                                         {presets.map((p) => (
                                             <PresetButton key={p.name} preset={p as CustomPreset} isCustom={false} />
@@ -247,8 +245,8 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
                                     </div>
                                     {customPresets.length > 0 && (
                                         <>
-                                            <Separator className="my-2" />
-                                            <h3 className="text-sm font-medium text-muted-foreground px-2">Custom</h3>
+                                            <Separator className="my-3" />
+                                            <h3 className="text-sm font-medium text-muted-foreground mb-2">Custom</h3>
                                             <div className="space-y-1">
                                                 {customPresets.map((p) => (
                                                     <PresetButton key={p.name} preset={p} isCustom={true} />
@@ -256,31 +254,18 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
                                             </div>
                                         </>
                                     )}
-                                     <Separator className="my-2" />
-                                     <div className="shrink-0 pr-1 pb-4">
-                                        <Controller
-                                            control={form.control}
-                                            name="backgroundColor"
-                                            render={({ field }) => (
-                                                <ColorInput
-                                                    label="Background Color"
-                                                    value={field.value}
-                                                    onChange={field.onChange}
-                                                />
-                                            )}
-                                        />
-                                    </div>
                                 </ScrollArea>
                             </div>
 
-                            <div className="col-span-2 space-y-4">
-                                <div className="flex justify-between items-center gap-2">
+                             {/* Right Column - Settings */}
+                            <div className="col-span-2 space-y-6">
+                                <div className="flex justify-between items-end gap-2">
                                     <FormField
                                         control={form.control} name="name" render={({ field }) => (
-                                            <FormItem className="flex-grow"><FormLabel>Name</FormLabel><FormControl><Input {...field} className="text-lg font-semibold" /></FormControl><FormMessage /></FormItem>
+                                            <FormItem className="flex-grow"><FormLabel>Name</FormLabel><FormControl><Input {...field} className="text-base" /></FormControl><FormMessage /></FormItem>
                                         )}
                                     />
-                                    <Button type="button" variant="outline" size="sm" className="mt-7 shrink-0" onClick={handleSavePreset}>
+                                    <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={handleSavePreset}>
                                         <Bookmark className="h-4 w-4 mr-2"/> Save
                                     </Button>
                                 </div>
@@ -309,9 +294,13 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
                                     )} />
                                     <FormField control={form.control} name="orientation" render={({ field }) => (
                                         <FormItem><FormLabel>Orientation</FormLabel>
-                                        <ToggleGroup type="single" value={field.value} onValueChange={(v) => {if(v) handleOrientationChange(v as 'portrait' | 'landscape')}} className="border rounded-md h-10 p-1">
-                                            <ToggleGroupItem value="portrait" className="h-full px-2"><svg className="h-5 w-5" viewBox="0 0 24 24"><path fill="currentColor" d="M17 2H7c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg></ToggleGroupItem>
-                                            <ToggleGroupItem value="landscape" className="h-full px-2"><svg className="h-5 w-5" viewBox="0 0 24 24"><path fill="currentColor" d="M22 17c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v0c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v0z" transform="rotate(-90 12 12)" /></svg></ToggleGroupItem>
+                                        <ToggleGroup type="single" value={field.value} onValueChange={(v) => {if(v) handleOrientationChange(v as 'portrait' | 'landscape')}} className="border rounded-md h-10 p-1 bg-muted">
+                                            <ToggleGroupItem value="portrait" className="h-full px-2 data-[state=on]:bg-background data-[state=on]:shadow-sm rounded-sm">
+                                                <svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M17 2H7c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+                                            </ToggleGroupItem>
+                                            <ToggleGroupItem value="landscape" className="h-full px-2 data-[state=on]:bg-background data-[state=on]:shadow-sm rounded-sm">
+                                                <svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M22 17c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v0c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v0z" transform="rotate(-90 12 12)" /></svg>
+                                            </ToggleGroupItem>
                                         </ToggleGroup>
                                         <FormMessage /></FormItem>
                                     )} />
@@ -320,8 +309,8 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
                             </div>
                         </div>
 
-                        <DialogFooter className="pt-4 border-t shrink-0">
-                            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+                        <DialogFooter className="pt-6 mt-6 border-t">
+                            <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
                             <Button type="submit">Create Document</Button>
                         </DialogFooter>
                     </form>
@@ -332,5 +321,3 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
 };
 
 export default NewPageDialog;
-
-    
