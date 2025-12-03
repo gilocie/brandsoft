@@ -108,6 +108,13 @@ export interface PageDetails {
     background: BackgroundSettings;
 }
 
+export interface Page {
+    id: string;
+    name: string;
+    elements: CanvasElement[];
+    pageDetails: PageDetails;
+}
+
 export interface TemplateSettings {
     isTemplate: boolean;
     templateName: string;
@@ -133,23 +140,32 @@ const defaultPageDetails: PageDetails = {
     width: 8.5, height: 11, unit: 'in', backgroundColor: '#FFFFFF', background: { ...defaultBackground },
 };
 
+const defaultPage: Page = {
+    id: `page-${Date.now()}`,
+    name: 'Page 1',
+    elements: [],
+    pageDetails: defaultPageDetails,
+};
+
 const defaultTemplateSettings: TemplateSettings = {
     isTemplate: false, templateName: '', templateDescription: '', editableFields: [],
 };
 
 // ============ STORE INTERFACE ============
 interface CanvasState {
-    elements: CanvasElement[];
+    pages: Page[];
+    currentPageIndex: number;
+    elements: CanvasElement[]; // Legacy, will be removed
     selectedElementId: string | null;
     selectedElementIds: string[];
     selectionBox: SelectionBox | null;
-    history: { elements: CanvasElement[]; pageDetails: PageDetails }[];
+    history: { pages: Page[], currentPageIndex: number }[];
     historyIndex: number;
     zoom: number;
     canvasPosition: { x: number; y: number };
     rulers: { visible: boolean };
     guides: { horizontal: Guide[]; vertical: Guide[] };
-    pageDetails: PageDetails;
+    pageDetails: PageDetails; // Legacy, will be removed
     templateSettings: TemplateSettings;
     isBackgroundRepositioning: boolean;
     isTemplateEditMode: boolean;
@@ -194,6 +210,13 @@ interface CanvasState {
     addGuide: (orientation: 'horizontal' | 'vertical', position: number) => void;
     updateGuide: (id: string, updates: Partial<Guide>) => void;
     deleteGuide: (id: string) => void;
+    
+    // Multi-page
+    addPage: () => void;
+    setActivePage: (index: number) => void;
+    deletePage: (index: number) => void;
+    duplicatePage: (index: number) => void;
+    movePage: (fromIndex: number, toIndex: number) => void;
 
     // Page
     updatePageDetails: (updates: Partial<PageDetails>) => void;
@@ -219,12 +242,14 @@ interface CanvasState {
 let nextZIndex = 1;
 
 export const useCanvasStore = create<CanvasState>((set, get) => ({
-    elements: [],
+    pages: [defaultPage],
+    currentPageIndex: 0,
+    elements: [], // Legacy, to be phased out
     selectedElementId: null,
     selectedElementIds: [],
     selectionBox: null,
-    pageDetails: { ...defaultPageDetails },
-    history: [{ elements: [], pageDetails: { ...defaultPageDetails } }],
+    pageDetails: { ...defaultPageDetails }, // Legacy
+    history: [{ pages: [defaultPage], currentPageIndex: 0 }],
     historyIndex: 0,
     zoom: 1,
     canvasPosition: { x: 0, y: 0 },
@@ -241,54 +266,85 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
             zIndex: nextZIndex++,
             props: { opacity: 1, fillOpacity: 1, ...element.props },
         };
-        set((state) => ({
-            elements: [...state.elements, newElement],
-            selectedElementId: options?.select !== false ? newElement.id : state.selectedElementId,
-            selectedElementIds: options?.select !== false ? [newElement.id] : state.selectedElementIds,
-        }));
+        set((state) => {
+            const newPages = [...state.pages];
+            const currentPage = newPages[state.currentPageIndex];
+            if(currentPage) {
+                 currentPage.elements.push(newElement);
+            }
+            return {
+                pages: newPages,
+                selectedElementId: options?.select !== false ? newElement.id : state.selectedElementId,
+                selectedElementIds: options?.select !== false ? [newElement.id] : state.selectedElementIds,
+            };
+        });
         get().commitHistory();
     },
 
     updateElement: (id, updates) => {
-        const element = get().elements.find(el => el.id === id);
+        const pages = get().pages;
+        const pageIndex = pages.findIndex(p => p.elements.some(e => e.id === id));
+        if (pageIndex === -1) return;
+
+        const element = pages[pageIndex].elements.find(el => el.id === id);
         if (!element) return;
+
         const deltaX = updates.x !== undefined ? updates.x - element.x : 0;
         const deltaY = updates.y !== undefined ? updates.y - element.y : 0;
 
         set((state) => ({
-            elements: state.elements.map((el) => {
-                if (el.id === id) return { ...el, ...updates };
-                if (el.linkedElementId === id && (deltaX !== 0 || deltaY !== 0)) {
-                    return { ...el, x: el.x + deltaX, y: el.y + deltaY };
-                }
-                if (el.groupId === id && (deltaX !== 0 || deltaY !== 0)) {
-                    return { ...el, x: el.x + deltaX, y: el.y + deltaY };
-                }
-                return el;
+            pages: state.pages.map((p, i) => {
+                if (i !== pageIndex) return p;
+                return {
+                    ...p,
+                    elements: p.elements.map((el) => {
+                        if (el.id === id) return { ...el, ...updates };
+                        if (el.linkedElementId === id && (deltaX !== 0 || deltaY !== 0)) {
+                            return { ...el, x: el.x + deltaX, y: el.y + deltaY };
+                        }
+                        if (el.groupId === id && (deltaX !== 0 || deltaY !== 0)) {
+                            return { ...el, x: el.x + deltaX, y: el.y + deltaY };
+                        }
+                        return el;
+                    })
+                };
             }),
         }));
     },
-
+    
     updateElementProps: (id, props) => {
         set((state) => ({
-            elements: state.elements.map((el) => el.id === id ? { ...el, props: { ...el.props, ...props } } : el),
+            pages: state.pages.map(p => ({
+                ...p,
+                elements: p.elements.map((el) => el.id === id ? { ...el, props: { ...el.props, ...props } } : el),
+            }))
         }));
     },
 
     deleteElement: (id) => {
         set((state) => {
-            const element = state.elements.find(el => el.id === id);
+            const pageIndex = state.pages.findIndex(p => p.elements.some(e => e.id === id));
+            if (pageIndex === -1) return state;
+
+            const element = state.pages[pageIndex].elements.find(el => el.id === id);
             let elementsToDelete = [id];
             
-            // If it's a group, delete all children
             if (element?.type === 'group' && element.childIds) {
                 elementsToDelete = [...elementsToDelete, ...element.childIds];
             }
+            
+            const newPages = state.pages.map((p, i) => {
+                if (i !== pageIndex) return p;
+                return {
+                    ...p,
+                    elements: p.elements
+                        .filter((el) => !elementsToDelete.includes(el.id))
+                        .map(el => el.linkedElementId === id ? { ...el, linkedElementId: null, isLinkedChild: false } : el)
+                };
+            });
 
             return {
-                elements: state.elements
-                    .filter((el) => !elementsToDelete.includes(el.id))
-                    .map(el => el.linkedElementId === id ? { ...el, linkedElementId: null, isLinkedChild: false } : el),
+                pages: newPages,
                 selectedElementId: state.selectedElementId === id ? null : state.selectedElementId,
                 selectedElementIds: state.selectedElementIds.filter(i => !elementsToDelete.includes(i)),
             };
@@ -297,8 +353,13 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     },
 
     duplicateElement: (id) => {
-        const element = get().elements.find(el => el.id === id);
+        const pages = get().pages;
+        const pageIndex = pages.findIndex(p => p.elements.some(e => e.id === id));
+        if (pageIndex === -1) return;
+        
+        const element = pages[pageIndex].elements.find(el => el.id === id);
         if (!element) return;
+        
         const newElement = {
             ...element,
             id: `element-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -306,17 +367,28 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
             linkedElementId: null, isLinkedChild: false, groupId: null,
             props: { ...element.props, isTemplateField: false, templateFieldType: undefined, templateFieldName: undefined },
         };
-        set((state) => ({ elements: [...state.elements, newElement], selectedElementId: newElement.id, selectedElementIds: [newElement.id] }));
+
+        set((state) => {
+            const newPages = [...state.pages];
+            newPages[pageIndex].elements.push(newElement);
+            return {
+                pages: newPages,
+                selectedElementId: newElement.id,
+                selectedElementIds: [newElement.id]
+            };
+        });
         get().commitHistory();
     },
-
-    selectElement: (id) => set({ 
-        selectedElementId: id, 
-        selectedElementIds: id ? [id] : [] 
+    
+    selectElement: (id) => set({
+        selectedElementId: id,
+        selectedElementIds: id ? [id] : [],
     }),
-
+    
     moveElement: (id, direction, amount = 1) => {
-        const element = get().elements.find(el => el.id === id);
+        const pageIndex = get().pages.findIndex(p => p.elements.some(e => e.id === id));
+        if (pageIndex === -1) return;
+        const element = get().pages[pageIndex].elements.find(el => el.id === id);
         if (!element) return;
         const updates: Partial<CanvasElement> = {};
         switch (direction) {
@@ -328,8 +400,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
         get().updateElement(id, updates);
     },
 
-    // Multi-select methods
-    selectMultipleElements: (ids) => set({ 
+    selectMultipleElements: (ids) => set({
         selectedElementIds: ids,
         selectedElementId: ids.length === 1 ? ids[0] : (ids.length > 0 ? ids[0] : null),
     }),
@@ -337,26 +408,28 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     addToSelection: (id) => set((state) => {
         if (state.selectedElementIds.includes(id)) return {};
         const newIds = [...state.selectedElementIds, id];
-        return { 
+        return {
             selectedElementIds: newIds,
-            selectedElementId: newIds[0],
+            selectedElementId: newIds.length === 1 ? newIds[0] : (newIds.length > 0 ? newIds[0] : null),
         };
     }),
-
+    
     removeFromSelection: (id) => set((state) => {
         const newIds = state.selectedElementIds.filter(i => i !== id);
-        return { 
+        return {
             selectedElementIds: newIds,
             selectedElementId: newIds.length > 0 ? newIds[0] : null,
         };
     }),
 
     clearSelection: () => set({ selectedElementId: null, selectedElementIds: [] }),
-
+    
     setSelectionBox: (box) => set({ selectionBox: box }),
 
     getElementsInSelectionBox: (box) => {
-        const { elements } = get();
+        const { pages, currentPageIndex } = get();
+        if (!pages[currentPageIndex]) return [];
+        const elements = pages[currentPageIndex].elements;
         const minX = Math.min(box.startX, box.endX);
         const maxX = Math.max(box.startX, box.endX);
         const minY = Math.min(box.startY, box.endY);
@@ -370,142 +443,166 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     },
 
     groupSelectedElements: () => {
-        const { selectedElementIds, elements } = get();
+        const { selectedElementIds, pages, currentPageIndex } = get();
         if (selectedElementIds.length < 2) return;
 
-        const selectedElements = elements.filter(el => selectedElementIds.includes(el.id));
+        const currentPage = pages[currentPageIndex];
+        const selectedElements = currentPage.elements.filter(el => selectedElementIds.includes(el.id));
         
-        // Calculate bounding box
         const minX = Math.min(...selectedElements.map(el => el.x));
         const minY = Math.min(...selectedElements.map(el => el.y));
         const maxX = Math.max(...selectedElements.map(el => el.x + el.width));
         const maxY = Math.max(...selectedElements.map(el => el.y + el.height));
 
-        const groupId = `group-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
+        const groupId = `group-${Date.now()}`;
         const groupElement: CanvasElement = {
-            id: groupId,
-            type: 'group',
-            x: minX,
-            y: minY,
-            width: maxX - minX,
-            height: maxY - minY,
-            rotation: 0,
-            props: { opacity: 1 },
-            zIndex: nextZIndex++,
-            childIds: selectedElementIds,
+            id: groupId, type: 'group', x: minX, y: minY, width: maxX - minX, height: maxY - minY, rotation: 0,
+            props: { opacity: 1 }, zIndex: nextZIndex++, childIds: selectedElementIds,
         };
 
-        set((state) => ({
-            elements: [
-                ...state.elements.map(el => 
-                    selectedElementIds.includes(el.id) 
-                        ? { ...el, groupId, x: el.x - minX, y: el.y - minY }
-                        : el
-                ),
-                groupElement
-            ],
-            selectedElementId: groupId,
-            selectedElementIds: [groupId],
-        }));
+        set((state) => {
+            const newPages = [...state.pages];
+            const page = newPages[state.currentPageIndex];
+            page.elements = page.elements.map(el => selectedElementIds.includes(el.id) ? { ...el, groupId, x: el.x - minX, y: el.y - minY } : el);
+            page.elements.push(groupElement);
+            return {
+                pages: newPages,
+                selectedElementId: groupId,
+                selectedElementIds: [groupId],
+            };
+        });
         get().commitHistory();
     },
 
     ungroupElement: (groupId) => {
-        const { elements } = get();
-        const group = elements.find(el => el.id === groupId);
+        const { pages, currentPageIndex } = get();
+        const currentPage = pages[currentPageIndex];
+        const group = currentPage.elements.find(el => el.id === groupId);
         if (!group || group.type !== 'group' || !group.childIds) return;
 
-        set((state) => ({
-            elements: state.elements
+        set((state) => {
+            const newPages = [...state.pages];
+            const page = newPages[state.currentPageIndex];
+            page.elements = page.elements
                 .filter(el => el.id !== groupId)
-                .map(el => 
-                    group.childIds!.includes(el.id)
-                        ? { ...el, groupId: null, x: el.x + group.x, y: el.y + group.y }
-                        : el
-                ),
-            selectedElementId: null,
-            selectedElementIds: group.childIds!,
-        }));
+                .map(el => group.childIds!.includes(el.id) ? { ...el, groupId: null, x: el.x + group.x, y: el.y + group.y } : el);
+            
+            return {
+                pages: newPages,
+                selectedElementId: null,
+                selectedElementIds: group.childIds!,
+            };
+        });
         get().commitHistory();
     },
-
+    
     linkElements: (parentId, childId) => {
         set((state) => ({
-            elements: state.elements.map(el =>
-                el.id === childId ? { ...el, linkedElementId: parentId, isLinkedChild: true } : el
-            ),
+            pages: state.pages.map(p => ({
+                ...p,
+                elements: p.elements.map(el =>
+                    el.id === childId ? { ...el, linkedElementId: parentId, isLinkedChild: true } : el
+                )
+            }))
         }));
         get().commitHistory();
     },
 
     unlinkElement: (elementId) => {
         set((state) => ({
-            elements: state.elements.map(el =>
-                el.id === elementId ? { ...el, linkedElementId: null, isLinkedChild: false } : el
-            ),
+            pages: state.pages.map(p => ({
+                ...p,
+                elements: p.elements.map(el =>
+                    el.id === elementId ? { ...el, linkedElementId: null, isLinkedChild: false } : el
+                )
+            }))
         }));
         get().commitHistory();
     },
-
-    getLinkedElements: (elementId) => get().elements.filter(el => el.linkedElementId === elementId),
+    
+    getLinkedElements: (elementId) => get().pages.flatMap(p => p.elements.filter(el => el.linkedElementId === elementId)),
 
     linkSelectedElements: () => {
-        const { selectedElementIds, elements } = get();
+        const { selectedElementIds, pages, currentPageIndex } = get();
         if (selectedElementIds.length < 2) return;
 
-        // Find the first shape to be the parent
-        const selectedElements = elements.filter(el => selectedElementIds.includes(el.id));
+        const currentPage = pages[currentPageIndex];
+        const selectedElements = currentPage.elements.filter(el => selectedElementIds.includes(el.id));
         const parentElement = selectedElements.find(el => el.type === 'shape') || selectedElements[0];
         const childElements = selectedElements.filter(el => el.id !== parentElement.id);
 
-        set((state) => ({
-            elements: state.elements.map(el =>
+        set((state) => {
+            const newPages = [...state.pages];
+            const page = newPages[state.currentPageIndex];
+            page.elements = page.elements.map(el =>
                 childElements.some(child => child.id === el.id)
                     ? { ...el, linkedElementId: parentElement.id, isLinkedChild: true }
                     : el
-            ),
-        }));
+            );
+            return { pages: newPages };
+        });
         get().commitHistory();
     },
 
     bringToFront: (id) => {
-        set((state) => ({ elements: state.elements.map((el) => el.id === id ? { ...el, zIndex: nextZIndex++ } : el) }));
+        set((state) => ({
+            pages: state.pages.map(p => ({
+                ...p,
+                elements: p.elements.map((el) => el.id === id ? { ...el, zIndex: nextZIndex++ } : el)
+            }))
+        }));
         get().commitHistory();
     },
 
     sendToBack: (id) => {
         set((state) => {
-            const minZ = Math.min(...state.elements.map(el => el.zIndex || 0));
-            return { elements: state.elements.map((el) => el.id === id ? { ...el, zIndex: minZ - 1 } : el) };
+            const minZ = Math.min(...state.pages.flatMap(p => p.elements).map(el => el.zIndex || 0));
+            return {
+                pages: state.pages.map(p => ({
+                    ...p,
+                    elements: p.elements.map((el) => el.id === id ? { ...el, zIndex: minZ - 1 } : el)
+                }))
+            };
         });
         get().commitHistory();
     },
 
     bringForward: (id) => {
         set((state) => {
-            const el = state.elements.find(e => e.id === id);
+            const allElements = state.pages.flatMap(p => p.elements);
+            const el = allElements.find(e => e.id === id);
             if (!el) return {};
-            const above = state.elements.filter(e => (e.zIndex || 0) > (el.zIndex || 0));
+            const above = allElements.filter(e => (e.zIndex || 0) > (el.zIndex || 0));
             if (!above.length) return {};
             const nextZ = Math.min(...above.map(e => e.zIndex || 0));
-            return { elements: state.elements.map(e => e.id === id ? { ...e, zIndex: nextZ + 1 } : e) };
+            return {
+                pages: state.pages.map(p => ({
+                    ...p,
+                    elements: p.elements.map(e => e.id === id ? { ...e, zIndex: nextZ + 1 } : e)
+                }))
+            };
         });
         get().commitHistory();
     },
-
+    
     sendBackward: (id) => {
         set((state) => {
-            const el = state.elements.find(e => e.id === id);
+            const allElements = state.pages.flatMap(p => p.elements);
+            const el = allElements.find(e => e.id === id);
             if (!el) return {};
-            const below = state.elements.filter(e => (e.zIndex || 0) < (el.zIndex || 0));
+            const below = allElements.filter(e => (e.zIndex || 0) < (el.zIndex || 0));
             if (!below.length) return {};
             const prevZ = Math.max(...below.map(e => e.zIndex || 0));
-            return { elements: state.elements.map(e => e.id === id ? { ...e, zIndex: prevZ - 1 } : e) };
+            return {
+                pages: state.pages.map(p => ({
+                    ...p,
+                    elements: p.elements.map(e => e.id === id ? { ...e, zIndex: prevZ - 1 } : e)
+                }))
+            };
         });
         get().commitHistory();
     },
-
+    
     setZoom: (zoom) => set({ zoom }),
     setCanvasPosition: (position) => set({ canvasPosition: position }),
     toggleRulers: () => set((state) => ({ rulers: { ...state.rulers, visible: !state.rulers.visible } })),
@@ -536,11 +633,79 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
             },
         }));
     },
+    
+    addPage: () => {
+        set(state => {
+            const newPage: Page = {
+                id: `page-${Date.now()}`,
+                name: `Page ${state.pages.length + 1}`,
+                elements: [],
+                pageDetails: state.pages[0]?.pageDetails || defaultPageDetails,
+            };
+            return { pages: [...state.pages, newPage], currentPageIndex: state.pages.length };
+        });
+        get().commitHistory();
+    },
+    
+    setActivePage: (index) => set({ currentPageIndex: index }),
 
-    updatePageDetails: (updates) => set((state) => ({ pageDetails: { ...state.pageDetails, ...updates } })),
+    deletePage: (index) => {
+        set(state => {
+            if (state.pages.length <= 1) return {};
+            const newPages = state.pages.filter((_, i) => i !== index);
+            const newIndex = Math.max(0, state.currentPageIndex >= index ? state.currentPageIndex - 1 : state.currentPageIndex);
+            return { pages: newPages, currentPageIndex: newIndex };
+        });
+        get().commitHistory();
+    },
+
+    duplicatePage: (index) => {
+        set(state => {
+            const pageToDuplicate = state.pages[index];
+            if (!pageToDuplicate) return {};
+            const newPage: Page = {
+                ...pageToDuplicate,
+                id: `page-${Date.now()}`,
+                name: `${pageToDuplicate.name} (Copy)`,
+                elements: pageToDuplicate.elements.map(el => ({
+                    ...el,
+                    id: `element-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                })),
+            };
+            const newPages = [...state.pages, newPage];
+            return { pages: newPages, currentPageIndex: newPages.length - 1 };
+        });
+        get().commitHistory();
+    },
+    
+    movePage: (from, to) => {
+        set(state => {
+            const newPages = [...state.pages];
+            const [movedPage] = newPages.splice(from, 1);
+            newPages.splice(to, 0, movedPage);
+            return { pages: newPages };
+        });
+        get().commitHistory();
+    },
+
+    updatePageDetails: (updates) => set((state) => {
+        const newPages = [...state.pages];
+        const page = newPages[state.currentPageIndex];
+        if(page) {
+            page.pageDetails = { ...page.pageDetails, ...updates };
+        }
+        return { pages: newPages };
+    }),
 
     updatePageBackground: (updates) => {
-        set((state) => ({ pageDetails: { ...state.pageDetails, background: { ...state.pageDetails.background, ...updates } } }));
+        set((state) => {
+            const newPages = [...state.pages];
+            const page = newPages[state.currentPageIndex];
+            if(page) {
+                page.pageDetails.background = { ...page.pageDetails.background, ...updates };
+            }
+            return { pages: newPages };
+        });
     },
 
     setBackgroundRepositioning: (isRepositioning) => set({ isBackgroundRepositioning: isRepositioning }),
@@ -551,15 +716,21 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
 
     markAsTemplateField: (elementId, fieldType, fieldName) => {
         set((state) => ({
-            elements: state.elements.map(el => el.id === elementId ? { ...el, props: { ...el.props, isTemplateField: true, templateFieldType: fieldType, templateFieldName: fieldName } } : el),
+            pages: state.pages.map(p => ({
+                ...p,
+                elements: p.elements.map(el => el.id === elementId ? { ...el, props: { ...el.props, isTemplateField: true, templateFieldType: fieldType, templateFieldName: fieldName } } : el)
+            })),
             templateSettings: { ...state.templateSettings, editableFields: [...new Set([...state.templateSettings.editableFields, elementId])] },
         }));
         get().commitHistory();
     },
-
+    
     removeTemplateField: (elementId) => {
         set((state) => ({
-            elements: state.elements.map(el => el.id === elementId ? { ...el, props: { ...el.props, isTemplateField: false, templateFieldType: undefined, templateFieldName: undefined } } : el),
+            pages: state.pages.map(p => ({
+                ...p,
+                elements: p.elements.map(el => el.id === elementId ? { ...el, props: { ...el.props, isTemplateField: false, templateFieldType: undefined, templateFieldName: undefined } } : el)
+            })),
             templateSettings: { ...state.templateSettings, editableFields: state.templateSettings.editableFields.filter(id => id !== elementId) },
         }));
         get().commitHistory();
@@ -568,7 +739,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     commitHistory: () => {
         set((state) => {
             const newHistory = state.history.slice(0, state.historyIndex + 1);
-            newHistory.push({ elements: JSON.parse(JSON.stringify(state.elements)), pageDetails: JSON.parse(JSON.stringify(state.pageDetails)) });
+            newHistory.push({ pages: JSON.parse(JSON.stringify(state.pages)), currentPageIndex: state.currentPageIndex });
             return { history: newHistory, historyIndex: newHistory.length - 1 };
         });
     },
@@ -577,7 +748,13 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
         set((state) => {
             if (state.historyIndex <= 0) return {};
             const prev = state.history[state.historyIndex - 1];
-            return { elements: JSON.parse(JSON.stringify(prev.elements)), pageDetails: JSON.parse(JSON.stringify(prev.pageDetails)), historyIndex: state.historyIndex - 1, selectedElementId: null, selectedElementIds: [] };
+            return {
+                pages: JSON.parse(JSON.stringify(prev.pages)),
+                currentPageIndex: prev.currentPageIndex,
+                historyIndex: state.historyIndex - 1,
+                selectedElementId: null,
+                selectedElementIds: []
+            };
         });
     },
 
@@ -585,18 +762,27 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
         set((state) => {
             if (state.historyIndex >= state.history.length - 1) return {};
             const next = state.history[state.historyIndex + 1];
-            return { elements: JSON.parse(JSON.stringify(next.elements)), pageDetails: JSON.parse(JSON.stringify(next.pageDetails)), historyIndex: state.historyIndex + 1, selectedElementId: null, selectedElementIds: [] };
+            return {
+                pages: JSON.parse(JSON.stringify(next.pages)),
+                currentPageIndex: next.currentPageIndex,
+                historyIndex: state.historyIndex + 1,
+                selectedElementId: null,
+                selectedElementIds: []
+            };
         });
     },
-
+    
     getSnapPosition: (element, newX, newY) => {
         const state = get();
+        const currentPage = state.pages[state.currentPageIndex];
+        if (!currentPage) return { x: newX, y: newY, snappedToId: null };
+
         const SNAP = 10;
         let snappedX = newX, snappedY = newY, snappedToId: string | null = null;
         const eCX = newX + element.width / 2, eCY = newY + element.height / 2;
         const eR = newX + element.width, eB = newY + element.height;
 
-        for (const other of state.elements) {
+        for (const other of currentPage.elements) {
             if (other.id === element.id || other.linkedElementId === element.id || element.linkedElementId === other.id) continue;
             const oCX = other.x + other.width / 2, oCY = other.y + other.height / 2;
             const oR = other.x + other.width, oB = other.y + other.height;
