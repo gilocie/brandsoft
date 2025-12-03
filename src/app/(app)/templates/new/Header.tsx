@@ -12,6 +12,7 @@ import {
   Check,
   Save,
   Download,
+  FilePlus,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -102,7 +103,7 @@ interface HeaderProps {
 }
 
 const Header = ({ onSaveTemplate }: HeaderProps) => {
-    const { undo, redo, historyIndex, history, rulers, toggleRulers } = useCanvasStore();
+    const { undo, redo, historyIndex, history, rulers, toggleRulers, setNewPageDialogOpen } = useCanvasStore();
     const [isExportOpen, setIsExportOpen] = useState(false);
     const canUndo = historyIndex > 0;
     const canRedo = historyIndex < history.length - 1;
@@ -121,11 +122,25 @@ const Header = ({ onSaveTemplate }: HeaderProps) => {
                          <Button variant="ghost" size="sm" className="text-white hover:bg-gray-800 hover:text-white"><File className="mr-2 h-4 w-4" /> File</Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-56 bg-black text-white border-gray-700">
+                        <DropdownMenuItem onSelect={() => setNewPageDialogOpen(true)}>
+                           <FilePlus className="mr-2 h-4 w-4" /> New
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem disabled>
+                           <Save className="mr-2 h-4 w-4" /> Save
+                        </DropdownMenuItem>
+                         <DropdownMenuItem disabled>
+                           <Save className="mr-2 h-4 w-4" /> Save As
+                        </DropdownMenuItem>
                         <DropdownMenuItem onSelect={onSaveTemplate}>
                            <Save className="mr-2 h-4 w-4" /> Save As Template
                         </DropdownMenuItem>
+                        <DropdownMenuSeparator />
                         <DropdownMenuItem onSelect={() => setIsExportOpen(true)}>
                            <Download className="mr-2 h-4 w-4" /> Export
+                        </DropdownMenuItem>
+                        <DropdownMenuItem disabled>
+                           Options
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
