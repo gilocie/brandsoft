@@ -10,7 +10,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
-import { Palette, Trash2, Pencil } from 'lucide-react';
+import { Palette, Trash2, Pencil, MoreVertical, Eye } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useBrandsoft, type BrandsoftTemplate } from '@/hooks/use-brandsoft';
 import { getBackgroundCSS, Page } from '@/stores/canvas-store';
@@ -21,7 +21,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreVertical } from 'lucide-react';
+import { useCanvasStore } from '@/stores/canvas-store';
+import { useRouter } from 'next/navigation';
 
 
 const templateCategories = [
@@ -57,7 +58,7 @@ const templateCategories = [
   },
 ];
 
-const TemplatePreview = ({ page }: { page: Page }) => (
+export const TemplatePreview = ({ page }: { page: Page }) => (
     <div 
         className="w-full h-full bg-white relative overflow-hidden" 
         style={getBackgroundCSS(page.pageDetails)}
@@ -85,26 +86,41 @@ const TemplatePreview = ({ page }: { page: Page }) => (
 
 const TemplateCard = ({ template }: { template: BrandsoftTemplate }) => {
     const firstPage = template.pages[0];
+    const { setPages } = useCanvasStore();
+    const router = useRouter();
+
     if (!firstPage) return null;
+    
+    const handleEdit = () => {
+        const newPages = JSON.parse(JSON.stringify(template.pages));
+        setPages(newPages);
+        router.push('/templates/new');
+    };
+
+    const { width, height, unit } = firstPage.pageDetails;
 
     return (
-        <Card className="group/card relative">
+        <Card className="group/card relative flex flex-col">
             <CardContent className="p-0 aspect-[8.5/11] overflow-hidden">
                 <TemplatePreview page={firstPage} />
             </CardContent>
-            <CardFooter className="p-3 flex justify-between items-center">
-                 <div>
-                    <p className="font-semibold text-sm truncate">{template.name}</p>
-                    <p className="text-xs text-muted-foreground">{template.pages.length} page(s)</p>
-                </div>
+            <CardHeader className="p-3">
+                 <CardTitle className="text-base font-semibold truncate">{template.name}</CardTitle>
+                 <CardDescription className="text-xs">{width}{unit} x {height}{unit}</CardDescription>
+            </CardHeader>
+            <CardFooter className="p-3 pt-0 mt-auto flex justify-between items-center">
+                 <Button variant="outline" size="sm" className="h-8">
+                    <Eye className="mr-2 h-3 w-3"/>
+                    View
+                 </Button>
                  <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover/card:opacity-100">
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
                             <MoreVertical className="h-4 w-4" />
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleEdit}>
                             <Pencil className="mr-2 h-4 w-4" /> Edit
                         </DropdownMenuItem>
                         <DropdownMenuItem className="text-destructive focus:text-destructive">
