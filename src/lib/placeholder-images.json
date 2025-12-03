@@ -1,46 +1,58 @@
 {
-  "placeholderImages": [
+  "images": [
     {
-      "id": "cert-bg-1",
-      "description": "Formal blue and gold certificate border",
-      "imageUrl": "https://images.unsplash.com/photo-1580795478690-5c6afcf4e7c3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxjZXJ0aWZpY2F0ZSUyMGJvcmRlcnxlbnwwfHx8fDE3NjQ3NzQwMDR8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "certificate border",
-      "category": "certificate"
-    },
-    {
-      "id": "cert-bg-2",
-      "description": "Modern geometric certificate background",
-      "imageUrl": "https://images.unsplash.com/photo-1762330915716-69ffffeeee95?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxjZXJ0aWZpY2F0ZSUyMG1vZGVybnxlbnwwfHx8fDE3NjQ3NzQwMDV8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "certificate modern",
-      "category": "certificate"
-    },
-    {
-      "id": "cert-bg-3",
-      "description": "Elegant certificate with flourish",
-      "imageUrl": "https://images.unsplash.com/photo-1584445584400-1a7cc5de77ae?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxjZXJ0aWZpY2F0ZSUyMGVsZWdhbnR8ZW58MHx8fHwxNzY0Nzc0MDA0fDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "certificate elegant",
-      "category": "certificate"
-    },
-    {
-      "id": "inv-bg-1",
-      "description": "Subtle invoice watermark",
-      "imageUrl": "https://images.unsplash.com/photo-1587116987946-06f1a5f9471a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8aW52b2ljZSUyMHdhdGVybWFya3xlbnwwfHx8fDE3NjQ3NzQwMDV8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "invoice watermark",
+      "id": "inv-0",
+      "name": "inv-and-quots0",
+      "src": "/inv-and-quots0.png",
       "category": "invoice"
     },
     {
-      "id": "inv-bg-2",
-      "description": "Minimalist invoice header graphic",
-      "imageUrl": "https://picsum.photos/seed/inv2/850/1100",
-      "imageHint": "invoice minimal",
+      "id": "inv-1",
+      "name": "inv-and-quots1",
+      "src": "/inv-and-quots1.png",
       "category": "invoice"
     },
     {
-      "id": "quot-bg-1",
-      "description": "Clean quotation background pattern",
-      "imageUrl": "https://images.unsplash.com/photo-1566933987063-1f0b84943ecc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxxdW90YXRpb24lMjBwYXR0ZXJufGVufDB8fHx8MTc2NDc3NDAwNHww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "quotation pattern",
+      "id": "inv-2",
+      "name": "inv-and-quots2",
+      "src": "/inv-and-quots2.png",
+      "category": "invoice"
+    },
+    {
+      "id": "inv-3",
+      "name": "inv-and-quots3",
+      "src": "/inv-and-quots3.png",
       "category": "quotation"
+    },
+    {
+      "id": "inv-4",
+      "name": "inv-and-quots4",
+      "src": "/inv-and-quots4.png",
+      "category": "invoice"
+    },
+    {
+      "id": "inv-5",
+      "name": "inv-and-quots5",
+      "src": "/inv-and-quots5.png",
+      "category": "quotation"
+    },
+    {
+      "id": "cert-0",
+      "name": "brandsoft-cert0",
+      "src": "/brandsoft-cert0.png",
+      "category": "certificate"
+    },
+    {
+      "id": "cert-1",
+      "name": "brandsoft-cert1",
+      "src": "/brandsoft-cert1.png",
+      "category": "certificate"
+    },
+    {
+      "id": "cert-2",
+      "name": "brandsoft-cert2",
+      "src": "/brandsoft-cert2.png",
+      "category": "certificate"
     }
   ]
 }

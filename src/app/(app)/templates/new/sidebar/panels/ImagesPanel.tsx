@@ -4,32 +4,34 @@
 import React, { useState, useEffect } from 'react';
 import { useCanvasStore } from '@/stores/canvas-store';
 import { Loader2 } from 'lucide-react';
-import certificateImageData from '@/lib/certificate-images';
-import invoiceImageData from '@/lib/invoice-images';
+import imageData from '@/lib/placeholder-images.json';
+import NextImage from 'next/image';
 
 const handleDragStart = (e: React.DragEvent, data: any) => {
     e.dataTransfer.setData('application/json', JSON.stringify(data));
 };
 
-const ImageItem = ({ image }: { image: { src: any, name: string } }) => {
+const ImageItem = ({ image }: { image: { src: string, name: string } }) => {
     const imageData = {
-        type: 'image',
+        type: 'image' as const,
         width: 300,
         height: 200,
         rotation: 0,
-        props: { src: image.src.default }
+        props: { src: image.src }
     };
 
     return (
         <div
-            className="bg-gray-200 rounded-md flex items-center justify-center cursor-grab hover:bg-gray-300 transition-colors overflow-hidden aspect-video"
+            className="bg-gray-200 rounded-md flex items-center justify-center cursor-grab hover:bg-gray-300 transition-colors overflow-hidden aspect-video relative"
             draggable
             onDragStart={(e) => handleDragStart(e, imageData)}
         >
-            <img 
-                src={image.src.default} 
+            <NextImage 
+                src={image.src} 
                 alt={image.name} 
-                className="w-full h-full object-cover"
+                layout="fill"
+                objectFit="cover"
+                unoptimized // Necessary for local /public images if not configured in next.config.js
             />
         </div>
     );
@@ -37,20 +39,23 @@ const ImageItem = ({ image }: { image: { src: any, name: string } }) => {
 
 export const ImagesPanel = () => {
     const { templateSettings } = useCanvasStore();
-    const [images, setImages] = useState<{ name: string; src: any }[]>([]);
+    const [images, setImages] = useState<{ name: string; src: string; category: string }[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     const currentCategory = templateSettings?.category || 'invoice';
 
     useEffect(() => {
         setIsLoading(true);
+        const allImages = imageData.images;
+        
+        let relevantImages;
         if (currentCategory === 'invoice' || currentCategory === 'quotation') {
-            setImages(invoiceImageData);
-        } else if (currentCategory === 'certificate') {
-            setImages(certificateImageData);
+            relevantImages = allImages.filter(img => img.category === 'invoice' || img.category === 'quotation');
         } else {
-            setImages([]);
+            relevantImages = allImages.filter(img => img.category === currentCategory);
         }
+
+        setImages(relevantImages);
         setIsLoading(false);
     }, [currentCategory]);
 
@@ -66,7 +71,7 @@ export const ImagesPanel = () => {
     if (images.length === 0) {
         return (
             <div className="p-4 text-center text-sm text-muted-foreground">
-                No images found for the '{currentCategory}' category. Add images to the manifest file.
+                No images found for the '{currentCategory}' category in placeholder-images.json.
             </div>
         );
     }
