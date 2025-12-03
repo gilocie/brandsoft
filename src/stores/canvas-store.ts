@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 
 // ============ TYPES ============
@@ -651,9 +652,17 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
 
     deletePage: (index) => {
         set(state => {
-            if (state.pages.length <= 1) return {};
-            const newPages = state.pages.filter((_, i) => i !== index);
-            const newIndex = Math.max(0, state.currentPageIndex >= index ? state.currentPageIndex - 1 : state.currentPageIndex);
+            let newPages = state.pages.filter((_, i) => i !== index);
+            if (newPages.length === 0) {
+                 const newPage: Page = {
+                    id: `page-${Date.now()}`,
+                    name: 'Page 1',
+                    elements: [],
+                    pageDetails: state.pages[0]?.pageDetails || defaultPageDetails,
+                };
+                newPages.push(newPage);
+            }
+            const newIndex = Math.min(Math.max(0, state.currentPageIndex), newPages.length - 1);
             return { pages: newPages, currentPageIndex: newIndex };
         });
         get().commitHistory();

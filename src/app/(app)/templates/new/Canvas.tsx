@@ -4,8 +4,9 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useCanvasStore, type CanvasElement as CanvasElementType } from '@/stores/canvas-store';
 import { Button } from '@/components/ui/button';
-import { PlusSquare, RefreshCcw, RefreshCw, SlidersHorizontal, Trash2, Link, Unlink } from 'lucide-react';
+import { PlusSquare, RefreshCcw, RefreshCw, SlidersHorizontal, Trash2, Link, Unlink, X } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { loadGoogleFonts } from './canvas/utils';
 import { TextElement, ShapeElement, ImageElement } from './canvas/elements';
 import { Ruler, RulerGuide, PageBackground, SelectionBox } from './canvas/ui';
@@ -128,7 +129,7 @@ const Canvas = ({ onPageDoubleClick }: CanvasProps) => {
     const {
         elements, addElement, selectElement, deleteElement, selectedElementId, selectedElementIds, moveElement,
         zoom, setZoom, canvasPosition, setCanvasPosition, rulers, guides, addGuide, addPage,
-        pages, currentPageIndex, setActivePage,
+        pages, currentPageIndex, setActivePage, deletePage,
         pageDetails: legacyPageDetails,
         updatePageBackground, commitHistory, undo, redo, historyIndex, history,
         isBackgroundRepositioning, setBackgroundRepositioning,
@@ -141,12 +142,24 @@ const Canvas = ({ onPageDoubleClick }: CanvasProps) => {
     const dragStart = useRef({ x: 0, y: 0, canvasX: 0, canvasY: 0 });
     const [isCtrlPressed, setIsCtrlPressed] = useState(false);
     const [isClient, setIsClient] = useState(false);
+    const [pageToDelete, setPageToDelete] = useState<number | null>(null);
 
     useEffect(() => {
         setIsClient(true);
     }, []);
 
     const currentPage = pages[currentPageIndex];
+    if (!currentPage) {
+        // This can happen briefly if the last page is deleted
+        return (
+             <main
+                ref={mainCanvasRef}
+                className={`flex-1 bg-gray-200 overflow-hidden relative flex items-center justify-center`}
+            >
+                <p className="text-muted-foreground">Creating new page...</p>
+            </main>
+        );
+    }
     const pageDetails = currentPage.pageDetails;
 
     const canUndo = historyIndex > 0;
@@ -352,7 +365,14 @@ const Canvas = ({ onPageDoubleClick }: CanvasProps) => {
         }
     };
 
-    const sortedElements = [...elements].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+    const handleDeletePage = () => {
+        if (pageToDelete !== null) {
+            deletePage(pageToDelete);
+            setPageToDelete(null);
+        }
+    };
+
+    const sortedElements = [...currentPage.elements].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
 
     return (
         <main
@@ -456,7 +476,7 @@ const Canvas = ({ onPageDoubleClick }: CanvasProps) => {
 
                         {sortedElements.map(el => <CanvasElementRenderer key={el.id} element={el} />)}
                         
-                        {elements.length === 0 && (
+                        {currentPage.elements.length === 0 && (
                             <div className="absolute inset-0 flex items-center justify-center text-gray-400 pointer-events-none">
                                 <p>Drag an element from a panel to add it</p>
                             </div>
@@ -468,16 +488,47 @@ const Canvas = ({ onPageDoubleClick }: CanvasProps) => {
 
                 <div className="absolute left-1/2 -translate-x-1/2 z-30 flex items-center gap-4" style={{ top: `calc(${pageDetails.height}${pageDetails.unit} + 16px)` }}>
                     {pages.map((p, i) => (
-                        <div key={p.id} onClick={() => setActivePage(i)} className={`cursor-pointer border-2 p-1 rounded-md ${i === currentPageIndex ? 'border-primary' : 'border-gray-300'}`}>
-                            <div className="w-16 h-20 bg-white" />
-                            <p className="text-xs text-center mt-1">{`Page ${i + 1}`}</p>
+                        <div key={p.id} className="relative group/page-thumb">
+                            <div onClick={() => setActivePage(i)} className={`cursor-pointer border-2 p-1 rounded-md ${i === currentPageIndex ? 'border-primary' : 'border-gray-300'}`}>
+                                <div className="w-16 h-20 bg-white" />
+                                <p className="text-xs text-center mt-1">{`Page ${i + 1}`}</p>
+                            </div>
+                             {pages.length > 0 && (
+                                <Button
+                                    variant="destructive"
+                                    size="icon"
+                                    className="absolute -top-2 -right-2 h-5 w-5 rounded-full opacity-0 group-hover/page-thumb:opacity-100 transition-opacity"
+                                    onClick={() => setPageToDelete(i)}
+                                >
+                                    <X className="h-3 w-3" />
+                                </Button>
+                            )}
                         </div>
                     ))}
                     <Button variant="outline" size="sm" className="bg-white shadow-md" onClick={addPage}><PlusSquare className="mr-2 h-4 w-4" /> Add Page</Button>
                 </div>
             </div>
+            
+            <AlertDialog open={pageToDelete !== null} onOpenChange={(open) => !open && setPageToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                           {pages.length > 1 
+                                ? `This will permanently delete Page ${pageToDelete !== null ? pageToDelete + 1 : ''}.`
+                                : "This is your last page. Deleting it will create a new blank page."
+                           }
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setPageToDelete(null)}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeletePage}>Delete Page</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </main>
     );
 };
 
 export default Canvas;
+
