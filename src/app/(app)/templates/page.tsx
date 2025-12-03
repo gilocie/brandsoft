@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Link from 'next/link';
@@ -118,7 +119,7 @@ const TemplateCard = ({ template }: { template: BrandsoftTemplate }) => {
             <CardHeader className="p-3">
                  <CardTitle className="text-base font-semibold truncate text-center">{template.name}</CardTitle>
             </CardHeader>
-            <CardContent className="p-3 pt-0 flex-grow flex gap-2">
+            <CardContent className="p-3 pt-0 flex-grow flex items-start gap-2">
                 <div className="aspect-[8.5/11] w-full overflow-hidden bg-gray-100 border rounded-md">
                     <TemplatePreview page={firstPage} />
                 </div>
@@ -137,14 +138,14 @@ const TemplateCard = ({ template }: { template: BrandsoftTemplate }) => {
         
         {/* View Dialog */}
         <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
-            <DialogContent className="max-w-4xl h-[90vh] p-0">
-                <div className="grid grid-cols-3 h-full gap-0">
-                    <div className="col-span-2 bg-muted rounded-l-lg flex items-center justify-center p-8">
-                        <div className="aspect-[8.5/11] w-full max-w-md max-h-full overflow-hidden shadow-lg">
+            <DialogContent className="max-w-4xl p-0">
+                <div className="grid grid-cols-1 md:grid-cols-3">
+                    <div className="md:col-span-2 bg-muted rounded-l-lg flex items-center justify-center p-8">
+                        <div className="aspect-[8.5/11] w-full max-w-md overflow-hidden shadow-lg">
                           {firstPage && <TemplatePreview page={firstPage} />}
                         </div>
                     </div>
-                    <div className="col-span-1 p-6 flex flex-col">
+                    <div className="md:col-span-1 p-6 flex flex-col">
                         <div className="flex-grow">
                             <DialogHeader className="text-left mb-4">
                                 <DialogTitle className="text-2xl font-bold">{template.name}</DialogTitle>
