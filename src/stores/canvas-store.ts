@@ -1,5 +1,6 @@
 
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
 // ============ TYPES ============
 export interface CanvasElementProps {
@@ -277,7 +278,8 @@ const getBackgroundCSS = (pageDetails: PageDetails) => {
         };
     }
     if (pageDetails.backgroundType === 'gradient') {
-        const stops = pageDetails.gradientStops || [{ color: '#FFFFFF', position: 0 }, { color: '#000000', position: 100 }];
+        const stops = pageDetails.gradientStops || [];
+        if (stops.length === 0) return { background: '#FFFFFF' }; // Fallback
         const sortedStops = [...stops].sort((a, b) => a.position - b.position);
         const colorStops = sortedStops.map(s => `${s.color} ${s.position}%`).join(', ');
         return { background: `linear-gradient(${pageDetails.gradientAngle || 90}deg, ${colorStops})` };
@@ -286,574 +288,597 @@ const getBackgroundCSS = (pageDetails: PageDetails) => {
 };
 
 
-export const useCanvasStore = create<CanvasState>((set, get) => ({
-    pages: [],
-    currentPageIndex: -1,
-    selectedElementId: null,
-    selectedElementIds: [],
-    selectionBox: null,
-    history: [],
-    historyIndex: -1,
-    zoom: 1,
-    canvasPosition: { x: 0, y: 0 },
-    rulers: { visible: true },
-    guides: { horizontal: [], vertical: [] },
-    templateSettings: { ...defaultTemplateSettings },
-    isBackgroundRepositioning: false,
-    isTemplateEditMode: false,
-    isNewPageDialogOpen: true,
+export const useCanvasStore = create<CanvasState>()(
+    persist(
+        (set, get) => ({
+            pages: [],
+            currentPageIndex: -1,
+            selectedElementId: null,
+            selectedElementIds: [],
+            selectionBox: null,
+            history: [],
+            historyIndex: -1,
+            zoom: 1,
+            canvasPosition: { x: 0, y: 0 },
+            rulers: { visible: true },
+            guides: { horizontal: [], vertical: [] },
+            templateSettings: { ...defaultTemplateSettings },
+            isBackgroundRepositioning: false,
+            isTemplateEditMode: false,
+            isNewPageDialogOpen: true,
 
-    addElement: (element, options) => {
-        const newElement = {
-            ...element,
-            id: `element-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            zIndex: nextZIndex++,
-            props: { opacity: 1, fillOpacity: 1, ...element.props },
-        };
-        set((state) => {
-            const newPages = [...state.pages];
-            const currentPage = newPages[state.currentPageIndex];
-            if(currentPage) {
-                 currentPage.elements.push(newElement);
-            }
-            return {
-                pages: newPages,
-                selectedElementId: options?.select !== false ? newElement.id : state.selectedElementId,
-                selectedElementIds: options?.select !== false ? [newElement.id] : state.selectedElementIds,
-            };
-        });
-        get().commitHistory();
-    },
+            addElement: (element, options) => {
+                const newElement = {
+                    ...element,
+                    id: `element-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                    zIndex: nextZIndex++,
+                    props: { opacity: 1, fillOpacity: 1, ...element.props },
+                };
+                set((state) => {
+                    const newPages = [...state.pages];
+                    const currentPage = newPages[state.currentPageIndex];
+                    if(currentPage) {
+                         currentPage.elements.push(newElement);
+                    }
+                    return {
+                        pages: newPages,
+                        selectedElementId: options?.select !== false ? newElement.id : state.selectedElementId,
+                        selectedElementIds: options?.select !== false ? [newElement.id] : state.selectedElementIds,
+                    };
+                });
+                get().commitHistory();
+            },
 
-    updateElement: (id, updates) => {
-        const pages = get().pages;
-        const pageIndex = pages.findIndex(p => p.elements.some(e => e.id === id));
-        if (pageIndex === -1) return;
+            updateElement: (id, updates) => {
+                const pages = get().pages;
+                const pageIndex = pages.findIndex(p => p.elements.some(e => e.id === id));
+                if (pageIndex === -1) return;
 
-        const element = pages[pageIndex].elements.find(el => el.id === id);
-        if (!element) return;
+                const element = pages[pageIndex].elements.find(el => el.id === id);
+                if (!element) return;
 
-        const deltaX = updates.x !== undefined ? updates.x - element.x : 0;
-        const deltaY = updates.y !== undefined ? updates.y - element.y : 0;
+                const deltaX = updates.x !== undefined ? updates.x - element.x : 0;
+                const deltaY = updates.y !== undefined ? updates.y - element.y : 0;
 
-        set((state) => ({
-            pages: state.pages.map((p, i) => {
-                if (i !== pageIndex) return p;
+                set((state) => ({
+                    pages: state.pages.map((p, i) => {
+                        if (i !== pageIndex) return p;
+                        return {
+                            ...p,
+                            elements: p.elements.map((el) => {
+                                if (el.id === id) return { ...el, ...updates };
+                                if (el.linkedElementId === id && (deltaX !== 0 || deltaY !== 0)) {
+                                    return { ...el, x: el.x + deltaX, y: el.y + deltaY };
+                                }
+                                if (el.groupId === id && (deltaX !== 0 || deltaY !== 0)) {
+                                    return { ...el, x: el.x + deltaX, y: el.y + deltaY };
+                                }
+                                return el;
+                            })
+                        };
+                    }),
+                }));
+            },
+            
+            updateElementProps: (id, props) => {
+                set((state) => ({
+                    pages: state.pages.map(p => ({
+                        ...p,
+                        elements: p.elements.map((el) => el.id === id ? { ...el, props: { ...el.props, ...props } } : el),
+                    }))
+                }));
+            },
+
+            deleteElement: (id) => {
+                set((state) => {
+                    const pageIndex = state.pages.findIndex(p => p.elements.some(e => e.id === id));
+                    if (pageIndex === -1) return state;
+
+                    const element = state.pages[pageIndex].elements.find(el => el.id === id);
+                    let elementsToDelete = [id];
+                    
+                    if (element?.type === 'group' && element.childIds) {
+                        elementsToDelete = [...elementsToDelete, ...element.childIds];
+                    }
+                    
+                    const newPages = state.pages.map((p, i) => {
+                        if (i !== pageIndex) return p;
+                        return {
+                            ...p,
+                            elements: p.elements
+                                .filter((el) => !elementsToDelete.includes(el.id))
+                                .map(el => el.linkedElementId === id ? { ...el, linkedElementId: null, isLinkedChild: false } : el)
+                        };
+                    });
+
+                    return {
+                        pages: newPages,
+                        selectedElementId: state.selectedElementId === id ? null : state.selectedElementId,
+                        selectedElementIds: state.selectedElementIds.filter(i => !elementsToDelete.includes(i)),
+                    };
+                });
+                get().commitHistory();
+            },
+
+            duplicateElement: (id) => {
+                const pages = get().pages;
+                const pageIndex = pages.findIndex(p => p.elements.some(e => e.id === id));
+                if (pageIndex === -1) return;
+                
+                const element = pages[pageIndex].elements.find(el => el.id === id);
+                if (!element) return;
+                
+                const newElement = {
+                    ...element,
+                    id: `element-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                    x: element.x + 20, y: element.y + 20, zIndex: nextZIndex++,
+                    linkedElementId: null, isLinkedChild: false, groupId: null,
+                    props: { ...element.props, isTemplateField: false, templateFieldType: undefined, templateFieldName: undefined },
+                };
+
+                set((state) => {
+                    const newPages = [...state.pages];
+                    newPages[pageIndex].elements.push(newElement);
+                    return {
+                        pages: newPages,
+                        selectedElementId: newElement.id,
+                        selectedElementIds: [newElement.id]
+                    };
+                });
+                get().commitHistory();
+            },
+            
+            selectElement: (id) => set({
+                selectedElementId: id,
+                selectedElementIds: id ? [id] : [],
+            }),
+            
+            moveElement: (id, direction, amount = 1) => {
+                const pageIndex = get().pages.findIndex(p => p.elements.some(e => e.id === id));
+                if (pageIndex === -1) return;
+                const element = get().pages[pageIndex].elements.find(el => el.id === id);
+                if (!element) return;
+                const updates: Partial<CanvasElement> = {};
+                switch (direction) {
+                    case 'up': updates.y = element.y - amount; break;
+                    case 'down': updates.y = element.y + amount; break;
+                    case 'left': updates.x = element.x - amount; break;
+                    case 'right': updates.x = element.x + amount; break;
+                }
+                get().updateElement(id, updates);
+            },
+
+            selectMultipleElements: (ids) => set({
+                selectedElementIds: ids,
+                selectedElementId: ids.length > 0 ? ids[0] : null,
+            }),
+
+            addToSelection: (id) => set((state) => {
+                if (state.selectedElementIds.includes(id)) return {};
+                const newIds = [...state.selectedElementIds, id];
                 return {
-                    ...p,
-                    elements: p.elements.map((el) => {
-                        if (el.id === id) return { ...el, ...updates };
-                        if (el.linkedElementId === id && (deltaX !== 0 || deltaY !== 0)) {
-                            return { ...el, x: el.x + deltaX, y: el.y + deltaY };
-                        }
-                        if (el.groupId === id && (deltaX !== 0 || deltaY !== 0)) {
-                            return { ...el, x: el.x + deltaX, y: el.y + deltaY };
-                        }
-                        return el;
-                    })
+                    selectedElementIds: newIds,
+                    selectedElementId: newIds.length === 1 ? newIds[0] : (newIds.length > 0 ? newIds[0] : null),
                 };
             }),
-        }));
-    },
-    
-    updateElementProps: (id, props) => {
-        set((state) => ({
-            pages: state.pages.map(p => ({
-                ...p,
-                elements: p.elements.map((el) => el.id === id ? { ...el, props: { ...el.props, ...props } } : el),
-            }))
-        }));
-    },
-
-    deleteElement: (id) => {
-        set((state) => {
-            const pageIndex = state.pages.findIndex(p => p.elements.some(e => e.id === id));
-            if (pageIndex === -1) return state;
-
-            const element = state.pages[pageIndex].elements.find(el => el.id === id);
-            let elementsToDelete = [id];
             
-            if (element?.type === 'group' && element.childIds) {
-                elementsToDelete = [...elementsToDelete, ...element.childIds];
-            }
-            
-            const newPages = state.pages.map((p, i) => {
-                if (i !== pageIndex) return p;
+            removeFromSelection: (id) => set((state) => {
+                const newIds = state.selectedElementIds.filter(i => i !== id);
                 return {
-                    ...p,
-                    elements: p.elements
-                        .filter((el) => !elementsToDelete.includes(el.id))
-                        .map(el => el.linkedElementId === id ? { ...el, linkedElementId: null, isLinkedChild: false } : el)
+                    selectedElementIds: newIds,
+                    selectedElementId: newIds.length > 0 ? newIds[0] : null,
                 };
-            });
+            }),
 
-            return {
-                pages: newPages,
-                selectedElementId: state.selectedElementId === id ? null : state.selectedElementId,
-                selectedElementIds: state.selectedElementIds.filter(i => !elementsToDelete.includes(i)),
-            };
-        });
-        get().commitHistory();
-    },
-
-    duplicateElement: (id) => {
-        const pages = get().pages;
-        const pageIndex = pages.findIndex(p => p.elements.some(e => e.id === id));
-        if (pageIndex === -1) return;
-        
-        const element = pages[pageIndex].elements.find(el => el.id === id);
-        if (!element) return;
-        
-        const newElement = {
-            ...element,
-            id: `element-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            x: element.x + 20, y: element.y + 20, zIndex: nextZIndex++,
-            linkedElementId: null, isLinkedChild: false, groupId: null,
-            props: { ...element.props, isTemplateField: false, templateFieldType: undefined, templateFieldName: undefined },
-        };
-
-        set((state) => {
-            const newPages = [...state.pages];
-            newPages[pageIndex].elements.push(newElement);
-            return {
-                pages: newPages,
-                selectedElementId: newElement.id,
-                selectedElementIds: [newElement.id]
-            };
-        });
-        get().commitHistory();
-    },
-    
-    selectElement: (id) => set({
-        selectedElementId: id,
-        selectedElementIds: id ? [id] : [],
-    }),
-    
-    moveElement: (id, direction, amount = 1) => {
-        const pageIndex = get().pages.findIndex(p => p.elements.some(e => e.id === id));
-        if (pageIndex === -1) return;
-        const element = get().pages[pageIndex].elements.find(el => el.id === id);
-        if (!element) return;
-        const updates: Partial<CanvasElement> = {};
-        switch (direction) {
-            case 'up': updates.y = element.y - amount; break;
-            case 'down': updates.y = element.y + amount; break;
-            case 'left': updates.x = element.x - amount; break;
-            case 'right': updates.x = element.x + amount; break;
-        }
-        get().updateElement(id, updates);
-    },
-
-    selectMultipleElements: (ids) => set({
-        selectedElementIds: ids,
-        selectedElementId: ids.length > 0 ? ids[0] : null,
-    }),
-
-    addToSelection: (id) => set((state) => {
-        if (state.selectedElementIds.includes(id)) return {};
-        const newIds = [...state.selectedElementIds, id];
-        return {
-            selectedElementIds: newIds,
-            selectedElementId: newIds.length === 1 ? newIds[0] : (newIds.length > 0 ? newIds[0] : null),
-        };
-    }),
-    
-    removeFromSelection: (id) => set((state) => {
-        const newIds = state.selectedElementIds.filter(i => i !== id);
-        return {
-            selectedElementIds: newIds,
-            selectedElementId: newIds.length > 0 ? newIds[0] : null,
-        };
-    }),
-
-    clearSelection: () => set({ selectedElementId: null, selectedElementIds: [] }),
-    
-    setSelectionBox: (box) => set({ selectionBox: box }),
-
-    getElementsInSelectionBox: (box) => {
-        const { pages, currentPageIndex } = get();
-        if (!pages[currentPageIndex]) return [];
-        const elements = pages[currentPageIndex].elements;
-        const minX = Math.min(box.startX, box.endX);
-        const maxX = Math.max(box.startX, box.endX);
-        const minY = Math.min(box.startY, box.endY);
-        const maxY = Math.max(box.startY, box.endY);
-
-        return elements.filter(el => {
-            const elRight = el.x + el.width;
-            const elBottom = el.y + el.height;
-            return el.x < maxX && elRight > minX && el.y < maxY && elBottom > minY;
-        }).map(el => el.id);
-    },
-
-    groupSelectedElements: () => {
-        const { selectedElementIds, pages, currentPageIndex } = get();
-        if (selectedElementIds.length < 2) return;
-
-        const currentPage = pages[currentPageIndex];
-        const selectedElements = currentPage.elements.filter(el => selectedElementIds.includes(el.id));
-        
-        const minX = Math.min(...selectedElements.map(el => el.x));
-        const minY = Math.min(...selectedElements.map(el => el.y));
-        const maxX = Math.max(...selectedElements.map(el => el.x + el.width));
-        const maxY = Math.max(...selectedElements.map(el => el.y + el.height));
-
-        const groupId = `group-${Date.now()}`;
-        const groupElement: CanvasElement = {
-            id: groupId, type: 'group', x: minX, y: minY, width: maxX - minX, height: maxY - minY, rotation: 0,
-            props: { opacity: 1 }, zIndex: nextZIndex++, childIds: selectedElementIds,
-        };
-
-        set((state) => {
-            const newPages = [...state.pages];
-            const page = newPages[state.currentPageIndex];
-            page.elements = page.elements.map(el => selectedElementIds.includes(el.id) ? { ...el, groupId, x: el.x - minX, y: el.y - minY } : el);
-            page.elements.push(groupElement);
-            return {
-                pages: newPages,
-                selectedElementId: groupId,
-                selectedElementIds: [groupId],
-            };
-        });
-        get().commitHistory();
-    },
-
-    ungroupElement: (groupId) => {
-        const { pages, currentPageIndex } = get();
-        const currentPage = pages[currentPageIndex];
-        const group = currentPage.elements.find(el => el.id === groupId);
-        if (!group || group.type !== 'group' || !group.childIds) return;
-
-        set((state) => {
-            const newPages = [...state.pages];
-            const page = newPages[state.currentPageIndex];
-            page.elements = page.elements
-                .filter(el => el.id !== groupId)
-                .map(el => group.childIds!.includes(el.id) ? { ...el, groupId: null, x: el.x + group.x, y: el.y + group.y } : el);
+            clearSelection: () => set({ selectedElementId: null, selectedElementIds: [] }),
             
-            return {
-                pages: newPages,
-                selectedElementId: null,
-                selectedElementIds: group.childIds!,
-            };
-        });
-        get().commitHistory();
-    },
-    
-    linkElements: (parentId, childId) => {
-        set((state) => ({
-            pages: state.pages.map(p => ({
-                ...p,
-                elements: p.elements.map(el =>
-                    el.id === childId ? { ...el, linkedElementId: parentId, isLinkedChild: true } : el
-                )
-            }))
-        }));
-        get().commitHistory();
-    },
+            setSelectionBox: (box) => set({ selectionBox: box }),
 
-    unlinkElement: (elementId) => {
-        set((state) => ({
-            pages: state.pages.map(p => ({
-                ...p,
-                elements: p.elements.map(el =>
-                    el.id === elementId ? { ...el, linkedElementId: null, isLinkedChild: false } : el
-                )
-            }))
-        }));
-        get().commitHistory();
-    },
-    
-    getLinkedElements: (elementId) => get().pages.flatMap(p => p.elements.filter(el => el.linkedElementId === elementId)),
+            getElementsInSelectionBox: (box) => {
+                const { pages, currentPageIndex } = get();
+                if (!pages[currentPageIndex]) return [];
+                const elements = pages[currentPageIndex].elements;
+                const minX = Math.min(box.startX, box.endX);
+                const maxX = Math.max(box.startX, box.endX);
+                const minY = Math.min(box.startY, box.endY);
+                const maxY = Math.max(box.startY, box.endY);
 
-    linkSelectedElements: () => {
-        const { selectedElementIds, pages, currentPageIndex } = get();
-        if (selectedElementIds.length < 2) return;
-
-        const currentPage = pages[currentPageIndex];
-        const selectedElements = currentPage.elements.filter(el => selectedElementIds.includes(el.id));
-        const parentElement = selectedElements.find(el => el.type === 'shape') || selectedElements[0];
-        const childElements = selectedElements.filter(el => el.id !== parentElement.id);
-
-        set((state) => {
-            const newPages = [...state.pages];
-            const page = newPages[state.currentPageIndex];
-            page.elements = page.elements.map(el =>
-                childElements.some(child => child.id === el.id)
-                    ? { ...el, linkedElementId: parentElement.id, isLinkedChild: true }
-                    : el
-            );
-            return { pages: newPages };
-        });
-        get().commitHistory();
-    },
-
-    bringToFront: (id) => {
-        set((state) => ({
-            pages: state.pages.map(p => ({
-                ...p,
-                elements: p.elements.map((el) => el.id === id ? { ...el, zIndex: nextZIndex++ } : el)
-            }))
-        }));
-        get().commitHistory();
-    },
-
-    sendToBack: (id) => {
-        set((state) => {
-            const minZ = Math.min(...state.pages.flatMap(p => p.elements).map(el => el.zIndex || 0));
-            return {
-                pages: state.pages.map(p => ({
-                    ...p,
-                    elements: p.elements.map((el) => el.id === id ? { ...el, zIndex: minZ - 1 } : el)
-                }))
-            };
-        });
-        get().commitHistory();
-    },
-
-    bringForward: (id) => {
-        set((state) => {
-            const allElements = state.pages.flatMap(p => p.elements);
-            const el = allElements.find(e => e.id === id);
-            if (!el) return {};
-            const above = allElements.filter(e => (e.zIndex || 0) > (el.zIndex || 0));
-            if (!above.length) return {};
-            const nextZ = Math.min(...above.map(e => e.zIndex || 0));
-            return {
-                pages: state.pages.map(p => ({
-                    ...p,
-                    elements: p.elements.map(e => e.id === id ? { ...e, zIndex: nextZ + 1 } : e)
-                }))
-            };
-        });
-        get().commitHistory();
-    },
-    
-    sendBackward: (id) => {
-        set((state) => {
-            const allElements = state.pages.flatMap(p => p.elements);
-            const el = allElements.find(e => e.id === id);
-            if (!el) return {};
-            const below = allElements.filter(e => (e.zIndex || 0) < (el.zIndex || 0));
-            if (!below.length) return {};
-            const prevZ = Math.max(...below.map(e => e.zIndex || 0));
-            return {
-                pages: state.pages.map(p => ({
-                    ...p,
-                    elements: p.elements.map(e => e.id === id ? { ...e, zIndex: prevZ - 1 } : e)
-                }))
-            };
-        });
-        get().commitHistory();
-    },
-    
-    setZoom: (zoom) => set({ zoom }),
-    setCanvasPosition: (position) => set({ canvasPosition: position }),
-    toggleRulers: () => set((state) => ({ rulers: { ...state.rulers, visible: !state.rulers.visible } })),
-
-    addGuide: (orientation, position) => {
-        const id = `guide-${orientation}-${Date.now()}`;
-        set((state) => ({
-            guides: orientation === 'horizontal'
-                ? { ...state.guides, horizontal: [...state.guides.horizontal, { id, y: position }] }
-                : { ...state.guides, vertical: [...state.guides.vertical, { id, x: position }] },
-        }));
-    },
-
-    updateGuide: (id, updates) => {
-        set((state) => ({
-            guides: {
-                horizontal: state.guides.horizontal.map(g => g.id === id ? { ...g, ...updates } : g),
-                vertical: state.guides.vertical.map(g => g.id === id ? { ...g, ...updates } : g),
+                return elements.filter(el => {
+                    const elRight = el.x + el.width;
+                    const elBottom = el.y + el.height;
+                    return el.x < maxX && elRight > minX && el.y < maxY && elBottom > minY;
+                }).map(el => el.id);
             },
-        }));
-    },
 
-    deleteGuide: (id) => {
-        set((state) => ({
-            guides: {
-                horizontal: state.guides.horizontal.filter(g => g.id !== id),
-                vertical: state.guides.vertical.filter(g => g.id !== id),
+            groupSelectedElements: () => {
+                const { selectedElementIds, pages, currentPageIndex } = get();
+                if (selectedElementIds.length < 2) return;
+
+                const currentPage = pages[currentPageIndex];
+                const selectedElements = currentPage.elements.filter(el => selectedElementIds.includes(el.id));
+                
+                const minX = Math.min(...selectedElements.map(el => el.x));
+                const minY = Math.min(...selectedElements.map(el => el.y));
+                const maxX = Math.max(...selectedElements.map(el => el.x + el.width));
+                const maxY = Math.max(...selectedElements.map(el => el.y + el.height));
+
+                const groupId = `group-${Date.now()}`;
+                const groupElement: CanvasElement = {
+                    id: groupId, type: 'group', x: minX, y: minY, width: maxX - minX, height: maxY - minY, rotation: 0,
+                    props: { opacity: 1 }, zIndex: nextZIndex++, childIds: selectedElementIds,
+                };
+
+                set((state) => {
+                    const newPages = [...state.pages];
+                    const page = newPages[state.currentPageIndex];
+                    page.elements = page.elements.map(el => selectedElementIds.includes(el.id) ? { ...el, groupId, x: el.x - minX, y: el.y - minY } : el);
+                    page.elements.push(groupElement);
+                    return {
+                        pages: newPages,
+                        selectedElementId: groupId,
+                        selectedElementIds: [groupId],
+                    };
+                });
+                get().commitHistory();
             },
-        }));
-    },
-    
-    addPage: () => {
-        set(state => {
-            const newPage: Page = {
-                id: `page-${Date.now()}`,
-                name: `Page ${state.pages.length + 1}`,
-                elements: [],
-                pageDetails: state.pages[0]?.pageDetails || defaultPageDetails,
-            };
-            return { pages: [...state.pages, newPage], currentPageIndex: state.pages.length };
-        });
-        get().commitHistory();
-    },
 
-    setPages: (pages) => {
-        set({ pages: pages, currentPageIndex: pages.length > 0 ? 0 : -1 });
-        get().commitHistory();
-    },
-    
-    setActivePage: (index) => set({ currentPageIndex: index }),
+            ungroupElement: (groupId) => {
+                const { pages, currentPageIndex } = get();
+                const currentPage = pages[currentPageIndex];
+                const group = currentPage.elements.find(el => el.id === groupId);
+                if (!group || group.type !== 'group' || !group.childIds) return;
 
-    deletePage: (index) => {
-        set(state => {
-            const newPages = state.pages.filter((_, i) => i !== index);
-            if (newPages.length === 0) {
-                return { pages: [], currentPageIndex: -1, isNewPageDialogOpen: true };
+                set((state) => {
+                    const newPages = [...state.pages];
+                    const page = newPages[state.currentPageIndex];
+                    page.elements = page.elements
+                        .filter(el => el.id !== groupId)
+                        .map(el => group.childIds!.includes(el.id) ? { ...el, groupId: null, x: el.x + group.x, y: el.y + group.y } : el);
+                    
+                    return {
+                        pages: newPages,
+                        selectedElementId: null,
+                        selectedElementIds: group.childIds!,
+                    };
+                });
+                get().commitHistory();
+            },
+            
+            linkElements: (parentId, childId) => {
+                set((state) => ({
+                    pages: state.pages.map(p => ({
+                        ...p,
+                        elements: p.elements.map(el =>
+                            el.id === childId ? { ...el, linkedElementId: parentId, isLinkedChild: true } : el
+                        )
+                    }))
+                }));
+                get().commitHistory();
+            },
+
+            unlinkElement: (elementId) => {
+                set((state) => ({
+                    pages: state.pages.map(p => ({
+                        ...p,
+                        elements: p.elements.map(el =>
+                            el.id === elementId ? { ...el, linkedElementId: null, isLinkedChild: false } : el
+                        )
+                    }))
+                }));
+                get().commitHistory();
+            },
+            
+            getLinkedElements: (elementId) => get().pages.flatMap(p => p.elements.filter(el => el.linkedElementId === elementId)),
+
+            linkSelectedElements: () => {
+                const { selectedElementIds, pages, currentPageIndex } = get();
+                if (selectedElementIds.length < 2) return;
+
+                const currentPage = pages[currentPageIndex];
+                const selectedElements = currentPage.elements.filter(el => selectedElementIds.includes(el.id));
+                const parentElement = selectedElements.find(el => el.type === 'shape') || selectedElements[0];
+                const childElements = selectedElements.filter(el => el.id !== parentElement.id);
+
+                set((state) => {
+                    const newPages = [...state.pages];
+                    const page = newPages[state.currentPageIndex];
+                    page.elements = page.elements.map(el =>
+                        childElements.some(child => child.id === el.id)
+                            ? { ...el, linkedElementId: parentElement.id, isLinkedChild: true }
+                            : el
+                    );
+                    return { pages: newPages };
+                });
+                get().commitHistory();
+            },
+
+            bringToFront: (id) => {
+                set((state) => ({
+                    pages: state.pages.map(p => ({
+                        ...p,
+                        elements: p.elements.map((el) => el.id === id ? { ...el, zIndex: nextZIndex++ } : el)
+                    }))
+                }));
+                get().commitHistory();
+            },
+
+            sendToBack: (id) => {
+                set((state) => {
+                    const minZ = Math.min(...state.pages.flatMap(p => p.elements).map(el => el.zIndex || 0));
+                    return {
+                        pages: state.pages.map(p => ({
+                            ...p,
+                            elements: p.elements.map((el) => el.id === id ? { ...el, zIndex: minZ - 1 } : el)
+                        }))
+                    };
+                });
+                get().commitHistory();
+            },
+
+            bringForward: (id) => {
+                set((state) => {
+                    const allElements = state.pages.flatMap(p => p.elements);
+                    const el = allElements.find(e => e.id === id);
+                    if (!el) return {};
+                    const above = allElements.filter(e => (e.zIndex || 0) > (el.zIndex || 0));
+                    if (!above.length) return {};
+                    const nextZ = Math.min(...above.map(e => e.zIndex || 0));
+                    return {
+                        pages: state.pages.map(p => ({
+                            ...p,
+                            elements: p.elements.map(e => e.id === id ? { ...e, zIndex: nextZ + 1 } : e)
+                        }))
+                    };
+                });
+                get().commitHistory();
+            },
+            
+            sendBackward: (id) => {
+                set((state) => {
+                    const allElements = state.pages.flatMap(p => p.elements);
+                    const el = allElements.find(e => e.id === id);
+                    if (!el) return {};
+                    const below = allElements.filter(e => (e.zIndex || 0) < (el.zIndex || 0));
+                    if (!below.length) return {};
+                    const prevZ = Math.max(...below.map(e => e.zIndex || 0));
+                    return {
+                        pages: state.pages.map(p => ({
+                            ...p,
+                            elements: p.elements.map(e => e.id === id ? { ...e, zIndex: prevZ - 1 } : e)
+                        }))
+                    };
+                });
+                get().commitHistory();
+            },
+            
+            setZoom: (zoom) => set({ zoom }),
+            setCanvasPosition: (position) => set({ canvasPosition: position }),
+            toggleRulers: () => set((state) => ({ rulers: { ...state.rulers, visible: !state.rulers.visible } })),
+
+            addGuide: (orientation, position) => {
+                const id = `guide-${orientation}-${Date.now()}`;
+                set((state) => ({
+                    guides: orientation === 'horizontal'
+                        ? { ...state.guides, horizontal: [...state.guides.horizontal, { id, y: position }] }
+                        : { ...state.guides, vertical: [...state.guides.vertical, { id, x: position }] },
+                }));
+            },
+
+            updateGuide: (id, updates) => {
+                set((state) => ({
+                    guides: {
+                        horizontal: state.guides.horizontal.map(g => g.id === id ? { ...g, ...updates } : g),
+                        vertical: state.guides.vertical.map(g => g.id === id ? { ...g, ...updates } : g),
+                    },
+                }));
+            },
+
+            deleteGuide: (id) => {
+                set((state) => ({
+                    guides: {
+                        horizontal: state.guides.horizontal.filter(g => g.id !== id),
+                        vertical: state.guides.vertical.filter(g => g.id !== id),
+                    },
+                }));
+            },
+            
+            addPage: () => {
+                set(state => {
+                    const newPage: Page = {
+                        id: `page-${Date.now()}`,
+                        name: `Page ${state.pages.length + 1}`,
+                        elements: [],
+                        pageDetails: state.pages[0]?.pageDetails || defaultPageDetails,
+                    };
+                    return { pages: [...state.pages, newPage], currentPageIndex: state.pages.length };
+                });
+                get().commitHistory();
+            },
+
+            setPages: (pages) => {
+                set({ pages: pages, currentPageIndex: pages.length > 0 ? 0 : -1 });
+                get().commitHistory();
+            },
+            
+            setActivePage: (index) => set({ currentPageIndex: index }),
+
+            deletePage: (index) => {
+                set(state => {
+                    const newPages = state.pages.filter((_, i) => i !== index);
+                    if (newPages.length === 0) {
+                        return { pages: [], currentPageIndex: -1, isNewPageDialogOpen: true };
+                    }
+                    const newIndex = Math.min(Math.max(0, state.currentPageIndex), newPages.length - 1);
+                    return { pages: newPages, currentPageIndex: newIndex };
+                });
+                get().commitHistory();
+            },
+
+            duplicatePage: (index) => {
+                set(state => {
+                    const pageToDuplicate = state.pages[index];
+                    if (!pageToDuplicate) return {};
+                    const newPage: Page = {
+                        ...pageToDuplicate,
+                        id: `page-${Date.now()}`,
+                        name: `${pageToDuplicate.name} (Copy)`,
+                        elements: pageToDuplicate.elements.map(el => ({
+                            ...el,
+                            id: `element-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                        })),
+                    };
+                    const newPages = [...state.pages, newPage];
+                    return { pages: newPages, currentPageIndex: newPages.length - 1 };
+                });
+                get().commitHistory();
+            },
+            
+            movePage: (from, to) => {
+                set(state => {
+                    const newPages = [...state.pages];
+                    const [movedPage] = newPages.splice(from, 1);
+                    newPages.splice(to, 0, movedPage);
+                    return { pages: newPages };
+                });
+                get().commitHistory();
+            },
+
+            setNewPageDialogOpen: (isOpen) => set({ isNewPageDialogOpen: isOpen }),
+
+            updatePageDetails: (updates) => set((state) => {
+                const newPages = [...state.pages];
+                const page = newPages[state.currentPageIndex];
+                if(page) {
+                    page.pageDetails = { ...page.pageDetails, ...updates };
+                }
+                return { pages: newPages };
+            }),
+
+            updatePageBackground: (updates) => {
+                set((state) => {
+                    const newPages = [...state.pages];
+                    const page = newPages[state.currentPageIndex];
+                    if(page) {
+                        page.pageDetails.background = { ...page.pageDetails.background, ...updates };
+                    }
+                    return { pages: newPages };
+                });
+            },
+
+            setBackgroundRepositioning: (isRepositioning) => set({ isBackgroundRepositioning: isRepositioning }),
+
+            updateTemplateSettings: (updates) => set((state) => ({ templateSettings: { ...state.templateSettings, ...updates } })),
+
+            setTemplateEditMode: (isEditMode) => set({ isTemplateEditMode: isEditMode }),
+
+            markAsTemplateField: (elementId, fieldType, fieldName) => {
+                set((state) => ({
+                    pages: state.pages.map(p => ({
+                        ...p,
+                        elements: p.elements.map(el => el.id === elementId ? { ...el, props: { ...el.props, isTemplateField: true, templateFieldType: fieldType, templateFieldName: fieldName } } : el)
+                    })),
+                    templateSettings: { ...state.templateSettings, editableFields: [...new Set([...state.templateSettings.editableFields, elementId])] },
+                }));
+                get().commitHistory();
+            },
+            
+            removeTemplateField: (elementId) => {
+                set((state) => ({
+                    pages: state.pages.map(p => ({
+                        ...p,
+                        elements: p.elements.map(el => el.id === elementId ? { ...el, props: { ...el.props, isTemplateField: false, templateFieldType: undefined, templateFieldName: undefined } } : el)
+                    })),
+                    templateSettings: { ...state.templateSettings, editableFields: state.templateSettings.editableFields.filter(id => id !== elementId) },
+                }));
+                get().commitHistory();
+            },
+
+            commitHistory: () => {
+                set((state) => {
+                    if(state.pages.length === 0) return state; // Don't save history if there are no pages
+                    const newHistory = state.history.slice(0, state.historyIndex + 1);
+                    newHistory.push({ pages: JSON.parse(JSON.stringify(state.pages)), currentPageIndex: state.currentPageIndex });
+                    return { history: newHistory, historyIndex: newHistory.length - 1 };
+                });
+            },
+
+            undo: () => {
+                set((state) => {
+                    if (state.historyIndex <= 0) return {};
+                    const prev = state.history[state.historyIndex - 1];
+                    return {
+                        pages: JSON.parse(JSON.stringify(prev.pages)),
+                        currentPageIndex: prev.currentPageIndex,
+                        historyIndex: state.historyIndex - 1,
+                        selectedElementId: null,
+                        selectedElementIds: []
+                    };
+                });
+            },
+
+            redo: () => {
+                set((state) => {
+                    if (state.historyIndex >= state.history.length - 1) return {};
+                    const next = state.history[state.historyIndex + 1];
+                    return {
+                        pages: JSON.parse(JSON.stringify(next.pages)),
+                        currentPageIndex: next.currentPageIndex,
+                        historyIndex: state.historyIndex + 1,
+                        selectedElementId: null,
+                        selectedElementIds: []
+                    };
+                });
+            },
+            
+            getSnapPosition: (element, newX, newY) => {
+                const state = get();
+                const currentPage = state.pages[state.currentPageIndex];
+                if (!currentPage) return { x: newX, y: newY, snappedToId: null };
+
+                const SNAP = 10;
+                let snappedX = newX, snappedY = newY, snappedToId: string | null = null;
+                const eCX = newX + element.width / 2, eCY = newY + element.height / 2;
+                const eR = newX + element.width, eB = newY + element.height;
+
+                for (const other of currentPage.elements) {
+                    if (other.id === element.id || other.linkedElementId === element.id || element.linkedElementId === other.id) continue;
+                    const oCX = other.x + other.width / 2, oCY = other.y + other.height / 2;
+                    const oR = other.x + other.width, oB = other.y + other.height;
+
+                    if (Math.abs(eCX - oCX) < SNAP) { snappedX = oCX - element.width / 2; snappedToId = other.id; }
+                    if (Math.abs(eCY - oCY) < SNAP) { snappedY = oCY - element.height / 2; snappedToId = other.id; }
+                    if (Math.abs(newX - other.x) < SNAP) { snappedX = other.x; snappedToId = other.id; }
+                    if (Math.abs(eR - oR) < SNAP) { snappedX = oR - element.width; snappedToId = other.id; }
+                    if (Math.abs(newY - other.y) < SNAP) { snappedY = other.y; snappedToId = other.id; }
+                    if (Math.abs(eB - oB) < SNAP) { snappedY = oB - element.height; snappedToId = other.id; }
+                    if (Math.abs(newX - oR) < SNAP) { snappedX = oR; snappedToId = other.id; }
+                    if (Math.abs(eR - other.x) < SNAP) { snappedX = other.x - element.width; snappedToId = other.id; }
+                    if (Math.abs(newY - oB) < SNAP) { snappedY = oB; snappedToId = other.id; }
+                    if (Math.abs(eB - other.y) < SNAP) { snappedY = other.y - element.height; snappedToId = other.id; }
+                }
+                return { x: snappedX, y: snappedY, snappedToId };
+            },
+        }),
+        {
+            name: 'brandsoft-canvas-storage',
+            storage: createJSONStorage(() => localStorage),
+            partialize: (state) =>
+                Object.fromEntries(
+                    Object.entries(state).filter(([key]) => !['history', 'historyIndex'].includes(key))
+                ),
+            onRehydrateStorage: () => (state) => {
+                if (state) {
+                    state.history = [{ pages: state.pages, currentPageIndex: state.currentPageIndex }];
+                    state.historyIndex = 0;
+                    if(state.pages.length === 0){
+                        state.isNewPageDialogOpen = true;
+                    } else {
+                        state.isNewPageDialogOpen = false;
+                    }
+                }
             }
-            const newIndex = Math.min(Math.max(0, state.currentPageIndex), newPages.length - 1);
-            return { pages: newPages, currentPageIndex: newIndex };
-        });
-        get().commitHistory();
-    },
-
-    duplicatePage: (index) => {
-        set(state => {
-            const pageToDuplicate = state.pages[index];
-            if (!pageToDuplicate) return {};
-            const newPage: Page = {
-                ...pageToDuplicate,
-                id: `page-${Date.now()}`,
-                name: `${pageToDuplicate.name} (Copy)`,
-                elements: pageToDuplicate.elements.map(el => ({
-                    ...el,
-                    id: `element-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                })),
-            };
-            const newPages = [...state.pages, newPage];
-            return { pages: newPages, currentPageIndex: newPages.length - 1 };
-        });
-        get().commitHistory();
-    },
-    
-    movePage: (from, to) => {
-        set(state => {
-            const newPages = [...state.pages];
-            const [movedPage] = newPages.splice(from, 1);
-            newPages.splice(to, 0, movedPage);
-            return { pages: newPages };
-        });
-        get().commitHistory();
-    },
-
-    setNewPageDialogOpen: (isOpen) => set({ isNewPageDialogOpen: isOpen }),
-
-    updatePageDetails: (updates) => set((state) => {
-        const newPages = [...state.pages];
-        const page = newPages[state.currentPageIndex];
-        if(page) {
-            page.pageDetails = { ...page.pageDetails, ...updates };
         }
-        return { pages: newPages };
-    }),
-
-    updatePageBackground: (updates) => {
-        set((state) => {
-            const newPages = [...state.pages];
-            const page = newPages[state.currentPageIndex];
-            if(page) {
-                page.pageDetails.background = { ...page.pageDetails.background, ...updates };
-            }
-            return { pages: newPages };
-        });
-    },
-
-    setBackgroundRepositioning: (isRepositioning) => set({ isBackgroundRepositioning: isRepositioning }),
-
-    updateTemplateSettings: (updates) => set((state) => ({ templateSettings: { ...state.templateSettings, ...updates } })),
-
-    setTemplateEditMode: (isEditMode) => set({ isTemplateEditMode: isEditMode }),
-
-    markAsTemplateField: (elementId, fieldType, fieldName) => {
-        set((state) => ({
-            pages: state.pages.map(p => ({
-                ...p,
-                elements: p.elements.map(el => el.id === elementId ? { ...el, props: { ...el.props, isTemplateField: true, templateFieldType: fieldType, templateFieldName: fieldName } } : el)
-            })),
-            templateSettings: { ...state.templateSettings, editableFields: [...new Set([...state.templateSettings.editableFields, elementId])] },
-        }));
-        get().commitHistory();
-    },
-    
-    removeTemplateField: (elementId) => {
-        set((state) => ({
-            pages: state.pages.map(p => ({
-                ...p,
-                elements: p.elements.map(el => el.id === elementId ? { ...el, props: { ...el.props, isTemplateField: false, templateFieldType: undefined, templateFieldName: undefined } } : el)
-            })),
-            templateSettings: { ...state.templateSettings, editableFields: state.templateSettings.editableFields.filter(id => id !== elementId) },
-        }));
-        get().commitHistory();
-    },
-
-    commitHistory: () => {
-        set((state) => {
-            if(state.pages.length === 0) return state; // Don't save history if there are no pages
-            const newHistory = state.history.slice(0, state.historyIndex + 1);
-            newHistory.push({ pages: JSON.parse(JSON.stringify(state.pages)), currentPageIndex: state.currentPageIndex });
-            return { history: newHistory, historyIndex: newHistory.length - 1 };
-        });
-    },
-
-    undo: () => {
-        set((state) => {
-            if (state.historyIndex <= 0) return {};
-            const prev = state.history[state.historyIndex - 1];
-            return {
-                pages: JSON.parse(JSON.stringify(prev.pages)),
-                currentPageIndex: prev.currentPageIndex,
-                historyIndex: state.historyIndex - 1,
-                selectedElementId: null,
-                selectedElementIds: []
-            };
-        });
-    },
-
-    redo: () => {
-        set((state) => {
-            if (state.historyIndex >= state.history.length - 1) return {};
-            const next = state.history[state.historyIndex + 1];
-            return {
-                pages: JSON.parse(JSON.stringify(next.pages)),
-                currentPageIndex: next.currentPageIndex,
-                historyIndex: state.historyIndex + 1,
-                selectedElementId: null,
-                selectedElementIds: []
-            };
-        });
-    },
-    
-    getSnapPosition: (element, newX, newY) => {
-        const state = get();
-        const currentPage = state.pages[state.currentPageIndex];
-        if (!currentPage) return { x: newX, y: newY, snappedToId: null };
-
-        const SNAP = 10;
-        let snappedX = newX, snappedY = newY, snappedToId: string | null = null;
-        const eCX = newX + element.width / 2, eCY = newY + element.height / 2;
-        const eR = newX + element.width, eB = newY + element.height;
-
-        for (const other of currentPage.elements) {
-            if (other.id === element.id || other.linkedElementId === element.id || element.linkedElementId === other.id) continue;
-            const oCX = other.x + other.width / 2, oCY = other.y + other.height / 2;
-            const oR = other.x + other.width, oB = other.y + other.height;
-
-            if (Math.abs(eCX - oCX) < SNAP) { snappedX = oCX - element.width / 2; snappedToId = other.id; }
-            if (Math.abs(eCY - oCY) < SNAP) { snappedY = oCY - element.height / 2; snappedToId = other.id; }
-            if (Math.abs(newX - other.x) < SNAP) { snappedX = other.x; snappedToId = other.id; }
-            if (Math.abs(eR - oR) < SNAP) { snappedX = oR - element.width; snappedToId = other.id; }
-            if (Math.abs(newY - other.y) < SNAP) { snappedY = other.y; snappedToId = other.id; }
-            if (Math.abs(eB - oB) < SNAP) { snappedY = oB - element.height; snappedToId = other.id; }
-            if (Math.abs(newX - oR) < SNAP) { snappedX = oR; snappedToId = other.id; }
-            if (Math.abs(eR - other.x) < SNAP) { snappedX = other.x - element.width; snappedToId = other.id; }
-            if (Math.abs(newY - oB) < SNAP) { snappedY = oB; snappedToId = other.id; }
-            if (Math.abs(eB - other.y) < SNAP) { snappedY = other.y - element.height; snappedToId = other.id; }
-        }
-        return { x: snappedX, y: snappedY, snappedToId };
-    },
-}));
+    )
+);
 
 export { getBackgroundCSS };

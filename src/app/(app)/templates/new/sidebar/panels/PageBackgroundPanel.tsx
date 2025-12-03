@@ -245,8 +245,6 @@ export const PageBackgroundPanel = () => {
                                     backgroundImage: `url(${bg.image})`,
                                     backgroundSize: 'cover',
                                     backgroundPosition: 'center',
-                                    opacity: bg.opacity,
-                                    filter: `blur(${bg.blur}px) grayscale(${bg.grayscale}%) brightness(${bg.brightness}%) contrast(${bg.contrast}%) saturate(${bg.saturate}%)`,
                                 }}
                             />
 
@@ -291,26 +289,6 @@ export const PageBackgroundPanel = () => {
                                 </Select>
                             </div>
 
-                            <div className="space-y-1.5">
-                                <Label className="text-xs">Position</Label>
-                                <Select
-                                    value={bg.objectPosition}
-                                    onValueChange={(v) => {
-                                        updatePageBackground({ objectPosition: v });
-                                        commitHistory();
-                                    }}
-                                >
-                                    <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="center center">Center</SelectItem>
-                                        <SelectItem value="top center">Top</SelectItem>
-                                        <SelectItem value="bottom center">Bottom</SelectItem>
-                                        <SelectItem value="left center">Left</SelectItem>
-                                        <SelectItem value="right center">Right</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
                             <Button variant="outline" size="sm" className="w-full" onClick={resetPosition}>
                                 <RotateCcw className="h-3 w-3 mr-1" />
                                 Reset Position & Scale
@@ -328,25 +306,13 @@ export const PageBackgroundPanel = () => {
                                     Reset
                                 </Button>
                             </div>
-
-                            <SliderWithLabel
-                                label="Opacity"
-                                value={Math.round(bg.opacity * 100)}
-                                min={0}
-                                max={100}
-                                unit="%"
-                                onChange={(v) => updatePageBackground({ opacity: v / 100 })}
-                                onCommit={commitHistory}
-                            />
-                            <SliderWithLabel
-                                label="Blur"
-                                value={bg.blur}
-                                min={0}
-                                max={20}
-                                unit="px"
-                                onChange={(v) => updatePageBackground({ blur: v })}
-                                onCommit={commitHistory}
-                            />
+                            
+                            <SliderWithLabel label="Opacity" value={Math.round(bg.opacity * 100)} min={0} max={100} unit="%" onChange={(v) => updatePageBackground({ opacity: v / 100 })} onCommit={commitHistory} />
+                            <SliderWithLabel label="Blur" value={bg.blur} min={0} max={20} unit="px" onChange={(v) => updatePageBackground({ blur: v })} onCommit={commitHistory} />
+                            <SliderWithLabel label="Grayscale" value={bg.grayscale} min={0} max={100} unit="%" onChange={(v) => updatePageBackground({ grayscale: v })} onCommit={commitHistory} />
+                            <SliderWithLabel label="Brightness" value={bg.brightness} min={0} max={200} unit="%" onChange={(v) => updatePageBackground({ brightness: v })} onCommit={commitHistory} />
+                            <SliderWithLabel label="Contrast" value={bg.contrast} min={0} max={200} unit="%" onChange={(v) => updatePageBackground({ contrast: v })} onCommit={commitHistory} />
+                            <SliderWithLabel label="Saturate" value={bg.saturate} min={0} max={200} unit="%" onChange={(v) => updatePageBackground({ saturate: v })} onCommit={commitHistory} />
                         </>
                     ) : (
                         <Button
