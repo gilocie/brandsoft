@@ -4,6 +4,7 @@
 import React from 'react';
 import NextImage from 'next/image';
 import backgroundImages from '@/lib/background-images';
+import { cn } from '@/lib/utils';
 
 const handleDragStart = (e: React.DragEvent, data: any) => {
     e.dataTransfer.setData('application/json', JSON.stringify(data));
@@ -24,12 +25,14 @@ const ImageItem = ({ image }: { image: { name: string; src: any } }) => {
             draggable
             onDragStart={(e) => handleDragStart(e, imageData)}
         >
-             <div className="w-full h-full relative" style={{ padding: '3px' }}>
-                <NextImage 
-                    src={image.src} 
-                    alt={image.name} 
-                    layout="fill"
-                    objectFit="cover"
+             <div className="w-full h-full relative p-[3px]">
+                <NextImage
+                    src={image.src}
+                    alt={image.name}
+                    layout="responsive"
+                    width={image.src.width}
+                    height={image.src.height}
+                    objectFit="contain"
                     unoptimized
                 />
             </div>
@@ -49,7 +52,7 @@ export const ImagesPanel = () => {
     return (
         <div className="p-4">
             <h3 className="text-sm font-medium text-gray-500 mb-4">Backgrounds</h3>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-3 gap-2">
                 {backgroundImages.map((image, index) => (
                     <ImageItem key={`${image.name}-${index}`} image={image} />
                 ))}
