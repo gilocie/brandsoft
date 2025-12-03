@@ -53,7 +53,8 @@ const MultiSelectActionsPanel = () => {
 };
 
 const ElementPropertiesContent = () => {
-    const { selectedElementId, selectedElementIds, elements } = useCanvasStore();
+    const { selectedElementId, selectedElementIds, pages, currentPageIndex } = useCanvasStore();
+    const elements = pages[currentPageIndex]?.elements || [];
     
     // Multi-select mode
     if (selectedElementIds.length > 1) {
@@ -134,8 +135,10 @@ interface RightSidebarProps {
 }
 
 const RightSidebar = ({ onCollapse, position, setPosition }: RightSidebarProps) => {
-    const { selectedElementId, selectedElementIds, elements } = useCanvasStore();
+    const { selectedElementId, selectedElementIds, pages, currentPageIndex } = useCanvasStore();
+    const elements = pages[currentPageIndex]?.elements || [];
     const selectedElement = elements.find(el => el.id === selectedElementId);
+
 
     const dragStartPos = React.useRef({ x: 0, y: 0 });
     const panelStartPos = React.useRef({ x: 0, y: 0 });
