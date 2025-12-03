@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -43,8 +42,9 @@ const Header = ({ onSaveTemplate }: HeaderProps) => {
                          <Button variant="ghost" size="sm" className="text-white hover:bg-gray-800 hover:text-white"><File className="mr-2 h-4 w-4" /> File</Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-56 bg-black text-white border-gray-700">
-                        <DropdownMenuItem onClick={onSaveTemplate}>Save</DropdownMenuItem>
+                        <DropdownMenuItem>Save</DropdownMenuItem>
                         <DropdownMenuItem>Save As</DropdownMenuItem>
+                        <DropdownMenuItem onClick={onSaveTemplate}>Save As Template</DropdownMenuItem>
                         <DropdownMenuItem>Export</DropdownMenuItem>
                         <DropdownMenuSeparator className="bg-gray-700"/>
                         <DropdownMenuCheckboxItem checked={rulers.visible} onCheckedChange={toggleRulers}>
@@ -74,9 +74,9 @@ const Header = ({ onSaveTemplate }: HeaderProps) => {
                 </DropdownMenu>
             </div>
             <div className="flex-1 text-center">
-                 <Button variant="ghost" size="sm" className="text-white hover:bg-gray-800 hover:text-white" onClick={onSaveTemplate}>
-                    <Save className="mr-2 h-4 w-4" /> Save As Template
-                </Button>
+                 <span className="text-xs text-gray-400 flex items-center gap-1.5 justify-center">
+                    <Check className="h-3 w-3" /> All changes saved
+                </span>
             </div>
             <div className="flex items-center gap-2">
                  <Button className="bg-primary hover:bg-primary/90 text-primary-foreground"><Share className="mr-2 h-4 w-4" /> Share</Button>
