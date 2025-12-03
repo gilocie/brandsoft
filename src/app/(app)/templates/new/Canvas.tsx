@@ -292,13 +292,20 @@ const Canvas = ({ onPageDoubleClick }: CanvasProps) => {
             return;
         }
         if (e.ctrlKey || e.metaKey || e.altKey) {
-            const rect = mainCanvasRef.current!.getBoundingClientRect();
-            const mouseX = e.clientX - rect.left, mouseY = e.clientY - rect.top;
-            const factor = 1 - e.deltaY * 0.001;
-            const newZoom = Math.max(0.1, Math.min(5, zoom * factor));
-            setZoom(newZoom);
-            setCanvasPosition({ x: mouseX - (mouseX - canvasPosition.x) * (newZoom / zoom), y: mouseY - (mouseY - canvasPosition.y) * (newZoom / zoom) });
+            // Zooming
+            if (e.altKey) {
+                const rect = mainCanvasRef.current!.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left, mouseY = e.clientY - rect.top;
+                const factor = 1 - e.deltaY * 0.001;
+                const newZoom = Math.max(0.1, Math.min(5, zoom * factor));
+                setZoom(newZoom);
+                setCanvasPosition({ x: mouseX - (mouseX - canvasPosition.x) * (newZoom / zoom), y: mouseY - (mouseY - canvasPosition.y) * (newZoom / zoom) });
+            } else {
+                 // Horizontal scroll
+                setCanvasPosition({ x: canvasPosition.x - e.deltaY, y: canvasPosition.y });
+            }
         } else {
+            // Vertical scroll / pan
             setCanvasPosition({ x: canvasPosition.x - e.deltaX, y: canvasPosition.y - e.deltaY });
         }
     };
@@ -434,3 +441,5 @@ const Canvas = ({ onPageDoubleClick }: CanvasProps) => {
 };
 
 export default Canvas;
+
+    
