@@ -277,9 +277,10 @@ const getBackgroundCSS = (pageDetails: PageDetails) => {
         };
     }
     if (pageDetails.backgroundType === 'gradient') {
-        const sortedStops = [...pageDetails.gradientStops].sort((a, b) => a.position - b.position);
+        const stops = pageDetails.gradientStops || [{ color: '#FFFFFF', position: 0 }, { color: '#000000', position: 100 }];
+        const sortedStops = [...stops].sort((a, b) => a.position - b.position);
         const colorStops = sortedStops.map(s => `${s.color} ${s.position}%`).join(', ');
-        return { background: `linear-gradient(${pageDetails.gradientAngle}deg, ${colorStops})` };
+        return { background: `linear-gradient(${pageDetails.gradientAngle || 90}deg, ${colorStops})` };
     }
     return { background: pageDetails.backgroundColor };
 };

@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -131,25 +132,25 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
 
     const handlePresetSelect = (preset: Partial<CustomPreset>) => {
         setActivePreset(preset.name || null);
-        const { ppi, colorMode, bitDepth, backgroundType, backgroundColor, gradientStart, gradientEnd, gradientAngle } = form.getValues();
         
-        const newWidth = preset.width || 8.5;
-        const newHeight = preset.height || 11;
+        const currentValues = form.getValues();
+        const newWidth = preset.width || currentValues.width;
+        const newHeight = preset.height || currentValues.height;
         
         form.reset({
-            name: preset.name || 'Untitled-1',
+            name: preset.name || currentValues.name,
             width: newWidth,
             height: newHeight,
-            unit: preset.unit || 'in',
+            unit: preset.unit || currentValues.unit,
             orientation: newHeight > newWidth ? 'portrait' : 'landscape',
-            ppi: preset.ppi || ppi,
-            colorMode: preset.colorMode || colorMode,
-            bitDepth: preset.bitDepth || bitDepth,
-            backgroundType: preset.backgroundType || backgroundType,
-            backgroundColor: preset.backgroundColor || backgroundColor,
-            gradientStart: preset.gradientStart || gradientStart,
-            gradientEnd: preset.gradientEnd || gradientEnd,
-            gradientAngle: preset.gradientAngle || gradientAngle,
+            ppi: preset.ppi || currentValues.ppi,
+            colorMode: preset.colorMode || currentValues.colorMode,
+            bitDepth: preset.bitDepth || currentValues.bitDepth,
+            backgroundType: preset.backgroundType || currentValues.backgroundType,
+            backgroundColor: preset.backgroundColor || currentValues.backgroundColor,
+            gradientStart: preset.gradientStart || currentValues.gradientStart,
+            gradientEnd: preset.gradientEnd || currentValues.gradientEnd,
+            gradientAngle: preset.gradientAngle || currentValues.gradientAngle,
         });
     };
     
@@ -205,15 +206,6 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
         });
     };
 
-    const getBackgroundValue = (data: NewPageFormData) => {
-        if (data.backgroundType === 'transparent') {
-            return 'transparent';
-        } else if (data.backgroundType === 'gradient') {
-            return `linear-gradient(${data.gradientAngle}deg, ${data.gradientStart}, ${data.gradientEnd})`;
-        }
-        return data.backgroundColor;
-    };
-
     const onSubmit = (data: NewPageFormData) => {
         const newPageDetails: PageDetails = {
             width: data.width,
@@ -224,10 +216,12 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
             colorMode: data.colorMode,
             bitDepth: data.bitDepth,
             backgroundType: data.backgroundType,
-            backgroundColor: getBackgroundValue(data),
-            gradientStart: data.gradientStart,
-            gradientEnd: data.gradientEnd,
-            gradientAngle: data.gradientAngle,
+            backgroundColor: data.backgroundColor,
+            gradientAngle: data.gradientAngle || 90,
+            gradientStops: [
+                { color: data.gradientStart || '#FFFFFF', position: 0 },
+                { color: data.gradientEnd || '#000000', position: 100 },
+            ],
             background: {
                 image: undefined,
                 opacity: 1, blur: 0, grayscale: 0, brightness: 100, contrast: 100, saturate: 100,
