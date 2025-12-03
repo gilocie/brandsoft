@@ -1,4 +1,5 @@
 
+
 export * from './ActionsPanel';
 export * from './PositionPanel';
 export * from './OpacityPanel';
@@ -13,3 +14,4 @@ export * from './PageDimensionsPanel';
 export * from './PageBackgroundPanel';
 export * from './TemplatePanel';
 export * from './shared/GradientSlider';
+export * from './ImagesPanel';
