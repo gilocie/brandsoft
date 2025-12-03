@@ -1,8 +1,11 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useCanvasStore } from '@/stores/canvas-store';
 import { Loader2 } from 'lucide-react';
+import certificateImageData from '@/lib/certificate-images';
+import invoiceImageData from '@/lib/invoice-images';
 
 const handleDragStart = (e: React.DragEvent, data: any) => {
     e.dataTransfer.setData('application/json', JSON.stringify(data));
@@ -40,40 +43,15 @@ export const ImagesPanel = () => {
     const currentCategory = templateSettings?.category || 'invoice';
 
     useEffect(() => {
-        let isMounted = true;
-        
-        const loadImages = async () => {
-            setIsLoading(true);
-            try {
-                let imageModule;
-                if (currentCategory === 'invoice' || currentCategory === 'quotation') {
-                    imageModule = await import('@/lib/invoice-images');
-                } else if (currentCategory === 'certificate') {
-                    imageModule = await import('@/lib/certificate-images');
-                } else {
-                     if (isMounted) setImages([]);
-                     return;
-                }
-                
-                if (isMounted) {
-                    setImages(imageModule.default);
-                }
-
-            } catch (error) {
-                console.error("Could not load images for category:", currentCategory, error);
-                 if (isMounted) {
-                    setImages([]);
-                 }
-            } finally {
-                if (isMounted) {
-                    setIsLoading(false);
-                }
-            }
-        };
-
-        loadImages();
-        
-        return () => { isMounted = false; };
+        setIsLoading(true);
+        if (currentCategory === 'invoice' || currentCategory === 'quotation') {
+            setImages(invoiceImageData);
+        } else if (currentCategory === 'certificate') {
+            setImages(certificateImageData);
+        } else {
+            setImages([]);
+        }
+        setIsLoading(false);
     }, [currentCategory]);
 
 
