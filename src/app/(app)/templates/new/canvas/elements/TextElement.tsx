@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef } from 'react';
-import { useCanvasStore, type CanvasElement } from '@/stores/canvas-store';
+import { useCanvasStore, type CanvasElement, getLiveValue } from '@/stores/canvas-store';
 import { ElementWrapper } from './ElementWrapper';
 
-interface TextElementProps { 
-    element: CanvasElement; 
-    isSelected: boolean; 
+interface TextElementProps {
+    element: CanvasElement;
+    isSelected: boolean;
 }
 
 export const TextElement = ({ element, isSelected }: TextElementProps) => {
@@ -14,6 +14,8 @@ export const TextElement = ({ element, isSelected }: TextElementProps) => {
     const prevFontSizeRef = useRef(element.props.fontSize || 14);
     const baseFontSize = element.props.fontSize || 14;
     const padding = 8;
+
+    const textToShow = element.props.dataField ? getLiveValue(element.props.dataField) : element.props.text;
 
     // Calculate display font size based on element dimensions
     const getDisplayFontSize = useCallback(() => {
@@ -34,7 +36,7 @@ export const TextElement = ({ element, isSelected }: TextElementProps) => {
     // Calculate minimum size based on text content
     const calculateMinSize = useCallback(() => {
         const fontSize = baseFontSize;
-        const text = element.props.text || '';
+        const text = textToShow || '';
         const words = text.split(/\s+/);
         let maxWordWidth = 0;
         words.forEach(w => {
@@ -50,7 +52,7 @@ export const TextElement = ({ element, isSelected }: TextElementProps) => {
             minWidth: Math.max(40, maxWordWidth + padding * 2),
             minHeight: Math.max(30, lineHeight * lines + padding * 2),
         };
-    }, [baseFontSize, element.props.text, element.props.fontFamily, element.props.fontWeight, element.props.lineHeight]);
+    }, [baseFontSize, textToShow, element.props.fontFamily, element.props.fontWeight, element.props.lineHeight]);
 
     // Update element size when font size changes via slider
     useEffect(() => {
@@ -59,7 +61,7 @@ export const TextElement = ({ element, isSelected }: TextElementProps) => {
 
         if (prevFontSize !== newFontSize) {
             const scale = newFontSize / prevFontSize;
-            
+
             // Scale the bounding box proportionally
             const newWidth = Math.max(40, element.width * scale);
             const newHeight = Math.max(30, element.height * scale);
@@ -103,7 +105,7 @@ export const TextElement = ({ element, isSelected }: TextElementProps) => {
                     pointerEvents: 'none',
                 }}
             >
-                {element.props.text}
+                {textToShow}
             </div>
         </ElementWrapper>
     );

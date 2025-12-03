@@ -2,6 +2,7 @@
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { type Customer, type Invoice } from '@/hooks/use-brandsoft';
 
 // ============ TYPES ============
 export interface CanvasElementProps {
@@ -14,6 +15,7 @@ export interface CanvasElementProps {
     textAlign?: 'left' | 'center' | 'right';
     lineHeight?: number;
     letterSpacing?: number;
+    dataField?: string; // e.g. '{{customer.name}}'
 
     // Image
     src?: string;
@@ -207,7 +209,10 @@ interface CanvasState {
     isTemplateEditMode: boolean;
     isNewPageDialogOpen: boolean;
     activePanel: string | null;
+    liveInvoice: Invoice | null;
+    liveCustomer: Customer | null;
     setActivePanel: (panel: string | null) => void;
+    setLiveDataContext: (data: { invoice: Invoice | null; customer: Customer | null; }) => void;
 
     // Element
     addElement: (element: Omit<CanvasElement, 'id'>, options?: { select?: boolean }) => void;
@@ -249,7 +254,7 @@ interface CanvasState {
     addGuide: (orientation: 'horizontal' | 'vertical', position: number) => void;
     updateGuide: (id: string, updates: Partial<Guide>) => void;
     deleteGuide: (id: string) => void;
-    
+
     // Multi-page
     addPage: () => void;
     setPages: (pages: Page[]) => void;
@@ -284,11 +289,11 @@ let nextZIndex = 1;
 
 export const getBackgroundStyle = (props: CanvasElementProps | PageDetails) => {
     const fillType = 'fillType' in props ? props.fillType : ('backgroundType' in props ? props.backgroundType : 'solid');
-    
+
     if (fillType === 'transparent') {
         return {
             backgroundImage: `
-                linear-gradient(45deg, #ccc 25%, transparent 25%), 
+                linear-gradient(45deg, #ccc 25%, transparent 25%),
                 linear-gradient(135deg, #ccc 25%, transparent 25%),
                 linear-gradient(45deg, transparent 75%, #ccc 75%),
                 linear-gradient(135deg, transparent 75%, #ccc 75%)`,
@@ -312,6 +317,23 @@ export const getBackgroundCSS = (pageDetails: PageDetails) => {
     return getBackgroundStyle(pageDetails);
 };
 
+export const getLiveValue = (dataField: string) => {
+    const { liveInvoice, liveCustomer } = useCanvasStore.getState();
+    if (!liveInvoice || !liveCustomer || !dataField) return dataField;
+
+    let value: any = { invoice: liveInvoice, customer: liveCustomer };
+    const keys = dataField.replace(/{{|}}/g, '').trim().split('.');
+
+    for (const key of keys) {
+        if (value && typeof value === 'object' && key in value) {
+            value = value[key];
+        } else {
+            return dataField; // Return original placeholder if path is invalid
+        }
+    }
+    return String(value);
+};
+
 
 export const useCanvasStore = create<CanvasState>()(
     persist(
@@ -332,23 +354,26 @@ export const useCanvasStore = create<CanvasState>()(
             isTemplateEditMode: false,
             isNewPageDialogOpen: true,
             activePanel: null,
+            liveInvoice: null,
+            liveCustomer: null,
             setActivePanel: (panel) => set((state) => ({ activePanel: state.activePanel === panel ? null : panel })),
+            setLiveDataContext: (data) => set(data),
 
             addElement: (element, options) => {
                 const newElement = {
                     ...element,
                     id: `element-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                     zIndex: nextZIndex++,
-                    props: { 
-                        opacity: 1, 
-                        fillOpacity: 1, 
+                    props: {
+                        opacity: 1,
+                        fillOpacity: 1,
                         fillType: 'solid' as 'solid' | 'gradient' | 'transparent',
-                        gradientAngle: 90, 
+                        gradientAngle: 90,
                         gradientStops: [
                             { color: '#cccccc', position: 0 },
                             { color: '#333333', position: 100 },
                         ],
-                        ...element.props 
+                        ...element.props
                     },
                 };
                 set((state) => {
@@ -396,7 +421,7 @@ export const useCanvasStore = create<CanvasState>()(
                     }),
                 }));
             },
-            
+
             updateElementProps: (id, props) => {
                 set((state) => ({
                     pages: state.pages.map(p => ({
@@ -413,11 +438,11 @@ export const useCanvasStore = create<CanvasState>()(
 
                     const element = state.pages[pageIndex].elements.find(el => el.id === id);
                     let elementsToDelete = [id];
-                    
+
                     if (element?.type === 'group' && element.childIds) {
                         elementsToDelete = [...elementsToDelete, ...element.childIds];
                     }
-                    
+
                     const newPages = state.pages.map((p, i) => {
                         if (i !== pageIndex) return p;
                         return {
@@ -461,7 +486,7 @@ export const useCanvasStore = create<CanvasState>()(
                         templateFieldName: undefined,
                     },
                 };
-                
+
                 set((state) => {
                     const newPages = [...state.pages];
                     newPages[pageIndex].elements.push(newElement);
@@ -473,12 +498,12 @@ export const useCanvasStore = create<CanvasState>()(
                 });
                 get().commitHistory();
             },
-            
+
             selectElement: (id) => set({
                 selectedElementId: id,
                 selectedElementIds: id ? [id] : [],
             }),
-            
+
             moveElement: (id, direction, amount = 1) => {
                 const pageIndex = get().pages.findIndex(p => p.elements.some(e => e.id === id));
                 if (pageIndex === -1) return;
@@ -507,7 +532,7 @@ export const useCanvasStore = create<CanvasState>()(
                     selectedElementId: newIds.length === 1 ? newIds[0] : (newIds.length > 0 ? newIds[0] : null),
                 };
             }),
-            
+
             removeFromSelection: (id) => set((state) => {
                 const newIds = state.selectedElementIds.filter(i => i !== id);
                 return {
@@ -517,7 +542,7 @@ export const useCanvasStore = create<CanvasState>()(
             }),
 
             clearSelection: () => set({ selectedElementId: null, selectedElementIds: [] }),
-            
+
             setSelectionBox: (box) => set({ selectionBox: box }),
 
             getElementsInSelectionBox: (box) => {
@@ -542,7 +567,7 @@ export const useCanvasStore = create<CanvasState>()(
 
                 const currentPage = pages[currentPageIndex];
                 const selectedElements = currentPage.elements.filter(el => selectedElementIds.includes(el.id));
-                
+
                 const minX = Math.min(...selectedElements.map(el => el.x));
                 const minY = Math.min(...selectedElements.map(el => el.y));
                 const maxX = Math.max(...selectedElements.map(el => el.x + el.width));
@@ -580,7 +605,7 @@ export const useCanvasStore = create<CanvasState>()(
                     page.elements = page.elements
                         .filter(el => el.id !== groupId)
                         .map(el => group.childIds!.includes(el.id) ? { ...el, groupId: null, x: el.x + group.x, y: el.y + group.y } : el);
-                    
+
                     return {
                         pages: newPages,
                         selectedElementId: null,
@@ -589,7 +614,7 @@ export const useCanvasStore = create<CanvasState>()(
                 });
                 get().commitHistory();
             },
-            
+
             linkElements: (parentId, childId) => {
                 set((state) => ({
                     pages: state.pages.map(p => ({
@@ -613,7 +638,7 @@ export const useCanvasStore = create<CanvasState>()(
                 }));
                 get().commitHistory();
             },
-            
+
             getLinkedElements: (elementId) => get().pages.flatMap(p => p.elements.filter(el => el.linkedElementId === elementId)),
 
             linkSelectedElements: () => {
@@ -678,7 +703,7 @@ export const useCanvasStore = create<CanvasState>()(
                 });
                 get().commitHistory();
             },
-            
+
             sendBackward: (id) => {
                 set((state) => {
                     const allElements = state.pages.flatMap(p => p.elements);
@@ -696,7 +721,7 @@ export const useCanvasStore = create<CanvasState>()(
                 });
                 get().commitHistory();
             },
-            
+
             setZoom: (zoom) => set({ zoom }),
             setCanvasPosition: (position) => set({ canvasPosition: position }),
             toggleRulers: () => set((state) => ({ rulers: { ...state.rulers, visible: !state.rulers.visible } })),
@@ -727,7 +752,7 @@ export const useCanvasStore = create<CanvasState>()(
                     },
                 }));
             },
-            
+
             addPage: () => {
                 set(state => {
                     const newPage: Page = {
@@ -745,7 +770,7 @@ export const useCanvasStore = create<CanvasState>()(
                 set({ pages: pages, currentPageIndex: pages.length > 0 ? 0 : -1 });
                 get().commitHistory();
             },
-            
+
             setActivePage: (index) => set({ currentPageIndex: index }),
 
             deletePage: (index) => {
@@ -778,7 +803,7 @@ export const useCanvasStore = create<CanvasState>()(
                 });
                 get().commitHistory();
             },
-            
+
             movePage: (from, to) => {
                 set(state => {
                     const newPages = [...state.pages];
@@ -827,7 +852,7 @@ export const useCanvasStore = create<CanvasState>()(
                 }));
                 get().commitHistory();
             },
-            
+
             removeTemplateField: (elementId) => {
                 set((state) => ({
                     pages: state.pages.map(p => ({
@@ -875,7 +900,7 @@ export const useCanvasStore = create<CanvasState>()(
                     };
                 });
             },
-            
+
             getSnapPosition: (element, newX, newY) => {
                 const state = get();
                 const currentPage = state.pages[state.currentPageIndex];
@@ -910,7 +935,7 @@ export const useCanvasStore = create<CanvasState>()(
             storage: createJSONStorage(() => localStorage),
             partialize: (state) =>
                 Object.fromEntries(
-                    Object.entries(state).filter(([key]) => !['history', 'historyIndex', 'activePanel'].includes(key))
+                    Object.entries(state).filter(([key]) => !['history', 'historyIndex', 'activePanel', 'liveInvoice', 'liveCustomer'].includes(key))
                 ),
             onRehydrateStorage: () => (state) => {
                 if (state) {
@@ -926,6 +951,3 @@ export const useCanvasStore = create<CanvasState>()(
         }
     )
 );
-
-
-

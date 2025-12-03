@@ -1,27 +1,29 @@
+
 'use client';
 
 import React from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { 
+import {
     RectangleHorizontal, Circle, Triangle, Star, Square, Heart, Gem, Hexagon, ArrowRight,
-    Building2, Image as ImageIcon, MapPin, Phone, Mail, Globe, User, Receipt, CalendarDays, Hash, Type, X, LayoutTemplate
+    Building2, Image as ImageIcon, MapPin, Phone, Mail, Globe, User, Receipt, CalendarDays, Hash, Type, X, LayoutTemplate, FileJson
 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
-import { useBrandsoft, type BrandsoftTemplate } from '@/hooks/use-brandsoft';
-import { useCanvasStore } from '@/stores/canvas-store';
+import { useBrandsoft, type BrandsoftTemplate, type Invoice, type Customer } from '@/hooks/use-brandsoft';
+import { useCanvasStore, getLiveValue } from '@/stores/canvas-store';
 import { TemplatePreview } from '@/app/(app)/templates/page';
 import { ImagesPanel } from './sidebar/panels/ImagesPanel';
-
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 
 const handleDragStart = (e: React.DragEvent, data: any) => {
     e.dataTransfer.setData('application/json', JSON.stringify(data));
 };
 
 const ShapeItem = ({ icon: Icon, shapeData }: { icon: React.ElementType, shapeData: any }) => (
-    <div 
+    <div
         className="h-24 bg-gray-200 rounded-md flex items-center justify-center cursor-grab hover:bg-gray-300 transition-colors"
         draggable
         onDragStart={(e) => handleDragStart(e, shapeData)}
@@ -65,10 +67,10 @@ const invoiceFields = [
         fields: [
             { name: 'Business Name', value: '{{brand.businessName}}', icon: Building2 },
             { name: 'Business Logo', value: '{{brand.logo}}', type: 'image', icon: ImageIcon },
-            { name: 'Business Address', value: '{{brand.address}}', icon: MapPin },
-            { name: 'Business Phone', value: '{{brand.phone}}', icon: Phone },
-            { name: 'Business Email', value: '{{brand.email}}', icon: Mail },
-            { name: 'Business Website', value: '{{brand.website}}', icon: Globe },
+            { name: 'Business Address', value: '{{profile.address}}', icon: MapPin },
+            { name: 'Business Phone', value: '{{profile.phone}}', icon: Phone },
+            { name: 'Business Email', value: '{{profile.email}}', icon: Mail },
+            { name: 'Business Website', value: '{{profile.website}}', icon: Globe },
         ]
     },
     {
@@ -84,10 +86,10 @@ const invoiceFields = [
     {
         category: 'Invoice',
         fields: [
-            { name: 'Invoice ID', value: '{{invoice.id}}', icon: Hash },
+            { name: 'Invoice ID', value: '{{invoice.invoiceId}}', icon: Hash },
             { name: 'Invoice Date', value: '{{invoice.date}}', icon: CalendarDays },
             { name: 'Due Date', value: '{{invoice.dueDate}}', icon: CalendarDays },
-            { name: 'Total Amount', value: '{{invoice.total}}', icon: Receipt },
+            { name: 'Total Amount', value: '{{invoice.amount}}', icon: Receipt },
             { name: 'Subtotal', value: '{{invoice.subtotal}}', icon: Receipt },
             { name: 'Tax Amount', value: '{{invoice.tax}}', icon: Receipt },
             { name: 'Discount Amount', value: '{{invoice.discount}}', icon: Receipt },
@@ -97,23 +99,40 @@ const invoiceFields = [
     {
         category: 'Line Items',
         fields: [
-             { name: 'Items Table', value: '{{invoice.items}}', type: 'table', icon: Building2 },
+             { name: 'Items Table', value: '{{invoice.lineItems}}', type: 'table', icon: Building2 },
         ]
     }
 ];
 
 const FieldsPanel = () => {
-    const fieldData = (value: string) => ({
-        type: 'text',
-        width: 150, height: 20, rotation: 0,
-        props: { text: value, fontSize: 14, color: '#000000' }
-    });
+    const { config } = useBrandsoft();
+    const { liveInvoice, setLiveDataContext } = useCanvasStore();
+
+    const handleDataChange = (invoiceId: string) => {
+        if (!config) return;
+        const invoice = config.invoices.find(inv => inv.invoiceId === invoiceId);
+        if (invoice) {
+            const customer = config.customers.find(c => c.name === invoice.customer) || null;
+            setLiveDataContext({ invoice, customer });
+        } else {
+            setLiveDataContext({ invoice: null, customer: null });
+        }
+    };
+    
+    const fieldData = (value: string) => {
+        const liveValue = getLiveValue(value);
+        return {
+            type: 'text',
+            width: 150, height: 20, rotation: 0,
+            props: { text: liveValue, fontSize: 14, color: '#000000', dataField: value }
+        }
+    };
 
     const FieldIcon = ({ field }: { field: typeof invoiceFields[0]['fields'][0] }) => (
         <TooltipProvider>
             <Tooltip>
                 <TooltipTrigger asChild>
-                    <div 
+                    <div
                         className="h-16 bg-gray-200 rounded-md flex items-center justify-center cursor-grab hover:bg-gray-300 transition-colors"
                         draggable
                         onDragStart={(e) => handleDragStart(e, fieldData(field.value))}
@@ -123,6 +142,7 @@ const FieldsPanel = () => {
                 </TooltipTrigger>
                 <TooltipContent>
                     <p>{field.name}</p>
+                    <p className="text-xs text-muted-foreground">{getLiveValue(field.value)}</p>
                 </TooltipContent>
             </Tooltip>
         </TooltipProvider>
@@ -130,6 +150,23 @@ const FieldsPanel = () => {
 
     return (
         <div className="p-2">
+             <div className="p-2 space-y-2 border-b mb-2">
+                <Label className="text-xs font-medium flex items-center gap-2"><FileJson className="h-4 w-4" /> Live Preview Data</Label>
+                <Select onValueChange={handleDataChange} value={liveInvoice?.invoiceId}>
+                    <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Select an invoice..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="none">None (Show Placeholders)</SelectItem>
+                        {config?.invoices.map(inv => (
+                            <SelectItem key={inv.invoiceId} value={inv.invoiceId}>
+                                {inv.invoiceId}: {inv.customer}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                 <p className="text-xs text-muted-foreground">Select an invoice to see real data on the canvas.</p>
+            </div>
              <Accordion type="multiple" defaultValue={['Business', 'Customer', 'Invoice']} className="w-full">
                 {invoiceFields.map(group => (
                     <AccordionItem value={group.category} key={group.category}>
@@ -243,11 +280,11 @@ const ElementsPanel = ({ activeTool, onClose, position, setPosition }: ElementsP
     };
 
     return (
-        <Card 
-            className="absolute w-64 z-20 h-[70vh] flex flex-col"
+        <Card
+            className="absolute w-80 z-20 h-[70vh] flex flex-col"
             style={{ top: position.y, left: position.x }}
         >
-            <CardHeader 
+            <CardHeader
                 className="p-2 border-b flex flex-row items-center justify-between bg-primary rounded-t-lg text-primary-foreground cursor-grab active:cursor-grabbing"
                 onMouseDown={handleMouseDown}
             >
