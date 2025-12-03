@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -47,11 +48,6 @@ const Header = ({ onSaveTemplate }: HeaderProps) => {
                         <DropdownMenuItem onClick={onSaveTemplate}>Save As Template</DropdownMenuItem>
                         <DropdownMenuItem>Export</DropdownMenuItem>
                         <DropdownMenuSeparator className="bg-gray-700"/>
-                        <DropdownMenuCheckboxItem checked={rulers.visible} onCheckedChange={toggleRulers}>
-                            <Ruler className="mr-2 h-4 w-4" />
-                            <span>Show Rulers</span>
-                             {rulers.visible && <Check className="ml-auto h-4 w-4"/>}
-                        </DropdownMenuCheckboxItem>
                          <DropdownMenuItem>Options</DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
@@ -70,6 +66,18 @@ const Header = ({ onSaveTemplate }: HeaderProps) => {
                             <span>Redo</span>
                             <DropdownMenuShortcut>Ctrl+Shift+Z</DropdownMenuShortcut>
                         </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="text-white hover:bg-gray-800 hover:text-white">View</Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56 bg-black text-white border-gray-700">
+                        <DropdownMenuCheckboxItem checked={rulers.visible} onCheckedChange={toggleRulers}>
+                            <Ruler className="mr-2 h-4 w-4" />
+                            <span>Show Rulers</span>
+                             {rulers.visible && <Check className="ml-auto h-4 w-4"/>}
+                        </DropdownMenuCheckboxItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
             </div>
