@@ -199,7 +199,7 @@ interface CanvasState {
     deleteElement: (id: string) => void;
     duplicateElement: (id: string) => void;
     selectElement: (id: string | null) => void;
-    moveElement: (id: string, direction: 'up' | 'down' | 'left' | 'right', amount?: number) => void;
+    moveElement: (id: string, direction: 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight', amount?: number) => void;
 
     // Multi-select
     selectMultipleElements: (ids: string[]) => void;
@@ -266,6 +266,7 @@ interface CanvasState {
 let nextZIndex = 1;
 
 const getBackgroundCSS = (pageDetails: PageDetails) => {
+    if (!pageDetails) return {};
     if (pageDetails.backgroundType === 'transparent') {
         return {
             backgroundImage: `
@@ -440,10 +441,10 @@ export const useCanvasStore = create<CanvasState>()(
                 if (!element) return;
                 const updates: Partial<CanvasElement> = {};
                 switch (direction) {
-                    case 'up': updates.y = element.y - amount; break;
-                    case 'down': updates.y = element.y + amount; break;
-                    case 'left': updates.x = element.x - amount; break;
-                    case 'right': updates.x = element.x + amount; break;
+                    case 'ArrowUp': updates.y = element.y - amount; break;
+                    case 'ArrowDown': updates.y = element.y + amount; break;
+                    case 'ArrowLeft': updates.x = element.x - amount; break;
+                    case 'ArrowRight': updates.x = element.x + amount; break;
                 }
                 get().updateElement(id, updates);
             },
