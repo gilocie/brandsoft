@@ -48,7 +48,7 @@ export default function DesignStudioPage() {
 
     return (
         <>
-            <div className="flex flex-col h-screen w-screen bg-white text-gray-900">
+            <div className="flex flex-col h-screen w-screen bg-white text-gray-900 overflow-hidden">
                 <Header onSaveTemplate={() => setIsSaveDialogOpen(true)} />
                 <div className="flex flex-1 overflow-hidden">
                     <LeftSidebar activeTool={activeTool} onToolClick={handleToolClick} />
