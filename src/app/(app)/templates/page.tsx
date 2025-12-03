@@ -116,7 +116,7 @@ const TemplateCard = ({ template }: { template: BrandsoftTemplate }) => {
       <>
         <Card className="group/card relative flex flex-col transition-shadow hover:shadow-lg">
             <CardHeader className="p-3">
-                 <CardTitle className="text-base font-semibold truncate">{template.name}</CardTitle>
+                 <CardTitle className="text-base font-semibold truncate text-center">{template.name}</CardTitle>
             </CardHeader>
             <CardContent className="p-3 pt-0 flex-grow flex gap-2">
                 <div className="aspect-[8.5/11] w-full overflow-hidden bg-gray-100 border rounded-md">
@@ -124,9 +124,9 @@ const TemplateCard = ({ template }: { template: BrandsoftTemplate }) => {
                 </div>
                 <div className="flex flex-col gap-1">
                     <TooltipProvider>
-                        <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsViewOpen(true)}><Eye className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>View</TooltipContent></Tooltip>
-                        <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleEdit}><Pencil className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Edit</TooltipContent></Tooltip>
-                        <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setIsDeleteOpen(true)}><Trash2 className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Delete</TooltipContent></Tooltip>
+                        <Tooltip><TooltipTrigger asChild><Button variant="default" size="icon" className="h-7 w-7" onClick={() => setIsViewOpen(true)}><Eye className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>View</TooltipContent></Tooltip>
+                        <Tooltip><TooltipTrigger asChild><Button variant="default" size="icon" className="h-7 w-7" onClick={handleEdit}><Pencil className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Edit</TooltipContent></Tooltip>
+                        <Tooltip><TooltipTrigger asChild><Button variant="destructive" size="icon" className="h-7 w-7" onClick={() => setIsDeleteOpen(true)}><Trash2 className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Delete</TooltipContent></Tooltip>
                     </TooltipProvider>
                 </div>
             </CardContent>
