@@ -149,6 +149,18 @@ const Canvas = ({ onPageDoubleClick }: CanvasProps) => {
         setIsClient(true);
     }, []);
 
+    const resetView = () => {
+        if (!mainCanvasRef.current || !pageRef.current) return;
+        const canvasRect = mainCanvasRef.current.getBoundingClientRect();
+        const scaleFactor = Math.min(
+            (canvasRect.width - 80) / pageRef.current.offsetWidth,
+            (canvasRect.height - 120) / pageRef.current.offsetHeight,
+            1
+        );
+        setZoom(scaleFactor);
+        setCanvasPosition({ x: (canvasRect.width - pageRef.current.offsetWidth * scaleFactor) / 2, y: (canvasRect.height - pageRef.current.offsetHeight * scaleFactor) / 2 });
+    };
+
     // Track Ctrl key
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -355,18 +367,6 @@ const Canvas = ({ onPageDoubleClick }: CanvasProps) => {
         } catch (err) { console.error(err); }
     };
 
-    const resetView = () => {
-        if (!mainCanvasRef.current || !pageRef.current) return;
-        const canvasRect = mainCanvasRef.current.getBoundingClientRect();
-        const scaleFactor = Math.min(
-            (canvasRect.width - 80) / pageRef.current.offsetWidth,
-            (canvasRect.height - 120) / pageRef.current.offsetHeight,
-            1
-        );
-        setZoom(scaleFactor);
-        setCanvasPosition({ x: (canvasRect.width - pageRef.current.offsetWidth * scaleFactor) / 2, y: (canvasRect.height - pageRef.current.offsetHeight * scaleFactor) / 2 });
-    };
-
     const handleCanvasClick = (e: React.MouseEvent) => {
         if (e.target === mainCanvasRef.current || e.target === pageRef.current) {
             if (!e.ctrlKey && !e.metaKey) {
@@ -538,3 +538,5 @@ const Canvas = ({ onPageDoubleClick }: CanvasProps) => {
 };
 
 export default Canvas;
+
+    
