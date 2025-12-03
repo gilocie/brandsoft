@@ -66,6 +66,7 @@ export type BrandsoftTemplate = {
   category: 'invoice' | 'quotation' | 'certificate' | 'id-card' | 'marketing';
   pages: Page[];
   previewImage?: string; // data URL
+  createdAt?: string;
 };
 
 
@@ -94,6 +95,7 @@ export type BrandsoftConfig = {
     paymentDetails?: string;
     invoicePrefix?: string;
     invoiceStartNumber?: number;
+    defaultInvoiceTemplate?: string | null;
   };
   modules: {
     invoice: boolean;

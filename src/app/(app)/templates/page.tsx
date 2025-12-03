@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import Link from 'next/link';
@@ -10,19 +9,17 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Tooltip, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Palette, Trash2, Pencil, MoreVertical, Eye } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useBrandsoft, type BrandsoftTemplate } from '@/hooks/use-brandsoft';
 import { getBackgroundCSS, Page } from '@/stores/canvas-store';
 import { cn } from '@/lib/utils';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { useCanvasStore } from '@/stores/canvas-store';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { Separator } from '@/components/ui/separator';
 
 
 const templateCategories = [
@@ -87,7 +84,10 @@ export const TemplatePreview = ({ page }: { page: Page }) => (
 const TemplateCard = ({ template }: { template: BrandsoftTemplate }) => {
     const firstPage = template.pages[0];
     const { setPages } = useCanvasStore();
+    const { config, saveConfig } = useBrandsoft();
     const router = useRouter();
+    const [isViewOpen, setIsViewOpen] = useState(false);
+    const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
     if (!firstPage) return null;
     
@@ -96,40 +96,92 @@ const TemplateCard = ({ template }: { template: BrandsoftTemplate }) => {
         setPages(newPages);
         router.push('/templates/new');
     };
+    
+    const handleDelete = () => {
+      if (!config) return;
+      const newTemplates = config.templates.filter(t => t.id !== template.id);
+      saveConfig({ ...config, templates: newTemplates }, { redirect: false });
+      setIsDeleteOpen(false);
+    };
+
+    const handleSetAsDefault = () => {
+        if (!config) return;
+        saveConfig({ ...config, profile: { ...config.profile, defaultInvoiceTemplate: template.id } }, { redirect: false });
+        alert(`"${template.name}" has been set as your default invoice template.`);
+    };
 
     const { width, height, unit } = firstPage.pageDetails;
 
     return (
-        <Card className="group/card relative flex flex-col">
-            <CardContent className="p-0 aspect-[8.5/11] overflow-hidden">
+      <>
+        <Card className="group/card relative flex flex-col transition-shadow hover:shadow-lg">
+            <CardContent className="p-0 aspect-[8.5/11] overflow-hidden bg-gray-100 rounded-t-lg">
                 <TemplatePreview page={firstPage} />
             </CardContent>
+            
+            <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
+                <TooltipProvider>
+                    <Tooltip><TooltipTrigger asChild><Button variant="secondary" size="icon" className="h-7 w-7" onClick={() => setIsViewOpen(true)}><Eye className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>View</TooltipContent></Tooltip>
+                    <Tooltip><TooltipTrigger asChild><Button variant="secondary" size="icon" className="h-7 w-7" onClick={handleEdit}><Pencil className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Edit</TooltipContent></Tooltip>
+                    <Tooltip><TooltipTrigger asChild><Button variant="destructive" size="icon" className="h-7 w-7" onClick={() => setIsDeleteOpen(true)}><Trash2 className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Delete</TooltipContent></Tooltip>
+                </TooltipProvider>
+            </div>
+
             <CardHeader className="p-3">
                  <CardTitle className="text-base font-semibold truncate">{template.name}</CardTitle>
                  <CardDescription className="text-xs">{width}{unit} x {height}{unit}</CardDescription>
             </CardHeader>
-            <CardFooter className="p-3 pt-0 mt-auto flex justify-between items-center">
-                 <Button variant="outline" size="sm" className="h-8">
-                    <Eye className="mr-2 h-3 w-3"/>
-                    View
-                 </Button>
-                 <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreVertical className="h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={handleEdit}>
-                            <Pencil className="mr-2 h-4 w-4" /> Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive focus:text-destructive">
-                            <Trash2 className="mr-2 h-4 w-4" /> Delete
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </CardFooter>
         </Card>
+        
+        {/* View Dialog */}
+        <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
+            <DialogContent className="max-w-4xl h-[90vh]">
+                <div className="grid grid-cols-3 h-full gap-6">
+                    <div className="col-span-2 bg-muted rounded-lg overflow-hidden">
+                        <div className="w-full h-full scale-[0.9] origin-center flex items-center justify-center">
+                          <div className="aspect-[8.5/11] h-full shadow-lg">
+                            {firstPage && <TemplatePreview page={firstPage} />}
+                          </div>
+                        </div>
+                    </div>
+                    <div className="col-span-1 py-6 pr-6 flex flex-col">
+                        <DialogHeader className="text-left mb-4">
+                            <DialogTitle className="text-2xl font-bold">{template.name}</DialogTitle>
+                            <DialogDescription>{template.description || 'No description available.'}</DialogDescription>
+                        </DialogHeader>
+                        
+                        <div className="space-y-2 text-sm text-muted-foreground">
+                            <p><strong>Category:</strong> <span className="capitalize">{template.category}</span></p>
+                            <p><strong>Created:</strong> {template.createdAt ? new Date(template.createdAt).toLocaleDateString() : 'N/A'}</p>
+                        </div>
+                        
+                        <Separator className="my-6"/>
+
+                        <DialogFooter className="flex-col gap-2 items-start mt-auto">
+                           <Button className="w-full" onClick={handleSetAsDefault}>Use this template</Button>
+                           <Button variant="outline" className="w-full" onClick={handleEdit}>Edit this template</Button>
+                        </DialogFooter>
+                    </div>
+                </div>
+            </DialogContent>
+        </Dialog>
+        
+        {/* Delete Confirmation */}
+         <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Delete Template</DialogTitle>
+                    <DialogDescription>
+                        Are you sure you want to delete the "{template.name}" template? This action cannot be undone.
+                    </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancel</Button>
+                    <Button variant="destructive" onClick={handleDelete}>Delete</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+      </>
     )
 }
 

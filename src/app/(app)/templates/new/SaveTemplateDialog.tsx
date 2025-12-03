@@ -70,6 +70,7 @@ const SaveTemplateDialog = ({ isOpen, onClose }: SaveTemplateDialogProps) => {
       description: data.description,
       category: data.category,
       pages: pages,
+      createdAt: new Date().toISOString(),
     };
 
     const newConfig = { ...config };
