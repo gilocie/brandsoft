@@ -102,7 +102,7 @@ const GradientSlider = ({ stops, onStopsChange, onCommit }: { stops: GradientSto
             {selectedStop && (
                 <div className="p-3 bg-muted rounded-md space-y-3">
                      <div className="flex items-center gap-2">
-                        <ColorInput label={`Stop ${selectedStopIndex + 1}`} value={selectedStop.color} onChange={handleStopColorChange} onBlur={onCommit} />
+                        <ColorInput label="" value={selectedStop.color} onChange={handleStopColorChange} onBlur={onCommit} />
                         <Input
                             type="number"
                             value={Math.round(selectedStop.position)}
@@ -111,7 +111,7 @@ const GradientSlider = ({ stops, onStopsChange, onCommit }: { stops: GradientSto
                             className="w-16 h-8 text-xs text-right"
                             min={0} max={100} step={1}
                         />
-                        <Button variant="destructive" size="icon" className="h-8 w-8" onClick={handleRemoveStop} disabled={sortedStops.length <= 2}>
+                         <Button variant="destructive" size="icon" className="h-8 w-8" onClick={handleRemoveStop} disabled={sortedStops.length <= 2}>
                             <Trash2 className="h-4 w-4" />
                         </Button>
                     </div>
@@ -130,6 +130,7 @@ export const PageBackgroundPanel = () => {
     if (!pageDetails) return null;
 
     const bg = pageDetails.background;
+    if (!bg) return null; // Added safe guard
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];

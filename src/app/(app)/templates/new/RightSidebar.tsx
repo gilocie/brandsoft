@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -117,7 +118,7 @@ const PagePropertiesContent = () => {
         <div className="py-1">
             <Accordion
                 type="multiple"
-                defaultValue={['dimensions', 'background', 'template']}
+                defaultValue={['dimensions', 'background-color', 'background-image', 'template']}
                 className="w-full"
             >
                 <PageDimensionsPanel />
