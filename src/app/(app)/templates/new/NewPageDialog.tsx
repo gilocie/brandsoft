@@ -105,6 +105,8 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
         },
     });
 
+    const watchedBackgroundColor = form.watch('backgroundColor');
+
     const handlePresetSelect = (preset: CustomPreset) => {
         setActivePreset(preset.name);
         form.reset({
@@ -199,7 +201,9 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
                     )}
                     onClick={() => handlePresetSelect(preset)}
                 >
-                    <Icon className="h-5 w-5 shrink-0" />
+                    <div className="p-2 rounded" style={{ backgroundColor: watchedBackgroundColor }}>
+                        <Icon className="h-5 w-5 shrink-0" style={{ color: 'white' }} />
+                    </div>
                     <div>
                         <p className="text-sm">{preset.name}</p>
                         <p className="text-xs text-muted-foreground">{preset.width}{preset.unit} x {preset.height}{preset.unit}</p>
@@ -222,84 +226,40 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-2xl h-full max-h-[550px] flex flex-col">
+            <DialogContent className="max-w-2xl h-[550px] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>New Document</DialogTitle>
                     <DialogDescription>
                         Create a new page by selecting a preset or defining custom dimensions.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="flex-grow overflow-hidden">
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="h-full flex flex-col">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 py-1 flex-grow overflow-hidden">
-                                <ScrollArea className="col-span-1 pr-4">
+                
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="h-full flex flex-col flex-grow min-h-0">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 py-1 flex-grow min-h-0">
+                            <div className="col-span-1 flex flex-col gap-4">
+                                <h3 className="text-sm font-medium text-muted-foreground px-2 shrink-0">Presets</h3>
+                                <ScrollArea className="flex-grow pr-4">
                                     <div className="space-y-1">
-                                        <h3 className="text-sm font-medium text-muted-foreground px-2">Presets</h3>
-                                        <div className="space-y-1">
-                                            {presets.map((p) => (
-                                                <PresetButton key={p.name} preset={p as CustomPreset} isCustom={false} />
-                                            ))}
-                                        </div>
-                                        {customPresets.length > 0 && (
-                                            <>
-                                                <Separator className="my-2" />
-                                                <h3 className="text-sm font-medium text-muted-foreground px-2">Custom</h3>
-                                                <div className="space-y-1">
-                                                    {customPresets.map((p) => (
-                                                        <PresetButton key={p.name} preset={p} isCustom={true} />
-                                                    ))}
-                                                </div>
-                                            </>
-                                        )}
+                                        {presets.map((p) => (
+                                            <PresetButton key={p.name} preset={p as CustomPreset} isCustom={false} />
+                                        ))}
                                     </div>
+                                    {customPresets.length > 0 && (
+                                        <>
+                                            <Separator className="my-2" />
+                                            <h3 className="text-sm font-medium text-muted-foreground px-2">Custom</h3>
+                                            <div className="space-y-1">
+                                                {customPresets.map((p) => (
+                                                    <PresetButton key={p.name} preset={p} isCustom={true} />
+                                                ))}
+                                            </div>
+                                        </>
+                                    )}
                                 </ScrollArea>
-
-                                <div className="col-span-2 space-y-4">
-                                    <div className="flex justify-between items-center gap-2">
-                                        <FormField
-                                            control={form.control} name="name" render={({ field }) => (
-                                                <FormItem className="flex-grow"><FormLabel>Name</FormLabel><FormControl><Input {...field} className="text-lg font-semibold" /></FormControl><FormMessage /></FormItem>
-                                            )}
-                                        />
-                                        <Button type="button" variant="outline" size="sm" className="mt-7 shrink-0" onClick={handleSavePreset}>
-                                            <Bookmark className="h-4 w-4 mr-2"/> Save
-                                        </Button>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <FormField control={form.control} name="width" render={({ field }) => (
-                                            <FormItem><FormLabel>Width</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                                        )} />
-                                        <FormField control={form.control} name="height" render={({ field }) => (
-                                            <FormItem><FormLabel>Height</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                                        )} />
-                                    </div>
-                                    
-                                    <div className="flex items-end gap-2">
-                                        <FormField control={form.control} name="unit" render={({ field }) => (
-                                            <FormItem className="flex-grow"><FormLabel>Units</FormLabel>
-                                            <Select onValueChange={field.onChange} value={field.value}>
-                                                <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                                                <SelectContent>
-                                                    <SelectItem value="px">Pixels</SelectItem>
-                                                    <SelectItem value="in">Inches</SelectItem>
-                                                    <SelectItem value="cm">Centimeters</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                            <FormMessage /></FormItem>
-                                        )} />
-                                        <FormField control={form.control} name="orientation" render={({ field }) => (
-                                            <FormItem><FormLabel>Orientation</FormLabel>
-                                            <ToggleGroup type="single" value={field.value} onValueChange={(v) => {if(v) handleOrientationChange(v as 'portrait' | 'landscape')}} className="border rounded-md h-10 p-1">
-                                                <ToggleGroupItem value="portrait" className="h-full px-2"><svg className="h-5 w-5" viewBox="0 0 24 24"><path fill="currentColor" d="M17 2H7c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg></ToggleGroupItem>
-                                                <ToggleGroupItem value="landscape" className="h-full px-2"><svg className="h-5 w-5" viewBox="0 0 24 24"><path fill="currentColor" d="M22 17c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v0c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v0z" transform="rotate(-90 12 12)" /></svg></ToggleGroupItem>
-                                            </ToggleGroup>
-                                            <FormMessage /></FormItem>
-                                        )} />
-                                    </div>
-
-                                    <Controller
+                                <div className="shrink-0 pr-4">
+                                    <Separator className="my-2" />
+                                     <Controller
                                         control={form.control}
                                         name="backgroundColor"
                                         render={({ field }) => (
@@ -313,13 +273,59 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
                                 </div>
                             </div>
 
-                            <DialogFooter className="pt-4 border-t shrink-0">
-                                <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-                                <Button type="submit">Create Document</Button>
-                            </DialogFooter>
-                        </form>
-                    </Form>
-                </div>
+                            <div className="col-span-2 space-y-4">
+                                <div className="flex justify-between items-center gap-2">
+                                    <FormField
+                                        control={form.control} name="name" render={({ field }) => (
+                                            <FormItem className="flex-grow"><FormLabel>Name</FormLabel><FormControl><Input {...field} className="text-lg font-semibold" /></FormControl><FormMessage /></FormItem>
+                                        )}
+                                    />
+                                    <Button type="button" variant="outline" size="sm" className="mt-7 shrink-0" onClick={handleSavePreset}>
+                                        <Bookmark className="h-4 w-4 mr-2"/> Save
+                                    </Button>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <FormField control={form.control} name="width" render={({ field }) => (
+                                        <FormItem><FormLabel>Width</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                    )} />
+                                    <FormField control={form.control} name="height" render={({ field }) => (
+                                        <FormItem><FormLabel>Height</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                    )} />
+                                </div>
+                                
+                                <div className="flex items-end gap-2">
+                                    <FormField control={form.control} name="unit" render={({ field }) => (
+                                        <FormItem className="flex-grow"><FormLabel>Units</FormLabel>
+                                        <Select onValueChange={field.onChange} value={field.value}>
+                                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="px">Pixels</SelectItem>
+                                                <SelectItem value="in">Inches</SelectItem>
+                                                <SelectItem value="cm">Centimeters</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage /></FormItem>
+                                    )} />
+                                    <FormField control={form.control} name="orientation" render={({ field }) => (
+                                        <FormItem><FormLabel>Orientation</FormLabel>
+                                        <ToggleGroup type="single" value={field.value} onValueChange={(v) => {if(v) handleOrientationChange(v as 'portrait' | 'landscape')}} className="border rounded-md h-10 p-1">
+                                            <ToggleGroupItem value="portrait" className="h-full px-2"><svg className="h-5 w-5" viewBox="0 0 24 24"><path fill="currentColor" d="M17 2H7c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg></ToggleGroupItem>
+                                            <ToggleGroupItem value="landscape" className="h-full px-2"><svg className="h-5 w-5" viewBox="0 0 24 24"><path fill="currentColor" d="M22 17c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v0c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v0z" transform="rotate(-90 12 12)" /></svg></ToggleGroupItem>
+                                        </ToggleGroup>
+                                        <FormMessage /></FormItem>
+                                    )} />
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <DialogFooter className="pt-4 border-t shrink-0">
+                            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+                            <Button type="submit">Create Document</Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
             </DialogContent>
         </Dialog>
     );
