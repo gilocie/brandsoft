@@ -8,7 +8,8 @@ import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/
 import { InputWithLabel } from '../components';
 
 export const PositionPanel = () => {
-    const { selectedElementId, elements, updateElement, commitHistory } = useCanvasStore();
+    const { selectedElementId, pages, currentPageIndex, updateElement, commitHistory } = useCanvasStore();
+    const elements = pages[currentPageIndex]?.elements || [];
     const element = elements.find(el => el.id === selectedElementId);
 
     if (!element) return null;

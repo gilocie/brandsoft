@@ -11,7 +11,8 @@ import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/
 import { SliderWithLabel } from '../components';
 
 export const ShapeImagePanel = () => {
-    const { selectedElementId, elements, updateElementProps, commitHistory } = useCanvasStore();
+    const { selectedElementId, pages, currentPageIndex, updateElementProps, commitHistory } = useCanvasStore();
+    const elements = pages[currentPageIndex]?.elements || [];
     const element = elements.find(el => el.id === selectedElementId && el.type === 'shape');
     const fileInputRef = useRef<HTMLInputElement>(null);
 

@@ -11,7 +11,8 @@ import { ColorInput, SliderWithLabel } from '../components';
 import { GOOGLE_FONTS, FONT_WEIGHTS } from '../../canvas/utils';
 
 export const TextStylePanel = () => {
-    const { selectedElementId, elements, updateElement, updateElementProps, commitHistory } = useCanvasStore();
+    const { selectedElementId, pages, currentPageIndex, updateElement, updateElementProps, commitHistory } = useCanvasStore();
+    const elements = pages[currentPageIndex]?.elements || [];
     const element = elements.find(el => el.id === selectedElementId && el.type === 'text');
 
     if (!element) return null;

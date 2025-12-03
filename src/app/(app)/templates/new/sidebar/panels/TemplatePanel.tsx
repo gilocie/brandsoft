@@ -24,7 +24,8 @@ const TEMPLATE_FIELD_TYPES = [
 export const TemplatePanel = () => {
     const {
         selectedElementId,
-        elements,
+        pages,
+        currentPageIndex,
         templateSettings,
         updateTemplateSettings,
         markAsTemplateField,
@@ -34,6 +35,7 @@ export const TemplatePanel = () => {
         commitHistory,
     } = useCanvasStore();
 
+    const elements = pages[currentPageIndex]?.elements || [];
     const selectedElement = elements.find(el => el.id === selectedElementId);
     const templateFields = elements.filter(el => el.props.isTemplateField);
 

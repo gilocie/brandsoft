@@ -7,7 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 export const TextContentPanel = () => {
-    const { selectedElementId, elements, updateElementProps, commitHistory } = useCanvasStore();
+    const { selectedElementId, pages, currentPageIndex, updateElementProps, commitHistory } = useCanvasStore();
+    const elements = pages[currentPageIndex]?.elements || [];
     const element = elements.find(el => el.id === selectedElementId && el.type === 'text');
 
     if (!element) return null;

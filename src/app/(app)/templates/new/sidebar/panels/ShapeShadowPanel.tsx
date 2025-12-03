@@ -9,7 +9,8 @@ import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/
 import { ColorInput, SliderWithLabel, InputWithLabel } from '../components';
 
 export const ShapeShadowPanel = () => {
-    const { selectedElementId, elements, updateElementProps, commitHistory } = useCanvasStore();
+    const { selectedElementId, pages, currentPageIndex, updateElementProps, commitHistory } = useCanvasStore();
+    const elements = pages[currentPageIndex]?.elements || [];
     const element = elements.find(el => el.id === selectedElementId && el.type === 'shape');
 
     if (!element) return null;
