@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState } from 'react';
@@ -61,7 +60,7 @@ interface NewPageDialogProps {
   onClose: () => void;
 }
 
-const useLocalStorage = <T>(key: string, initialValue: T) => {
+const useLocalStorage = <T,>(key: string, initialValue: T) => {
     const [storedValue, setStoredValue] = useState<T>(() => {
         if (typeof window === 'undefined') return initialValue;
         try {
@@ -234,7 +233,7 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-3xl p-0 flex flex-col h-full max-h-[500px]">
+            <DialogContent className="max-w-3xl p-0 flex flex-col max-h-[85vh]">
                  <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
                         <div className="border-b px-6 py-4 shrink-0">
@@ -244,10 +243,10 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
                             </DialogDescription>
                         </div>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-3 flex-1 min-h-0">
+                        <div className="grid grid-cols-1 md:grid-cols-3 flex-1 overflow-hidden min-h-0">
                             {/* Left Column (Presets) */}
-                            <div className="col-span-1 border-r flex flex-col">
-                                <ScrollArea className="flex-grow">
+                            <div className="col-span-1 border-r flex flex-col overflow-hidden">
+                                <ScrollArea className="flex-1">
                                     <div className="p-4 space-y-4">
                                         <div>
                                             <h3 className="text-xs font-medium text-muted-foreground mb-2 px-2">Presets</h3>
@@ -269,8 +268,8 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
                             </div>
                             
                             {/* Right Column (Properties) */}
-                            <div className="col-span-2 flex flex-col">
-                                <ScrollArea className="flex-grow">
+                            <div className="col-span-2 flex flex-col overflow-hidden">
+                                <ScrollArea className="flex-1">
                                     <div className="p-6 space-y-6">
                                         <div className="flex items-end gap-2">
                                             <FormField control={form.control} name="name" render={({ field }) => (
@@ -340,5 +339,3 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
 };
 
 export default NewPageDialog;
-
-    
