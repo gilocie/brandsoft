@@ -6,7 +6,7 @@ import {
   File,
   RefreshCcw,
   RefreshCw,
-  Share,
+  Eye,
   Ruler,
   Check,
   Save
@@ -79,7 +79,7 @@ const Header = ({ onSaveTemplate }: HeaderProps) => {
                 </span>
             </div>
             <div className="flex items-center gap-2">
-                 <Button className="bg-primary hover:bg-primary/90 text-primary-foreground"><Share className="mr-2 h-4 w-4" /> Share</Button>
+                 <Button className="bg-primary hover:bg-primary/90 text-primary-foreground"><Eye className="mr-2 h-4 w-4" /> View Design</Button>
                  <Avatar className="h-9 w-9">
                     <AvatarImage src={config?.brand.logo} />
                     <AvatarFallback>{config?.brand.businessName?.[0]}</AvatarFallback>
