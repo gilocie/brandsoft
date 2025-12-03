@@ -1,24 +1,27 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useCanvasStore } from '@/stores/canvas-store';
 import { Loader2 } from 'lucide-react';
-import imageData from '@/lib/placeholder-images.json';
 import NextImage from 'next/image';
+import invoiceImages from '@/lib/invoice-images';
+import certificateImages from '@/lib/certificate-images';
 
 const handleDragStart = (e: React.DragEvent, data: any) => {
     e.dataTransfer.setData('application/json', JSON.stringify(data));
 };
 
-const ImageItem = ({ image }: { image: { src: string, name: string } }) => {
+const ImageItem = ({ src }: { src: string }) => {
     const imageData = {
         type: 'image' as const,
         width: 300,
         height: 200,
         rotation: 0,
-        props: { src: image.src }
+        props: { src: src }
     };
+    
+    // Extract name from src, e.g. /inv-and-quots0.jpg -> inv-and-quots0
+    const name = src.split('/').pop()?.split('.')[0] || 'image';
 
     return (
         <div
@@ -27,8 +30,8 @@ const ImageItem = ({ image }: { image: { src: string, name: string } }) => {
             onDragStart={(e) => handleDragStart(e, imageData)}
         >
             <NextImage 
-                src={image.src} 
-                alt={image.name} 
+                src={src} 
+                alt={name} 
                 layout="fill"
                 objectFit="cover"
                 unoptimized
@@ -37,53 +40,26 @@ const ImageItem = ({ image }: { image: { src: string, name: string } }) => {
     );
 };
 
+
 export const ImagesPanel = () => {
     const { templateSettings } = useCanvasStore();
-    const [images, setImages] = useState<{ name: string; src: string; category: string }[]>([]);
+    const [images, setImages] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     const currentCategory = templateSettings?.category || 'invoice';
 
     useEffect(() => {
         setIsLoading(true);
-        const allImages = imageData.images;
-        
-        let relevantImages;
+        let relevantImages: string[] = [];
+
         if (currentCategory === 'invoice' || currentCategory === 'quotation') {
-            relevantImages = allImages.filter(img => img.category === 'invoice');
+            relevantImages = invoiceImages;
         } else {
-            relevantImages = allImages.filter(img => img.category === currentCategory);
+            relevantImages = certificateImages;
         }
 
-        // We'll add an onError check to filter out images that don't actually exist.
-        const verifiedImages: typeof relevantImages = [];
-        let loadedCount = 0;
-
-        if (relevantImages.length === 0) {
-            setImages([]);
-            setIsLoading(false);
-            return;
-        }
-
-        relevantImages.forEach(imageInfo => {
-            const img = new Image();
-            img.src = imageInfo.src;
-            img.onload = () => {
-                verifiedImages.push(imageInfo);
-                loadedCount++;
-                if (loadedCount === relevantImages.length) {
-                    setImages(verifiedImages);
-                    setIsLoading(false);
-                }
-            };
-            img.onerror = () => {
-                loadedCount++;
-                 if (loadedCount === relevantImages.length) {
-                    setImages(verifiedImages);
-                    setIsLoading(false);
-                }
-            };
-        });
+        setImages(relevantImages);
+        setIsLoading(false);
 
     }, [currentCategory]);
 
@@ -99,7 +75,7 @@ export const ImagesPanel = () => {
     if (images.length === 0) {
         return (
             <div className="p-4 text-center text-sm text-muted-foreground">
-                No images found for the '{currentCategory}' category. Add images to the `/public` folder and update `placeholder-images.json`.
+                No images found for the '{currentCategory}' category. Add images to the `/public` folder and update the manifest files in `/src/lib/`.
             </div>
         );
     }
@@ -108,8 +84,8 @@ export const ImagesPanel = () => {
         <div className="p-4">
             <h3 className="text-sm font-medium text-gray-500 mb-4">Backgrounds</h3>
             <div className="grid grid-cols-2 gap-4">
-                {images.map((image, index) => (
-                    <ImageItem key={`${image.name}-${index}`} image={image} />
+                {images.map((src, index) => (
+                    <ImageItem key={`${src}-${index}`} src={src} />
                 ))}
             </div>
         </div>
