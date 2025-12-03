@@ -424,7 +424,7 @@ const Canvas = ({ onPageDoubleClick }: CanvasProps) => {
                 )}
 
                 {/* Page */}
-                <div ref={pageRef} className="relative bg-white shadow-lg" style={{ width: `${pageDetails.width}${pageDetails.unit}`, height: `${pageDetails.height}${pageDetails.unit}`, backgroundColor: pageDetails.backgroundColor }}>
+                <div id="page-0" ref={pageRef} className="relative bg-white shadow-lg" style={{ width: `${pageDetails.width}${pageDetails.unit}`, height: `${pageDetails.height}${pageDetails.unit}`, backgroundColor: pageDetails.backgroundColor }}>
                     <PageBackground />
                     {guides.horizontal.map(g => <RulerGuide key={g.id} id={g.id} orientation="horizontal" position={g.y!} />)}
                     {guides.vertical.map(g => <RulerGuide key={g.id} id={g.id} orientation="vertical" position={g.x!} />)}

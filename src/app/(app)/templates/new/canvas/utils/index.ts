@@ -1,3 +1,5 @@
+import html2canvas from 'html2canvas';
+
 // ============ FONTS ============
 export const GOOGLE_FONTS = [
     'Poppins', 'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Raleway',
@@ -40,4 +42,20 @@ export const getResizeCursor = (position: string): string => {
         'middle-left': 'ew-resize', 'middle-right': 'ew-resize',
     };
     return cursors[position] || 'default';
+};
+
+// ============ EXPORT ============
+export const exportCanvasAsImage = async (element: HTMLElement, format: 'png' | 'jpeg' = 'png') => {
+    const canvas = await html2canvas(element, {
+        scale: 2, // Higher scale for better quality
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+        backgroundColor: null, // Use element's background or make it transparent for PNG
+    });
+
+    const link = document.createElement('a');
+    link.download = `design.${format}`;
+    link.href = canvas.toDataURL(`image/${format}`, 1.0); // 1.0 is max quality for JPEG
+    link.click();
 };

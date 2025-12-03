@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -17,20 +16,30 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from '@/components/ui/dropdown-menu';
 import { useBrandsoft } from '@/hooks/use-brandsoft';
 import { useCanvasStore } from '@/stores/canvas-store';
+import { exportCanvasAsImage } from './canvas/utils';
 
 interface HeaderProps {
     onSaveTemplate: () => void;
 }
 
 const Header = ({ onSaveTemplate }: HeaderProps) => {
-    const { undo, redo, historyIndex, history, rulers, toggleRulers } = useCanvasStore();
+    const { undo, redo, historyIndex, history, rulers, toggleRulers, pages, currentPageIndex } = useCanvasStore();
     const canUndo = historyIndex > 0;
     const canRedo = historyIndex < history.length - 1;
     const { config } = useBrandsoft();
 
+    const handleExport = (format: 'png' | 'jpeg') => {
+        const pageElement = document.getElementById(`page-${currentPageIndex}`);
+        if (pageElement) {
+            exportCanvasAsImage(pageElement, format);
+        } else {
+            console.error("Could not find page element to export.");
+        }
+    };
+    
     return (
         <header className="h-16 bg-black border-b border-gray-800 flex items-center justify-between px-4 z-20 text-white shrink-0">
              <div className="flex items-center gap-2">
@@ -46,7 +55,13 @@ const Header = ({ onSaveTemplate }: HeaderProps) => {
                         <DropdownMenuItem>Save</DropdownMenuItem>
                         <DropdownMenuItem>Save As</DropdownMenuItem>
                         <DropdownMenuItem onClick={onSaveTemplate}>Save As Template</DropdownMenuItem>
-                        <DropdownMenuItem>Export</DropdownMenuItem>
+                        <DropdownMenuSub>
+                            <DropdownMenuSubTrigger>Export</DropdownMenuSubTrigger>
+                            <DropdownMenuSubContent className="bg-black text-white border-gray-700">
+                                <DropdownMenuItem onClick={() => handleExport('png')}>as PNG</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleExport('jpeg')}>as JPEG</DropdownMenuItem>
+                            </DropdownMenuSubContent>
+                        </DropdownMenuSub>
                         <DropdownMenuSeparator className="bg-gray-700"/>
                          <DropdownMenuItem>Options</DropdownMenuItem>
                     </DropdownMenuContent>
