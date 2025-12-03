@@ -206,7 +206,7 @@ const TemplateCard = ({ template }: { template: BrandsoftTemplate }) => {
         </Card>
         
         <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
-            <DialogContent className="max-w-5xl p-0 flex flex-col overflow-hidden">
+            <DialogContent className="max-w-5xl p-0 h-[85vh] flex flex-col overflow-hidden">
                 <div className="grid grid-cols-1 md:grid-cols-3 h-full w-full">
                     
                     <div className="md:col-span-2 bg-muted/50 rounded-l-lg flex items-center justify-center p-4 md:p-8 overflow-hidden h-full relative">
@@ -219,7 +219,7 @@ const TemplateCard = ({ template }: { template: BrandsoftTemplate }) => {
                     </div>
 
                     <div className="md:col-span-1 flex flex-col h-full border-l bg-background">
-                        <div className="flex-1 overflow-y-auto p-6">
+                        <div className="p-6">
                             <DialogHeader className="text-left mb-4">
                                 <DialogTitle className="text-2xl font-bold">{template.name}</DialogTitle>
                                 <DialogDescription>{template.description || 'Perfect for your business'}</DialogDescription>
@@ -232,7 +232,9 @@ const TemplateCard = ({ template }: { template: BrandsoftTemplate }) => {
                                     <p className="flex justify-between"><strong>Size:</strong> {width}{unit} x {height}{unit}</p>
                                 </div>
                             </div>
-                            <Separator className="my-4"/>
+                        </div>
+                        <Separator />
+                         <div className="flex-1 overflow-y-auto p-6">
                             {template.category === 'invoice' && config?.invoices && (
                                 <div className="space-y-2">
                                      <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2"><FileJson className="h-4 w-4" /> Live Preview Data</h3>
