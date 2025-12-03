@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -80,7 +79,7 @@ const ElementPropertiesContent = () => {
     }
 
     return (
-        <div className="space-y-0">
+        <div className="space-y-0 pb-4">
             <ActionsPanel />
             <Accordion
                 type="multiple"
@@ -115,7 +114,7 @@ const ElementPropertiesContent = () => {
 
 const PagePropertiesContent = () => {
     return (
-        <div className="py-1">
+        <div className="py-1 pb-4">
             <Accordion
                 type="multiple"
                 defaultValue={['dimensions', 'background-color', 'background-image', 'template']}
@@ -139,7 +138,6 @@ const RightSidebar = ({ onCollapse, position, setPosition }: RightSidebarProps) 
     const { selectedElementId, selectedElementIds, pages, currentPageIndex } = useCanvasStore();
     const elements = pages[currentPageIndex]?.elements || [];
     const selectedElement = elements.find(el => el.id === selectedElementId);
-
 
     const dragStartPos = React.useRef({ x: 0, y: 0 });
     const panelStartPos = React.useRef({ x: 0, y: 0 });
@@ -176,17 +174,23 @@ const RightSidebar = ({ onCollapse, position, setPosition }: RightSidebarProps) 
 
     return (
         <Card
-            className="absolute w-64 z-20 flex flex-col shadow-lg"
+            className="absolute w-80 z-20 flex flex-col shadow-lg overflow-hidden border bg-background"
             style={{ 
                 top: position.y, 
                 right: position.x,
-                height: 'calc(100vh - 140px)',
-                maxHeight: '600px',
+                /* 
+                 * FIXED HEIGHT LOGIC:
+                 * 1. We use a fixed calculation (viewport height - margin).
+                 * 2. This prevents 'auto' height from disabling the scrollbar.
+                 * 3. 'maxHeight' ensures it doesn't go off-screen on small devices.
+                 */
+                height: 'calc(100vh - 120px)',
+                maxHeight: '800px',
             }}
         >
-            {/* Header - Compact */}
+            {/* Header */}
             <div
-                className="px-3 py-1.5 border-b flex items-center justify-between bg-primary rounded-t-lg cursor-grab active:cursor-grabbing shrink-0"
+                className="px-3 py-1.5 border-b flex items-center justify-between bg-primary rounded-t-lg cursor-grab active:cursor-grabbing flex-shrink-0"
                 onMouseDown={handleMouseDown}
             >
                 <span className="text-xs font-medium text-primary-foreground">
@@ -202,13 +206,18 @@ const RightSidebar = ({ onCollapse, position, setPosition }: RightSidebarProps) 
                 </Button>
             </div>
 
-            {/* Content */}
+            {/* 
+             * Tabs Container:
+             * flex-1 ensures it fills the remaining height of the Card.
+             * flex-col organizes the List and Content vertically.
+             * min-h-0 is CRITICAL for nested flex scrolling.
+             */}
             <Tabs
                 defaultValue={selectedElementId ? 'element' : 'page'}
                 value={selectedElementId || selectedElementIds.length > 0 ? 'element' : 'page'}
-                className="flex-1 flex flex-col overflow-hidden"
+                className="flex-1 flex flex-col min-h-0 w-full"
             >
-                <TabsList className="w-full rounded-none border-b shrink-0 h-8">
+                <TabsList className="w-full rounded-none border-b flex-shrink-0 h-9">
                     <TabsTrigger
                         value="element"
                         className="flex-1 text-xs h-7"
@@ -221,15 +230,24 @@ const RightSidebar = ({ onCollapse, position, setPosition }: RightSidebarProps) 
                     </TabsTrigger>
                 </TabsList>
 
-                <ScrollArea className="flex-1">
-                    <TabsContent value="element" className="mt-0 p-0">
-                        <ElementPropertiesContent />
-                    </TabsContent>
+                {/* 
+                 * Scrollable Area Wrapper:
+                 * This div fills the remaining space (flex-1) and hides overflow 
+                 * so the ScrollArea inside it can manage the scrolling.
+                 */}
+                <div className="flex-1 min-h-0 overflow-hidden relative">
+                    <ScrollArea className="h-full w-full">
+                        <div className="h-full">
+                            <TabsContent value="element" className="mt-0 border-0 p-0 data-[state=inactive]:hidden">
+                                <ElementPropertiesContent />
+                            </TabsContent>
 
-                    <TabsContent value="page" className="mt-0 p-0">
-                        <PagePropertiesContent />
-                    </TabsContent>
-                </ScrollArea>
+                            <TabsContent value="page" className="mt-0 border-0 p-0 data-[state=inactive]:hidden">
+                                <PagePropertiesContent />
+                            </TabsContent>
+                        </div>
+                    </ScrollArea>
+                </div>
             </Tabs>
         </Card>
     );
