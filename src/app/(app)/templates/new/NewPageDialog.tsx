@@ -102,8 +102,6 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
         },
     });
 
-    const watchedBgColor = form.watch('backgroundColor');
-
     const handlePresetSelect = (preset: CustomPreset) => {
         setActivePreset(preset.name);
         form.reset({
@@ -244,7 +242,6 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-3 flex-1 overflow-hidden min-h-0">
-                            {/* Left Column (Presets) */}
                             <div className="col-span-1 border-r flex flex-col overflow-hidden">
                                 <ScrollArea className="flex-1">
                                     <div className="p-4 space-y-4">
@@ -267,7 +264,6 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
                                 </ScrollArea>
                             </div>
                             
-                            {/* Right Column (Properties) */}
                             <div className="col-span-2 flex flex-col overflow-hidden">
                                 <ScrollArea className="flex-1">
                                     <div className="p-6 space-y-6">
