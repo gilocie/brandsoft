@@ -9,16 +9,14 @@ const handleDragStart = (e: React.DragEvent, data: any) => {
     e.dataTransfer.setData('application/json', JSON.stringify(data));
 };
 
-const ImageItem = ({ src }: { src: string }) => {
+const ImageItem = ({ image }: { image: { name: string; src: any } }) => {
     const imageData = {
         type: 'image' as const,
         width: 300,
         height: 200,
         rotation: 0,
-        props: { src: src }
+        props: { src: image.src.src } // .src is needed because of how Next.js handles static imports
     };
-    
-    const name = src.split('/').pop()?.split('.')[0] || 'image';
 
     return (
         <div
@@ -27,8 +25,8 @@ const ImageItem = ({ src }: { src: string }) => {
             onDragStart={(e) => handleDragStart(e, imageData)}
         >
             <NextImage 
-                src={src} 
-                alt={name} 
+                src={image.src} 
+                alt={image.name} 
                 layout="fill"
                 objectFit="cover"
                 unoptimized
@@ -41,7 +39,7 @@ export const ImagesPanel = () => {
     if (!backgroundImages || backgroundImages.length === 0) {
         return (
             <div className="p-4 text-center text-sm text-muted-foreground">
-                No images found. Please add image paths to `src/lib/background-images.ts` and place the files in the `public/backgrounds` folder.
+                No images found. Please add images to `src/app/(app)/templates/backgrounds` and update `src/lib/background-images.ts`.
             </div>
         );
     }
@@ -50,8 +48,8 @@ export const ImagesPanel = () => {
         <div className="p-4">
             <h3 className="text-sm font-medium text-gray-500 mb-4">Backgrounds</h3>
             <div className="grid grid-cols-2 gap-4">
-                {backgroundImages.map((src, index) => (
-                    <ImageItem key={`${src}-${index}`} src={src} />
+                {backgroundImages.map((image, index) => (
+                    <ImageItem key={`${image.name}-${index}`} image={image} />
                 ))}
             </div>
         </div>

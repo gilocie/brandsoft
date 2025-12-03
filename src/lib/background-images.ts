@@ -1,10 +1,14 @@
 
-// This file acts as a manifest for all template background images.
-// To add a new image, place the image file in the `/public/backgrounds` directory
-// and add its path to this list.
+'use client';
 
-const backgroundImages: string[] = [
-    '/backgrounds/brandsoft-cert0.jpg',
+// When you add a new image to the 'src/app/(app)/templates/backgrounds' folder,
+// add a new import line here and add the imported variable to the array below.
+
+import cert0 from '@/app/(app)/templates/backgrounds/brandsoft-cert0.jpg';
+
+const backgroundImages: { name: string; src: any }[] = [
+  { name: 'brandsoft-cert0', src: cert0 },
+  // { name: 'brandsoft-cert1', src: cert1 }, // Example for next image
 ];
 
 export default backgroundImages;
