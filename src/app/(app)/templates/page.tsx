@@ -148,7 +148,7 @@ const TemplateCard = ({ template }: { template: BrandsoftTemplate }) => {
                         <div className="flex-grow">
                             <DialogHeader className="text-left mb-4">
                                 <DialogTitle className="text-2xl font-bold">{template.name}</DialogTitle>
-                                <DialogDescription>{template.description || 'No description available.'}</DialogDescription>
+                                <DialogDescription>{template.description || 'Perfect for you business'}</DialogDescription>
                             </DialogHeader>
                             
                             <div className="space-y-2 text-sm text-muted-foreground">
