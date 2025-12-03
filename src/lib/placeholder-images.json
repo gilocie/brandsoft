@@ -1,3 +1,46 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "cert-bg-1",
+      "description": "Formal blue and gold certificate border",
+      "imageUrl": "https://images.unsplash.com/photo-1580795478690-5c6afcf4e7c3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxjZXJ0aWZpY2F0ZSUyMGJvcmRlcnxlbnwwfHx8fDE3NjQ3NzQwMDR8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "certificate border",
+      "category": "certificate"
+    },
+    {
+      "id": "cert-bg-2",
+      "description": "Modern geometric certificate background",
+      "imageUrl": "https://images.unsplash.com/photo-1762330915716-69ffffeeee95?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxjZXJ0aWZpY2F0ZSUyMG1vZGVybnxlbnwwfHx8fDE3NjQ3NzQwMDV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "certificate modern",
+      "category": "certificate"
+    },
+    {
+      "id": "cert-bg-3",
+      "description": "Elegant certificate with flourish",
+      "imageUrl": "https://images.unsplash.com/photo-1568137224279-f19f0f825447?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxjZXJ0aWZpY2F0ZSUyMGVsZWdhbnR8ZW58MHx8fHwxNzY0Nzc0MDA0fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "certificate elegant",
+      "category": "certificate"
+    },
+    {
+      "id": "inv-bg-1",
+      "description": "Subtle invoice watermark",
+      "imageUrl": "https://images.unsplash.com/photo-1658203897373-9ba844573252?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxpbnZvaWNlJTIwd2F0ZXJtYXJrfGVufDB8fHx8MTc2NDc3NDAwNXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "invoice watermark",
+      "category": "invoice"
+    },
+    {
+      "id": "inv-bg-2",
+      "description": "Minimalist invoice header graphic",
+      "imageUrl": "https://picsum.photos/seed/inv2/850/1100",
+      "imageHint": "invoice minimal",
+      "category": "invoice"
+    },
+    {
+      "id": "quot-bg-1",
+      "description": "Clean quotation background pattern",
+      "imageUrl": "https://images.unsplash.com/photo-1566933987063-1f0b84943ecc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxxdW90YXRpb24lMjBwYXR0ZXJufGVufDB8fHx8MTc2NDc3NDAwNHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "quotation pattern",
+      "category": "quotation"
+    }
+  ]
 }
