@@ -137,29 +137,29 @@ const TemplateCard = ({ template }: { template: BrandsoftTemplate }) => {
         
         {/* View Dialog */}
         <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
-            <DialogContent className="max-w-4xl h-[90vh]">
-                <div className="grid grid-cols-3 h-full gap-6">
-                    <div className="col-span-2 bg-muted rounded-lg overflow-hidden">
-                        <div className="w-full h-full scale-[0.9] origin-center flex items-center justify-center">
-                          <div className="aspect-[8.5/11] h-full shadow-lg">
-                            {firstPage && <TemplatePreview page={firstPage} />}
-                          </div>
+            <DialogContent className="max-w-4xl h-[90vh] p-0">
+                <div className="grid grid-cols-3 h-full gap-0">
+                    <div className="col-span-2 bg-muted rounded-l-lg flex items-center justify-center p-8">
+                        <div className="aspect-[8.5/11] w-full max-w-md max-h-full overflow-hidden shadow-lg">
+                          {firstPage && <TemplatePreview page={firstPage} />}
                         </div>
                     </div>
-                    <div className="col-span-1 py-6 pr-6 flex flex-col">
-                        <DialogHeader className="text-left mb-4">
-                            <DialogTitle className="text-2xl font-bold">{template.name}</DialogTitle>
-                            <DialogDescription>{template.description || 'No description available.'}</DialogDescription>
-                        </DialogHeader>
-                        
-                        <div className="space-y-2 text-sm text-muted-foreground">
-                            <p><strong>Category:</strong> <span className="capitalize">{template.category}</span></p>
-                            <p><strong>Created:</strong> {template.createdAt ? new Date(template.createdAt).toLocaleDateString() : 'N/A'}</p>
+                    <div className="col-span-1 p-6 flex flex-col">
+                        <div className="flex-grow">
+                            <DialogHeader className="text-left mb-4">
+                                <DialogTitle className="text-2xl font-bold">{template.name}</DialogTitle>
+                                <DialogDescription>{template.description || 'No description available.'}</DialogDescription>
+                            </DialogHeader>
+                            
+                            <div className="space-y-2 text-sm text-muted-foreground">
+                                <p><strong>Category:</strong> <span className="capitalize">{template.category}</span></p>
+                                <p><strong>Created:</strong> {template.createdAt ? new Date(template.createdAt).toLocaleDateString() : 'N/A'}</p>
+                            </div>
                         </div>
                         
                         <Separator className="my-6"/>
 
-                        <DialogFooter className="flex-col gap-2 items-start mt-auto">
+                        <DialogFooter className="flex-col gap-2 items-center justify-center">
                            <Button className="w-full" onClick={handleSetAsDefault}>Use this template</Button>
                            <Button variant="outline" className="w-full" onClick={handleEdit}>Edit this template</Button>
                         </DialogFooter>
