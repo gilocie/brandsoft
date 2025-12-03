@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -13,8 +13,10 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { ColorInput } from './sidebar/components';
-import { File, Image, BookOpen, Newspaper, Contact } from 'lucide-react';
+import { File, Image, BookOpen, Newspaper, Contact, Bookmark, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
+import { Separator } from '@/components/ui/separator';
 
 const presets = [
     { name: 'Letter', width: 8.5, height: 11, unit: 'in', icon: File },
@@ -24,6 +26,14 @@ const presets = [
     { name: 'ID Card', width: 3.375, height: 2.125, unit: 'in', icon: Contact },
     { name: 'Book', width: 6, height: 9, unit: 'in', icon: BookOpen },
 ];
+
+type CustomPreset = {
+    name: string;
+    width: number;
+    height: number;
+    unit: 'in' | 'px' | 'cm';
+    icon: React.ElementType;
+};
 
 const newPageSchema = z.object({
   name: z.string().min(1, "Page name is required"),
@@ -41,9 +51,40 @@ interface NewPageDialogProps {
   onClose: () => void;
 }
 
+const useLocalStorage = <T>(key: string, initialValue: T) => {
+    const [storedValue, setStoredValue] = useState<T>(() => {
+        if (typeof window === 'undefined') {
+            return initialValue;
+        }
+        try {
+            const item = window.localStorage.getItem(key);
+            return item ? JSON.parse(item) : initialValue;
+        } catch (error) {
+            console.log(error);
+            return initialValue;
+        }
+    });
+
+    const setValue = (value: T | ((val: T) => T)) => {
+        try {
+            const valueToStore = value instanceof Function ? value(storedValue) : value;
+            setStoredValue(valueToStore);
+            if (typeof window !== 'undefined') {
+                window.localStorage.setItem(key, JSON.stringify(valueToStore));
+            }
+        } catch (error) {
+            console.log(error);
+        }
+    };
+    return [storedValue, setValue] as const;
+};
+
 const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
     const { setPages, setNewPageDialogOpen } = useCanvasStore();
+    const { toast } = useToast();
     const [activePreset, setActivePreset] = useState<string | null>('Letter');
+    const [customPresets, setCustomPresets] = useLocalStorage<CustomPreset[]>('custom-doc-presets', []);
+
 
     const form = useForm<NewPageFormData>({
         resolver: zodResolver(newPageSchema),
@@ -57,18 +98,16 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
         },
     });
 
-    const handlePresetSelect = (presetName: string) => {
-        const preset = presets.find(p => p.name === presetName);
-        if (preset) {
-            setActivePreset(preset.name);
-            form.reset({
-                ...form.getValues(),
-                width: preset.width,
-                height: preset.height,
-                unit: preset.unit as 'in' | 'px' | 'cm',
-                orientation: preset.width < preset.height ? 'portrait' : 'landscape',
-            });
-        }
+    const handlePresetSelect = (preset: CustomPreset) => {
+        setActivePreset(preset.name);
+        form.reset({
+            ...form.getValues(),
+            name: preset.name,
+            width: preset.width,
+            height: preset.height,
+            unit: preset.unit,
+            orientation: preset.width < preset.height ? 'portrait' : 'landscape',
+        });
     };
     
     const handleOrientationChange = (orientation: 'portrait' | 'landscape') => {
@@ -80,6 +119,42 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
             form.setValue('height', width);
         }
         form.setValue('orientation', orientation);
+    };
+
+    const handleSavePreset = () => {
+        const { name, width, height, unit } = form.getValues();
+        if (!name || !width || !height || !unit) {
+            toast({
+                variant: 'destructive',
+                title: 'Cannot Save Preset',
+                description: 'Please provide a name and dimensions for your preset.',
+            });
+            return;
+        }
+        
+        const newPreset: CustomPreset = { name, width, height, unit, icon: Bookmark };
+        
+        setCustomPresets(prev => {
+            const existing = prev.find(p => p.name.toLowerCase() === name.toLowerCase());
+            if (existing) {
+                // Update existing preset
+                return prev.map(p => p.name.toLowerCase() === name.toLowerCase() ? newPreset : p);
+            }
+            return [...prev, newPreset];
+        });
+
+        toast({
+            title: 'Preset Saved!',
+            description: `"${name}" has been saved to your custom presets.`,
+        });
+    };
+    
+    const handleDeletePreset = (presetName: string) => {
+        setCustomPresets(prev => prev.filter(p => p.name !== presetName));
+        toast({
+            title: 'Preset Deleted',
+            description: `"${presetName}" has been removed.`,
+        });
     };
 
     const onSubmit = (data: NewPageFormData) => {
@@ -106,6 +181,36 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
         setNewPageDialogOpen(false);
     };
 
+    const PresetButton = ({ preset, isCustom }: { preset: CustomPreset, isCustom: boolean }) => (
+         <div className="relative group/preset">
+            <button
+                type="button"
+                className={cn(
+                    "w-full flex items-center gap-3 p-2 rounded-md text-left",
+                    activePreset === preset.name ? 'bg-primary/10 text-primary font-semibold' : 'hover:bg-muted'
+                )}
+                onClick={() => handlePresetSelect(preset)}
+            >
+                <preset.icon className="h-5 w-5 shrink-0" />
+                <div>
+                    <p className="text-sm">{preset.name}</p>
+                    <p className="text-xs text-muted-foreground">{preset.width}{preset.unit} x {preset.height}{preset.unit}</p>
+                </div>
+            </button>
+            {isCustom && (
+                 <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover/preset:opacity-100 transition-opacity"
+                    onClick={(e) => { e.stopPropagation(); handleDeletePreset(preset.name); }}
+                >
+                    <Trash2 className="h-3 w-3" />
+                </Button>
+            )}
+        </div>
+    );
+
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="max-w-3xl">
@@ -117,38 +222,40 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)}>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 py-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 py-2">
                             {/* Presets */}
                             <div className="col-span-1 space-y-2">
                                 <h3 className="text-sm font-medium text-muted-foreground">Presets</h3>
                                 <div className="space-y-1">
                                     {presets.map((p) => (
-                                        <button
-                                            key={p.name}
-                                            type="button"
-                                            className={cn(
-                                                "w-full flex items-center gap-3 p-2 rounded-md text-left",
-                                                activePreset === p.name ? 'bg-primary/10 text-primary font-semibold' : 'hover:bg-muted'
-                                            )}
-                                            onClick={() => handlePresetSelect(p.name)}
-                                        >
-                                            <p.icon className="h-5 w-5 shrink-0" />
-                                            <div>
-                                                <p className="text-sm">{p.name}</p>
-                                                <p className="text-xs text-muted-foreground">{p.width}{p.unit} x {p.height}{p.unit}</p>
-                                            </div>
-                                        </button>
+                                        <PresetButton key={p.name} preset={p as CustomPreset} isCustom={false} />
                                     ))}
                                 </div>
+                                {customPresets.length > 0 && (
+                                    <>
+                                        <Separator className="my-2" />
+                                        <h3 className="text-sm font-medium text-muted-foreground">Custom</h3>
+                                        <div className="space-y-1">
+                                            {customPresets.map((p) => (
+                                                 <PresetButton key={p.name} preset={p} isCustom={true} />
+                                            ))}
+                                        </div>
+                                    </>
+                                )}
                             </div>
 
                             {/* Details */}
                             <div className="col-span-2 space-y-4">
-                                 <FormField
-                                    control={form.control} name="name" render={({ field }) => (
-                                        <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} className="text-lg font-semibold" /></FormControl><FormMessage /></FormItem>
-                                    )}
-                                />
+                                <div className="flex justify-between items-center">
+                                     <FormField
+                                        control={form.control} name="name" render={({ field }) => (
+                                            <FormItem className="flex-grow"><FormLabel>Name</FormLabel><FormControl><Input {...field} className="text-lg font-semibold" /></FormControl><FormMessage /></FormItem>
+                                        )}
+                                    />
+                                    <Button type="button" variant="outline" size="sm" className="mt-7 ml-4" onClick={handleSavePreset}>
+                                        <Bookmark className="h-4 w-4 mr-2"/> Save Preset
+                                    </Button>
+                                </div>
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <FormField control={form.control} name="width" render={({ field }) => (
