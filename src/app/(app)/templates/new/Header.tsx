@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -19,7 +20,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from '@/components/ui/dropdown-menu';
 import { useBrandsoft } from '@/hooks/use-brandsoft';
 import { useCanvasStore } from '@/stores/canvas-store';
-import { exportCanvasAsImage } from './canvas/utils';
+import { exportAsImage, exportAsPdf, exportAsZip } from './canvas/utils/export';
 
 interface HeaderProps {
     onSaveTemplate: () => void;
@@ -30,13 +31,23 @@ const Header = ({ onSaveTemplate }: HeaderProps) => {
     const canUndo = historyIndex > 0;
     const canRedo = historyIndex < history.length - 1;
     const { config } = useBrandsoft();
+    const isMultiPage = pages.length > 1;
 
-    const handleExport = (format: 'png' | 'jpeg') => {
-        const pageElement = document.getElementById(`page-${currentPageIndex}`);
-        if (pageElement) {
-            exportCanvasAsImage(pageElement, format);
+    const handleExport = (format: 'png' | 'jpeg' | 'pdf') => {
+        if (format === 'pdf') {
+            exportAsPdf(pages, `design-${Date.now()}`);
+            return;
+        }
+
+        if (isMultiPage) {
+            exportAsZip(pages, format, `design-pages-${Date.now()}`);
         } else {
-            console.error("Could not find page element to export.");
+            const pageElement = document.getElementById(`page-${currentPageIndex}`);
+            if (pageElement) {
+                exportAsImage(pageElement, format, `design-${Date.now()}`);
+            } else {
+                console.error("Could not find page element to export.");
+            }
         }
     };
     
@@ -55,11 +66,13 @@ const Header = ({ onSaveTemplate }: HeaderProps) => {
                         <DropdownMenuItem>Save</DropdownMenuItem>
                         <DropdownMenuItem>Save As</DropdownMenuItem>
                         <DropdownMenuItem onClick={onSaveTemplate}>Save As Template</DropdownMenuItem>
+                        <DropdownMenuSeparator className="bg-gray-700"/>
                         <DropdownMenuSub>
                             <DropdownMenuSubTrigger>Export</DropdownMenuSubTrigger>
                             <DropdownMenuSubContent className="bg-black text-white border-gray-700">
-                                <DropdownMenuItem onClick={() => handleExport('png')}>as PNG</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleExport('jpeg')}>as JPEG</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleExport('png')}>as PNG {isMultiPage && '(ZIP)'}</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleExport('jpeg')}>as JPEG {isMultiPage && '(ZIP)'}</DropdownMenuItem>
+                                {isMultiPage && <DropdownMenuItem onClick={() => handleExport('pdf')}>as PDF</DropdownMenuItem>}
                             </DropdownMenuSubContent>
                         </DropdownMenuSub>
                         <DropdownMenuSeparator className="bg-gray-700"/>
