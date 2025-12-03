@@ -222,10 +222,10 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)}>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 py-2">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-1">
                             {/* Presets */}
-                            <div className="col-span-1 space-y-2">
-                                <h3 className="text-sm font-medium text-muted-foreground">Presets</h3>
+                            <div className="col-span-1 space-y-1">
+                                <h3 className="text-sm font-medium text-muted-foreground px-2">Presets</h3>
                                 <div className="space-y-1">
                                     {presets.map((p) => (
                                         <PresetButton key={p.name} preset={p as CustomPreset} isCustom={false} />
@@ -234,7 +234,7 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
                                 {customPresets.length > 0 && (
                                     <>
                                         <Separator className="my-2" />
-                                        <h3 className="text-sm font-medium text-muted-foreground">Custom</h3>
+                                        <h3 className="text-sm font-medium text-muted-foreground px-2">Custom</h3>
                                         <div className="space-y-1">
                                             {customPresets.map((p) => (
                                                  <PresetButton key={p.name} preset={p} isCustom={true} />
@@ -245,7 +245,7 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
                             </div>
 
                             {/* Details */}
-                            <div className="col-span-2 space-y-4">
+                            <div className="col-span-2 space-y-3">
                                 <div className="flex justify-between items-center">
                                      <FormField
                                         control={form.control} name="name" render={({ field }) => (
@@ -303,7 +303,7 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
                             </div>
                         </div>
 
-                        <DialogFooter>
+                        <DialogFooter className="pt-4">
                             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
                             <Button type="submit">Create</Button>
                         </DialogFooter>
