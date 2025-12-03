@@ -338,6 +338,21 @@ const Canvas = ({ onPageDoubleClick }: CanvasProps) => {
     const hasMultiSelect = selectedElementIds.length > 1;
     const sortedElements = [...currentPage.elements].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
 
+    const getPageBackgroundStyle = () => {
+        if (pageDetails.backgroundType === 'transparent') {
+             return {
+                backgroundImage: `
+                    linear-gradient(45deg, #ccc 25%, transparent 25%), 
+                    linear-gradient(135deg, #ccc 25%, transparent 25%),
+                    linear-gradient(45deg, transparent 75%, #ccc 75%),
+                    linear-gradient(135deg, transparent 75%, #ccc 75%)`,
+                backgroundSize: '20px 20px',
+                backgroundPosition: '0 0, 10px 0, 10px -10px, 0px 10px',
+             };
+        }
+        return { background: pageDetails.backgroundColor };
+    }
+
     return (
         <main
             ref={mainCanvasRef}
@@ -381,7 +396,16 @@ const Canvas = ({ onPageDoubleClick }: CanvasProps) => {
                 </div>
                 {hasMultiSelect && <div className="absolute z-30 bg-blue-500 text-white text-xs px-2 py-1 rounded" style={{ top: '-36px', left: '0' }}>{selectedElementIds.length} elements selected</div>}
                 
-                <div id={`page-${currentPageIndex}`} ref={pageRef} className="relative bg-white shadow-lg" style={{ width: `${pageDetails.width}${pageDetails.unit}`, height: `${pageDetails.height}${pageDetails.unit}`, background: pageDetails.backgroundColor }}>
+                <div 
+                    id={`page-${currentPageIndex}`} 
+                    ref={pageRef} 
+                    className="relative bg-white shadow-lg" 
+                    style={{ 
+                        width: `${pageDetails.width}${pageDetails.unit}`, 
+                        height: `${pageDetails.height}${pageDetails.unit}`, 
+                        ...getPageBackgroundStyle()
+                    }}
+                >
                     <PageBackground />
                     {guides.horizontal.map(g => <RulerGuide key={g.id} id={g.id} orientation="horizontal" position={g.y!} />)}
                     {guides.vertical.map(g => <RulerGuide key={g.id} id={g.id} orientation="vertical" position={g.x!} />)}

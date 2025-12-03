@@ -43,6 +43,14 @@ type CustomPreset = {
     height: number;
     unit: 'in' | 'px' | 'cm';
     icon: string;
+    ppi: number;
+    colorMode: 'RGB' | 'CMYK' | 'Grayscale';
+    bitDepth: '8' | '16' | '32';
+    backgroundType: 'color' | 'transparent' | 'gradient';
+    backgroundColor: string;
+    gradientStart?: string;
+    gradientEnd?: string;
+    gradientAngle?: number;
 };
 
 const newPageSchema = z.object({
@@ -118,20 +126,30 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
     });
 
     const watchedBgType = form.watch('backgroundType');
-    const watchedBgColor = form.watch('backgroundColor');
     const watchedGradientStart = form.watch('gradientStart');
     const watchedGradientEnd = form.watch('gradientEnd');
 
-    const handlePresetSelect = (preset: CustomPreset) => {
-        setActivePreset(preset.name);
+    const handlePresetSelect = (preset: Partial<CustomPreset>) => {
+        setActivePreset(preset.name || null);
         const { ppi, colorMode, bitDepth, backgroundType, backgroundColor, gradientStart, gradientEnd, gradientAngle } = form.getValues();
+        
+        const newWidth = preset.width || 8.5;
+        const newHeight = preset.height || 11;
+        
         form.reset({
-            name: preset.name,
-            width: preset.width,
-            height: preset.height,
-            unit: preset.unit,
-            orientation: preset.width < preset.height ? 'portrait' : 'landscape',
-            ppi, colorMode, bitDepth, backgroundType, backgroundColor, gradientStart, gradientEnd, gradientAngle
+            name: preset.name || 'Untitled-1',
+            width: newWidth,
+            height: newHeight,
+            unit: preset.unit || 'in',
+            orientation: newHeight > newWidth ? 'portrait' : 'landscape',
+            ppi: preset.ppi || ppi,
+            colorMode: preset.colorMode || colorMode,
+            bitDepth: preset.bitDepth || bitDepth,
+            backgroundType: preset.backgroundType || backgroundType,
+            backgroundColor: preset.backgroundColor || backgroundColor,
+            gradientStart: preset.gradientStart || gradientStart,
+            gradientEnd: preset.gradientEnd || gradientEnd,
+            gradientAngle: preset.gradientAngle || gradientAngle,
         });
     };
     
@@ -148,8 +166,8 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
     };
 
     const handleSavePreset = () => {
-        const { name, width, height, unit } = form.getValues();
-        if (!name || !width || !height || !unit) {
+        const data = form.getValues();
+        if (!data.name || !data.width || !data.height || !data.unit) {
             toast({
                 variant: 'destructive',
                 title: 'Cannot Save Preset',
@@ -158,19 +176,24 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
             return;
         }
         
-        const newPreset: CustomPreset = { name, width, height, unit, icon: 'Bookmark' };
+        const newPreset: CustomPreset = { 
+            name: data.name, width: data.width, height: data.height, unit: data.unit, icon: 'Bookmark',
+            ppi: data.ppi, colorMode: data.colorMode, bitDepth: data.bitDepth,
+            backgroundType: data.backgroundType, backgroundColor: data.backgroundColor,
+            gradientStart: data.gradientStart, gradientEnd: data.gradientEnd, gradientAngle: data.gradientAngle,
+        };
         
         setCustomPresets(prev => {
-            const existing = prev.find(p => p.name.toLowerCase() === name.toLowerCase());
+            const existing = prev.find(p => p.name.toLowerCase() === data.name.toLowerCase());
             if (existing) {
-                return prev.map(p => p.name.toLowerCase() === name.toLowerCase() ? newPreset : p);
+                return prev.map(p => p.name.toLowerCase() === data.name.toLowerCase() ? newPreset : p);
             }
             return [...prev, newPreset];
         });
 
         toast({
             title: 'Preset Saved!',
-            description: `"${name}" has been saved to your custom presets.`,
+            description: `"${data.name}" has been saved to your custom presets.`,
         });
     };
     
@@ -223,8 +246,8 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
         setNewPageDialogOpen(false);
     };
 
-    const PresetButton = ({ preset, isCustom }: { preset: CustomPreset, isCustom: boolean }) => {
-        const Icon = iconMap[preset.icon] || File;
+    const PresetButton = ({ preset, isCustom }: { preset: Partial<CustomPreset>, isCustom: boolean }) => {
+        const Icon = iconMap[preset.icon || 'File'] || File;
         const isSelected = activePreset === preset.name;
         
         return (
@@ -253,13 +276,13 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
                         <p className="text-xs text-muted-foreground">{preset.width}{preset.unit} x {preset.height}{preset.unit}</p>
                     </div>
                 </button>
-                {isCustom && (
+                {isCustom && preset.name && (
                      <Button
                         type="button"
                         variant="destructive"
                         size="icon"
                         className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover/preset:opacity-100 transition-opacity"
-                        onClick={(e) => { e.stopPropagation(); handleDeletePreset(preset.name); }}
+                        onClick={(e) => { e.stopPropagation(); handleDeletePreset(preset.name!); }}
                     >
                         <Trash2 className="h-3 w-3" />
                     </Button>
@@ -422,11 +445,11 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
                                         <FormField control={form.control} name="backgroundType" render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Background Contents</FormLabel>
-                                                <Tabs value={field.value} onValueChange={field.onChange} className="w-full">
+                                                <Tabs value={field.value} onValueChange={(v) => v && field.onChange(v as any)} className="w-full">
                                                     <TabsList className="grid w-full grid-cols-3">
                                                         <TabsTrigger value="color">Color</TabsTrigger>
-                                                        <TabsTrigger value="transparent">Transparent</TabsTrigger>
                                                         <TabsTrigger value="gradient">Gradient</TabsTrigger>
+                                                        <TabsTrigger value="transparent">None</TabsTrigger>
                                                     </TabsList>
                                                     <TabsContent value="color" className="mt-4">
                                                         <FormField control={form.control} name="backgroundColor" render={({ field }) => (
@@ -438,8 +461,8 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
                                                         )} />
                                                     </TabsContent>
                                                     <TabsContent value="transparent" className="mt-4">
-                                                        <div className="text-sm text-muted-foreground">
-                                                            Background will be transparent
+                                                        <div className="text-sm text-muted-foreground p-4 text-center border rounded-md">
+                                                            Background will be transparent.
                                                         </div>
                                                     </TabsContent>
                                                     <TabsContent value="gradient" className="mt-4 space-y-4">

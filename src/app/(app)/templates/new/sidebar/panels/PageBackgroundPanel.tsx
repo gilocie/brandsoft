@@ -74,6 +74,14 @@ export const PageBackgroundPanel = () => {
         }
         return pageDetails.backgroundColor;
     };
+    
+    const handleBackgroundTypeChange = (type: 'color' | 'gradient' | 'transparent') => {
+        updatePageDetails({ 
+            backgroundType: type,
+            backgroundColor: getBackgroundValue() // This will recalculate the final CSS value
+        });
+        commitHistory();
+    };
 
 
     return (
@@ -83,7 +91,7 @@ export const PageBackgroundPanel = () => {
                     Background Color
                 </AccordionTrigger>
                  <AccordionContent className="px-3 pb-3 space-y-4">
-                     <Tabs value={pageDetails.backgroundType} onValueChange={(v) => updatePageDetails({ backgroundType: v as any })} className="w-full">
+                     <Tabs value={pageDetails.backgroundType} onValueChange={(v) => handleBackgroundTypeChange(v as any)} className="w-full">
                         <TabsList className="grid w-full grid-cols-3 h-8">
                             <TabsTrigger value="color" className="text-xs h-6">Color</TabsTrigger>
                             <TabsTrigger value="gradient" className="text-xs h-6">Gradient</TabsTrigger>
@@ -92,8 +100,8 @@ export const PageBackgroundPanel = () => {
                         <TabsContent value="color" className="mt-4">
                             <ColorInput
                                 label=""
-                                value={pageDetails.backgroundColor}
-                                onChange={(v) => updatePageDetails({ backgroundColor: v, backgroundType: 'color' })}
+                                value={pageDetails.gradientStart || pageDetails.backgroundColor}
+                                onChange={(v) => updatePageDetails({ backgroundColor: v, gradientStart: v })}
                                 onBlur={commitHistory}
                             />
                         </TabsContent>
@@ -102,13 +110,13 @@ export const PageBackgroundPanel = () => {
                                 <ColorInput
                                     label="Start"
                                     value={pageDetails.gradientStart || '#FFFFFF'}
-                                    onChange={(v) => updatePageDetails({ gradientStart: v, backgroundType: 'gradient' })}
+                                    onChange={(v) => updatePageDetails({ gradientStart: v })}
                                     onBlur={commitHistory}
                                 />
                                  <ColorInput
                                     label="End"
                                     value={pageDetails.gradientEnd || '#000000'}
-                                    onChange={(v) => updatePageDetails({ gradientEnd: v, backgroundType: 'gradient' })}
+                                    onChange={(v) => updatePageDetails({ gradientEnd: v })}
                                     onBlur={commitHistory}
                                 />
                             </div>
@@ -122,7 +130,7 @@ export const PageBackgroundPanel = () => {
                             <div className="h-12 rounded-md border" style={{ background: getBackgroundValue() }} />
                         </TabsContent>
                          <TabsContent value="transparent" className="mt-4">
-                            <div className="text-sm text-center text-muted-foreground p-2">
+                            <div className="text-sm text-center text-muted-foreground p-2 border rounded-md">
                                 Background is transparent.
                             </div>
                         </TabsContent>
