@@ -14,7 +14,7 @@ import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { useBrandsoft, type BrandsoftTemplate } from '@/hooks/use-brandsoft';
 import { useCanvasStore } from '@/stores/canvas-store';
 import { TemplatePreview } from '@/app/(app)/templates/page';
-import { ImagesPanel } from './sidebar/panels/ImagesPanel';
+
 
 const handleDragStart = (e: React.DragEvent, data: any) => {
     e.dataTransfer.setData('application/json', JSON.stringify(data));
@@ -193,7 +193,6 @@ const PanelContent = ({ activeTool }: { activeTool: string | null }) => {
         case 'Shapes': return <ShapesPanel />;
         case 'Fields': return <FieldsPanel />;
         case 'Templates': return <TemplatesPanel />;
-        case 'Images': return <ImagesPanel />;
         default:
             return (
                 <div className="p-4">
