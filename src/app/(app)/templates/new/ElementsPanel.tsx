@@ -5,12 +5,15 @@ import React from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
     RectangleHorizontal, Circle, Triangle, Star, Square, Heart, Gem, Hexagon, ArrowRight,
-    Building2, Image as ImageIcon, MapPin, Phone, Mail, Globe, User, Receipt, CalendarDays, Hash, Type, X
+    Building2, Image as ImageIcon, MapPin, Phone, Mail, Globe, User, Receipt, CalendarDays, Hash, Type, X, LayoutTemplate
 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader } from '@/components/ui/card';
+import { Card, CardHeader, CardContent } from '@/components/ui/card';
+import { useBrandsoft, type BrandsoftTemplate } from '@/hooks/use-brandsoft';
+import { useCanvasStore } from '@/stores/canvas-store';
+import { TemplatePreview } from '@/app/(app)/templates/page';
 
 const handleDragStart = (e: React.DragEvent, data: any) => {
     e.dataTransfer.setData('application/json', JSON.stringify(data));
@@ -146,12 +149,49 @@ const FieldsPanel = () => {
     )
 }
 
+const TemplatesPanel = () => {
+    const { config } = useBrandsoft();
+    const { setPages } = useCanvasStore();
+    const templates = config?.templates || [];
+
+    const handleTemplateClick = (template: BrandsoftTemplate) => {
+        // Deep copy pages to avoid unintended mutations
+        const newPages = JSON.parse(JSON.stringify(template.pages));
+        setPages(newPages);
+    };
+
+    if (templates.length === 0) {
+        return (
+            <div className="p-4 text-center text-sm text-gray-400">
+                <LayoutTemplate className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                No saved templates found.
+            </div>
+        );
+    }
+    
+    return (
+        <div className="p-2 space-y-2">
+            {templates.map(template => (
+                <div key={template.id} className="cursor-pointer" onClick={() => handleTemplateClick(template)}>
+                    <Card className="overflow-hidden hover:shadow-md hover:border-primary">
+                        <CardContent className="p-0 aspect-[8.5/11] bg-gray-100">
+                            {template.pages[0] && <TemplatePreview page={template.pages[0]} />}
+                        </CardContent>
+                        <CardHeader className="p-2">
+                            <p className="text-xs font-medium truncate">{template.name}</p>
+                        </CardHeader>
+                    </Card>
+                </div>
+            ))}
+        </div>
+    )
+}
+
 const PanelContent = ({ activeTool }: { activeTool: string | null }) => {
     switch(activeTool) {
-        case 'Shapes':
-            return <ShapesPanel />;
-        case 'Fields':
-            return <FieldsPanel />;
+        case 'Shapes': return <ShapesPanel />;
+        case 'Fields': return <FieldsPanel />;
+        case 'Templates': return <TemplatesPanel />;
         default:
             return (
                 <div className="p-4">
@@ -222,5 +262,3 @@ const ElementsPanel = ({ activeTool, onClose, position, setPosition }: ElementsP
 };
 
 export default ElementsPanel;
-
-    

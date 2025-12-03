@@ -5,6 +5,7 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { hexToHsl } from '@/lib/utils';
+import { Page } from '@/stores/canvas-store';
 
 const LICENSE_KEY = 'brandsoft_license';
 const CONFIG_KEY = 'brandsoft_config';
@@ -58,6 +59,16 @@ export type Invoice = {
     lineItems?: InvoiceLineItem[];
 };
 
+export type BrandsoftTemplate = {
+  id: string;
+  name: string;
+  description?: string;
+  category: 'invoice' | 'quotation' | 'certificate' | 'id-card' | 'marketing';
+  pages: Page[];
+  previewImage?: string; // data URL
+};
+
+
 export type BrandsoftConfig = {
   brand: {
     logo: string;
@@ -94,6 +105,7 @@ export type BrandsoftConfig = {
   customers: Customer[];
   products: Product[];
   invoices: Invoice[];
+  templates: BrandsoftTemplate[];
   currencies: string[];
 };
 
@@ -237,6 +249,9 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
          if (!parsedConfig.customers || parsedConfig.customers.length === 0) {
             parsedConfig.customers = initialCustomers;
         }
+        if (!parsedConfig.templates) {
+            parsedConfig.templates = [];
+        }
         setConfig(parsedConfig);
       }
     } catch (error) {
@@ -283,7 +298,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       setConfig(newConfig);
 
       if (options.redirect) {
-        const nonRedirectPaths = ['/dashboard', '/settings', '/products', '/invoices'];
+        const nonRedirectPaths = ['/dashboard', '/settings', '/products', '/invoices', '/templates'];
         const isCustomerPage = window.location.pathname.startsWith('/customers');
         const isProductsPage = window.location.pathname.startsWith('/products');
         const isInvoicePage = window.location.pathname.startsWith('/invoices');
