@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useRef, useEffect, useState } from 'react';
@@ -126,8 +127,10 @@ interface CanvasProps { onPageDoubleClick: () => void; }
 const Canvas = ({ onPageDoubleClick }: CanvasProps) => {
     const {
         elements, addElement, selectElement, deleteElement, selectedElementId, selectedElementIds, moveElement,
-        zoom, setZoom, canvasPosition, setCanvasPosition, rulers, guides, addGuide,
-        pageDetails, updatePageBackground, commitHistory, undo, redo, historyIndex, history,
+        zoom, setZoom, canvasPosition, setCanvasPosition, rulers, guides, addGuide, addPage,
+        pages, currentPageIndex, setActivePage,
+        pageDetails: legacyPageDetails,
+        updatePageBackground, commitHistory, undo, redo, historyIndex, history,
         isBackgroundRepositioning, setBackgroundRepositioning,
         selectionBox, setSelectionBox, getElementsInSelectionBox, selectMultipleElements,
         linkSelectedElements, groupSelectedElements,
@@ -137,6 +140,14 @@ const Canvas = ({ onPageDoubleClick }: CanvasProps) => {
     const pageRef = useRef<HTMLDivElement>(null);
     const dragStart = useRef({ x: 0, y: 0, canvasX: 0, canvasY: 0 });
     const [isCtrlPressed, setIsCtrlPressed] = useState(false);
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    const currentPage = pages[currentPageIndex];
+    const pageDetails = currentPage.pageDetails;
 
     const canUndo = historyIndex > 0;
     const canRedo = historyIndex < history.length - 1;
@@ -424,35 +435,45 @@ const Canvas = ({ onPageDoubleClick }: CanvasProps) => {
                 )}
 
                 {/* Page */}
-                <div id="page-0" ref={pageRef} className="relative bg-white shadow-lg" style={{ width: `${pageDetails.width}${pageDetails.unit}`, height: `${pageDetails.height}${pageDetails.unit}`, backgroundColor: pageDetails.backgroundColor }}>
-                    <PageBackground />
-                    {guides.horizontal.map(g => <RulerGuide key={g.id} id={g.id} orientation="horizontal" position={g.y!} />)}
-                    {guides.vertical.map(g => <RulerGuide key={g.id} id={g.id} orientation="vertical" position={g.x!} />)}
-                    
-                    {/* Multi-select bounding box */}
-                    <MultiSelectBox elementIds={selectedElementIds} />
-                    
-                    {/* Selection box while dragging */}
-                    {selectionBox && selectionBox.isSelecting && (
-                        <SelectionBox
-                            startX={selectionBox.startX}
-                            startY={selectionBox.startY}
-                            endX={selectionBox.endX}
-                            endY={selectionBox.endY}
-                        />
-                    )}
+                {isClient ? (
+                    <div id={`page-${currentPageIndex}`} ref={pageRef} className="relative bg-white shadow-lg" style={{ width: `${pageDetails.width}${pageDetails.unit}`, height: `${pageDetails.height}${pageDetails.unit}`, backgroundColor: pageDetails.backgroundColor }}>
+                        <PageBackground />
+                        {guides.horizontal.map(g => <RulerGuide key={g.id} id={g.id} orientation="horizontal" position={g.y!} />)}
+                        {guides.vertical.map(g => <RulerGuide key={g.id} id={g.id} orientation="vertical" position={g.x!} />)}
+                        
+                        {/* Multi-select bounding box */}
+                        <MultiSelectBox elementIds={selectedElementIds} />
+                        
+                        {/* Selection box while dragging */}
+                        {selectionBox && selectionBox.isSelecting && (
+                            <SelectionBox
+                                startX={selectionBox.startX}
+                                startY={selectionBox.startY}
+                                endX={selectionBox.endX}
+                                endY={selectionBox.endY}
+                            />
+                        )}
 
-                    {sortedElements.map(el => <CanvasElementRenderer key={el.id} element={el} />)}
-                    
-                    {elements.length === 0 && (
-                        <div className="absolute inset-0 flex items-center justify-center text-gray-400 pointer-events-none">
-                            <p>Drag an element from a panel to add it</p>
+                        {sortedElements.map(el => <CanvasElementRenderer key={el.id} element={el} />)}
+                        
+                        {elements.length === 0 && (
+                            <div className="absolute inset-0 flex items-center justify-center text-gray-400 pointer-events-none">
+                                <p>Drag an element from a panel to add it</p>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                     <div ref={pageRef} className="relative bg-white shadow-lg" style={{ width: `${pageDetails.width}${pageDetails.unit}`, height: `${pageDetails.height}${pageDetails.unit}` }}/>
+                )}
+
+                <div className="absolute left-1/2 -translate-x-1/2 z-30 flex items-center gap-4" style={{ top: `calc(${pageDetails.height}${pageDetails.unit} + 16px)` }}>
+                    {pages.map((p, i) => (
+                        <div key={p.id} onClick={() => setActivePage(i)} className={`cursor-pointer border-2 p-1 rounded-md ${i === currentPageIndex ? 'border-primary' : 'border-gray-300'}`}>
+                            <div className="w-16 h-20 bg-white" />
+                            <p className="text-xs text-center mt-1">{`Page ${i + 1}`}</p>
                         </div>
-                    )}
-                </div>
-
-                <div className="absolute left-1/2 -translate-x-1/2 z-30" style={{ top: `calc(${pageDetails.height}${pageDetails.unit} + 16px)` }}>
-                    <Button variant="outline" className="bg-white shadow-md"><PlusSquare className="mr-2 h-4 w-4" /> Add page</Button>
+                    ))}
+                    <Button variant="outline" size="sm" className="bg-white shadow-md" onClick={addPage}><PlusSquare className="mr-2 h-4 w-4" /> Add Page</Button>
                 </div>
             </div>
         </main>

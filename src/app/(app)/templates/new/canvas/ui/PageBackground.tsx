@@ -1,10 +1,16 @@
+
 'use client';
 
 import React from 'react';
 import { useCanvasStore } from '@/stores/canvas-store';
 
 export const PageBackground = () => {
-    const { pageDetails, updatePageBackground, commitHistory, isBackgroundRepositioning, setBackgroundRepositioning } = useCanvasStore();
+    const { pages, currentPageIndex, updatePageBackground, commitHistory, isBackgroundRepositioning, setBackgroundRepositioning } = useCanvasStore();
+    
+    const currentPage = pages[currentPageIndex];
+    if (!currentPage) return null;
+
+    const { pageDetails } = currentPage;
     const bg = pageDetails.background;
 
     if (!bg.image) return null;
