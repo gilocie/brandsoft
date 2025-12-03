@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -66,7 +65,7 @@ const processTextWithData = (text: string, data: any) => {
             if (value && typeof value === 'object' && k in value) {
                 value = value[k];
             } else {
-                return match; // Keep placeholder if data not found
+                return match;
             }
         }
         return String(value);
@@ -100,7 +99,7 @@ export const TemplatePreview = ({ page, liveData }: { page: Page, liveData?: { i
             >
                 {el.type === 'text' && (
                     <div style={{
-                        fontSize: `${(processedProps.fontSize || 12) / 20}px`, // Scale font size for preview
+                        fontSize: `${(processedProps.fontSize || 12) / 20}px`,
                         color: processedProps.color,
                         fontFamily: processedProps.fontFamily,
                         fontWeight: processedProps.fontWeight,
@@ -209,8 +208,9 @@ const TemplateCard = ({ template }: { template: BrandsoftTemplate }) => {
             <DialogContent className="max-w-5xl p-0 h-[85vh] flex flex-col overflow-hidden">
                 <div className="grid grid-cols-1 md:grid-cols-3 h-full w-full">
                     
-                    <div className="md:col-span-2 bg-muted/50 rounded-l-lg flex items-center justify-center p-4 md:p-8 overflow-hidden h-full relative">
-                        <div className="aspect-[8.5/11] w-full max-w-md max-h-full overflow-hidden shadow-xl bg-white ring-1 ring-black/5">
+                    {/* Preview area with scroll */}
+                    <div className="md:col-span-2 bg-muted/50 rounded-l-lg flex items-start justify-center p-4 md:p-8 overflow-y-auto h-full">
+                        <div className="aspect-[8.5/11] w-full max-w-md overflow-hidden shadow-xl bg-white ring-1 ring-black/5 my-auto">
                             <TemplatePreview
                                 page={firstPage}
                                 liveData={previewInvoice && previewCustomer ? { invoice: previewInvoice, customer: previewCustomer } : undefined}
@@ -218,8 +218,10 @@ const TemplateCard = ({ template }: { template: BrandsoftTemplate }) => {
                         </div>
                     </div>
 
-                    <div className="md:col-span-1 flex flex-col h-full border-l bg-background">
-                        <div className="p-6">
+                    {/* Right sidebar with proper scroll */}
+                    <div className="md:col-span-1 flex flex-col h-full border-l bg-background overflow-hidden">
+                        {/* Fixed header */}
+                        <div className="p-6 flex-shrink-0">
                             <DialogHeader className="text-left mb-4">
                                 <DialogTitle className="text-2xl font-bold">{template.name}</DialogTitle>
                                 <DialogDescription>{template.description || 'Perfect for your business'}</DialogDescription>
@@ -233,24 +235,30 @@ const TemplateCard = ({ template }: { template: BrandsoftTemplate }) => {
                                 </div>
                             </div>
                         </div>
-                        <Separator />
-                         <div className="flex-1 overflow-y-auto p-6">
+                        
+                        <Separator className="flex-shrink-0" />
+                        
+                        {/* Scrollable content area */}
+                        <div className="flex-1 overflow-y-auto min-h-0">
                             {template.category === 'invoice' && config?.invoices && (
                                 <div className="space-y-2">
-                                     <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2"><FileJson className="h-4 w-4" /> Live Preview Data</h3>
+                                     <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2 sticky top-0 bg-background py-3 px-6 z-10 border-b">
+                                        <FileJson className="h-4 w-4" /> Live Preview Data
+                                     </h3>
+                                     <div className="px-6">
                                      <Accordion type="multiple" className="w-full">
                                         {Object.entries(invoices).map(([status, invs]) => invs.length > 0 && (
                                             <AccordionItem value={status} key={status}>
-                                                <AccordionTrigger className="text-xs py-2">
+                                                <AccordionTrigger className="text-xs py-2 no-underline hover:no-underline">
                                                     <div className="flex items-center gap-2">
                                                         <Badge variant={status === 'Paid' ? 'success' : status === 'Overdue' ? 'destructive' : 'secondary'} className="w-16 justify-center">{status}</Badge>
                                                         <span>({invs.length})</span>
                                                     </div>
                                                 </AccordionTrigger>
                                                 <AccordionContent>
-                                                    <div className="space-y-1 max-h-24 overflow-y-auto pr-2">
-                                                        {invs.map(inv => (
-                                                            <button key={inv.invoiceId} onClick={() => setPreviewInvoice(inv)} className={cn("w-full text-left p-1.5 rounded-md text-xs hover:bg-muted", previewInvoice?.invoiceId === inv.invoiceId && "bg-muted font-semibold")}>
+                                                    <div className="space-y-1 max-h-32 overflow-y-auto pr-2">
+                                                        {invs.map((inv: Invoice) => (
+                                                            <button key={inv.invoiceId} onClick={() => setPreviewInvoice(inv)} className={cn("w-full text-left p-1.5 rounded-md text-xs hover:bg-muted transition-colors no-underline", previewInvoice?.invoiceId === inv.invoiceId && "bg-muted font-semibold")}>
                                                                 {inv.invoiceId}: {inv.customer}
                                                             </button>
                                                         ))}
@@ -259,11 +267,13 @@ const TemplateCard = ({ template }: { template: BrandsoftTemplate }) => {
                                             </AccordionItem>
                                         ))}
                                     </Accordion>
+                                    </div>
                                 </div>
                             )}
                         </div>
                         
-                        <div className="p-6 pt-4 border-t bg-background mt-auto">
+                        {/* Fixed footer with buttons */}
+                        <div className="p-6 pt-4 border-t bg-background flex-shrink-0">
                             <DialogFooter className="flex-col gap-3 sm:space-x-0">
                                <Button className="w-full" onClick={handleSetAsDefault}>Use this template</Button>
                                <Button variant="outline" className="w-full" onClick={handleEdit}>Edit this template</Button>
