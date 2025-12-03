@@ -5,12 +5,15 @@ import React from 'react';
 import NextImage from 'next/image';
 import backgroundImages from '@/lib/background-images';
 import { cn } from '@/lib/utils';
+import { useCanvasStore } from '@/stores/canvas-store';
 
 const handleDragStart = (e: React.DragEvent, data: any) => {
     e.dataTransfer.setData('application/json', JSON.stringify(data));
 };
 
 const ImageItem = ({ image }: { image: { name: string; src: any } }) => {
+    const { updatePageBackground, commitHistory } = useCanvasStore();
+
     const imageData = {
         type: 'image' as const,
         width: 300,
@@ -19,11 +22,17 @@ const ImageItem = ({ image }: { image: { name: string; src: any } }) => {
         props: { src: image.src.src }
     };
 
+    const handleDoubleClick = () => {
+        updatePageBackground({ image: image.src.src });
+        commitHistory();
+    };
+
     return (
         <div
-            className="bg-gray-200 rounded-md flex items-center justify-center cursor-grab hover:bg-gray-300 transition-colors overflow-hidden"
+            className="bg-gray-200 rounded-md flex items-center justify-center cursor-pointer hover:bg-gray-300 transition-colors overflow-hidden"
             draggable
             onDragStart={(e) => handleDragStart(e, imageData)}
+            onDoubleClick={handleDoubleClick}
         >
              <div className="w-full h-full relative p-[3px]">
                 <NextImage
