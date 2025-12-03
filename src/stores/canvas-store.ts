@@ -19,7 +19,7 @@ export interface CanvasElementProps {
     objectFit?: 'cover' | 'contain' | 'fill' | 'none';
 
     // Shape fill
-    fillType?: 'solid' | 'gradient';
+    fillType?: 'solid' | 'gradient' | 'transparent';
     backgroundColor?: string;
     gradientAngle?: number;
     gradientStops?: GradientStop[];

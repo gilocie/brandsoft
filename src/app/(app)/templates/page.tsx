@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import Link from 'next/link';
@@ -12,15 +10,17 @@ import {
 } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import { Palette, Trash2, Pencil, MoreVertical, Eye } from 'lucide-react';
+import { Palette, Trash2, Pencil, Eye, FileJson } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { useBrandsoft, type BrandsoftTemplate } from '@/hooks/use-brandsoft';
-import { getBackgroundCSS, Page } from '@/stores/canvas-store';
+import { useBrandsoft, type BrandsoftTemplate, type Invoice, type Customer } from '@/hooks/use-brandsoft';
+import { getBackgroundCSS, Page, CanvasElement } from '@/stores/canvas-store';
 import { cn } from '@/lib/utils';
 import { useCanvasStore } from '@/stores/canvas-store';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Separator } from '@/components/ui/separator';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Badge } from '@/components/ui/badge';
 
 
 const templateCategories = [
@@ -56,13 +56,32 @@ const templateCategories = [
   },
 ];
 
-export const TemplatePreview = ({ page }: { page: Page }) => (
-    <div 
-        className="w-full h-full bg-white relative overflow-hidden" 
-        style={getBackgroundCSS(page.pageDetails)}
-    >
-        {page.elements.map(el => (
-            <div
+const processTextWithData = (text: string, data: any) => {
+    if (!text) return '';
+    return text.replace(/{{(.*?)}}/g, (match, key) => {
+        const keys = key.trim().split('.');
+        let value = data;
+        for (const k of keys) {
+            if (value && typeof value === 'object' && k in value) {
+                value = value[k];
+            } else {
+                return match; // Keep placeholder if data not found
+            }
+        }
+        return String(value);
+    });
+};
+
+export const TemplatePreview = ({ page, liveData }: { page: Page, liveData?: { invoice: Invoice, customer: Customer | null } }) => {
+    
+    const renderElement = (el: CanvasElement) => {
+        let processedProps = { ...el.props };
+        if (liveData && el.type === 'text' && el.props.text) {
+             processedProps.text = processTextWithData(el.props.text, liveData);
+        }
+
+        return (
+             <div
                 key={el.id}
                 style={{
                     position: 'absolute',
@@ -71,15 +90,47 @@ export const TemplatePreview = ({ page }: { page: Page }) => (
                     width: `${(el.width / page.pageDetails.width) * 100}%`,
                     height: `${(el.height / page.pageDetails.height) * 100}%`,
                     transform: `rotate(${el.rotation}deg)`,
-                    backgroundColor: el.props.backgroundColor || 'transparent',
-                    border: el.props.borderWidth ? `${el.props.borderWidth}px ${el.props.borderStyle || 'solid'} ${el.props.borderColor || '#000'}` : 'none',
+                    backgroundColor: processedProps.backgroundColor || 'transparent',
+                    border: processedProps.borderWidth ? `${processedProps.borderWidth}px ${processedProps.borderStyle || 'solid'} ${processedProps.borderColor || '#000'}` : 'none',
+                    zIndex: el.zIndex || 1,
+                    opacity: processedProps.opacity ?? 1,
+                    ...getBackgroundStyle(processedProps),
                 }}
             >
-                {el.type === 'text' && <span className="text-[4px]">{el.props.text}</span>}
+                {el.type === 'text' && (
+                    <div style={{
+                        fontSize: `${(processedProps.fontSize || 12) / 20}px`, // Scale font size for preview
+                        color: processedProps.color,
+                        fontFamily: processedProps.fontFamily,
+                        fontWeight: processedProps.fontWeight,
+                        textAlign: processedProps.textAlign,
+                        lineHeight: processedProps.lineHeight,
+                        letterSpacing: processedProps.letterSpacing,
+                        width: '100%',
+                        height: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: processedProps.textAlign,
+                        padding: '1px',
+                        overflow: 'hidden',
+                    }}>
+                        {processedProps.text}
+                    </div>
+                )}
             </div>
-        ))}
-    </div>
-);
+        )
+    };
+
+    return (
+        <div 
+            className="w-full h-full bg-white relative overflow-hidden" 
+            style={getBackgroundCSS(page.pageDetails)}
+        >
+            {page.elements.map(renderElement)}
+        </div>
+    );
+};
+
 
 
 const TemplateCard = ({ template }: { template: BrandsoftTemplate }) => {
@@ -89,6 +140,23 @@ const TemplateCard = ({ template }: { template: BrandsoftTemplate }) => {
     const router = useRouter();
     const [isViewOpen, setIsViewOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+    const [previewInvoice, setPreviewInvoice] = useState<Invoice | null>(null);
+
+    const invoices = useMemo(() => {
+        if (!config || template.category !== 'invoice') return {};
+        return {
+            Pending: config.invoices.filter(inv => inv.status === 'Pending'),
+            Paid: config.invoices.filter(inv => inv.status === 'Paid'),
+            Overdue: config.invoices.filter(inv => inv.status === 'Overdue'),
+            Canceled: config.invoices.filter(inv => inv.status === 'Canceled'),
+        };
+    }, [config, template.category]);
+    
+    const previewCustomer = useMemo(() => {
+        if (!config || !previewInvoice) return null;
+        return config.customers.find(c => c.name === previewInvoice.customer) || null;
+    }, [config, previewInvoice]);
+
 
     if (!firstPage) return null;
     
@@ -136,41 +204,70 @@ const TemplateCard = ({ template }: { template: BrandsoftTemplate }) => {
             </CardFooter>
         </Card>
         
-        {/* View Dialog */}
         <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
-            <DialogContent className="max-w-4xl p-0">
-                <div className="grid grid-cols-1 md:grid-cols-3">
-                    <div className="md:col-span-2 bg-muted rounded-l-lg flex items-center justify-center p-8">
-                        <div className="aspect-[8.5/11] w-full max-w-md overflow-hidden shadow-lg bg-white">
-                          {firstPage && <TemplatePreview page={firstPage} />}
+            <DialogContent className="max-w-5xl p-0 h-[85vh] flex flex-col overflow-hidden">
+                <div className="grid grid-cols-1 md:grid-cols-3 h-full w-full">
+                    <div className="md:col-span-2 bg-muted/50 rounded-l-lg flex items-center justify-center p-4 md:p-8 overflow-hidden h-full relative">
+                        <div className="aspect-[8.5/11] w-full max-w-md max-h-full overflow-hidden shadow-xl bg-white ring-1 ring-black/5">
+                            <TemplatePreview
+                                page={firstPage}
+                                liveData={previewInvoice && previewCustomer ? { invoice: previewInvoice, customer: previewCustomer } : undefined}
+                            />
                         </div>
                     </div>
-                    <div className="md:col-span-1 p-6 flex flex-col">
-                        <div className="flex-grow">
+                    <div className="md:col-span-1 flex flex-col h-full border-l bg-background">
+                        <div className="flex-1 overflow-y-auto p-6">
                             <DialogHeader className="text-left mb-4">
                                 <DialogTitle className="text-2xl font-bold">{template.name}</DialogTitle>
-                                <DialogDescription>{template.description || 'Perfect for you business'}</DialogDescription>
+                                <DialogDescription>{template.description || 'Perfect for your business'}</DialogDescription>
                             </DialogHeader>
-                            
-                            <div className="space-y-2 text-sm text-muted-foreground">
-                                <p><strong>Category:</strong> <span className="capitalize">{template.category}</span></p>
-                                <p><strong>Created:</strong> {template.createdAt ? new Date(template.createdAt).toLocaleDateString() : 'N/A'}</p>
+                            <div className="space-y-4 text-sm">
+                                <div className="bg-muted/40 p-4 rounded-lg space-y-2 border">
+                                    <p className="flex justify-between"><strong>Category:</strong> <span className="capitalize">{template.category}</span></p>
+                                    <p className="flex justify-between"><strong>Created:</strong> {template.createdAt ? new Date(template.createdAt).toLocaleDateString() : 'N/A'}</p>
+                                    <p className="flex justify-between"><strong>Size:</strong> {width}{unit} x {height}{unit}</p>
+                                </div>
                             </div>
+                            <Separator className="my-4"/>
+                            {template.category === 'invoice' && config?.invoices && (
+                                <div className="space-y-2">
+                                     <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2"><FileJson className="h-4 w-4" /> Live Preview Data</h3>
+                                     <Accordion type="multiple" className="w-full">
+                                        {Object.entries(invoices).map(([status, invs]) => invs.length > 0 && (
+                                            <AccordionItem value={status} key={status}>
+                                                <AccordionTrigger className="text-xs py-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <Badge variant={status === 'Paid' ? 'success' : status === 'Overdue' ? 'destructive' : 'secondary'} className="w-16 justify-center">{status}</Badge>
+                                                        <span>({invs.length})</span>
+                                                    </div>
+                                                </AccordionTrigger>
+                                                <AccordionContent>
+                                                    <div className="space-y-1 max-h-24 overflow-y-auto pr-2">
+                                                        {invs.map(inv => (
+                                                            <button key={inv.invoiceId} onClick={() => setPreviewInvoice(inv)} className={cn("w-full text-left p-1.5 rounded-md text-xs hover:bg-muted", previewInvoice?.invoiceId === inv.invoiceId && "bg-muted font-semibold")}>
+                                                                {inv.invoiceId}: {inv.customer}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </AccordionContent>
+                                            </AccordionItem>
+                                        ))}
+                                    </Accordion>
+                                </div>
+                            )}
                         </div>
-                        
-                        <Separator className="my-6"/>
-
-                        <DialogFooter className="flex-col gap-2 items-center justify-center">
-                           <Button className="w-full" onClick={handleSetAsDefault}>Use this template</Button>
-                           <Button variant="outline" className="w-full" onClick={handleEdit}>Edit this template</Button>
-                        </DialogFooter>
+                        <div className="p-6 pt-4 border-t bg-background mt-auto">
+                            <DialogFooter className="flex-col gap-3 sm:space-x-0">
+                               <Button className="w-full" onClick={handleSetAsDefault}>Use this template</Button>
+                               <Button variant="outline" className="w-full" onClick={handleEdit}>Edit this template</Button>
+                            </DialogFooter>
+                        </div>
                     </div>
                 </div>
             </DialogContent>
         </Dialog>
         
-        {/* Delete Confirmation */}
-         <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>Delete Template</DialogTitle>
@@ -192,7 +289,7 @@ export default function TemplatesPage() {
     const { config } = useBrandsoft();
 
   return (
-    <div className="container mx-auto space-y-6">
+    <div className="container mx-auto space-y-6 py-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold font-headline">Template Marketplace</h1>
