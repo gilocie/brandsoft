@@ -13,18 +13,27 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { ColorInput } from './sidebar/components';
-import { File, Image, BookOpen, Newspaper, Contact, Bookmark, Trash2 } from 'lucide-react';
+import { File, Image as ImageIcon, BookOpen, Newspaper, Contact, Bookmark, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 
+const iconMap: { [key: string]: React.ElementType } = {
+    File,
+    ImageIcon,
+    BookOpen,
+    Newspaper,
+    Contact,
+    Bookmark,
+};
+
 const presets = [
-    { name: 'Letter', width: 8.5, height: 11, unit: 'in', icon: File },
-    { name: 'A4', width: 21, height: 29.7, unit: 'cm', icon: File },
-    { name: 'HD', width: 1920, height: 1080, unit: 'px', icon: Image },
-    { name: 'Social', width: 1080, height: 1080, unit: 'px', icon: Newspaper },
-    { name: 'ID Card', width: 3.375, height: 2.125, unit: 'in', icon: Contact },
-    { name: 'Book', width: 6, height: 9, unit: 'in', icon: BookOpen },
+    { name: 'Letter', width: 8.5, height: 11, unit: 'in', icon: 'File' },
+    { name: 'A4', width: 21, height: 29.7, unit: 'cm', icon: 'File' },
+    { name: 'HD', width: 1920, height: 1080, unit: 'px', icon: 'ImageIcon' },
+    { name: 'Social', width: 1080, height: 1080, unit: 'px', icon: 'Newspaper' },
+    { name: 'ID Card', width: 3.375, height: 2.125, unit: 'in', icon: 'Contact' },
+    { name: 'Book', width: 6, height: 9, unit: 'in', icon: 'BookOpen' },
 ];
 
 type CustomPreset = {
@@ -32,7 +41,7 @@ type CustomPreset = {
     width: number;
     height: number;
     unit: 'in' | 'px' | 'cm';
-    icon: React.ElementType;
+    icon: string;
 };
 
 const newPageSchema = z.object({
@@ -53,9 +62,7 @@ interface NewPageDialogProps {
 
 const useLocalStorage = <T>(key: string, initialValue: T) => {
     const [storedValue, setStoredValue] = useState<T>(() => {
-        if (typeof window === 'undefined') {
-            return initialValue;
-        }
+        if (typeof window === 'undefined') return initialValue;
         try {
             const item = window.localStorage.getItem(key);
             return item ? JSON.parse(item) : initialValue;
@@ -72,9 +79,7 @@ const useLocalStorage = <T>(key: string, initialValue: T) => {
             if (typeof window !== 'undefined') {
                 window.localStorage.setItem(key, JSON.stringify(valueToStore));
             }
-        } catch (error) {
-            console.log(error);
-        }
+        } catch (error) { console.log(error); }
     };
     return [storedValue, setValue] as const;
 };
@@ -132,12 +137,11 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
             return;
         }
         
-        const newPreset: CustomPreset = { name, width, height, unit, icon: Bookmark };
+        const newPreset: CustomPreset = { name, width, height, unit, icon: 'Bookmark' };
         
         setCustomPresets(prev => {
             const existing = prev.find(p => p.name.toLowerCase() === name.toLowerCase());
             if (existing) {
-                // Update existing preset
                 return prev.map(p => p.name.toLowerCase() === name.toLowerCase() ? newPreset : p);
             }
             return [...prev, newPreset];
@@ -181,39 +185,42 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
         setNewPageDialogOpen(false);
     };
 
-    const PresetButton = ({ preset, isCustom }: { preset: CustomPreset, isCustom: boolean }) => (
-         <div className="relative group/preset">
-            <button
-                type="button"
-                className={cn(
-                    "w-full flex items-center gap-3 p-2 rounded-md text-left",
-                    activePreset === preset.name ? 'bg-primary/10 text-primary font-semibold' : 'hover:bg-muted'
-                )}
-                onClick={() => handlePresetSelect(preset)}
-            >
-                <preset.icon className="h-5 w-5 shrink-0" />
-                <div>
-                    <p className="text-sm">{preset.name}</p>
-                    <p className="text-xs text-muted-foreground">{preset.width}{preset.unit} x {preset.height}{preset.unit}</p>
-                </div>
-            </button>
-            {isCustom && (
-                 <Button
+    const PresetButton = ({ preset, isCustom }: { preset: CustomPreset, isCustom: boolean }) => {
+        const Icon = iconMap[preset.icon] || File;
+        return (
+             <div className="relative group/preset">
+                <button
                     type="button"
-                    variant="destructive"
-                    size="icon"
-                    className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover/preset:opacity-100 transition-opacity"
-                    onClick={(e) => { e.stopPropagation(); handleDeletePreset(preset.name); }}
+                    className={cn(
+                        "w-full flex items-center gap-3 p-2 rounded-md text-left",
+                        activePreset === preset.name ? 'bg-primary/10 text-primary font-semibold' : 'hover:bg-muted'
+                    )}
+                    onClick={() => handlePresetSelect(preset)}
                 >
-                    <Trash2 className="h-3 w-3" />
-                </Button>
-            )}
-        </div>
-    );
+                    <Icon className="h-5 w-5 shrink-0" />
+                    <div>
+                        <p className="text-sm">{preset.name}</p>
+                        <p className="text-xs text-muted-foreground">{preset.width}{preset.unit} x {preset.height}{preset.unit}</p>
+                    </div>
+                </button>
+                {isCustom && (
+                     <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover/preset:opacity-100 transition-opacity"
+                        onClick={(e) => { e.stopPropagation(); handleDeletePreset(preset.name); }}
+                    >
+                        <Trash2 className="h-3 w-3" />
+                    </Button>
+                )}
+            </div>
+        );
+    }
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-3xl">
+            <DialogContent className="max-w-2xl">
                 <DialogHeader>
                     <DialogTitle>New Document</DialogTitle>
                     <DialogDescription>
@@ -223,7 +230,6 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)}>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-1">
-                            {/* Presets */}
                             <div className="col-span-1 space-y-1">
                                 <h3 className="text-sm font-medium text-muted-foreground px-2">Presets</h3>
                                 <div className="space-y-1">
@@ -244,16 +250,15 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
                                 )}
                             </div>
 
-                            {/* Details */}
                             <div className="col-span-2 space-y-3">
-                                <div className="flex justify-between items-center">
+                                <div className="flex justify-between items-center gap-2">
                                      <FormField
                                         control={form.control} name="name" render={({ field }) => (
                                             <FormItem className="flex-grow"><FormLabel>Name</FormLabel><FormControl><Input {...field} className="text-lg font-semibold" /></FormControl><FormMessage /></FormItem>
                                         )}
                                     />
-                                    <Button type="button" variant="outline" size="sm" className="mt-7 ml-4" onClick={handleSavePreset}>
-                                        <Bookmark className="h-4 w-4 mr-2"/> Save Preset
+                                    <Button type="button" variant="outline" size="sm" className="mt-7 shrink-0" onClick={handleSavePreset}>
+                                        <Bookmark className="h-4 w-4 mr-2"/> Save
                                     </Button>
                                 </div>
 

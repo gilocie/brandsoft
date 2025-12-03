@@ -156,7 +156,6 @@ const defaultTemplateSettings: TemplateSettings = {
 interface CanvasState {
     pages: Page[];
     currentPageIndex: number;
-    elements: CanvasElement[]; // Legacy, will be removed
     selectedElementId: string | null;
     selectedElementIds: string[];
     selectionBox: SelectionBox | null;
@@ -166,7 +165,6 @@ interface CanvasState {
     canvasPosition: { x: number; y: number };
     rulers: { visible: boolean };
     guides: { horizontal: Guide[]; vertical: Guide[] };
-    pageDetails: PageDetails; // Legacy, will be removed
     templateSettings: TemplateSettings;
     isBackgroundRepositioning: boolean;
     isTemplateEditMode: boolean;
@@ -246,15 +244,13 @@ interface CanvasState {
 let nextZIndex = 1;
 
 export const useCanvasStore = create<CanvasState>((set, get) => ({
-    pages: [defaultPage],
-    currentPageIndex: 0,
-    elements: [], // Legacy, to be phased out
+    pages: [],
+    currentPageIndex: -1,
     selectedElementId: null,
     selectedElementIds: [],
     selectionBox: null,
-    pageDetails: { ...defaultPageDetails }, // Legacy
-    history: [{ pages: [defaultPage], currentPageIndex: 0 }],
-    historyIndex: 0,
+    history: [],
+    historyIndex: -1,
     zoom: 1,
     canvasPosition: { x: 0, y: 0 },
     rulers: { visible: true },
@@ -262,7 +258,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     templateSettings: { ...defaultTemplateSettings },
     isBackgroundRepositioning: false,
     isTemplateEditMode: false,
-    isNewPageDialogOpen: false,
+    isNewPageDialogOpen: true,
 
     addElement: (element, options) => {
         const newElement = {
@@ -407,7 +403,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
 
     selectMultipleElements: (ids) => set({
         selectedElementIds: ids,
-        selectedElementId: ids.length === 1 ? ids[0] : (ids.length > 0 ? ids[0] : null),
+        selectedElementId: ids.length > 0 ? ids[0] : null,
     }),
 
     addToSelection: (id) => set((state) => {
@@ -653,7 +649,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     },
 
     setPages: (pages) => {
-        set({ pages: pages, currentPageIndex: 0 });
+        set({ pages: pages, currentPageIndex: pages.length > 0 ? 0 : -1 });
         get().commitHistory();
     },
     
@@ -663,7 +659,6 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
         set(state => {
             const newPages = state.pages.filter((_, i) => i !== index);
             if (newPages.length === 0) {
-                // If the last page is deleted, open the "New Page" dialog.
                 return { pages: [], currentPageIndex: -1, isNewPageDialogOpen: true };
             }
             const newIndex = Math.min(Math.max(0, state.currentPageIndex), newPages.length - 1);
@@ -753,6 +748,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
 
     commitHistory: () => {
         set((state) => {
+            if(state.pages.length === 0) return state; // Don't save history if there are no pages
             const newHistory = state.history.slice(0, state.historyIndex + 1);
             newHistory.push({ pages: JSON.parse(JSON.stringify(state.pages)), currentPageIndex: state.currentPageIndex });
             return { history: newHistory, historyIndex: newHistory.length - 1 };

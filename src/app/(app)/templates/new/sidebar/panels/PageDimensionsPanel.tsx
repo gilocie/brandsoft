@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -8,7 +9,10 @@ import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/
 import { InputWithLabel } from '../components';
 
 export const PageDimensionsPanel = () => {
-    const { pageDetails, updatePageDetails, commitHistory } = useCanvasStore();
+    const { pages, currentPageIndex, updatePageDetails, commitHistory } = useCanvasStore();
+    const pageDetails = pages[currentPageIndex]?.pageDetails;
+
+    if (!pageDetails) return null;
 
     return (
         <AccordionItem value="dimensions">
