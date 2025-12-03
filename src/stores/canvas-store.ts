@@ -19,7 +19,10 @@ export interface CanvasElementProps {
     objectFit?: 'cover' | 'contain' | 'fill' | 'none';
 
     // Shape fill
+    fillType?: 'solid' | 'gradient';
     backgroundColor?: string;
+    gradientAngle?: number;
+    gradientStops?: GradientStop[];
     fillOpacity?: number;
     clipPath?: string;
 
@@ -129,6 +132,16 @@ export interface Page {
     name: string;
     elements: CanvasElement[];
     pageDetails: PageDetails;
+}
+
+export interface BrandsoftTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  category: 'invoice' | 'quotation' | 'certificate' | 'id-card' | 'marketing';
+  pages: Page[];
+  previewImage?: string; // data URL
+  createdAt?: string;
 }
 
 export interface TemplateSettings {
@@ -265,9 +278,10 @@ interface CanvasState {
 // ============ IMPLEMENTATION ============
 let nextZIndex = 1;
 
-const getBackgroundCSS = (pageDetails: PageDetails) => {
-    if (!pageDetails) return {};
-    if (pageDetails.backgroundType === 'transparent') {
+export const getBackgroundStyle = (props: CanvasElementProps | PageDetails) => {
+    const fillType = 'fillType' in props ? props.fillType : ('backgroundType' in props ? props.backgroundType : 'solid');
+    
+    if (fillType === 'transparent') {
         return {
             backgroundImage: `
                 linear-gradient(45deg, #ccc 25%, transparent 25%), 
@@ -278,14 +292,20 @@ const getBackgroundCSS = (pageDetails: PageDetails) => {
             backgroundPosition: '0 0, 10px 0, 10px -10px, 0px 10px',
         };
     }
-    if (pageDetails.backgroundType === 'gradient') {
-        const stops = pageDetails.gradientStops || [];
-        if (stops.length === 0) return { background: '#FFFFFF' }; // Fallback
+    if (fillType === 'gradient') {
+        const stops = props.gradientStops || [];
+        if (stops.length === 0) return { background: props.backgroundColor || '#FFFFFF' };
         const sortedStops = [...stops].sort((a, b) => a.position - b.position);
         const colorStops = sortedStops.map(s => `${s.color} ${s.position}%`).join(', ');
-        return { background: `linear-gradient(${pageDetails.gradientAngle || 90}deg, ${colorStops})` };
+        return { background: `linear-gradient(${props.gradientAngle || 90}deg, ${colorStops})` };
     }
-    return { background: pageDetails.backgroundColor };
+    return { background: props.backgroundColor };
+};
+
+
+export const getBackgroundCSS = (pageDetails: PageDetails) => {
+    if (!pageDetails) return {};
+    return getBackgroundStyle(pageDetails);
 };
 
 
@@ -313,7 +333,17 @@ export const useCanvasStore = create<CanvasState>()(
                     ...element,
                     id: `element-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                     zIndex: nextZIndex++,
-                    props: { opacity: 1, fillOpacity: 1, ...element.props },
+                    props: { 
+                        opacity: 1, 
+                        fillOpacity: 1, 
+                        fillType: 'solid', 
+                        gradientAngle: 90, 
+                        gradientStops: [
+                            { color: '#cccccc', position: 0 },
+                            { color: '#333333', position: 100 },
+                        ],
+                        ...element.props 
+                    },
                 };
                 set((state) => {
                     const newPages = [...state.pages];
@@ -881,5 +911,3 @@ export const useCanvasStore = create<CanvasState>()(
         }
     )
 );
-
-export { getBackgroundCSS };

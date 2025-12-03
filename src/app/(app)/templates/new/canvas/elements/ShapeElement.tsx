@@ -1,9 +1,10 @@
+
 'use client';
 
 import React, { useRef, useState } from 'react';
 import { ImagePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useCanvasStore, type CanvasElement } from '@/stores/canvas-store';
+import { useCanvasStore, type CanvasElement, getBackgroundStyle } from '@/stores/canvas-store';
 import { ElementWrapper } from './ElementWrapper';
 
 interface ShapeElementProps { element: CanvasElement; isSelected: boolean; }
@@ -14,7 +15,7 @@ export const ShapeElement = ({ element, isSelected }: ShapeElementProps) => {
     const [isRepositioningImage, setIsRepositioningImage] = useState(false);
 
     const isTriangle = element.props.borderBottom && element.props.borderLeft && element.props.borderRight;
-
+    
     const getBorderRadius = () => {
         const { borderTopLeftRadius = 0, borderTopRightRadius = 0, borderBottomRightRadius = 0, borderBottomLeftRadius = 0 } = element.props;
         return `${borderTopLeftRadius}px ${borderTopRightRadius}px ${borderBottomRightRadius}px ${borderBottomLeftRadius}px`;
@@ -53,11 +54,16 @@ export const ShapeElement = ({ element, isSelected }: ShapeElementProps) => {
 
     const shapeStyles: React.CSSProperties = {
         width: '100%', height: '100%',
-        backgroundColor: element.props.shapeImage ? 'transparent' : (element.props.backgroundColor || '#cccccc'),
+        ...getBackgroundStyle(element.props),
         opacity: element.props.fillOpacity ?? 1, borderRadius: getBorderRadius(), clipPath: element.props.clipPath,
         border: element.props.borderWidth ? `${element.props.borderWidth}px ${element.props.borderStyle || 'solid'} ${element.props.borderColor || '#000'}` : 'none',
         boxShadow: getShadow(), filter: getFilter(), boxSizing: 'border-box', overflow: 'hidden', position: 'relative',
     };
+    
+    if (element.props.fillType === 'solid' && !element.props.shapeImage) {
+        shapeStyles.backgroundColor = element.props.backgroundColor || '#cccccc';
+    }
+
 
     return (
         <ElementWrapper element={element} isSelected={isSelected} minWidth={20} minHeight={20} borderColor="#10b981">

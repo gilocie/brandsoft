@@ -140,7 +140,7 @@ const Canvas = ({ onPageDoubleClick }: CanvasProps) => {
         updatePageBackground, commitHistory, undo, redo, historyIndex, history,
         isBackgroundRepositioning, setBackgroundRepositioning,
         selectionBox, setSelectionBox, getElementsInSelectionBox, selectMultipleElements,
-        linkSelectedElements, groupSelectedElements, setNewPageDialogOpen
+        groupSelectedElements, linkSelectedElements, setNewPageDialogOpen
     } = useCanvasStore();
 
     const currentPage = pages[currentPageIndex];
@@ -385,14 +385,18 @@ const Canvas = ({ onPageDoubleClick }: CanvasProps) => {
                 <div 
                     id={`page-${currentPageIndex}`} 
                     ref={pageRef} 
-                    className="relative bg-white shadow-lg" 
-                    style={{ 
-                        width: `${pageDetails.width}${pageDetails.unit}`, 
-                        height: `${pageDetails.height}${pageDetails.unit}`, 
-                        ...getBackgroundCSS(pageDetails)
+                    className="relative shadow-lg"
+                    style={{
+                        width: `${pageDetails.width}${pageDetails.unit}`,
+                        height: `${pageDetails.height}${pageDetails.unit}`,
                     }}
                 >
-                    <PageBackground />
+                    <div 
+                        className="absolute inset-0 overflow-hidden" 
+                        style={getBackgroundCSS(pageDetails)}
+                    >
+                        <PageBackground />
+                    </div>
                     {guides.horizontal.map(g => <RulerGuide key={g.id} id={g.id} orientation="horizontal" position={g.y!} />)}
                     {guides.vertical.map(g => <RulerGuide key={g.id} id={g.id} orientation="vertical" position={g.x!} />)}
                     <MultiSelectBox elementIds={selectedElementIds} />
