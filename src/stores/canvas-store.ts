@@ -336,7 +336,7 @@ export const useCanvasStore = create<CanvasState>()(
                     props: { 
                         opacity: 1, 
                         fillOpacity: 1, 
-                        fillType: 'solid', 
+                        fillType: 'solid' as 'solid' | 'gradient' | 'transparent',
                         gradientAngle: 90, 
                         gradientStops: [
                             { color: '#cccccc', position: 0 },
@@ -435,25 +435,34 @@ export const useCanvasStore = create<CanvasState>()(
                 const pages = get().pages;
                 const pageIndex = pages.findIndex(p => p.elements.some(e => e.id === id));
                 if (pageIndex === -1) return;
-                
+
                 const element = pages[pageIndex].elements.find(el => el.id === id);
                 if (!element) return;
-                
-                const newElement = {
+
+                const newElement: CanvasElement = {
                     ...element,
                     id: `element-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                    x: element.x + 20, y: element.y + 20, zIndex: nextZIndex++,
-                    linkedElementId: null, isLinkedChild: false, groupId: null,
-                    props: { ...element.props, isTemplateField: false, templateFieldType: undefined, templateFieldName: undefined },
+                    x: element.x + 20,
+                    y: element.y + 20,
+                    zIndex: nextZIndex++,
+                    linkedElementId: null,
+                    isLinkedChild: false,
+                    groupId: null,
+                    props: {
+                        ...element.props,
+                        isTemplateField: false,
+                        templateFieldType: undefined,
+                        templateFieldName: undefined,
+                    },
                 };
-
+                
                 set((state) => {
                     const newPages = [...state.pages];
                     newPages[pageIndex].elements.push(newElement);
                     return {
                         pages: newPages,
                         selectedElementId: newElement.id,
-                        selectedElementIds: [newElement.id]
+                        selectedElementIds: [newElement.id],
                     };
                 });
                 get().commitHistory();
@@ -911,3 +920,4 @@ export const useCanvasStore = create<CanvasState>()(
         }
     )
 );
+
