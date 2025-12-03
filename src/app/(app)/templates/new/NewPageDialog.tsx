@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -11,6 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { File, Image as ImageIcon, BookOpen, Newspaper, Contact, Bookmark, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -50,7 +52,14 @@ const newPageSchema = z.object({
   height: z.coerce.number().min(0.1, "Height must be positive"),
   unit: z.enum(['in', 'px', 'cm']),
   orientation: z.enum(['portrait', 'landscape']),
+  ppi: z.coerce.number().min(1).max(5000),
+  backgroundType: z.enum(['color', 'transparent', 'gradient']),
   backgroundColor: z.string(),
+  gradientStart: z.string().optional(),
+  gradientEnd: z.string().optional(),
+  gradientAngle: z.coerce.number().optional(),
+  colorMode: z.enum(['RGB', 'CMYK', 'Grayscale']),
+  bitDepth: z.enum(['8', '16', '32']),
 });
 
 type NewPageFormData = z.infer<typeof newPageSchema>;
@@ -98,26 +107,40 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
             height: 11,
             unit: 'in',
             orientation: 'portrait',
+            ppi: 300,
+            backgroundType: 'color',
             backgroundColor: '#FFFFFF',
+            gradientStart: '#FFFFFF',
+            gradientEnd: '#000000',
+            gradientAngle: 90,
+            colorMode: 'RGB',
+            bitDepth: '8',
         },
     });
 
+    const watchedBgType = form.watch('backgroundType');
+    const watchedBgColor = form.watch('backgroundColor');
+    const watchedGradientStart = form.watch('gradientStart');
+    const watchedGradientEnd = form.watch('gradientEnd');
+
     const handlePresetSelect = (preset: CustomPreset) => {
         setActivePreset(preset.name);
+        const { ppi, colorMode, bitDepth, backgroundType, backgroundColor, gradientStart, gradientEnd, gradientAngle } = form.getValues();
         form.reset({
-            ...form.getValues(),
             name: preset.name,
             width: preset.width,
             height: preset.height,
             unit: preset.unit,
             orientation: preset.width < preset.height ? 'portrait' : 'landscape',
+            ppi, colorMode, bitDepth, backgroundType, backgroundColor, gradientStart, gradientEnd, gradientAngle
         });
     };
     
     const handleOrientationChange = (orientation: 'portrait' | 'landscape') => {
         const { width, height } = form.getValues();
-        const currentIsPortrait = width < height;
+        const currentIsPortrait = height > width;
         const newIsPortrait = orientation === 'portrait';
+        
         if (currentIsPortrait !== newIsPortrait) {
             form.setValue('width', height);
             form.setValue('height', width);
@@ -160,12 +183,29 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
         });
     };
 
+    const getBackgroundValue = (data: NewPageFormData) => {
+        if (data.backgroundType === 'transparent') {
+            return 'transparent';
+        } else if (data.backgroundType === 'gradient') {
+            return `linear-gradient(${data.gradientAngle}deg, ${data.gradientStart}, ${data.gradientEnd})`;
+        }
+        return data.backgroundColor;
+    };
+
     const onSubmit = (data: NewPageFormData) => {
         const newPageDetails: PageDetails = {
             width: data.width,
             height: data.height,
             unit: data.unit,
-            backgroundColor: data.backgroundColor,
+            ppi: data.ppi,
+            orientation: data.orientation,
+            colorMode: data.colorMode,
+            bitDepth: data.bitDepth,
+            backgroundType: data.backgroundType,
+            backgroundColor: getBackgroundValue(data),
+            gradientStart: data.gradientStart,
+            gradientEnd: data.gradientEnd,
+            gradientAngle: data.gradientAngle,
             background: {
                 image: undefined,
                 opacity: 1, blur: 0, grayscale: 0, brightness: 100, contrast: 100, saturate: 100,
@@ -229,11 +269,34 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
         );
     }
 
+    const getResolution = () => {
+        const { width, height, unit, ppi } = form.watch();
+        if (!width || !height || !ppi) return '...';
+        if (unit === 'px') {
+            return `${Math.round(width)} x ${Math.round(height)} px`;
+        }
+        
+        let pxWidth = 0;
+        let pxHeight = 0;
+        
+        if (unit === 'in') {
+            pxWidth = Math.round(width * ppi);
+            pxHeight = Math.round(height * ppi);
+        } else if (unit === 'cm') {
+            const inches = width / 2.54;
+            const inchesHeight = height / 2.54;
+            pxWidth = Math.round(inches * ppi);
+            pxHeight = Math.round(inchesHeight * ppi);
+        }
+        
+        return `${pxWidth} x ${pxHeight} px @ ${ppi} PPI`;
+    };
+
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="max-w-3xl p-0 flex flex-col max-h-[85vh]">
                  <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full min-h-0">
                         <div className="border-b px-6 py-4 shrink-0">
                             <DialogTitle>New Document</DialogTitle>
                             <DialogDescription>
@@ -242,6 +305,7 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-3 flex-1 overflow-hidden min-h-0">
+                            {/* Left Column (Presets) */}
                             <div className="col-span-1 border-r flex flex-col overflow-hidden">
                                 <ScrollArea className="flex-1">
                                     <div className="p-4 space-y-4">
@@ -264,6 +328,7 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
                                 </ScrollArea>
                             </div>
                             
+                            {/* Right Column (Properties) */}
                             <div className="col-span-2 flex flex-col overflow-hidden">
                                 <ScrollArea className="flex-1">
                                     <div className="p-6 space-y-6">
@@ -276,10 +341,10 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
 
                                         <div className="grid grid-cols-2 gap-4">
                                             <FormField control={form.control} name="width" render={({ field }) => (
-                                                <FormItem><FormLabel>Width</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                                <FormItem><FormLabel>Width</FormLabel><FormControl><Input type="number" step="any" {...field} /></FormControl><FormMessage /></FormItem>
                                             )} />
                                             <FormField control={form.control} name="height" render={({ field }) => (
-                                                <FormItem><FormLabel>Height</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                                <FormItem><FormLabel>Height</FormLabel><FormControl><Input type="number" step="any" {...field} /></FormControl><FormMessage /></FormItem>
                                             )} />
                                         </div>
                                         
@@ -309,13 +374,107 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
                                                 <FormMessage /></FormItem>
                                             )} />
                                         </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <FormLabel>Resolution</FormLabel>
+                                                <div className="text-sm text-muted-foreground bg-muted px-3 py-2 rounded-md h-10 flex items-center">
+                                                    {getResolution()}
+                                                </div>
+                                            </div>
+                                            <FormField control={form.control} name="ppi" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>PPI/DPI</FormLabel>
+                                                    <FormControl>
+                                                        <Input type="number" min="1" max="5000" step="1" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )} />
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <FormField control={form.control} name="colorMode" render={({ field }) => (
+                                                <FormItem><FormLabel>Color Mode</FormLabel>
+                                                    <Select onValueChange={field.onChange} value={field.value}>
+                                                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                                        <SelectContent>
+                                                            <SelectItem value="RGB">RGB Color</SelectItem>
+                                                            <SelectItem value="CMYK">CMYK Color</SelectItem>
+                                                            <SelectItem value="Grayscale">Grayscale</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                <FormMessage /></FormItem>
+                                            )} />
+                                            <FormField control={form.control} name="bitDepth" render={({ field }) => (
+                                                <FormItem><FormLabel>Bit Depth</FormLabel>
+                                                    <Select onValueChange={field.onChange} value={field.value}>
+                                                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                                        <SelectContent>
+                                                            <SelectItem value="8">8 bit</SelectItem>
+                                                            <SelectItem value="16">16 bit</SelectItem>
+                                                            <SelectItem value="32">32 bit</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                <FormMessage /></FormItem>
+                                            )} />
+                                        </div>
                                         
-                                        <FormField control={form.control} name="backgroundColor" render={({ field }) => (
+                                        <FormField control={form.control} name="backgroundType" render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Background Color</FormLabel>
-                                                <FormControl>
-                                                    <ColorInput label="" value={field.value} onChange={field.onChange} />
-                                                </FormControl>
+                                                <FormLabel>Background Contents</FormLabel>
+                                                <Tabs value={field.value} onValueChange={field.onChange} className="w-full">
+                                                    <TabsList className="grid w-full grid-cols-3">
+                                                        <TabsTrigger value="color">Color</TabsTrigger>
+                                                        <TabsTrigger value="transparent">Transparent</TabsTrigger>
+                                                        <TabsTrigger value="gradient">Gradient</TabsTrigger>
+                                                    </TabsList>
+                                                    <TabsContent value="color" className="mt-4">
+                                                        <FormField control={form.control} name="backgroundColor" render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormControl>
+                                                                    <ColorInput label="" value={field.value} onChange={field.onChange} />
+                                                                </FormControl>
+                                                            </FormItem>
+                                                        )} />
+                                                    </TabsContent>
+                                                    <TabsContent value="transparent" className="mt-4">
+                                                        <div className="text-sm text-muted-foreground">
+                                                            Background will be transparent
+                                                        </div>
+                                                    </TabsContent>
+                                                    <TabsContent value="gradient" className="mt-4 space-y-4">
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            <FormField control={form.control} name="gradientStart" render={({ field }) => (
+                                                                <FormItem>
+                                                                    <FormLabel>Start Color</FormLabel>
+                                                                    <FormControl>
+                                                                        <ColorInput label="" value={field.value || '#FFFFFF'} onChange={field.onChange} />
+                                                                    </FormControl>
+                                                                </FormItem>
+                                                            )} />
+                                                            <FormField control={form.control} name="gradientEnd" render={({ field }) => (
+                                                                <FormItem>
+                                                                    <FormLabel>End Color</FormLabel>
+                                                                    <FormControl>
+                                                                        <ColorInput label="" value={field.value || '#000000'} onChange={field.onChange} />
+                                                                    </FormControl>
+                                                                </FormItem>
+                                                            )} />
+                                                        </div>
+                                                        <FormField control={form.control} name="gradientAngle" render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel>Angle (degrees)</FormLabel>
+                                                                <FormControl>
+                                                                    <Input type="number" min="0" max="360" {...field} />
+                                                                </FormControl>
+                                                            </FormItem>
+                                                        )} />
+                                                        <div className="h-16 rounded-md border" style={{
+                                                            background: `linear-gradient(${form.watch('gradientAngle') || 90}deg, ${watchedGradientStart || '#FFFFFF'}, ${watchedGradientEnd || '#000000'})`
+                                                        }} />
+                                                    </TabsContent>
+                                                </Tabs>
                                             </FormItem>
                                         )} />
                                     </div>

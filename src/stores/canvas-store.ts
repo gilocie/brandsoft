@@ -105,7 +105,17 @@ export interface PageDetails {
     width: number;
     height: number;
     unit: 'in' | 'px' | 'cm';
+    ppi: number;
+    orientation: 'portrait' | 'landscape';
+    colorMode: 'RGB' | 'CMYK' | 'Grayscale';
+    bitDepth: '8' | '16' | '32';
+
+    backgroundType: 'color' | 'transparent' | 'gradient';
     backgroundColor: string;
+    gradientStart?: string;
+    gradientEnd?: string;
+    gradientAngle?: number;
+
     background: BackgroundSettings;
 }
 
@@ -138,7 +148,9 @@ const defaultBackground: BackgroundSettings = {
 };
 
 const defaultPageDetails: PageDetails = {
-    width: 8.5, height: 11, unit: 'in', backgroundColor: '#FFFFFF', background: { ...defaultBackground },
+    width: 8.5, height: 11, unit: 'in', ppi: 300, orientation: 'portrait',
+    colorMode: 'RGB', bitDepth: '8', backgroundType: 'color', backgroundColor: '#FFFFFF',
+    background: { ...defaultBackground },
 };
 
 const defaultPage: Page = {

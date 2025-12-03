@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useRef } from 'react';
@@ -7,13 +8,19 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { UploadCloud, Trash2, RotateCcw } from 'lucide-react';
+import { UploadCloud, Trash2, RotateCcw, Image as ImageIcon } from 'lucide-react';
 import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ColorInput, SliderWithLabel } from '../components';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 
 export const PageBackgroundPanel = () => {
-    const { pageDetails, updatePageDetails, updatePageBackground, commitHistory } = useCanvasStore();
+    const { pages, currentPageIndex, updatePageDetails, updatePageBackground, commitHistory } = useCanvasStore();
     const bgInputRef = useRef<HTMLInputElement>(null);
+
+    const pageDetails = pages[currentPageIndex]?.pageDetails;
+    if (!pageDetails) return null;
+
     const bg = pageDetails.background;
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -58,24 +65,76 @@ export const PageBackgroundPanel = () => {
         });
         commitHistory();
     };
+    
+    const getBackgroundValue = () => {
+        if (pageDetails.backgroundType === 'transparent') {
+            return 'transparent';
+        } else if (pageDetails.backgroundType === 'gradient') {
+            return `linear-gradient(${pageDetails.gradientAngle || 90}deg, ${pageDetails.gradientStart || '#FFFFFF'}, ${pageDetails.gradientEnd || '#000000'})`;
+        }
+        return pageDetails.backgroundColor;
+    };
+
 
     return (
-        <AccordionItem value="background">
-            <AccordionTrigger className="text-xs font-medium py-2 px-3 hover:no-underline">
-                Background
-            </AccordionTrigger>
-            <AccordionContent className="px-3 pb-3 space-y-4">
-                <ColorInput
-                    label="Background Color"
-                    value={pageDetails.backgroundColor}
-                    onChange={(v) => updatePageDetails({ backgroundColor: v })}
-                    onBlur={commitHistory}
-                />
+        <>
+            <AccordionItem value="background-color">
+                <AccordionTrigger className="text-xs font-medium py-2 px-3 hover:no-underline">
+                    Background Color
+                </AccordionTrigger>
+                 <AccordionContent className="px-3 pb-3 space-y-4">
+                     <Tabs value={pageDetails.backgroundType} onValueChange={(v) => updatePageDetails({ backgroundType: v as any })} className="w-full">
+                        <TabsList className="grid w-full grid-cols-3 h-8">
+                            <TabsTrigger value="color" className="text-xs h-6">Color</TabsTrigger>
+                            <TabsTrigger value="gradient" className="text-xs h-6">Gradient</TabsTrigger>
+                            <TabsTrigger value="transparent" className="text-xs h-6">None</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="color" className="mt-4">
+                            <ColorInput
+                                label=""
+                                value={pageDetails.backgroundColor}
+                                onChange={(v) => updatePageDetails({ backgroundColor: v, backgroundType: 'color' })}
+                                onBlur={commitHistory}
+                            />
+                        </TabsContent>
+                        <TabsContent value="gradient" className="mt-4 space-y-4">
+                             <div className="grid grid-cols-2 gap-2">
+                                <ColorInput
+                                    label="Start"
+                                    value={pageDetails.gradientStart || '#FFFFFF'}
+                                    onChange={(v) => updatePageDetails({ gradientStart: v, backgroundType: 'gradient' })}
+                                    onBlur={commitHistory}
+                                />
+                                 <ColorInput
+                                    label="End"
+                                    value={pageDetails.gradientEnd || '#000000'}
+                                    onChange={(v) => updatePageDetails({ gradientEnd: v, backgroundType: 'gradient' })}
+                                    onBlur={commitHistory}
+                                />
+                            </div>
+                             <SliderWithLabel
+                                label="Angle"
+                                value={pageDetails.gradientAngle || 90}
+                                min={0} max={360} unit="°"
+                                onChange={(v) => updatePageDetails({ gradientAngle: v })}
+                                onCommit={commitHistory}
+                            />
+                            <div className="h-12 rounded-md border" style={{ background: getBackgroundValue() }} />
+                        </TabsContent>
+                         <TabsContent value="transparent" className="mt-4">
+                            <div className="text-sm text-center text-muted-foreground p-2">
+                                Background is transparent.
+                            </div>
+                        </TabsContent>
+                    </Tabs>
+                </AccordionContent>
+            </AccordionItem>
 
-                <Separator />
-
-                <div className="space-y-3">
-                    <Label className="text-xs font-medium">Background Image</Label>
+            <AccordionItem value="background-image">
+                 <AccordionTrigger className="text-xs font-medium py-2 px-3 hover:no-underline">
+                   Background Image
+                </AccordionTrigger>
+                <AccordionContent className="px-3 pb-3 space-y-4">
                     <Input
                         type="file"
                         accept="image/*"
@@ -86,7 +145,6 @@ export const PageBackgroundPanel = () => {
 
                     {bg.image ? (
                         <>
-                            {/* Preview */}
                             <div
                                 className="relative w-full h-24 bg-gray-100 rounded-md overflow-hidden"
                                 style={{
@@ -120,7 +178,6 @@ export const PageBackgroundPanel = () => {
 
                             <Separator />
 
-                            {/* Image Fit */}
                             <div className="space-y-1.5">
                                 <Label className="text-xs">Image Fit</Label>
                                 <Select
@@ -130,9 +187,7 @@ export const PageBackgroundPanel = () => {
                                         commitHistory();
                                     }}
                                 >
-                                    <SelectTrigger className="h-8 text-xs">
-                                        <SelectValue />
-                                    </SelectTrigger>
+                                    <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="cover">Cover (fill & crop)</SelectItem>
                                         <SelectItem value="contain">Contain (fit inside)</SelectItem>
@@ -142,7 +197,6 @@ export const PageBackgroundPanel = () => {
                                 </Select>
                             </div>
 
-                            {/* Position */}
                             <div className="space-y-1.5">
                                 <Label className="text-xs">Position</Label>
                                 <Select
@@ -152,19 +206,13 @@ export const PageBackgroundPanel = () => {
                                         commitHistory();
                                     }}
                                 >
-                                    <SelectTrigger className="h-8 text-xs">
-                                        <SelectValue />
-                                    </SelectTrigger>
+                                    <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="center center">Center</SelectItem>
                                         <SelectItem value="top center">Top</SelectItem>
                                         <SelectItem value="bottom center">Bottom</SelectItem>
                                         <SelectItem value="left center">Left</SelectItem>
                                         <SelectItem value="right center">Right</SelectItem>
-                                        <SelectItem value="top left">Top Left</SelectItem>
-                                        <SelectItem value="top right">Top Right</SelectItem>
-                                        <SelectItem value="bottom left">Bottom Left</SelectItem>
-                                        <SelectItem value="bottom right">Bottom Right</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -180,7 +228,6 @@ export const PageBackgroundPanel = () => {
 
                             <Separator />
 
-                            {/* Effects */}
                             <div className="flex justify-between items-center">
                                 <Label className="text-xs font-medium">Image Effects</Label>
                                 <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={resetEffects}>
@@ -197,7 +244,6 @@ export const PageBackgroundPanel = () => {
                                 onChange={(v) => updatePageBackground({ opacity: v / 100 })}
                                 onCommit={commitHistory}
                             />
-
                             <SliderWithLabel
                                 label="Blur"
                                 value={bg.blur}
@@ -207,46 +253,6 @@ export const PageBackgroundPanel = () => {
                                 onChange={(v) => updatePageBackground({ blur: v })}
                                 onCommit={commitHistory}
                             />
-
-                            <SliderWithLabel
-                                label="Brightness"
-                                value={bg.brightness}
-                                min={0}
-                                max={200}
-                                unit="%"
-                                onChange={(v) => updatePageBackground({ brightness: v })}
-                                onCommit={commitHistory}
-                            />
-
-                            <SliderWithLabel
-                                label="Contrast"
-                                value={bg.contrast}
-                                min={0}
-                                max={200}
-                                unit="%"
-                                onChange={(v) => updatePageBackground({ contrast: v })}
-                                onCommit={commitHistory}
-                            />
-
-                            <SliderWithLabel
-                                label="Saturation"
-                                value={bg.saturate}
-                                min={0}
-                                max={200}
-                                unit="%"
-                                onChange={(v) => updatePageBackground({ saturate: v })}
-                                onCommit={commitHistory}
-                            />
-
-                            <SliderWithLabel
-                                label="Grayscale"
-                                value={bg.grayscale}
-                                min={0}
-                                max={100}
-                                unit="%"
-                                onChange={(v) => updatePageBackground({ grayscale: v })}
-                                onCommit={commitHistory}
-                            />
                         </>
                     ) : (
                         <Button
@@ -254,12 +260,12 @@ export const PageBackgroundPanel = () => {
                             className="w-full"
                             onClick={() => bgInputRef.current?.click()}
                         >
-                            <UploadCloud className="h-4 w-4 mr-2" />
-                            Upload Image
+                            <ImageIcon className="h-4 w-4 mr-2" />
+                            Upload Background Image
                         </Button>
                     )}
-                </div>
-            </AccordionContent>
-        </AccordionItem>
+                </AccordionContent>
+            </AccordionItem>
+        </>
     );
 };
