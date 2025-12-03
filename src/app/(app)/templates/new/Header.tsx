@@ -1,7 +1,7 @@
 
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ChevronLeft,
   File,
@@ -10,48 +10,106 @@ import {
   Eye,
   Ruler,
   Check,
-  Save
+  Save,
+  Download,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useBrandsoft } from '@/hooks/use-brandsoft';
 import { useCanvasStore } from '@/stores/canvas-store';
 import { exportAsImage, exportAsPdf, exportAsZip } from './canvas/utils/export';
+
+const ExportDialog = ({ isOpen, onOpenChange }: { isOpen: boolean, onOpenChange: (open: boolean) => void }) => {
+    const { pages, currentPageIndex } = useCanvasStore();
+    const [format, setFormat] = useState<'png' | 'jpeg' | 'pdf'>('png');
+    const [exportScope, setExportScope] = useState<'current' | 'all'>('current');
+    const isMultiPage = pages.length > 1;
+
+    const handleExport = () => {
+        if (format === 'pdf') {
+            exportAsPdf(pages, `design-${Date.now()}`);
+        } else {
+            if (isMultiPage && exportScope === 'all') {
+                exportAsZip(pages, format, `design-pages-${Date.now()}`);
+            } else {
+                const pageElement = document.getElementById(`page-${currentPageIndex}`);
+                if (pageElement) {
+                    exportAsImage(pageElement, format, `page-${currentPageIndex + 1}-${Date.now()}`);
+                }
+            }
+        }
+        onOpenChange(false);
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Export Design</DialogTitle>
+                    <DialogDescription>Choose your export format and options.</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="format">Format</Label>
+                        <Select value={format} onValueChange={(v) => setFormat(v as any)}>
+                            <SelectTrigger id="format"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="png">PNG</SelectItem>
+                                <SelectItem value="jpeg">JPEG</SelectItem>
+                                <SelectItem value="pdf">PDF</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    {isMultiPage && format !== 'pdf' && (
+                        <div className="space-y-2">
+                            <Label>Pages</Label>
+                            <RadioGroup value={exportScope} onValueChange={(v) => setExportScope(v as any)}>
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="current" id="r1" />
+                                    <Label htmlFor="r1">Export current page only</Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="all" id="r2" />
+                                    <Label htmlFor="r2">Export all pages as ZIP</Label>
+                                </div>
+                            </RadioGroup>
+                        </div>
+                    )}
+                     {format === 'pdf' && isMultiPage && (
+                        <div className="text-sm text-muted-foreground p-3 bg-muted rounded-md">
+                           All pages will be combined into a single PDF document.
+                        </div>
+                    )}
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button onClick={handleExport}><Download className="mr-2 h-4 w-4" /> Export</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};
 
 interface HeaderProps {
     onSaveTemplate: () => void;
 }
 
 const Header = ({ onSaveTemplate }: HeaderProps) => {
-    const { undo, redo, historyIndex, history, rulers, toggleRulers, pages, currentPageIndex } = useCanvasStore();
+    const { undo, redo, historyIndex, history, rulers, toggleRulers } = useCanvasStore();
+    const [isExportOpen, setIsExportOpen] = useState(false);
     const canUndo = historyIndex > 0;
     const canRedo = historyIndex < history.length - 1;
     const { config } = useBrandsoft();
-    const isMultiPage = pages.length > 1;
-
-    const handleExport = (format: 'png' | 'jpeg' | 'pdf') => {
-        if (format === 'pdf') {
-            exportAsPdf(pages, `design-${Date.now()}`);
-            return;
-        }
-
-        if (isMultiPage) {
-            exportAsZip(pages, format, `design-pages-${Date.now()}`);
-        } else {
-            const pageElement = document.getElementById(`page-${currentPageIndex}`);
-            if (pageElement) {
-                exportAsImage(pageElement, format, `design-${Date.now()}`);
-            } else {
-                console.error("Could not find page element to export.");
-            }
-        }
-    };
     
     return (
+        <>
         <header className="h-16 bg-black border-b border-gray-800 flex items-center justify-between px-4 z-20 text-white shrink-0">
              <div className="flex items-center gap-2">
                 <Button variant="ghost" size="sm" asChild className="text-white hover:bg-gray-800 hover:text-white">
@@ -63,20 +121,12 @@ const Header = ({ onSaveTemplate }: HeaderProps) => {
                          <Button variant="ghost" size="sm" className="text-white hover:bg-gray-800 hover:text-white"><File className="mr-2 h-4 w-4" /> File</Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-56 bg-black text-white border-gray-700">
-                        <DropdownMenuItem>Save</DropdownMenuItem>
-                        <DropdownMenuItem>Save As</DropdownMenuItem>
-                        <DropdownMenuItem onClick={onSaveTemplate}>Save As Template</DropdownMenuItem>
-                        <DropdownMenuSeparator className="bg-gray-700"/>
-                        <DropdownMenuSub>
-                            <DropdownMenuSubTrigger>Export</DropdownMenuSubTrigger>
-                            <DropdownMenuSubContent className="bg-black text-white border-gray-700">
-                                <DropdownMenuItem onClick={() => handleExport('png')}>as PNG {isMultiPage && '(ZIP)'}</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleExport('jpeg')}>as JPEG {isMultiPage && '(ZIP)'}</DropdownMenuItem>
-                                {isMultiPage && <DropdownMenuItem onClick={() => handleExport('pdf')}>as PDF</DropdownMenuItem>}
-                            </DropdownMenuSubContent>
-                        </DropdownMenuSub>
-                        <DropdownMenuSeparator className="bg-gray-700"/>
-                         <DropdownMenuItem>Options</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={onSaveTemplate}>
+                           <Save className="mr-2 h-4 w-4" /> Save As Template
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => setIsExportOpen(true)}>
+                           <Download className="mr-2 h-4 w-4" /> Export
+                        </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
                 <DropdownMenu>
@@ -92,7 +142,7 @@ const Header = ({ onSaveTemplate }: HeaderProps) => {
                          <DropdownMenuItem onClick={redo} disabled={!canRedo}>
                             <RefreshCw className="mr-2 h-4 w-4" />
                             <span>Redo</span>
-                            <DropdownMenuShortcut>Ctrl+Shift+Z</DropdownMenuShortcut>
+                            <DropdownMenuShortcut>Ctrl+Y</DropdownMenuShortcut>
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
@@ -122,6 +172,8 @@ const Header = ({ onSaveTemplate }: HeaderProps) => {
                 </Avatar>
             </div>
         </header>
+        <ExportDialog isOpen={isExportOpen} onOpenChange={setIsExportOpen} />
+        </>
     );
 }
 
