@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -18,7 +18,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ColorInput } from './sidebar/components/ColorInput';
-
 
 const iconMap: { [key: string]: React.ElementType } = {
     File,
@@ -91,7 +90,6 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
     const { toast } = useToast();
     const [activePreset, setActivePreset] = useState<string | null>('Letter');
     const [customPresets, setCustomPresets] = useLocalStorage<CustomPreset[]>('custom-doc-presets', []);
-
 
     const form = useForm<NewPageFormData>({
         resolver: zodResolver(newPageSchema),
@@ -239,17 +237,17 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
             <DialogContent className="max-w-3xl p-0 flex flex-col h-full max-h-[500px]">
                  <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
-                        <div className="border-b px-6 py-4">
+                        <div className="border-b px-6 py-4 shrink-0">
                             <DialogTitle>New Document</DialogTitle>
                             <DialogDescription>
                                 Create a new page by selecting a preset or defining custom dimensions.
                             </DialogDescription>
                         </div>
                         
-                        <div className="grid grid-cols-3 flex-1 min-h-0">
-                            {/* Left Column */}
-                            <div className="col-span-1 border-r">
-                                <ScrollArea className="h-full">
+                        <div className="grid grid-cols-1 md:grid-cols-3 flex-1 min-h-0">
+                            {/* Left Column (Presets) */}
+                            <div className="col-span-1 border-r flex flex-col">
+                                <ScrollArea className="flex-grow">
                                     <div className="p-4 space-y-4">
                                         <div>
                                             <h3 className="text-xs font-medium text-muted-foreground mb-2 px-2">Presets</h3>
@@ -270,9 +268,9 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
                                 </ScrollArea>
                             </div>
                             
-                            {/* Right Column */}
-                            <div className="col-span-2">
-                                <ScrollArea className="h-full">
+                            {/* Right Column (Properties) */}
+                            <div className="col-span-2 flex flex-col">
+                                <ScrollArea className="flex-grow">
                                     <div className="p-6 space-y-6">
                                         <div className="flex items-end gap-2">
                                             <FormField control={form.control} name="name" render={({ field }) => (
@@ -330,7 +328,7 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
                             </div>
                         </div>
 
-                        <DialogFooter className="px-6 py-4 border-t">
+                        <DialogFooter className="px-6 py-4 border-t shrink-0">
                             <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
                             <Button type="submit">Create Document</Button>
                         </DialogFooter>
