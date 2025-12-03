@@ -255,7 +255,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     pageDetails: { ...defaultPageDetails }, // Legacy
     history: [{ pages: [defaultPage], currentPageIndex: 0 }],
     historyIndex: 0,
-    zoom: 0.3,
+    zoom: 1,
     canvasPosition: { x: 0, y: 0 },
     rulers: { visible: true },
     guides: { horizontal: [], vertical: [] },

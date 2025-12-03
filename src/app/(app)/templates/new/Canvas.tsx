@@ -127,9 +127,9 @@ interface CanvasProps { onPageDoubleClick: () => void; }
 
 const Canvas = ({ onPageDoubleClick }: CanvasProps) => {
     const {
-        elements, addElement, selectElement, deleteElement, selectedElementId, selectedElementIds, moveElement,
+        pages, currentPageIndex, addElement, selectElement, deleteElement, selectedElementId, selectedElementIds, moveElement,
         zoom, setZoom, canvasPosition, setCanvasPosition, rulers, guides, addGuide, addPage,
-        pages, currentPageIndex, setActivePage, deletePage,
+        setActivePage, deletePage,
         updatePageBackground, commitHistory, undo, redo, historyIndex, history,
         isBackgroundRepositioning, setBackgroundRepositioning,
         selectionBox, setSelectionBox, getElementsInSelectionBox, selectMultipleElements,
@@ -143,12 +143,6 @@ const Canvas = ({ onPageDoubleClick }: CanvasProps) => {
     const [isClient, setIsClient] = useState(false);
     const [pageToDelete, setPageToDelete] = useState<number | null>(null);
 
-    const currentPage = pages[currentPageIndex];
-    
-    useEffect(() => {
-        setIsClient(true);
-    }, []);
-
     const resetView = () => {
         if (!mainCanvasRef.current || !pageRef.current) return;
         const canvasRect = mainCanvasRef.current.getBoundingClientRect();
@@ -160,6 +154,10 @@ const Canvas = ({ onPageDoubleClick }: CanvasProps) => {
         setZoom(scaleFactor);
         setCanvasPosition({ x: (canvasRect.width - pageRef.current.offsetWidth * scaleFactor) / 2, y: (canvasRect.height - pageRef.current.offsetHeight * scaleFactor) / 2 });
     };
+    
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     // Track Ctrl key
     useEffect(() => {
@@ -226,8 +224,14 @@ const Canvas = ({ onPageDoubleClick }: CanvasProps) => {
 
     useEffect(() => { loadGoogleFonts(); }, []);
     
-    useEffect(() => { const t = setTimeout(resetView, 100); return () => clearTimeout(t); }, [currentPageIndex]);
+    useEffect(() => {
+      // Use a short timeout to ensure the DOM is ready for measurement
+      const t = setTimeout(resetView, 100); 
+      return () => clearTimeout(t); 
+    }, [currentPageIndex]);
     
+    const currentPage = pages[currentPageIndex];
+
     if (!currentPage) {
         return (
              <main
@@ -538,5 +542,3 @@ const Canvas = ({ onPageDoubleClick }: CanvasProps) => {
 };
 
 export default Canvas;
-
-    
