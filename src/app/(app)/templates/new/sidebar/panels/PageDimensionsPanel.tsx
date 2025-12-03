@@ -44,7 +44,7 @@ export const PageDimensionsPanel = () => {
             <AccordionTrigger className="text-xs font-medium py-2 px-3 hover:no-underline">
                 Page Setup
             </AccordionTrigger>
-            <AccordionContent className="px-3 pb-3 space-y-3">
+            <AccordionContent className="px-2 pb-3 space-y-3">
                 <div className="grid grid-cols-2 gap-2">
                     <InputWithLabel
                         label="W"
@@ -53,6 +53,7 @@ export const PageDimensionsPanel = () => {
                         value={pageDetails.width}
                         onChange={(e) => updatePageDetails({ width: Number(e.target.value) })}
                         onBlur={commitHistory}
+                        labelWidth="w-4"
                     />
                     <InputWithLabel
                         label="H"
@@ -61,6 +62,7 @@ export const PageDimensionsPanel = () => {
                         value={pageDetails.height}
                         onChange={(e) => updatePageDetails({ height: Number(e.target.value) })}
                         onBlur={commitHistory}
+                        labelWidth="w-4"
                     />
                 </div>
                  <div className="flex items-end gap-2">
@@ -106,7 +108,7 @@ export const PageDimensionsPanel = () => {
                     </div>
                     <div className="space-y-1">
                         <Label className="text-xs">Resolution</Label>
-                        <div className="text-[11px] text-muted-foreground bg-muted px-2 h-8 flex items-center rounded-md">
+                        <div className="text-[10px] text-muted-foreground bg-muted px-2 h-8 flex items-center rounded-md">
                            {getResolution()}
                         </div>
                     </div>
