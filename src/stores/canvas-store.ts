@@ -101,6 +101,11 @@ export interface BackgroundSettings {
     scale: number;
 }
 
+export interface GradientStop {
+    color: string;
+    position: number; // 0 to 100
+}
+
 export interface PageDetails {
     width: number;
     height: number;
@@ -112,9 +117,8 @@ export interface PageDetails {
 
     backgroundType: 'color' | 'transparent' | 'gradient';
     backgroundColor: string;
-    gradientStart?: string;
-    gradientEnd?: string;
-    gradientAngle?: number;
+    gradientAngle: number;
+    gradientStops: GradientStop[];
 
     background: BackgroundSettings;
 }
@@ -150,7 +154,11 @@ const defaultBackground: BackgroundSettings = {
 const defaultPageDetails: PageDetails = {
     width: 8.5, height: 11, unit: 'in', ppi: 300, orientation: 'portrait',
     colorMode: 'RGB', bitDepth: '8', backgroundType: 'color', backgroundColor: '#FFFFFF',
-    gradientStart: '#FFFFFF', gradientEnd: '#000000', gradientAngle: 90,
+    gradientAngle: 90,
+    gradientStops: [
+        { color: '#FFFFFF', position: 0 },
+        { color: '#000000', position: 100 },
+    ],
     background: { ...defaultBackground },
 };
 
@@ -255,6 +263,27 @@ interface CanvasState {
 
 // ============ IMPLEMENTATION ============
 let nextZIndex = 1;
+
+const getBackgroundCSS = (pageDetails: PageDetails) => {
+    if (pageDetails.backgroundType === 'transparent') {
+        return {
+            backgroundImage: `
+                linear-gradient(45deg, #ccc 25%, transparent 25%), 
+                linear-gradient(135deg, #ccc 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #ccc 75%),
+                linear-gradient(135deg, transparent 75%, #ccc 75%)`,
+            backgroundSize: '20px 20px',
+            backgroundPosition: '0 0, 10px 0, 10px -10px, 0px 10px',
+        };
+    }
+    if (pageDetails.backgroundType === 'gradient') {
+        const sortedStops = [...pageDetails.gradientStops].sort((a, b) => a.position - b.position);
+        const colorStops = sortedStops.map(s => `${s.color} ${s.position}%`).join(', ');
+        return { background: `linear-gradient(${pageDetails.gradientAngle}deg, ${colorStops})` };
+    }
+    return { background: pageDetails.backgroundColor };
+};
+
 
 export const useCanvasStore = create<CanvasState>((set, get) => ({
     pages: [],
@@ -825,3 +854,5 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
         return { x: snappedX, y: snappedY, snappedToId };
     },
 }));
+
+export { getBackgroundCSS };

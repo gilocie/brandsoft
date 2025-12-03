@@ -1,17 +1,89 @@
 
 'use client';
 
-import React, { useRef } from 'react';
-import { useCanvasStore } from '@/stores/canvas-store';
+import React, { useRef, useState, useEffect } from 'react';
+import { useCanvasStore, type GradientStop } from '@/stores/canvas-store';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { UploadCloud, Trash2, RotateCcw, Image as ImageIcon } from 'lucide-react';
+import { UploadCloud, Trash2, RotateCcw, Image as ImageIcon, Plus, X } from 'lucide-react';
 import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ColorInput, SliderWithLabel } from '../components';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+
+const GradientSlider = ({ stops, onStopsChange }: { stops: GradientStop[], onStopsChange: (stops: GradientStop[]) => void }) => {
+    const sliderRef = useRef<HTMLDivElement>(null);
+    const [selectedStopIndex, setSelectedStopIndex] = useState<number | null>(0);
+
+    const sortedStops = [...stops].sort((a, b) => a.position - b.position);
+    const background = `linear-gradient(to right, ${sortedStops.map(s => `${s.color} ${s.position}%`).join(', ')})`;
+
+    const handleSliderClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (!sliderRef.current) return;
+        const rect = sliderRef.current.getBoundingClientRect();
+        const position = ((e.clientX - rect.left) / rect.width) * 100;
+        
+        // Check if clicking on an existing stop
+        for (let i = 0; i < sortedStops.length; i++) {
+            if (Math.abs(sortedStops[i].position - position) < 3) { // 3% tolerance
+                setSelectedStopIndex(i);
+                return;
+            }
+        }
+        
+        // Add new stop
+        const newStops = [...sortedStops, { color: '#ffffff', position: Math.round(position) }];
+        onStopsChange(newStops);
+        setSelectedStopIndex(newStops.length - 1);
+    };
+
+    const handleStopColorChange = (color: string) => {
+        if (selectedStopIndex === null) return;
+        const newStops = [...sortedStops];
+        newStops[selectedStopIndex].color = color;
+        onStopsChange(newStops);
+    };
+
+    const handleRemoveStop = () => {
+        if (selectedStopIndex === null || sortedStops.length <= 2) return;
+        const newStops = sortedStops.filter((_, i) => i !== selectedStopIndex);
+        onStopsChange(newStops);
+        setSelectedStopIndex(Math.max(0, selectedStopIndex - 1));
+    };
+
+    const selectedStop = selectedStopIndex !== null ? sortedStops[selectedStopIndex] : null;
+
+    return (
+        <div className="space-y-3">
+            <div ref={sliderRef} onClick={handleSliderClick} className="relative h-6 w-full rounded-full border cursor-pointer" style={{ background }}>
+                {sortedStops.map((stop, index) => (
+                    <div
+                        key={index}
+                        className={cn(
+                            "absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 bg-white",
+                            selectedStopIndex === index ? "border-primary ring-2 ring-primary" : "border-gray-400"
+                        )}
+                        style={{ left: `${stop.position}%` }}
+                    />
+                ))}
+            </div>
+            {selectedStop && (
+                <div className="p-3 bg-muted rounded-md space-y-3">
+                     <div className="flex items-center gap-2">
+                        <ColorInput label={`Stop ${selectedStopIndex + 1}`} value={selectedStop.color} onChange={handleStopColorChange} />
+                        <Button variant="destructive" size="icon" className="h-8 w-8" onClick={handleRemoveStop} disabled={sortedStops.length <= 2}>
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
 
 
 export const PageBackgroundPanel = () => {
@@ -66,23 +138,10 @@ export const PageBackgroundPanel = () => {
         commitHistory();
     };
     
-    const getBackgroundValue = () => {
-        if (pageDetails.backgroundType === 'transparent') {
-            return 'transparent';
-        } else if (pageDetails.backgroundType === 'gradient') {
-            return `linear-gradient(${pageDetails.gradientAngle || 90}deg, ${pageDetails.gradientStart || '#FFFFFF'}, ${pageDetails.gradientEnd || '#000000'})`;
-        }
-        return pageDetails.backgroundColor;
-    };
-    
     const handleBackgroundTypeChange = (type: 'color' | 'gradient' | 'transparent') => {
-        updatePageDetails({ 
-            backgroundType: type,
-            backgroundColor: getBackgroundValue() // This will recalculate the final CSS value
-        });
+        updatePageDetails({ backgroundType: type });
         commitHistory();
     };
-
 
     return (
         <>
@@ -100,26 +159,16 @@ export const PageBackgroundPanel = () => {
                         <TabsContent value="color" className="mt-4">
                             <ColorInput
                                 label=""
-                                value={pageDetails.gradientStart || pageDetails.backgroundColor}
-                                onChange={(v) => updatePageDetails({ backgroundColor: v, gradientStart: v })}
+                                value={pageDetails.backgroundColor}
+                                onChange={(v) => updatePageDetails({ backgroundColor: v })}
                                 onBlur={commitHistory}
                             />
                         </TabsContent>
-                        <TabsContent value="gradient" className="mt-4 space-y-4">
-                             <div className="grid grid-cols-2 gap-2">
-                                <ColorInput
-                                    label="Start"
-                                    value={pageDetails.gradientStart || '#FFFFFF'}
-                                    onChange={(v) => updatePageDetails({ gradientStart: v })}
-                                    onBlur={commitHistory}
-                                />
-                                 <ColorInput
-                                    label="End"
-                                    value={pageDetails.gradientEnd || '#000000'}
-                                    onChange={(v) => updatePageDetails({ gradientEnd: v })}
-                                    onBlur={commitHistory}
-                                />
-                            </div>
+                         <TabsContent value="gradient" className="mt-4 space-y-4">
+                            <GradientSlider 
+                                stops={pageDetails.gradientStops} 
+                                onStopsChange={(stops) => updatePageDetails({ gradientStops: stops })} 
+                            />
                              <SliderWithLabel
                                 label="Angle"
                                 value={pageDetails.gradientAngle || 90}
@@ -127,7 +176,6 @@ export const PageBackgroundPanel = () => {
                                 onChange={(v) => updatePageDetails({ gradientAngle: v })}
                                 onCommit={commitHistory}
                             />
-                            <div className="h-12 rounded-md border" style={{ background: getBackgroundValue() }} />
                         </TabsContent>
                          <TabsContent value="transparent" className="mt-4">
                             <div className="text-sm text-center text-muted-foreground p-2 border rounded-md">

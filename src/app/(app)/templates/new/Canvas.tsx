@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useRef, useEffect, useState } from 'react';
-import { useCanvasStore, type CanvasElement as CanvasElementType } from '@/stores/canvas-store';
+import { useCanvasStore, type CanvasElement as CanvasElementType, getBackgroundCSS } from '@/stores/canvas-store';
 import { Button } from '@/components/ui/button';
 import { PlusSquare, RefreshCcw, RefreshCw, SlidersHorizontal, Trash2, Link, Unlink, X } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -338,20 +338,6 @@ const Canvas = ({ onPageDoubleClick }: CanvasProps) => {
     const hasMultiSelect = selectedElementIds.length > 1;
     const sortedElements = [...currentPage.elements].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
 
-    const getPageBackgroundStyle = () => {
-        if (pageDetails.backgroundType === 'transparent') {
-             return {
-                backgroundImage: `
-                    linear-gradient(45deg, #ccc 25%, transparent 25%), 
-                    linear-gradient(135deg, #ccc 25%, transparent 25%),
-                    linear-gradient(45deg, transparent 75%, #ccc 75%),
-                    linear-gradient(135deg, transparent 75%, #ccc 75%)`,
-                backgroundSize: '20px 20px',
-                backgroundPosition: '0 0, 10px 0, 10px -10px, 0px 10px',
-             };
-        }
-        return { background: pageDetails.backgroundColor };
-    }
 
     return (
         <main
@@ -403,7 +389,7 @@ const Canvas = ({ onPageDoubleClick }: CanvasProps) => {
                     style={{ 
                         width: `${pageDetails.width}${pageDetails.unit}`, 
                         height: `${pageDetails.height}${pageDetails.unit}`, 
-                        ...getPageBackgroundStyle()
+                        ...getBackgroundCSS(pageDetails)
                     }}
                 >
                     <PageBackground />
