@@ -48,7 +48,7 @@ interface SaveTemplateDialogProps {
 }
 
 const SaveTemplateDialog = ({ isOpen, onClose }: SaveTemplateDialogProps) => {
-  const { pages } = useCanvasStore();
+  const { pages, templateSettings } = useCanvasStore();
   const { config, saveConfig } = useBrandsoft();
   const { toast } = useToast();
 
@@ -64,12 +64,20 @@ const SaveTemplateDialog = ({ isOpen, onClose }: SaveTemplateDialogProps) => {
   const onSubmit = (data: TemplateFormData) => {
     if (!config) return;
 
+    const updatedPages = pages.map(page => ({
+        ...page,
+        pageDetails: {
+            ...page.pageDetails,
+            ...templateSettings, // Save template settings into each page
+        }
+    }));
+
     const newTemplate = {
       id: `template-${Date.now()}`,
       name: data.name,
       description: data.description,
       category: data.category,
-      pages: pages,
+      pages: updatedPages,
       createdAt: new Date().toISOString(),
     };
 
