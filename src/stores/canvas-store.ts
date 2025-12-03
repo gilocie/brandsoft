@@ -1,4 +1,5 @@
 
+
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
@@ -148,6 +149,7 @@ export interface TemplateSettings {
     isTemplate: boolean;
     templateName: string;
     templateDescription: string;
+    category: 'invoice' | 'quotation' | 'certificate' | 'id-card' | 'marketing';
     editableFields: string[];
 }
 
@@ -184,7 +186,7 @@ const defaultPage: Page = {
 };
 
 const defaultTemplateSettings: TemplateSettings = {
-    isTemplate: false, templateName: '', templateDescription: '', editableFields: [],
+    isTemplate: false, templateName: '', templateDescription: '', category: 'invoice', editableFields: [],
 };
 
 // ============ STORE INTERFACE ============
@@ -920,4 +922,5 @@ export const useCanvasStore = create<CanvasState>()(
         }
     )
 );
+
 
