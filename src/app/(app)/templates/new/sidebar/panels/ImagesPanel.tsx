@@ -1,7 +1,7 @@
+
 'use client';
 
 import React from 'react';
-import { Loader2 } from 'lucide-react';
 import NextImage from 'next/image';
 import backgroundImages from '@/lib/background-images';
 
@@ -36,7 +36,6 @@ const ImageItem = ({ src }: { src: string }) => {
         </div>
     );
 };
-
 
 export const ImagesPanel = () => {
     if (!backgroundImages || backgroundImages.length === 0) {
