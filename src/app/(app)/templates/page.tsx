@@ -141,7 +141,7 @@ const TemplateCard = ({ template }: { template: BrandsoftTemplate }) => {
             <DialogContent className="max-w-4xl p-0">
                 <div className="grid grid-cols-1 md:grid-cols-3">
                     <div className="md:col-span-2 bg-muted rounded-l-lg flex items-center justify-center p-8">
-                        <div className="aspect-[8.5/11] w-full max-w-md overflow-hidden shadow-lg">
+                        <div className="aspect-[8.5/11] w-full max-w-md overflow-hidden shadow-lg bg-white">
                           {firstPage && <TemplatePreview page={firstPage} />}
                         </div>
                     </div>
