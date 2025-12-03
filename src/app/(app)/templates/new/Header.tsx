@@ -58,12 +58,12 @@ const Header = ({ onSaveTemplate }: HeaderProps) => {
                         <DropdownMenuItem onClick={undo} disabled={!canUndo}>
                             <RefreshCcw className="mr-2 h-4 w-4" />
                             <span>Undo</span>
-                            <DropdownMenuShortcut>⌘Z</DropdownMenuShortcut>
+                            <DropdownMenuShortcut>Ctrl+Z</DropdownMenuShortcut>
                         </DropdownMenuItem>
                          <DropdownMenuItem onClick={redo} disabled={!canRedo}>
                             <RefreshCw className="mr-2 h-4 w-4" />
                             <span>Redo</span>
-                            <DropdownMenuShortcut>⇧⌘Z</DropdownMenuShortcut>
+                            <DropdownMenuShortcut>Ctrl+Shift+Z</DropdownMenuShortcut>
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
