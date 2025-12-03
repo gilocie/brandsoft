@@ -201,7 +201,7 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
                     )}
                     onClick={() => handlePresetSelect(preset)}
                 >
-                    <div className="p-2 rounded" style={{ backgroundColor: watchedBackgroundColor }}>
+                    <div className="p-2 rounded-md" style={{ backgroundColor: watchedBackgroundColor }}>
                         <Icon className="h-5 w-5 shrink-0" style={{ color: 'white' }} />
                     </div>
                     <div>
@@ -226,7 +226,7 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-2xl h-[550px] flex flex-col">
+            <DialogContent className="max-w-2xl max-h-[500px] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>New Document</DialogTitle>
                     <DialogDescription>
@@ -235,7 +235,7 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
                 </DialogHeader>
                 
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="h-full flex flex-col flex-grow min-h-0">
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="h-full flex-1 flex flex-col min-h-0">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 py-1 flex-grow min-h-0">
                             <div className="col-span-1 flex flex-col gap-4">
                                 <h3 className="text-sm font-medium text-muted-foreground px-2 shrink-0">Presets</h3>
@@ -256,21 +256,21 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
                                             </div>
                                         </>
                                     )}
+                                     <Separator className="my-2" />
+                                     <div className="shrink-0 pr-1 pb-4">
+                                        <Controller
+                                            control={form.control}
+                                            name="backgroundColor"
+                                            render={({ field }) => (
+                                                <ColorInput
+                                                    label="Background Color"
+                                                    value={field.value}
+                                                    onChange={field.onChange}
+                                                />
+                                            )}
+                                        />
+                                    </div>
                                 </ScrollArea>
-                                <div className="shrink-0 pr-4">
-                                    <Separator className="my-2" />
-                                     <Controller
-                                        control={form.control}
-                                        name="backgroundColor"
-                                        render={({ field }) => (
-                                            <ColorInput
-                                                label="Background Color"
-                                                value={field.value}
-                                                onChange={field.onChange}
-                                            />
-                                        )}
-                                    />
-                                </div>
                             </div>
 
                             <div className="col-span-2 space-y-4">
@@ -332,3 +332,5 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
 };
 
 export default NewPageDialog;
+
+    
