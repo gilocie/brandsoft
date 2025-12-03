@@ -37,7 +37,7 @@ export const ImagesPanel = () => {
     const [images, setImages] = useState<{ name: string; src: string }[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    const currentCategory = templateSettings?.category;
+    const currentCategory = templateSettings?.category || 'invoice';
 
     useEffect(() => {
         let isMounted = true;
