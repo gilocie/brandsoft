@@ -130,13 +130,12 @@ const Canvas = ({ onPageDoubleClick }: CanvasProps) => {
         elements, addElement, selectElement, deleteElement, selectedElementId, selectedElementIds, moveElement,
         zoom, setZoom, canvasPosition, setCanvasPosition, rulers, guides, addGuide, addPage,
         pages, currentPageIndex, setActivePage, deletePage,
-        pageDetails: legacyPageDetails,
         updatePageBackground, commitHistory, undo, redo, historyIndex, history,
         isBackgroundRepositioning, setBackgroundRepositioning,
         selectionBox, setSelectionBox, getElementsInSelectionBox, selectMultipleElements,
         linkSelectedElements, groupSelectedElements, setNewPageDialogOpen
     } = useCanvasStore();
-
+    
     const mainCanvasRef = useRef<HTMLDivElement>(null);
     const pageRef = useRef<HTMLDivElement>(null);
     const dragStart = useRef({ x: 0, y: 0, canvasX: 0, canvasY: 0 });
@@ -144,34 +143,11 @@ const Canvas = ({ onPageDoubleClick }: CanvasProps) => {
     const [isClient, setIsClient] = useState(false);
     const [pageToDelete, setPageToDelete] = useState<number | null>(null);
 
+    const currentPage = pages[currentPageIndex];
+    
     useEffect(() => {
         setIsClient(true);
     }, []);
-
-    const currentPage = pages[currentPageIndex];
-
-    if (!currentPage) {
-        return (
-             <main
-                ref={mainCanvasRef}
-                className={`flex-1 bg-gray-200 overflow-hidden relative flex items-center justify-center`}
-            >
-                <div className="text-center">
-                    <p className="text-muted-foreground mb-4">No page selected. Create a new page to begin.</p>
-                    <Button onClick={() => setNewPageDialogOpen(true)}>
-                        <PlusSquare className="mr-2 h-4 w-4" /> Create New Page
-                    </Button>
-                </div>
-            </main>
-        );
-    }
-    const pageDetails = currentPage.pageDetails;
-
-    const canUndo = historyIndex > 0;
-    const canRedo = historyIndex < history.length - 1;
-    const hasMultiSelect = selectedElementIds.length > 1;
-
-    useEffect(() => { loadGoogleFonts(); }, []);
 
     // Track Ctrl key
     useEffect(() => {
@@ -188,7 +164,7 @@ const Canvas = ({ onPageDoubleClick }: CanvasProps) => {
             document.removeEventListener('keyup', handleKeyUp);
         };
     }, []);
-
+    
     // Keyboard shortcuts
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -234,7 +210,33 @@ const Canvas = ({ onPageDoubleClick }: CanvasProps) => {
 
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [selectedElementId, selectedElementIds, isBackgroundRepositioning, selectionBox]);
+    }, [selectedElementId, selectedElementIds, isBackgroundRepositioning, selectionBox, deleteElement, redo, undo, groupSelectedElements, linkSelectedElements, setBackgroundRepositioning, setSelectionBox, moveElement]);
+
+    useEffect(() => { loadGoogleFonts(); }, []);
+    
+    useEffect(() => { const t = setTimeout(resetView, 100); return () => clearTimeout(t); }, [currentPageIndex]);
+    
+    if (!currentPage) {
+        return (
+             <main
+                ref={mainCanvasRef}
+                className={`flex-1 bg-gray-200 overflow-hidden relative flex items-center justify-center`}
+            >
+                <div className="text-center">
+                    <p className="text-muted-foreground mb-4">No page selected. Create a new page to begin.</p>
+                    <Button onClick={() => setNewPageDialogOpen(true)}>
+                        <PlusSquare className="mr-2 h-4 w-4" /> Create New Page
+                    </Button>
+                </div>
+            </main>
+        );
+    }
+    
+    const pageDetails = currentPage.pageDetails;
+
+    const canUndo = historyIndex > 0;
+    const canRedo = historyIndex < history.length - 1;
+    const hasMultiSelect = selectedElementIds.length > 1;
 
     // Handle selection box drawing with Ctrl+Drag
     const handleCanvasMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -356,11 +358,14 @@ const Canvas = ({ onPageDoubleClick }: CanvasProps) => {
     const resetView = () => {
         if (!mainCanvasRef.current || !pageRef.current) return;
         const canvasRect = mainCanvasRef.current.getBoundingClientRect();
-        setCanvasPosition({ x: (canvasRect.width - pageRef.current.offsetWidth) / 2, y: (canvasRect.height - pageRef.current.offsetHeight) / 2 });
-        setZoom(1);
+        const scaleFactor = Math.min(
+            (canvasRect.width - 80) / pageRef.current.offsetWidth,
+            (canvasRect.height - 120) / pageRef.current.offsetHeight,
+            1
+        );
+        setZoom(scaleFactor);
+        setCanvasPosition({ x: (canvasRect.width - pageRef.current.offsetWidth * scaleFactor) / 2, y: (canvasRect.height - pageRef.current.offsetHeight * scaleFactor) / 2 });
     };
-
-    useEffect(() => { const t = setTimeout(resetView, 100); return () => clearTimeout(t); }, []);
 
     const handleCanvasClick = (e: React.MouseEvent) => {
         if (e.target === mainCanvasRef.current || e.target === pageRef.current) {
