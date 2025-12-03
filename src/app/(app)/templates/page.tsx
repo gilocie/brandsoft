@@ -115,22 +115,20 @@ const TemplateCard = ({ template }: { template: BrandsoftTemplate }) => {
     return (
       <>
         <Card className="group/card relative flex flex-col transition-shadow hover:shadow-lg">
-            <CardContent className="p-0 aspect-[8.5/11] overflow-hidden bg-gray-100 rounded-t-lg">
-                <TemplatePreview page={firstPage} />
-            </CardContent>
-            
-            <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
-                <TooltipProvider>
-                    <Tooltip><TooltipTrigger asChild><Button variant="secondary" size="icon" className="h-7 w-7" onClick={() => setIsViewOpen(true)}><Eye className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>View</TooltipContent></Tooltip>
-                    <Tooltip><TooltipTrigger asChild><Button variant="secondary" size="icon" className="h-7 w-7" onClick={handleEdit}><Pencil className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Edit</TooltipContent></Tooltip>
-                    <Tooltip><TooltipTrigger asChild><Button variant="destructive" size="icon" className="h-7 w-7" onClick={() => setIsDeleteOpen(true)}><Trash2 className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Delete</TooltipContent></Tooltip>
-                </TooltipProvider>
-            </div>
-
             <CardHeader className="p-3">
                  <CardTitle className="text-base font-semibold truncate">{template.name}</CardTitle>
                  <CardDescription className="text-xs">{width}{unit} x {height}{unit}</CardDescription>
             </CardHeader>
+            <CardContent className="p-0 aspect-[8.5/11] overflow-hidden bg-gray-100">
+                <TemplatePreview page={firstPage} />
+            </CardContent>
+            <CardFooter className="p-2 flex gap-1">
+                <TooltipProvider>
+                    <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7 flex-1" onClick={() => setIsViewOpen(true)}><Eye className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>View</TooltipContent></Tooltip>
+                    <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7 flex-1" onClick={handleEdit}><Pencil className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Edit</TooltipContent></Tooltip>
+                    <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-7 w-7 flex-1 text-destructive hover:text-destructive" onClick={() => setIsDeleteOpen(true)}><Trash2 className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent>Delete</TooltipContent></Tooltip>
+                </TooltipProvider>
+            </CardFooter>
         </Card>
         
         {/* View Dialog */}
