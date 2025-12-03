@@ -15,7 +15,7 @@ const ImageItem = ({ image }: { image: { name: string; src: any } }) => {
         width: 300,
         height: 200,
         rotation: 0,
-        props: { src: image.src.src } // .src is needed because of how Next.js handles static imports
+        props: { src: image.src.src }
     };
 
     return (
@@ -30,6 +30,7 @@ const ImageItem = ({ image }: { image: { name: string; src: any } }) => {
                 layout="fill"
                 objectFit="cover"
                 unoptimized
+                style={{ padding: '3px' }}
             />
         </div>
     );
@@ -39,7 +40,7 @@ export const ImagesPanel = () => {
     if (!backgroundImages || backgroundImages.length === 0) {
         return (
             <div className="p-4 text-center text-sm text-muted-foreground">
-                No images found. Please add images to `src/app/(app)/templates/backgrounds` and update `src/lib/background-images.ts`.
+                No images found. Please add images to the manifest file.
             </div>
         );
     }
