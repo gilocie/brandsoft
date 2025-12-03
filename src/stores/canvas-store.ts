@@ -150,6 +150,7 @@ const defaultBackground: BackgroundSettings = {
 const defaultPageDetails: PageDetails = {
     width: 8.5, height: 11, unit: 'in', ppi: 300, orientation: 'portrait',
     colorMode: 'RGB', bitDepth: '8', backgroundType: 'color', backgroundColor: '#FFFFFF',
+    gradientStart: '#FFFFFF', gradientEnd: '#000000', gradientAngle: 90,
     background: { ...defaultBackground },
 };
 

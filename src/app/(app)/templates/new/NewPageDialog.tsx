@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState } from 'react';
@@ -294,7 +293,7 @@ const NewPageDialog = ({ isOpen, onClose }: NewPageDialogProps) => {
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-3xl p-0 flex flex-col max-h-[85vh]">
+            <DialogContent className="max-w-3xl p-0 flex flex-col max-h-[90vh] h-[600px]">
                  <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full min-h-0">
                         <div className="border-b px-6 py-4 shrink-0">

@@ -381,7 +381,7 @@ const Canvas = ({ onPageDoubleClick }: CanvasProps) => {
                 </div>
                 {hasMultiSelect && <div className="absolute z-30 bg-blue-500 text-white text-xs px-2 py-1 rounded" style={{ top: '-36px', left: '0' }}>{selectedElementIds.length} elements selected</div>}
                 
-                <div id={`page-${currentPageIndex}`} ref={pageRef} className="relative bg-white shadow-lg" style={{ width: `${pageDetails.width}${pageDetails.unit}`, height: `${pageDetails.height}${pageDetails.unit}`, backgroundColor: pageDetails.backgroundColor }}>
+                <div id={`page-${currentPageIndex}`} ref={pageRef} className="relative bg-white shadow-lg" style={{ width: `${pageDetails.width}${pageDetails.unit}`, height: `${pageDetails.height}${pageDetails.unit}`, background: pageDetails.backgroundColor }}>
                     <PageBackground />
                     {guides.horizontal.map(g => <RulerGuide key={g.id} id={g.id} orientation="horizontal" position={g.y!} />)}
                     {guides.vertical.map(g => <RulerGuide key={g.id} id={g.id} orientation="vertical" position={g.x!} />)}

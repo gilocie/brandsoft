@@ -11,9 +11,14 @@ export const PageBackground = () => {
     if (!currentPage) return null;
 
     const { pageDetails } = currentPage;
+    
+    // Do not render anything if the background type is color or transparent as it's handled by the parent div
+    if (!pageDetails.background?.image) {
+        return null;
+    }
+    
     const bg = pageDetails.background;
 
-    if (!bg.image) return null;
 
     const getFilter = () => {
         const f = [];
