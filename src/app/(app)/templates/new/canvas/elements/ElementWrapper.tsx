@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useRef } from 'react';
@@ -21,7 +22,14 @@ export const ElementWrapper = ({
     element, isSelected, children, minWidth = 20, minHeight = 20,
     onCalculateMinSize, borderColor = '#3b82f6', borderStyle = 'solid',
 }: ElementWrapperProps) => {
-    const { updateElement, selectElement, commitHistory, zoom, linkElements, unlinkElement, getSnapPosition, elements, isTemplateEditMode } = useCanvasStore();
+    const { 
+        updateElement, selectElement, commitHistory, zoom, linkElements, unlinkElement, getSnapPosition, 
+        pages, currentPageIndex, isTemplateEditMode 
+    } = useCanvasStore();
+
+    const currentPage = pages[currentPageIndex];
+    const elements = currentPage?.elements || [];
+
     const elementRef = useRef<HTMLDivElement>(null);
     const [snapInfo, setSnapInfo] = useState<{ vertical: number | null; horizontal: number | null }>({ vertical: null, horizontal: null });
     const [showLinkButton, setShowLinkButton] = useState<string | null>(null);
