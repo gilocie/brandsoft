@@ -31,7 +31,7 @@ const ImageItem = ({ image }: { image: { src: string, name: string } }) => {
                 alt={image.name} 
                 layout="fill"
                 objectFit="cover"
-                unoptimized // Necessary for local /public images if not configured in next.config.js
+                unoptimized
             />
         </div>
     );
@@ -50,13 +50,41 @@ export const ImagesPanel = () => {
         
         let relevantImages;
         if (currentCategory === 'invoice' || currentCategory === 'quotation') {
-            relevantImages = allImages.filter(img => img.category === 'invoice' || img.category === 'quotation');
+            relevantImages = allImages.filter(img => img.category === 'invoice');
         } else {
             relevantImages = allImages.filter(img => img.category === currentCategory);
         }
 
-        setImages(relevantImages);
-        setIsLoading(false);
+        // We'll add an onError check to filter out images that don't actually exist.
+        const verifiedImages: typeof relevantImages = [];
+        let loadedCount = 0;
+
+        if (relevantImages.length === 0) {
+            setImages([]);
+            setIsLoading(false);
+            return;
+        }
+
+        relevantImages.forEach(imageInfo => {
+            const img = new Image();
+            img.src = imageInfo.src;
+            img.onload = () => {
+                verifiedImages.push(imageInfo);
+                loadedCount++;
+                if (loadedCount === relevantImages.length) {
+                    setImages(verifiedImages);
+                    setIsLoading(false);
+                }
+            };
+            img.onerror = () => {
+                loadedCount++;
+                 if (loadedCount === relevantImages.length) {
+                    setImages(verifiedImages);
+                    setIsLoading(false);
+                }
+            };
+        });
+
     }, [currentCategory]);
 
 
@@ -71,7 +99,7 @@ export const ImagesPanel = () => {
     if (images.length === 0) {
         return (
             <div className="p-4 text-center text-sm text-muted-foreground">
-                No images found for the '{currentCategory}' category in placeholder-images.json.
+                No images found for the '{currentCategory}' category. Add images to the `/public` folder and update `placeholder-images.json`.
             </div>
         );
     }
