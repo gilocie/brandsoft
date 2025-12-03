@@ -7,10 +7,10 @@ import {
   File,
   RefreshCcw,
   RefreshCw,
-  UploadCloud,
   Share,
   Ruler,
-  Check
+  Check,
+  Save
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -21,7 +21,11 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMe
 import { useBrandsoft } from '@/hooks/use-brandsoft';
 import { useCanvasStore } from '@/stores/canvas-store';
 
-const Header = () => {
+interface HeaderProps {
+    onSaveTemplate: () => void;
+}
+
+const Header = ({ onSaveTemplate }: HeaderProps) => {
     const { undo, redo, historyIndex, history, rulers, toggleRulers } = useCanvasStore();
     const canUndo = historyIndex > 0;
     const canRedo = historyIndex < history.length - 1;
@@ -67,7 +71,9 @@ const Header = () => {
                     </Tooltip>
                 </TooltipProvider>
                 <Separator orientation="vertical" className="h-6 bg-gray-700" />
-                <span className="text-xs text-gray-400 flex items-center gap-1.5"><UploadCloud className="h-4 w-4" /> All changes saved</span>
+                <Button variant="outline" size="sm" className="text-white bg-transparent border-gray-600 hover:bg-gray-800 hover:text-white" onClick={onSaveTemplate}>
+                    <Save className="mr-2 h-4 w-4" /> Save As Template
+                </Button>
                  <Button className="bg-primary hover:bg-primary/90 text-primary-foreground"><Share className="mr-2 h-4 w-4" /> Share</Button>
                  <Avatar className="h-9 w-9">
                     <AvatarImage src={config?.brand.logo} />

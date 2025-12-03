@@ -9,11 +9,13 @@ import Canvas from './Canvas';
 import Footer from './Footer';
 import RightSidebar from './RightSidebar';
 import { useCanvasStore } from '@/stores/canvas-store';
+import SaveTemplateDialog from './SaveTemplateDialog'; // Import the new dialog
 
 export default function DesignStudioPage() {
     const [activeTool, setActiveTool] = useState<string | null>(null);
     const { addElement, selectedElementId } = useCanvasStore();
     const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
+    const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false); // State for the save dialog
 
     const [elementsPanelPosition, setElementsPanelPosition] = useState({ x: 112, y: 16 });
     const [rightSidebarPosition, setRightSidebarPosition] = useState({ x: 16, y: 16 });
@@ -45,28 +47,34 @@ export default function DesignStudioPage() {
     }, [selectedElementId]);
 
     return (
-        <div className="flex flex-col h-screen w-screen bg-white text-gray-900">
-            <Header />
-            <div className="flex flex-1 overflow-hidden">
-                <LeftSidebar activeTool={activeTool} onToolClick={handleToolClick} />
-                <div className="relative flex-1 flex flex-col">
-                    <Canvas onPageDoubleClick={() => setIsRightSidebarOpen(v => !v)} />
-                     <ElementsPanel 
-                        activeTool={activeTool} 
-                        onClose={() => setActiveTool(null)} 
-                        position={elementsPanelPosition}
-                        setPosition={setElementsPanelPosition}
-                    />
-                    {isRightSidebarOpen && (
-                        <RightSidebar 
-                            onCollapse={() => setIsRightSidebarOpen(false)} 
-                            position={rightSidebarPosition}
-                            setPosition={setRightSidebarPosition}
+        <>
+            <div className="flex flex-col h-screen w-screen bg-white text-gray-900">
+                <Header onSaveTemplate={() => setIsSaveDialogOpen(true)} />
+                <div className="flex flex-1 overflow-hidden">
+                    <LeftSidebar activeTool={activeTool} onToolClick={handleToolClick} />
+                    <div className="relative flex-1 flex flex-col">
+                        <Canvas onPageDoubleClick={() => setIsRightSidebarOpen(v => !v)} />
+                        <ElementsPanel 
+                            activeTool={activeTool} 
+                            onClose={() => setActiveTool(null)} 
+                            position={elementsPanelPosition}
+                            setPosition={setElementsPanelPosition}
                         />
-                    )}
+                        {isRightSidebarOpen && (
+                            <RightSidebar 
+                                onCollapse={() => setIsRightSidebarOpen(false)} 
+                                position={rightSidebarPosition}
+                                setPosition={setRightSidebarPosition}
+                            />
+                        )}
+                    </div>
                 </div>
+                <Footer />
             </div>
-            <Footer />
-        </div>
+            <SaveTemplateDialog 
+                isOpen={isSaveDialogOpen}
+                onClose={() => setIsSaveDialogOpen(false)}
+            />
+        </>
     );
 }
