@@ -170,6 +170,7 @@ interface CanvasState {
     templateSettings: TemplateSettings;
     isBackgroundRepositioning: boolean;
     isTemplateEditMode: boolean;
+    isNewPageDialogOpen: boolean;
 
     // Element
     addElement: (element: Omit<CanvasElement, 'id'>, options?: { select?: boolean }) => void;
@@ -214,10 +215,12 @@ interface CanvasState {
     
     // Multi-page
     addPage: () => void;
+    setPages: (pages: Page[]) => void;
     setActivePage: (index: number) => void;
     deletePage: (index: number) => void;
     duplicatePage: (index: number) => void;
     movePage: (fromIndex: number, toIndex: number) => void;
+    setNewPageDialogOpen: (isOpen: boolean) => void;
 
     // Page
     updatePageDetails: (updates: Partial<PageDetails>) => void;
@@ -259,6 +262,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     templateSettings: { ...defaultTemplateSettings },
     isBackgroundRepositioning: false,
     isTemplateEditMode: false,
+    isNewPageDialogOpen: false,
 
     addElement: (element, options) => {
         const newElement = {
@@ -647,20 +651,20 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
         });
         get().commitHistory();
     },
+
+    setPages: (pages) => {
+        set({ pages: pages, currentPageIndex: 0 });
+        get().commitHistory();
+    },
     
     setActivePage: (index) => set({ currentPageIndex: index }),
 
     deletePage: (index) => {
         set(state => {
-            let newPages = state.pages.filter((_, i) => i !== index);
+            const newPages = state.pages.filter((_, i) => i !== index);
             if (newPages.length === 0) {
-                 const newPage: Page = {
-                    id: `page-${Date.now()}`,
-                    name: 'Page 1',
-                    elements: [],
-                    pageDetails: state.pages[0]?.pageDetails || defaultPageDetails,
-                };
-                newPages.push(newPage);
+                // If the last page is deleted, open the "New Page" dialog.
+                return { pages: [], currentPageIndex: -1, isNewPageDialogOpen: true };
             }
             const newIndex = Math.min(Math.max(0, state.currentPageIndex), newPages.length - 1);
             return { pages: newPages, currentPageIndex: newIndex };
@@ -696,6 +700,8 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
         });
         get().commitHistory();
     },
+
+    setNewPageDialogOpen: (isOpen) => set({ isNewPageDialogOpen: isOpen }),
 
     updatePageDetails: (updates) => set((state) => {
         const newPages = [...state.pages];

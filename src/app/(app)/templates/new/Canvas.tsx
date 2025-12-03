@@ -134,7 +134,7 @@ const Canvas = ({ onPageDoubleClick }: CanvasProps) => {
         updatePageBackground, commitHistory, undo, redo, historyIndex, history,
         isBackgroundRepositioning, setBackgroundRepositioning,
         selectionBox, setSelectionBox, getElementsInSelectionBox, selectMultipleElements,
-        linkSelectedElements, groupSelectedElements,
+        linkSelectedElements, groupSelectedElements, setNewPageDialogOpen
     } = useCanvasStore();
 
     const mainCanvasRef = useRef<HTMLDivElement>(null);
@@ -150,13 +150,17 @@ const Canvas = ({ onPageDoubleClick }: CanvasProps) => {
 
     const currentPage = pages[currentPageIndex];
     if (!currentPage) {
-        // This can happen briefly if the last page is deleted
         return (
              <main
                 ref={mainCanvasRef}
                 className={`flex-1 bg-gray-200 overflow-hidden relative flex items-center justify-center`}
             >
-                <p className="text-muted-foreground">Creating new page...</p>
+                <div className="text-center">
+                    <p className="text-muted-foreground mb-4">No page selected. Create a new page to begin.</p>
+                    <Button onClick={() => setNewPageDialogOpen(true)}>
+                        <PlusSquare className="mr-2 h-4 w-4" /> Create New Page
+                    </Button>
+                </div>
             </main>
         );
     }
@@ -514,10 +518,7 @@ const Canvas = ({ onPageDoubleClick }: CanvasProps) => {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                         <AlertDialogDescription>
-                           {pages.length > 1 
-                                ? `This will permanently delete Page ${pageToDelete !== null ? pageToDelete + 1 : ''}.`
-                                : "This is your last page. Deleting it will create a new blank page."
-                           }
+                           {`This will permanently delete Page ${pageToDelete !== null ? pageToDelete + 1 : ''}.`}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -531,4 +532,3 @@ const Canvas = ({ onPageDoubleClick }: CanvasProps) => {
 };
 
 export default Canvas;
-

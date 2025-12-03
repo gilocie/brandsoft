@@ -9,13 +9,14 @@ import Canvas from './Canvas';
 import Footer from './Footer';
 import RightSidebar from './RightSidebar';
 import { useCanvasStore } from '@/stores/canvas-store';
-import SaveTemplateDialog from './SaveTemplateDialog'; // Import the new dialog
+import SaveTemplateDialog from './SaveTemplateDialog';
+import NewPageDialog from './NewPageDialog'; // Import the new dialog
 
 export default function DesignStudioPage() {
     const [activeTool, setActiveTool] = useState<string | null>(null);
-    const { addElement, selectedElementId } = useCanvasStore();
+    const { addElement, selectedElementId, isNewPageDialogOpen, setNewPageDialogOpen } = useCanvasStore();
     const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
-    const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false); // State for the save dialog
+    const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
 
     const [elementsPanelPosition, setElementsPanelPosition] = useState({ x: 112, y: 16 });
     const [rightSidebarPosition, setRightSidebarPosition] = useState({ x: 16, y: 16 });
@@ -74,6 +75,10 @@ export default function DesignStudioPage() {
             <SaveTemplateDialog 
                 isOpen={isSaveDialogOpen}
                 onClose={() => setIsSaveDialogOpen(false)}
+            />
+            <NewPageDialog
+                isOpen={isNewPageDialogOpen}
+                onClose={() => setNewPageDialogOpen(false)}
             />
         </>
     );
