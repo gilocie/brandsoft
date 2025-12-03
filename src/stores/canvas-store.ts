@@ -206,6 +206,8 @@ interface CanvasState {
     isBackgroundRepositioning: boolean;
     isTemplateEditMode: boolean;
     isNewPageDialogOpen: boolean;
+    activePanel: string | null;
+    setActivePanel: (panel: string | null) => void;
 
     // Element
     addElement: (element: Omit<CanvasElement, 'id'>, options?: { select?: boolean }) => void;
@@ -329,6 +331,8 @@ export const useCanvasStore = create<CanvasState>()(
             isBackgroundRepositioning: false,
             isTemplateEditMode: false,
             isNewPageDialogOpen: true,
+            activePanel: null,
+            setActivePanel: (panel) => set((state) => ({ activePanel: state.activePanel === panel ? null : panel })),
 
             addElement: (element, options) => {
                 const newElement = {
@@ -906,7 +910,7 @@ export const useCanvasStore = create<CanvasState>()(
             storage: createJSONStorage(() => localStorage),
             partialize: (state) =>
                 Object.fromEntries(
-                    Object.entries(state).filter(([key]) => !['history', 'historyIndex'].includes(key))
+                    Object.entries(state).filter(([key]) => !['history', 'historyIndex', 'activePanel'].includes(key))
                 ),
             onRehydrateStorage: () => (state) => {
                 if (state) {
@@ -922,5 +926,6 @@ export const useCanvasStore = create<CanvasState>()(
         }
     )
 );
+
 
 

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useRef } from 'react';
@@ -15,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GradientSlider } from './shared/GradientSlider';
 
 export const PageBackgroundPanel = () => {
-    const { pages, currentPageIndex, updatePageDetails, updatePageBackground, commitHistory } = useCanvasStore();
+    const { pages, currentPageIndex, updatePageDetails, updatePageBackground, commitHistory, setActivePanel } = useCanvasStore();
     const bgInputRef = useRef<HTMLInputElement>(null);
 
     const pageDetails = pages[currentPageIndex]?.pageDetails;
@@ -145,7 +146,7 @@ export const PageBackgroundPanel = () => {
                                     variant="outline"
                                     size="sm"
                                     className="flex-1"
-                                    onClick={() => bgInputRef.current?.click()}
+                                    onClick={() => setActivePanel('Images')}
                                 >
                                     Change
                                 </Button>
@@ -210,10 +211,10 @@ export const PageBackgroundPanel = () => {
                         <Button
                             variant="outline"
                             className="w-full"
-                            onClick={() => bgInputRef.current?.click()}
+                            onClick={() => setActivePanel('Images')}
                         >
                             <ImageIcon className="h-4 w-4 mr-2" />
-                            Upload Background Image
+                            Select Background Image
                         </Button>
                     )}
                 </AccordionContent>

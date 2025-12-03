@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -13,8 +14,14 @@ import SaveTemplateDialog from './SaveTemplateDialog';
 import NewPageDialog from './NewPageDialog'; // Import the new dialog
 
 export default function DesignStudioPage() {
-    const [activeTool, setActiveTool] = useState<string | null>(null);
-    const { addElement, selectedElementId, isNewPageDialogOpen, setNewPageDialogOpen } = useCanvasStore();
+    const { 
+        addElement, 
+        selectedElementId, 
+        isNewPageDialogOpen, 
+        setNewPageDialogOpen,
+        activePanel,
+        setActivePanel 
+    } = useCanvasStore();
     const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
     const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
 
@@ -35,9 +42,9 @@ export default function DesignStudioPage() {
                 props: { text: 'Your text here', fontSize: 24, color: '#000000' }
             }, {select: true });
             // Don't open a panel for direct actions
-            setActiveTool(null);
+            setActivePanel(null);
         } else if (panelTools.includes(tool)) {
-            setActiveTool(prev => prev === tool ? null : tool);
+            setActivePanel(tool);
         }
     };
     
@@ -52,12 +59,12 @@ export default function DesignStudioPage() {
             <div className="flex flex-col h-screen w-screen bg-white text-gray-900 overflow-hidden">
                 <Header onSaveTemplate={() => setIsSaveDialogOpen(true)} />
                 <div className="flex flex-1 overflow-hidden">
-                    <LeftSidebar activeTool={activeTool} onToolClick={handleToolClick} />
+                    <LeftSidebar activeTool={activePanel} onToolClick={handleToolClick} />
                     <div className="relative flex-1 flex flex-col">
                         <Canvas onPageDoubleClick={() => setIsRightSidebarOpen(v => !v)} />
                         <ElementsPanel 
-                            activeTool={activeTool} 
-                            onClose={() => setActiveTool(null)} 
+                            activeTool={activePanel} 
+                            onClose={() => setActivePanel(null)} 
                             position={elementsPanelPosition}
                             setPosition={setElementsPanelPosition}
                         />

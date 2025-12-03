@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React from 'react';
@@ -15,6 +16,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { useCanvasStore } from '@/stores/canvas-store';
 
 interface LeftSidebarProps {
     activeTool: string | null;
@@ -22,6 +24,7 @@ interface LeftSidebarProps {
 }
 
 const LeftSidebar = ({ activeTool, onToolClick }: LeftSidebarProps) => {
+    const { setActivePanel } = useCanvasStore();
 
     const tools = [
         { icon: Braces, label: 'Fields' },
