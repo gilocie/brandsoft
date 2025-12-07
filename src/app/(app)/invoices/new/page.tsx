@@ -93,7 +93,7 @@ export default function NewInvoicePage() {
       applyTax: true,
       taxName: 'VAT',
       taxType: 'percentage',
-      taxValue: 16.5,
+      taxValue: 17.5,
       applyShipping: false,
       shippingValue: 0,
       applyDiscount: false,
