@@ -31,7 +31,7 @@ export type Product = {
   type: 'product' | 'service';
 };
 
-export type InvoiceLineItem = {
+export type LineItem = {
     productId?: string;
     description: string;
     quantity: number;
@@ -56,8 +56,30 @@ export type Invoice = {
     taxValue?: number;
     shipping?: number;
     notes?: string;
-    lineItems?: InvoiceLineItem[];
+    lineItems?: LineItem[];
 };
+
+export type Quotation = {
+    quotationId: string;
+    customer: string;
+    customerId?: string;
+    date: string;
+    validUntil: string;
+    amount: number;
+    status: 'Draft' | 'Sent' | 'Accepted' | 'Declined';
+    subtotal?: number;
+    discount?: number;
+    discountType?: 'percentage' | 'flat';
+    discountValue?: number;
+    tax?: number;
+    taxName?: string;
+    taxType?: 'percentage' | 'flat';
+    taxValue?: number;
+    shipping?: number;
+    notes?: string;
+    lineItems?: LineItem[];
+};
+
 
 export type BrandsoftTemplate = {
   id: string;
@@ -95,6 +117,8 @@ export type BrandsoftConfig = {
     paymentDetails?: string;
     invoicePrefix?: string;
     invoiceStartNumber?: number;
+    quotationPrefix?: string;
+    quotationStartNumber?: number;
     defaultInvoiceTemplate?: string | null;
   };
   modules: {
@@ -107,6 +131,7 @@ export type BrandsoftConfig = {
   customers: Customer[];
   products: Product[];
   invoices: Invoice[];
+  quotations: Quotation[];
   templates: BrandsoftTemplate[];
   currencies: string[];
 };
@@ -127,6 +152,9 @@ interface BrandsoftContextType {
   addInvoice: (invoice: Omit<Invoice, 'invoiceId'>) => Invoice;
   updateInvoice: (invoiceId: string, data: Partial<Omit<Invoice, 'invoiceId'>>) => void;
   deleteInvoice: (invoiceId: string) => void;
+  addQuotation: (quotation: Omit<Quotation, 'quotationId'>) => Quotation;
+  updateQuotation: (quotationId: string, data: Partial<Omit<Quotation, 'quotationId'>>) => void;
+  deleteQuotation: (quotationId: string) => void;
   addCurrency: (currency: string) => void;
 }
 
@@ -254,6 +282,9 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
         if (!parsedConfig.templates) {
             parsedConfig.templates = [];
         }
+        if (!parsedConfig.quotations) {
+            parsedConfig.quotations = [];
+        }
         setConfig(parsedConfig);
       }
     } catch (error) {
@@ -300,13 +331,14 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       setConfig(newConfig);
 
       if (options.redirect) {
-        const nonRedirectPaths = ['/dashboard', '/settings', '/products', '/invoices', '/templates'];
+        const nonRedirectPaths = ['/dashboard', '/settings', '/products', '/invoices', '/quotations', '/templates'];
         const isCustomerPage = window.location.pathname.startsWith('/customers');
         const isProductsPage = window.location.pathname.startsWith('/products');
         const isInvoicePage = window.location.pathname.startsWith('/invoices');
+        const isQuotationPage = window.location.pathname.startsWith('/quotations');
 
         
-        const shouldRedirect = !nonRedirectPaths.includes(window.location.pathname) && !isCustomerPage && !isProductsPage && !isInvoicePage;
+        const shouldRedirect = !nonRedirectPaths.includes(window.location.pathname) && !isCustomerPage && !isProductsPage && !isInvoicePage && !isQuotationPage;
         
         if (shouldRedirect) {
           router.push('/dashboard');
@@ -448,6 +480,59 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     };
     saveConfig(newConfig, { redirect: false });
   };
+  
+    const addQuotation = (quotationData: Omit<Quotation, 'quotationId'>): Quotation => {
+        if (!config) throw new Error("Config not loaded");
+        
+        let nextIdNumber = config.profile.quotationStartNumber || 1;
+        const existingIds = new Set(config.quotations.map(q => q.quotationId));
+        const prefix = config.profile.quotationPrefix || 'QUO-';
+
+        let newQuotationId = `${prefix}${String(nextIdNumber).padStart(3, '0')}`;
+        while(existingIds.has(newQuotationId)) {
+            nextIdNumber++;
+            newQuotationId = `${prefix}${String(nextIdNumber).padStart(3, '0')}`;
+        }
+
+        const newQuotation: Quotation = {
+        ...quotationData,
+        quotationId: newQuotationId,
+        };
+        
+        const newConfig: BrandsoftConfig = {
+        ...config,
+        quotations: [...config.quotations, newQuotation],
+        profile: {
+            ...config.profile,
+            quotationStartNumber: nextIdNumber + 1,
+        }
+        };
+        saveConfig(newConfig, { redirect: false });
+        return newQuotation;
+    };
+
+    const updateQuotation = (quotationId: string, data: Partial<Omit<Quotation, 'quotationId'>>) => {
+        if (!config) throw new Error("Config not loaded");
+        const updatedQuotations = config.quotations.map(q =>
+        q.quotationId === quotationId ? { ...q, ...data, quotationId } : q
+        );
+        const newConfig: BrandsoftConfig = {
+        ...config,
+        quotations: updatedQuotations,
+        };
+        saveConfig(newConfig, { redirect: false });
+    };
+
+    const deleteQuotation = (quotationId: string) => {
+        if (!config) throw new Error("Config not loaded");
+        const updatedQuotations = config.quotations.filter(q => q.quotationId !== quotationId);
+        const newConfig: BrandsoftConfig = {
+        ...config,
+        quotations: updatedQuotations,
+        };
+        saveConfig(newConfig, { redirect: false });
+    };
+
 
   const addCurrency = (currency: string) => {
     if (!config) throw new Error("Config not loaded");
@@ -461,7 +546,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
   };
 
 
-  const value = { isActivated, isConfigured, config, activate, saveConfig, logout, addCustomer, updateCustomer, deleteCustomer, addProduct, updateProduct, deleteProduct, addInvoice, updateInvoice, deleteInvoice, addCurrency };
+  const value = { isActivated, isConfigured, config, activate, saveConfig, logout, addCustomer, updateCustomer, deleteCustomer, addProduct, updateProduct, deleteProduct, addInvoice, updateInvoice, deleteInvoice, addQuotation, updateQuotation, deleteQuotation, addCurrency };
 
   return <BrandsoftContext.Provider value={value}>{children}</BrandsoftContext.Provider>;
 }

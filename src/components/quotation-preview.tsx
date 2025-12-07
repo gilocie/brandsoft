@@ -2,7 +2,7 @@
 
 'use client';
 
-import { BrandsoftConfig, Customer, Invoice, LineItem } from '@/hooks/use-brandsoft';
+import { BrandsoftConfig, Customer, Quotation } from '@/hooks/use-brandsoft';
 import { format, parseISO } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
@@ -12,13 +12,16 @@ import html2canvas from 'html2canvas';
 import { createRoot } from 'react-dom/client';
 
 
-// This props definition is intentionally verbose to support both
-// the real-time form data from a new/edit page and the stored data from an existing invoice.
-type InvoiceData = Partial<Invoice> & {
-    lineItems?: LineItem[],
+type QuotationData = Partial<Quotation> & {
+    lineItems?: {
+        productId?: string;
+        description: string;
+        quantity: number;
+        price: number;
+    }[],
     currency?: string;
-    invoiceDate?: Date;
-    dueDate?: Date;
+    quotationDate?: Date;
+    validUntil?: Date;
     taxName?: string;
     applyTax?: boolean;
     taxType?: 'percentage' | 'flat';
@@ -31,31 +34,31 @@ type InvoiceData = Partial<Invoice> & {
 };
 
 
-export interface InvoicePreviewProps {
+export interface QuotationPreviewProps {
     config: BrandsoftConfig | null;
     customer: Customer | null;
-    invoiceData: InvoiceData;
-    invoiceId?: string;
-    forPdf?: boolean; // New prop to indicate PDF rendering mode
+    quotationData: QuotationData;
+    quotationId?: string;
+    forPdf?: boolean;
 }
 
-const InvoiceStatusWatermark = ({ status }: { status: Invoice['status'] }) => {
+const QuotationStatusWatermark = ({ status }: { status: Quotation['status'] }) => {
     let text = '';
     let colorClass = '';
 
     switch (status) {
-        case 'Pending':
-        case 'Overdue':
-            text = 'UNPAID';
-            colorClass = 'text-red-500/20';
+        case 'Draft':
+        case 'Sent':
+            text = status.toUpperCase();
+            colorClass = 'text-blue-500/20';
             break;
-        case 'Paid':
-            text = 'PAID';
+        case 'Accepted':
+            text = 'ACCEPTED';
             colorClass = 'text-green-500/20';
             break;
-        case 'Canceled':
-            text = 'CANCELED';
-            colorClass = 'text-gray-500/20';
+        case 'Declined':
+            text = 'DECLINED';
+            colorClass = 'text-red-500/20';
             break;
         default:
             return null;
@@ -73,9 +76,9 @@ const InvoiceStatusWatermark = ({ status }: { status: Invoice['status'] }) => {
 };
 
 
-export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPdf = false }: InvoicePreviewProps) {
+export function QuotationPreview({ config, customer, quotationData, quotationId, forPdf = false }: QuotationPreviewProps) {
 
-    if (!config || !customer || !invoiceData) {
+    if (!config || !customer || !quotationData) {
         return (
             <div className="flex items-center justify-center p-10 text-muted-foreground">
                 Please fill out all required fields to see the preview.
@@ -83,65 +86,65 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
         );
     }
     
-    const currencyCode = invoiceData.currency || config.profile.defaultCurrency;
+    const currencyCode = quotationData.currency || config.profile.defaultCurrency;
     const formatCurrency = (value: number) => `${currencyCode}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-    const subtotal = invoiceData.lineItems?.reduce((acc, item) => acc + (item.quantity * item.price), 0) || invoiceData.subtotal || 0;
+    const subtotal = quotationData.lineItems?.reduce((acc, item) => acc + (item.quantity * item.price), 0) || quotationData.subtotal || 0;
     
     let discountAmount = 0;
-    if (invoiceData.applyDiscount && invoiceData.discountValue) {
-        if (invoiceData.discountType === 'percentage') {
-            discountAmount = subtotal * (invoiceData.discountValue / 100);
+    if (quotationData.applyDiscount && quotationData.discountValue) {
+        if (quotationData.discountType === 'percentage') {
+            discountAmount = subtotal * (quotationData.discountValue / 100);
         } else {
-            discountAmount = invoiceData.discountValue;
+            discountAmount = quotationData.discountValue;
         }
-    } else if (invoiceData.discount) {
-      discountAmount = invoiceData.discount;
+    } else if (quotationData.discount) {
+      discountAmount = quotationData.discount;
     }
 
     const subtotalAfterDiscount = subtotal - discountAmount;
     
     let taxAmount = 0;
     let taxRateDisplay = '0%';
-    if (invoiceData.applyTax && invoiceData.taxValue) {
-        if (invoiceData.taxType === 'percentage') {
-            taxAmount = subtotalAfterDiscount * (invoiceData.taxValue / 100);
-            taxRateDisplay = `${invoiceData.taxValue}%`;
+    if (quotationData.applyTax && quotationData.taxValue) {
+        if (quotationData.taxType === 'percentage') {
+            taxAmount = subtotalAfterDiscount * (quotationData.taxValue / 100);
+            taxRateDisplay = `${quotationData.taxValue}%`;
         } else {
-            taxAmount = invoiceData.taxValue;
-            taxRateDisplay = formatCurrency(invoiceData.taxValue);
+            taxAmount = quotationData.taxValue;
+            taxRateDisplay = formatCurrency(quotationData.taxValue);
         }
-    } else if (invoiceData.tax && invoiceData.tax > 0 && subtotalAfterDiscount > 0) {
-      taxAmount = invoiceData.tax;
-      if (invoiceData.taxType === 'percentage' && invoiceData.taxValue) {
-        taxRateDisplay = `${invoiceData.taxValue}%`;
-      } else if (invoiceData.taxType === 'flat' && invoiceData.taxValue) {
-        taxRateDisplay = formatCurrency(invoiceData.taxValue);
+    } else if (quotationData.tax && quotationData.tax > 0 && subtotalAfterDiscount > 0) {
+      taxAmount = quotationData.tax;
+      if (quotationData.taxType === 'percentage' && quotationData.taxValue) {
+        taxRateDisplay = `${quotationData.taxValue}%`;
+      } else if (quotationData.taxType === 'flat' && quotationData.taxValue) {
+        taxRateDisplay = formatCurrency(quotationData.taxValue);
       } else {
          const effectiveTaxRate = (taxAmount / subtotalAfterDiscount) * 100;
          taxRateDisplay = `${effectiveTaxRate.toFixed(2)}%`;
       }
-    } else if (invoiceData.tax) {
-        taxAmount = invoiceData.tax;
+    } else if (quotationData.tax) {
+        taxAmount = quotationData.tax;
         taxRateDisplay = formatCurrency(taxAmount);
     }
 
 
-    const shippingAmount = Number(invoiceData.applyShipping && invoiceData.shippingValue ? invoiceData.shippingValue : (invoiceData.shipping || 0));
+    const shippingAmount = Number(quotationData.applyShipping && quotationData.shippingValue ? quotationData.shippingValue : (quotationData.shipping || 0));
     
     const total = subtotalAfterDiscount + taxAmount + shippingAmount;
     
-    const rawInvoiceDate = invoiceData.invoiceDate || invoiceData.date;
-    const rawDueDate = invoiceData.dueDate || invoiceData.date;
-    const invoiceDate = typeof rawInvoiceDate === 'string' ? parseISO(rawInvoiceDate) : rawInvoiceDate;
-    const dueDate = typeof rawDueDate === 'string' ? parseISO(rawDueDate) : rawDueDate;
+    const rawQuotationDate = quotationData.quotationDate || quotationData.date;
+    const rawValidUntil = quotationData.validUntil || quotationData.date;
+    const quotationDate = typeof rawQuotationDate === 'string' ? parseISO(rawQuotationDate) : rawQuotationDate;
+    const validUntil = typeof rawValidUntil === 'string' ? parseISO(rawValidUntil) : rawValidUntil;
     
-    const taxName = invoiceData.taxName || 'Tax';
+    const taxName = quotationData.taxName || 'Tax';
 
     return (
         <div className={forPdf ? "" : "bg-gray-100 p-4 sm:p-8 rounded-lg"}>
             <div 
-                id={`invoice-preview-${invoiceId}`} 
+                id={`quotation-preview-${quotationId}`} 
                 className={cn(
                     "w-full max-w-[8.5in] mx-auto bg-white shadow-lg relative font-sans flex flex-col",
                     forPdf ? "min-h-[11in]" : "min-h-[11in] p-12"
@@ -162,9 +165,8 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                         <img src={config.brand.watermarkImage} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0 opacity-10 pointer-events-none" alt="watermark" />
                     )}
                     
-                    {invoiceData.status && !config.brand.watermarkImage && <InvoiceStatusWatermark status={invoiceData.status} />}
+                    {quotationData.status && !config.brand.watermarkImage && <QuotationStatusWatermark status={quotationData.status} />}
 
-                    {/* Header - Fixed positioning for PDF */}
                     {config.brand.headerImage ? (
                         <div className="absolute top-0 left-0 right-0 h-20 z-10">
                             <img src={config.brand.headerImage} className="w-full h-full object-cover" alt="Letterhead"/>
@@ -173,14 +175,13 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                         <div className="absolute top-0 left-0 right-0 h-10 z-10" style={{backgroundColor: config.brand.primaryColor}}></div>
                     )}
                     
-                    {/* Main Content */}
                     <header className="relative z-10 flex justify-between items-start mb-8 pt-2">
                         <div className="flex items-center gap-4">
                             {config.brand.logo && (
                             <img src={config.brand.logo} alt={config.brand.businessName} className="h-16 w-16 sm:h-20 sm:w-20 object-contain" />
                             )}
                             <div>
-                                <h1 className="text-3xl sm:text-4xl font-bold" style={{color: config.brand.primaryColor}}>Invoice</h1>
+                                <h1 className="text-3xl sm:text-4xl font-bold" style={{color: config.brand.primaryColor}}>Quotation</h1>
                             </div>
                         </div>
                         <div className="text-right text-sm text-gray-600">
@@ -192,10 +193,9 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                         </div>
                     </header>
 
-                    {/* Bill To & Dates */}
                     <section className="relative z-10 grid grid-cols-2 gap-8 mb-4">
                         <div>
-                            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">Bill To</h3>
+                            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">Quote To</h3>
                             <p className="font-bold text-lg">{customer.companyName || customer.name}</p>
                             {config.brand.showCustomerAddress ? (
                                 <>
@@ -208,22 +208,21 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                         <div className="text-right">
                             <div className="space-y-2">
                             <div className="grid grid-cols-2 gap-2">
-                                    <span className="text-sm font-semibold text-gray-500">INVOICE #</span>
-                                    <span className="font-medium">{invoiceId || `${config.profile.invoicePrefix || 'INV-'}${String(config.profile.invoiceStartNumber || 1).padStart(3, '0')}`}</span>
+                                    <span className="text-sm font-semibold text-gray-500">QUOTATION #</span>
+                                    <span className="font-medium">{quotationId || `${config.profile.quotationPrefix || 'QUO-'}${String(config.profile.quotationStartNumber || 1).padStart(3, '0')}`}</span>
                                 </div>
                                 <div className="grid grid-cols-2 gap-2">
                                     <span className="text-sm font-semibold text-gray-500">DATE</span>
-                                    <span className="font-medium">{format(invoiceDate || new Date(), 'MM/dd/yy')}</span>
+                                    <span className="font-medium">{format(quotationDate || new Date(), 'MM/dd/yy')}</span>
                                 </div>
                                 <div className="grid grid-cols-2 gap-2">
-                                    <span className="text-sm font-semibold text-gray-500">DUE DATE</span>
-                                    <span className="font-medium">{format(dueDate || new Date(), 'MM/dd/yy')}</span>
+                                    <span className="text-sm font-semibold text-gray-500">VALID UNTIL</span>
+                                    <span className="font-medium">{format(validUntil || new Date(), 'MM/dd/yy')}</span>
                                 </div>
                             </div>
                         </div>
                     </section>
 
-                    {/* Line Items Table */}
                     <section className="relative z-10 mb-8">
                         <Table>
                             <TableHeader>
@@ -237,7 +236,7 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {invoiceData.lineItems?.map((item, index) => {
+                                {quotationData.lineItems?.map((item, index) => {
                                     const product = config?.products.find(p => p.name === item.description);
                                     return (
                                         <TableRow key={index} className="border-b border-gray-300">
@@ -254,19 +253,12 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                         </Table>
                     </section>
 
-                    {/* Totals & Notes */}
                     <section className="relative z-10 grid grid-cols-2 gap-8 items-start mb-12 mt-auto">
                         <div className="text-sm">
-                            {invoiceData.notes && (
+                            {quotationData.notes && (
                                 <div>
                                     <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Notes</h3>
-                                    <p className="text-gray-600 mt-1 text-xs">{invoiceData.notes}</p>
-                                </div>
-                            )}
-                            {config.profile.paymentDetails && (
-                                <div className="mt-4">
-                                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Payment Details</h3>
-                                    <p className="text-gray-600 mt-1 whitespace-pre-wrap text-xs">{config.profile.paymentDetails}</p>
+                                    <p className="text-gray-600 mt-1 text-xs">{quotationData.notes}</p>
                                 </div>
                             )}
                         </div>
@@ -303,7 +295,6 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                     </section>
                 </div>
 
-                {/* Footer - Absolute positioning at bottom */}
                 <footer className={cn("mt-auto", forPdf ? "absolute bottom-0 left-0 right-0 z-10" : "")}>
                     {config.brand.footerImage && (
                         <img src={config.brand.footerImage} className="w-full h-auto" alt="Footer"/>
@@ -318,9 +309,9 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
     );
 }
 
-export const downloadInvoiceAsPdf = async (props: InvoicePreviewProps) => {
+export const downloadQuotationAsPdf = async (props: QuotationPreviewProps) => {
     const container = document.createElement('div');
-    container.id = `pdf-container-${props.invoiceId}`;
+    container.id = `pdf-container-${props.quotationId}`;
     container.style.position = 'fixed';
     container.style.left = '-9999px';
     container.style.top = '0';
@@ -328,31 +319,30 @@ export const downloadInvoiceAsPdf = async (props: InvoicePreviewProps) => {
     document.body.appendChild(container);
 
     const root = createRoot(container);
-    root.render(<InvoicePreview {...props} forPdf={true} />);
+    root.render(<QuotationPreview {...props} forPdf={true} />);
 
     await new Promise(resolve => setTimeout(resolve, 1500));
 
-    const invoiceElement = container.querySelector(`#invoice-preview-${props.invoiceId}`) as HTMLElement;
-    if (!invoiceElement) {
-        console.error("Invoice element not found for PDF generation.");
+    const quotationElement = container.querySelector(`#quotation-preview-${props.quotationId}`) as HTMLElement;
+    if (!quotationElement) {
+        console.error("Quotation element not found for PDF generation.");
         root.unmount();
         document.body.removeChild(container);
         return;
     }
     
-    // Temporarily get header and footer to render them on each page
-    const headerClone = invoiceElement.querySelector('header')?.cloneNode(true) as HTMLElement | null;
-    const footerClone = invoiceElement.querySelector('footer.absolute')?.cloneNode(true) as HTMLElement | null;
+    const headerClone = quotationElement.querySelector('header')?.cloneNode(true) as HTMLElement | null;
+    const footerClone = quotationElement.querySelector('footer.absolute')?.cloneNode(true) as HTMLElement | null;
 
 
-    const canvas = await html2canvas(invoiceElement, {
+    const canvas = await html2canvas(quotationElement, {
         scale: 2,
         useCORS: true,
         allowTaint: true,
         logging: false,
         backgroundColor: '#ffffff',
         width: 816,
-        height: invoiceElement.scrollHeight
+        height: quotationElement.scrollHeight
     });
 
     root.unmount();
@@ -392,5 +382,5 @@ export const downloadInvoiceAsPdf = async (props: InvoicePreviewProps) => {
         heightLeft -= pdfHeight;
     }
 
-    pdf.save(`Invoice-${props.invoiceId}.pdf`);
+    pdf.save(`Quotation-${props.quotationId}.pdf`);
 };

@@ -51,12 +51,13 @@ export default function DashboardPage() {
             paidAmount: 0,
             unpaidAmount: 0,
             canceledAmount: 0,
-            quotationsSent: 0, // Placeholder
-            receiptsIssued: 0, // Placeholder
+            quotationsSent: 0,
+            receiptsIssued: 0,
         };
     }
 
     const invoices = config.invoices || [];
+    const quotations = config.quotations || [];
     
     const paidInvoices = invoices.filter(inv => inv.status === 'Paid');
     const unpaidInvoices = invoices.filter(inv => inv.status === 'Pending' || inv.status === 'Overdue');
@@ -76,7 +77,7 @@ export default function DashboardPage() {
         paidAmount,
         unpaidAmount,
         canceledAmount,
-        quotationsSent: 0, // Placeholder
+        quotationsSent: quotations.filter(q => q.status === 'Sent').length,
         receiptsIssued: paidInvoices.length,
     }
   }, [config]);
