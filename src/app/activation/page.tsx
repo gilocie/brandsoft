@@ -46,8 +46,13 @@ export default function ActivationPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
-      <Card className="w-full max-w-md shadow-2xl">
+    <div 
+      className="flex min-h-screen items-center justify-center bg-cover bg-center p-4 font-body"
+      style={{ backgroundImage: "url('https://picsum.photos/seed/activationbg/1920/1080')" }}
+      data-ai-hint="background abstract"
+    >
+      <div className="absolute inset-0 bg-background/50 backdrop-blur-sm" />
+      <Card className="w-full max-w-md shadow-2xl z-10">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4">
             <Logo />
