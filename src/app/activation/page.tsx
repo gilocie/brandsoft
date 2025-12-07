@@ -71,7 +71,7 @@ export default function ActivationPage() {
                   <FormItem>
                     <FormLabel>Serial Key</FormLabel>
                     <FormControl>
-                      <Input placeholder="XXXX-XXXX-XXXX-XXXX" {...field} />
+                      <Input placeholder="XXXX-XXXX-XXXX-XXXX" {...field} className="text-center placeholder:text-center"/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
