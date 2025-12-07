@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -49,7 +50,7 @@ export default function ActivationPage() {
     <div 
       className="flex min-h-screen items-center justify-center bg-cover bg-center p-4 font-body"
       style={{ backgroundImage: "url('https://picsum.photos/seed/activationbg/1920/1080')" }}
-      data-ai-hint="background abstract"
+      data-ai-hint="business building"
     >
       <div className="absolute inset-0 bg-background/50 backdrop-blur-sm" />
       <Card className="w-full max-w-md shadow-2xl z-10">
