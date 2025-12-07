@@ -19,7 +19,7 @@ export function Logo() {
             <BriefcaseBusiness className="h-5 w-5 text-primary" />
         </AvatarFallback>
       </Avatar>
-      <h1 className="text-3xl font-headline font-bold text-primary">{businessName}</h1>
+      <h1 className="text-3xl font-body font-bold text-primary">{businessName}</h1>
     </div>
   );
 }
