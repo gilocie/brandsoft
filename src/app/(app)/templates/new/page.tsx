@@ -3,6 +3,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Header from './Header';
 import LeftSidebar from './LeftSidebar';
 import ElementsPanel from './ElementsPanel';
@@ -11,7 +12,8 @@ import Footer from './Footer';
 import RightSidebar from './RightSidebar';
 import { useCanvasStore } from '@/stores/canvas-store';
 import SaveTemplateDialog from './SaveTemplateDialog';
-import NewPageDialog from './NewPageDialog'; // Import the new dialog
+import NewPageDialog from './NewPageDialog';
+import { useBrandsoft } from '@/hooks/use-brandsoft';
 
 export default function DesignStudioPage() {
     const { 
@@ -20,15 +22,52 @@ export default function DesignStudioPage() {
         isNewPageDialogOpen, 
         setNewPageDialogOpen,
         activePanel,
-        setActivePanel 
+        setActivePanel,
+        setLiveDataContext,
+        setPages,
     } = useCanvasStore();
+    const { config } = useBrandsoft();
+
     const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
     const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
+    const searchParams = useSearchParams();
 
     const [elementsPanelPosition, setElementsPanelPosition] = useState({ x: 112, y: 16 });
     const [rightSidebarPosition, setRightSidebarPosition] = useState({ x: 16, y: 16 });
     
     const panelTools = ['Fields', 'Shapes', 'Templates', 'Uploads', 'Images', 'Styles', 'More'];
+
+    useEffect(() => {
+        const documentType = searchParams.get('documentType');
+        const documentId = searchParams.get('documentId');
+
+        if (documentType && documentId && config) {
+            let document;
+            let customer;
+
+            if (documentType === 'invoice') {
+                document = config.invoices.find(inv => inv.invoiceId === documentId);
+                if (document) {
+                    customer = config.customers.find(c => c.name === document.customer) || null;
+                    const template = config.templates.find(t => t.id === config.profile.defaultInvoiceTemplate);
+                    if (template) {
+                        setPages(JSON.parse(JSON.stringify(template.pages)));
+                    }
+                    setLiveDataContext({ invoice: document, customer });
+                }
+            } else if (documentType === 'quotation') {
+                document = config.quotations.find(q => q.quotationId === documentId);
+                if (document) {
+                    customer = config.customers.find(c => c.name === document.customer) || null;
+                    // You might have a default quotation template setting in the future
+                    // const template = config.templates.find(t => t.id === config.profile.defaultQuotationTemplate);
+                    // if(template) { setPages(JSON.parse(JSON.stringify(template.pages))) }
+                    setLiveDataContext({ quotation: document, customer });
+                }
+            }
+        }
+    }, [searchParams, config, setLiveDataContext, setPages]);
+
 
     const handleToolClick = (tool: string) => {
         if (tool === 'Text') {
