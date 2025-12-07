@@ -49,7 +49,7 @@ export default function ActivationPage() {
   return (
     <div 
       className="flex min-h-screen items-center justify-center bg-cover bg-center p-4 font-body"
-      style={{ backgroundImage: "url('https://picsum.photos/seed/activationbg/1920/1080')" }}
+      style={{ backgroundImage: "url('https://picsum.photos/seed/business/1920/1080')" }}
       data-ai-hint="business building"
     >
       <div className="absolute inset-0 bg-background/50 backdrop-blur-sm" />
@@ -58,7 +58,7 @@ export default function ActivationPage() {
           <div className="mx-auto mb-4">
             <Logo />
           </div>
-          <CardTitle className="font-headline text-2xl">Software Activation</CardTitle>
+          <CardTitle className="font-body text-2xl">Software Activation</CardTitle>
           <CardDescription>Please enter your serial key to continue.</CardDescription>
         </CardHeader>
         <CardContent>
