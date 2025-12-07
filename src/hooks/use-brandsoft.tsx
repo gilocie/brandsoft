@@ -1,6 +1,6 @@
 
 
-"use client";
+'use client';
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
@@ -251,6 +251,49 @@ const initialInvoices: Invoice[] = [
   },
 ];
 
+const initialQuotations: Quotation[] = [
+    {
+        quotationId: 'QUO-001',
+        customer: 'Liam Johnson',
+        date: '2023-11-01',
+        validUntil: '2023-11-30',
+        amount: 500.0,
+        status: 'Sent',
+        subtotal: 500,
+        lineItems: [{ description: 'Website Redesign', quantity: 1, price: 500 }],
+    },
+    {
+        quotationId: 'QUO-002',
+        customer: 'Olivia Smith',
+        date: '2023-11-05',
+        validUntil: '2023-12-05',
+        amount: 1200.0,
+        status: 'Accepted',
+        subtotal: 1200,
+        lineItems: [{ description: 'E-commerce Platform Development', quantity: 1, price: 1200 }],
+    },
+    {
+        quotationId: 'QUO-003',
+        customer: 'Emma Brown',
+        date: '2023-11-10',
+        validUntil: '2023-12-10',
+        amount: 300.0,
+        status: 'Declined',
+        subtotal: 300,
+        lineItems: [{ description: 'Quarterly Social Media Management', quantity: 1, price: 300 }],
+    },
+    {
+        quotationId: 'QUO-004',
+        customer: 'Noah Williams',
+        date: '2023-11-12',
+        validUntil: '2023-12-12',
+        amount: 800.0,
+        status: 'Draft',
+        subtotal: 800,
+        lineItems: [{ description: 'Mobile App UI/UX Design', quantity: 1, price: 800 }],
+    }
+];
+
 
 export function BrandsoftProvider({ children }: { children: ReactNode }) {
   const [isActivated, setIsActivated] = useState<boolean | null>(null);
@@ -282,8 +325,8 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
         if (!parsedConfig.templates) {
             parsedConfig.templates = [];
         }
-        if (!parsedConfig.quotations) {
-            parsedConfig.quotations = [];
+        if (!parsedConfig.quotations || parsedConfig.quotations.length === 0) {
+            parsedConfig.quotations = initialQuotations;
         }
         setConfig(parsedConfig);
       }
