@@ -16,7 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from "@/lib/utils";
-import { CalendarIcon, PlusCircle, Trash2, Save, Send, Eye, UserPlus } from 'lucide-react';
+import { CalendarIcon, PlusCircle, Trash2, Save, Send, Eye, UserPlus, Palette } from 'lucide-react';
 import { format } from "date-fns";
 import Link from 'next/link';
 import { useBrandsoft, type Customer, type Invoice, type Product } from '@/hooks/use-brandsoft.tsx';
@@ -249,9 +249,14 @@ export default function NewInvoicePage() {
             <h1 className="text-3xl font-bold font-headline">New Invoice</h1>
             <p className="text-muted-foreground">Fill in the details below to create a new invoice.</p>
           </div>
-          <Button variant="outline" asChild>
-            <Link href="/invoices">Cancel</Link>
-          </Button>
+            <div className="flex items-center gap-2">
+                 <Button asChild>
+                    <Link href={`/templates/design?documentType=invoice&isNew=true`}><Palette className="mr-2 h-4 w-4"/> Design</Link>
+                </Button>
+                <Button variant="outline" asChild>
+                    <Link href="/invoices">Cancel</Link>
+                </Button>
+            </div>
        </div>
       <Form {...form}>
         <form onSubmit={e => e.preventDefault()} className="space-y-8">
