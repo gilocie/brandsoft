@@ -296,7 +296,7 @@ export default function EditInvoicePage() {
           </div>
           <div className="flex items-center gap-2">
             <Button asChild>
-                <Link href={`/templates/new?documentType=invoice&documentId=${invoiceId}`}><Palette className="mr-2 h-4 w-4"/> Design</Link>
+                <Link href={`/templates/design?documentType=invoice&documentId=${invoiceId}`}><Palette className="mr-2 h-4 w-4"/> Design</Link>
             </Button>
             <Button variant="outline" asChild>
                 <Link href="/invoices">Cancel</Link>

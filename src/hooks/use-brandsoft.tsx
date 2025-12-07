@@ -38,6 +38,18 @@ export type LineItem = {
     price: number;
 };
 
+export type DesignSettings = {
+    backgroundColor?: string;
+    textColor?: string;
+    primaryColor?: string;
+    secondaryColor?: string;
+    font?: string;
+    headerImage?: string;
+    footerImage?: string;
+    backgroundImage?: string;
+    watermarkImage?: string;
+}
+
 export type Invoice = {
     invoiceId: string;
     customer: string;
@@ -57,6 +69,7 @@ export type Invoice = {
     shipping?: number;
     notes?: string;
     lineItems?: LineItem[];
+    design?: DesignSettings;
 };
 
 export type Quotation = {
@@ -78,6 +91,7 @@ export type Quotation = {
     shipping?: number;
     notes?: string;
     lineItems?: LineItem[];
+    design?: DesignSettings;
 };
 
 
