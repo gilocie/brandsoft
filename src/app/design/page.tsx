@@ -396,9 +396,12 @@ function DocumentDesignPage() {
     // Auto-save to session storage
     useEffect(() => {
         if (!isLoading) {
-            setFormData(watchedValues);
+            const subscription = form.watch((value) => {
+                setFormData(value);
+            });
+            return () => subscription.unsubscribe();
         }
-    }, [watchedValues, isLoading, setFormData]);
+    }, [isLoading, form, setFormData]);
 
 
     const currentDesignSettings: DesignSettings = useMemo(() => ({
@@ -684,3 +687,5 @@ export default dynamic(() => Promise.resolve(DocumentDesignPage), {
     ssr: false,
     loading: () => <div className="w-full h-screen flex items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>
 });
+
+    
