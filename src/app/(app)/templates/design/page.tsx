@@ -213,12 +213,12 @@ export default function DocumentDesignPage() {
 
 
     if (isLoading) {
-        return <div className="h-screen w-screen flex items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
+        return <div className="flex items-center justify-center h-full"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
     }
 
     if (!document) {
         return (
-             <div className="h-screen w-screen flex flex-col items-center justify-center text-center">
+             <div className="flex flex-col items-center justify-center text-center h-full">
                 <h1 className="text-2xl font-bold">Document Not Found</h1>
                 <p className="text-muted-foreground">The requested document could not be found, or required data is missing.</p>
                 <Button asChild className="mt-4"><Link href="/dashboard">Return to Dashboard</Link></Button>
@@ -230,8 +230,8 @@ export default function DocumentDesignPage() {
 
 
     return (
-        <div className="min-h-screen bg-muted/40">
-            <div className="grid grid-cols-1 lg:grid-cols-3 h-screen">
+        <div className="h-full">
+            <div className="grid grid-cols-1 lg:grid-cols-3 h-full">
                 <div className="lg:col-span-1 bg-background border-r h-full flex flex-col">
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
@@ -295,7 +295,7 @@ export default function DocumentDesignPage() {
                         </form>
                     </Form>
                 </div>
-                <div className="hidden lg:col-span-2 lg:flex items-center justify-center h-full overflow-y-auto p-8">
+                <div className="lg:col-span-2 flex items-center justify-center h-full overflow-y-auto p-8 bg-muted/40">
                      {documentType === 'invoice' && (
                         <InvoicePreview
                             config={livePreviewConfig}
