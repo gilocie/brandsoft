@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm, useWatch } from 'react-hook-form';
@@ -155,6 +156,8 @@ function DocumentDesignPage() {
         }
     }, [config?.profile.defaultInvoiceTemplate, config?.profile.defaultQuotationTemplate]);
 
+    const stableGetFormData = useCallback(getFormData, []);
+
     useEffect(() => {
         if (!config || !documentType) return;
 
@@ -164,7 +167,7 @@ function DocumentDesignPage() {
         const defaultTemplate = getDefaultTemplate(documentType);
 
         if (isNew) {
-            doc = getFormData();
+            doc = stableGetFormData();
             existingDesign = (doc as any)?.design || {};
         } else if (documentId) {
             if (documentType === 'invoice') {
@@ -188,7 +191,7 @@ function DocumentDesignPage() {
         
         form.reset(initialValues);
         setIsLoading(false);
-    }, [config, documentId, documentType, isNew, getFormData, getDefaultTemplate]);
+    }, [config, documentId, documentType, isNew, stableGetFormData, getDefaultTemplate, form]);
 
     const onSubmit = (data: DesignSettingsFormData) => {
         if (!config || !documentType) return;
@@ -438,4 +441,5 @@ function DocumentDesignPage() {
 
 export default dynamic(() => Promise.resolve(DocumentDesignPage), {
     ssr: false,
-    loading: () => <div className="flex items-center justify-center h-full"><Loader2 className="h-12 w-1
+    loading: () => <div className="flex items-center justify-center h-full"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>
+});
