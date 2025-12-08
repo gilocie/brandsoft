@@ -54,6 +54,15 @@ export interface DesignSettings {
     watermarkAngle?: number;
     headerColor?: string;
     footerColor?: string;
+    // Visibility toggles
+    showLogo?: boolean;
+    showBusinessAddress?: boolean;
+    showInvoiceTitle?: boolean;
+    showBillingAddress?: boolean;
+    showDates?: boolean;
+    showPaymentDetails?: boolean;
+    showNotes?: boolean;
+    showBrandsoftFooter?: boolean;
 }
 
 export type Invoice = {
@@ -128,6 +137,15 @@ export type BrandsoftConfig = {
     showCustomerAddress: boolean;
     backgroundColor?: string;
     textColor?: string;
+    // Default visibility
+    showLogo?: boolean;
+    showBusinessAddress?: boolean;
+    showInvoiceTitle?: boolean;
+    showBillingAddress?: boolean;
+    showDates?: boolean;
+    showPaymentDetails?: boolean;
+    showNotes?: boolean;
+    showBrandsoftFooter?: boolean;
   };
   profile: {
     address: string;
@@ -141,8 +159,8 @@ export type BrandsoftConfig = {
     invoiceStartNumber?: number;
     quotationPrefix?: string;
     quotationStartNumber?: number;
-    defaultInvoiceTemplate?: DesignSettings;
-    defaultQuotationTemplate?: DesignSettings;
+    defaultInvoiceTemplate?: DesignSettings | string;
+    defaultQuotationTemplate?: DesignSettings | string;
   };
   modules: {
     invoice: boolean;
@@ -397,7 +415,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       setConfig(newConfig);
 
       if (options.redirect) {
-        const nonRedirectPaths = ['/dashboard', '/settings', '/products', '/invoices', '/quotations', '/templates'];
+        const nonRedirectPaths = ['/dashboard', '/settings', '/products', '/invoices', '/quotations', '/templates', '/design'];
         const isCustomerPage = window.location.pathname.startsWith('/customers');
         const isProductsPage = window.location.pathname.startsWith('/products');
         const isInvoicePage = window.location.pathname.startsWith('/invoices');
@@ -619,8 +637,4 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
 
 export function useBrandsoft() {
   const context = useContext(BrandsoftContext);
-  if (context === undefined) {
-    throw new Error('useBrandsoft must be used within a BrandsoftProvider');
-  }
-  return context;
-}
+  
