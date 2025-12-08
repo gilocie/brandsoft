@@ -207,7 +207,15 @@ export function QuotationPreview({
                  {watermarkText && <QuotationStatusWatermark status={watermarkText} design={design} />}
 
                 <div className="relative z-10 flex-grow flex flex-col pt-12 px-12 pb-2">
-                    <header className="flex justify-between items-start mb-5">
+                    {/* Header bar and image */}
+                    <div className="absolute top-0 left-0 right-0 h-[60px] z-0">
+                        <div className="absolute top-0 left-0 right-0 h-full" style={{backgroundColor: design.headerColor}}></div>
+                        {design.headerImage && (
+                            <img src={design.headerImage} className="w-full h-full object-cover" style={{opacity: design.headerImageOpacity}} alt="Letterhead"/>
+                        )}
+                    </div>
+                    
+                    <header className="flex justify-between items-start mb-5 relative z-10">
                          <div className="flex items-center gap-4">
                             {(design.logo || config.brand?.logo) && (
                                 <img src={design.logo || config.brand.logo} alt={config.brand?.businessName || 'Logo'} className="h-16 w-16 sm:h-20 sm:w-20 object-contain" />
@@ -225,7 +233,7 @@ export function QuotationPreview({
                         </div>
                     </header>
 
-                    <section className="grid grid-cols-2 gap-8 mb-4">
+                    <section className="grid grid-cols-2 gap-8 mb-4 relative z-10">
                         <div>
                             <h3 className="text-sm font-semibold uppercase tracking-wider mb-1" style={{color: design.textColor ? design.textColor : 'rgb(107 114 128)'}}>Quote To</h3>
                             <p className="font-bold text-lg">{customer.companyName || customer.name}</p>
@@ -255,7 +263,7 @@ export function QuotationPreview({
                         </div>
                     </section>
 
-                    <section className="mb-8">
+                    <section className="mb-8 relative z-10">
                         <Table>
                             <TableHeader>
                                 <TableRow className="bg-transparent border-b-2" style={{borderColor: design.textColor}}>
@@ -285,7 +293,7 @@ export function QuotationPreview({
                         </Table>
                     </section>
 
-                    <section className="grid grid-cols-2 gap-8 items-start mt-auto">
+                    <section className="grid grid-cols-2 gap-8 items-start mt-auto relative z-10">
                         <div className="text-sm">
                             {quotationData.notes && (
                                 <div>
@@ -326,14 +334,6 @@ export function QuotationPreview({
                         </div>
                     </section>
                 </div>
-                
-                <div className="absolute top-0 left-0 right-0 h-[60px] z-20" style={{backgroundColor: design.headerColor}}></div>
-                
-                {design.headerImage && (
-                    <div className="absolute top-0 left-0 right-0 h-[60px] z-20">
-                        <img src={design.headerImage} className="w-full h-full object-cover" style={{opacity: design.headerImageOpacity}} alt="Letterhead"/>
-                    </div>
-                )}
 
                 <footer className="absolute bottom-0 left-0 right-0 z-20">
                     {design.footerImage && (
