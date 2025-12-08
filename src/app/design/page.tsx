@@ -11,7 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useToast } from '@/hooks/use-toast';
 import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
-import { UploadCloud, Paintbrush, Layers, Trash2, ArrowLeft, Loader2, PanelLeft, Settings2, Hash, Eye, Wallet } from 'lucide-react';
+import { UploadCloud, Paintbrush, Layers, Trash2, ArrowLeft, Loader2, PanelLeft, Settings2, Hash, Eye, Wallet, Coins } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Link from 'next/link';
@@ -59,6 +59,8 @@ const designSettingsSchema = z.object({
   invoiceStartNumber: z.coerce.number().optional(),
   // Payments
   paymentDetails: z.string().optional(),
+  // Regional
+  defaultCurrency: z.string().optional(),
 });
 
 
@@ -188,7 +190,7 @@ function SettingsPanel({ form, documentType, documentId, isNew, onSubmit, return
                         </p>
                     </div>
                     <div className="flex-grow p-2 space-y-2 overflow-y-auto">
-                        <Accordion type="multiple" defaultValue={['appearance', 'elements', 'layout', 'numbering', 'payments']} className="w-full">
+                        <Accordion type="multiple" defaultValue={['appearance', 'elements', 'layout', 'numbering', 'payments', 'regional']} className="w-full">
                              <Card className="border-0 shadow-none">
                                 <AccordionItem value="appearance">
                                     <AccordionTrigger className="text-sm p-2"><div className="flex items-center gap-2"><Paintbrush className="h-4 w-4"/> Appearance</div></AccordionTrigger>
@@ -310,6 +312,17 @@ function SettingsPanel({ form, documentType, documentId, isNew, onSubmit, return
                                     </AccordionContent>
                                 </AccordionItem>
                              </Card>
+
+                             <Card className="border-0 shadow-none">
+                                <AccordionItem value="regional">
+                                    <AccordionTrigger className="text-sm p-2"><div className="flex items-center gap-2"><Coins className="h-4 w-4"/> Regional</div></AccordionTrigger>
+                                    <AccordionContent className="p-2 space-y-3">
+                                         <FormField control={form.control} name="defaultCurrency" render={({ field }) => (
+                                            <FormItem><FormLabel className="text-xs">Default Currency</FormLabel><FormControl><Input placeholder="USD" {...field} className="h-8 text-xs"/></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                    </AccordionContent>
+                                </AccordionItem>
+                             </Card>
                         </Accordion>
                     </div>
                     <div className="p-4 border-t bg-background flex-shrink-0 flex gap-2 sticky bottom-0">
@@ -370,6 +383,7 @@ function DocumentDesignPage() {
             invoicePrefix: 'INV-',
             invoiceStartNumber: 101,
             paymentDetails: '',
+            defaultCurrency: 'USD',
         },
     });
 
@@ -467,13 +481,13 @@ function DocumentDesignPage() {
             invoicePrefix: profile.invoicePrefix || 'INV-',
             invoiceStartNumber: profile.invoiceStartNumber || 101,
             paymentDetails: profile.paymentDetails || '',
+            defaultCurrency: profile.defaultCurrency || 'USD',
         };
         
         form.reset(initialValues);
         setIsLoading(false);
     }, [config, documentId, documentType, isNew, stableGetFormData, getDefaultTemplate, form]);
     
-    // This effect listens to form changes and saves them to the config immediately.
     useEffect(() => {
         const subscription = form.watch((values) => {
             if (isLoading || !config) return;
@@ -496,6 +510,7 @@ function DocumentDesignPage() {
                 invoicePrefix: values.invoicePrefix,
                 invoiceStartNumber: values.invoiceStartNumber,
                 paymentDetails: values.paymentDetails,
+                defaultCurrency: values.defaultCurrency,
             };
 
             if (isNew) {
@@ -515,7 +530,6 @@ function DocumentDesignPage() {
 
 
     const onSubmit = (data: DesignSettingsFormData) => {
-        // The useEffect now handles saving, so this can just be for feedback.
         toast({ title: "Design Saved", description: "Your changes have been saved." });
         router.push(returnUrl);
     };
