@@ -115,13 +115,13 @@ const ImageUploader = ({
                     <p className="text-xs text-muted-foreground">{label}</p>
                 )}
             </div>
-            <FormField control={form.control} name={fieldName} render={() => (
+            <FormField control={form.control} name={fieldName} render={({ field }) => (
                 <FormItem>
                     <FormControl>
                         <div>
                             <Input type="file" accept="image/*" className="hidden" ref={inputRef} onChange={handleImageChange} />
                             <Button type="button" variant="outline" size="sm" onClick={() => inputRef.current?.click()} className="w-full h-8 text-xs">
-                                <UploadCloud className="mr-2 h-3 w-3" /> Upload
+                                <UploadCloud className="mr-2 h-3 w-3" /> {field.value ? 'Change' : 'Upload'}
                             </Button>
                         </div>
                     </FormControl>
