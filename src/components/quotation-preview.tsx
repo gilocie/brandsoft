@@ -172,11 +172,11 @@ export function QuotationPreview({ config, customer, quotationData, quotationId,
                     {quotationData.status && !design.watermarkImage && <QuotationStatusWatermark status={quotationData.status} />}
 
                     {design.headerImage ? (
-                        <div className="absolute top-0 left-0 right-0 h-20 z-10">
+                        <div className="absolute top-0 left-0 right-0 h-20 z-20">
                             <img src={design.headerImage} className="w-full h-full object-cover" alt="Letterhead"/>
                         </div>
                     ) : (
-                        <div className="absolute top-0 left-0 right-0 h-10 z-10" style={{backgroundColor: design.primaryColor}}></div>
+                        <div className="absolute top-0 left-0 right-0 h-10 z-20" style={{backgroundColor: design.primaryColor}}></div>
                     )}
                     
                     <header className="relative z-10 flex justify-between items-start mb-8 pt-2">
@@ -299,7 +299,7 @@ export function QuotationPreview({ config, customer, quotationData, quotationId,
                     </section>
                 </div>
 
-                <footer className={cn("mt-auto", forPdf ? "absolute bottom-0 left-0 right-0 z-10" : "")}>
+                <footer className={cn("mt-auto", forPdf ? "absolute bottom-0 left-0 right-0 z-20" : "")}>
                     {design.footerImage && (
                         <img src={design.footerImage} className="w-full h-auto" alt="Footer"/>
                     )}
