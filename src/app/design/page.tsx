@@ -21,6 +21,7 @@ import { InvoicePreview } from '@/components/invoice-preview';
 import { QuotationPreview } from '@/components/quotation-preview';
 import dynamic from 'next/dynamic';
 import { cn } from '@/lib/utils';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from '@/components/ui/drawer';
 
 const designSettingsSchema = z.object({
   backgroundColor: z.string().optional(),
@@ -335,7 +336,7 @@ function DocumentDesignPage() {
     return (
         <div className="flex h-screen overflow-hidden">
             <aside className={cn(
-                "fixed top-0 left-0 z-40 w-80 h-screen transition-transform -translate-x-full sm:translate-x-0 bg-background border-r",
+                "fixed top-0 left-0 z-40 w-80 h-screen transition-transform bg-background border-r",
                 isSidebarOpen ? "translate-x-0" : "-translate-x-full"
             )}>
                 <SettingsPanel form={form} documentType={documentType} documentId={documentId} isNew={isNew} onSubmit={onSubmit} returnUrl={returnUrl} />
@@ -352,7 +353,7 @@ function DocumentDesignPage() {
                     <div className="flex-1 text-center font-semibold">{documentType} Design</div>
                 </header>
                 <div className="flex-1 w-full bg-slate-100 overflow-y-auto flex justify-center items-start p-8">
-                    <div className="flex-shrink-0 shadow-2xl transform origin-top scale-[0.85]">
+                     <div className="flex-shrink-0 shadow-2xl transform origin-top scale-[0.55] md:scale-[0.75] xl:scale-[0.85]">
                         {hasContentForPreview ? (
                             <>
                                 {documentType === 'invoice' && (
@@ -397,5 +398,3 @@ export default dynamic(() => Promise.resolve(DocumentDesignPage), {
     ssr: false,
     loading: () => <div className="w-full h-screen flex items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>
 });
-
-    
