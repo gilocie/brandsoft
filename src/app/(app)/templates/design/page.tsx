@@ -115,36 +115,38 @@ export default function DocumentDesignPage() {
     });
 
     useEffect(() => {
-        if (!config) return;
+        if (isLoading || !config) return;
 
-        let doc: Invoice | Quotation | undefined | null = null;
+        let doc: Invoice | Quotation | null = null;
         let design: Partial<DesignSettings> = {};
         const brand = config.brand || {};
-
+        
         if (isNew) {
-            const formData = getFormData();
-            if (formData) {
-                doc = {
-                    ...(formData as any),
-                    [documentType === 'invoice' ? 'invoiceId' : 'quotationId']: 'PREVIEW',
+            const newDocumentFormData = getFormData();
+            if (newDocumentFormData) {
+                const docTypeKey = documentType === 'invoice' ? 'invoiceId' : 'quotationId';
+                 doc = {
+                    ...(newDocumentFormData as any),
+                    [docTypeKey]: 'PREVIEW',
                 };
-                // For new documents, start with global brand settings
-                design = config.profile.defaultInvoiceTemplate || {};
             }
-        } else if (documentId) {
-            if (documentType === 'invoice') {
-                doc = config.invoices.find(inv => inv.invoiceId === documentId);
-            } else if (documentType === 'quotation') {
-                doc = config.quotations.find(q => q.quotationId === documentId);
-            }
-            // For existing documents, use their specific design or fall back
-            if (doc) {
-                design = doc.design || {};
+        }
+        
+        if (!doc && !isNew) {
+            if (documentType === 'invoice' && documentId) {
+                doc = config.invoices.find(inv => inv.invoiceId === documentId) || null;
+            } else if (documentType === 'quotation' && documentId) {
+                doc = config.quotations.find(q => q.quotationId === documentId) || null;
             }
         }
         
         if (doc) {
-            setDocument(doc as Invoice | Quotation);
+            setDocument(doc);
+            design = doc.design || {};
+        } else if (!isNew) {
+            setDocument(null);
+            const defaultTemplateKey = documentType === 'invoice' ? 'defaultInvoiceTemplate' : 'defaultQuotationTemplate';
+            design = config.profile[defaultTemplateKey] || {};
         }
 
         const initialValues = {
@@ -161,9 +163,13 @@ export default function DocumentDesignPage() {
         setBackgroundPreview(initialValues.backgroundImage);
         setWatermarkPreview(initialValues.watermarkImage);
 
-        setIsLoading(false);
+    // Using JSON.stringify on getFormData() is a way to create a stable dependency if the object's contents are the same.
+    // This is still a bit of a hack but avoids the infinite loop.
+    }, [config, documentId, documentType, isNew, isLoading, form]);
 
-    }, [config, documentType, documentId, isNew, getFormData, form]);
+    useEffect(() => {
+      if(config) setIsLoading(false);
+    }, [config])
 
     const onSubmit = (data: DesignSettingsFormData) => {
         if (!config) return;
@@ -171,7 +177,6 @@ export default function DocumentDesignPage() {
         const newDesignSettings: DesignSettings = data;
 
         if (isNew) {
-            // Save as a global default template
             const templateKey = documentType === 'invoice' ? 'defaultInvoiceTemplate' : 'defaultQuotationTemplate';
              saveConfig({
                 ...config,
@@ -231,17 +236,6 @@ export default function DocumentDesignPage() {
     
     const returnUrl = isNew ? `/${documentType}s/new` : (documentId ? `/${documentType}s/${documentId}/edit` : `/${documentType}s`);
 
-    if (!document && !isNew) {
-        return (
-            <div className="flex flex-col items-center justify-center text-center h-full">
-                <h2 className="text-2xl font-bold mb-2">Document Not Found</h2>
-                <p className="text-muted-foreground mb-4">The requested document could not be found, or required data is missing.</p>
-                <Button asChild>
-                    <Link href="/dashboard">Return to Dashboard</Link>
-                </Button>
-            </div>
-        );
-    }
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 h-full">
@@ -329,11 +323,10 @@ export default function DocumentDesignPage() {
                         )}
                     </>
                 ) : (
-                    <div className="w-full max-w-[8.5in] mx-auto bg-white shadow-lg aspect-[8.5/11] flex items-center justify-center border">
+                     <div className="w-full max-w-[8.5in] mx-auto bg-white shadow-lg aspect-[8.5/11] flex items-center justify-center border">
                         <div className="text-center p-8">
                           <h3 className="text-xl font-semibold mb-2">Live Preview</h3>
-                          <p className="text-muted-foreground">Your document preview will appear here.</p>
-                          <p className="text-muted-foreground text-sm mt-2">Fill in customer & item details on the previous page to see them here.</p>
+                          <p className="text-muted-foreground">Select a customer and add items on the previous page to see a preview.</p>
                         </div>
                     </div>
                 )}
