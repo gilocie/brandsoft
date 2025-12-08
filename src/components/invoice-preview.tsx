@@ -312,7 +312,7 @@ export function InvoicePreview({
                             </Table>
                         </section>
                         
-                        <div className="mt-auto">
+                        <div className="mt-8">
                            <div className="flex flex-row gap-12 items-start">
                                 <div className="flex-1">
                                     <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Payment Details</h3>
@@ -337,7 +337,7 @@ export function InvoicePreview({
                                     )}
                                     {taxAmount > 0 && (
                                         <div className="flex justify-between items-center text-sm border-b border-gray-100 pb-2">
-                                            <span className="text-gray-600">{taxName}</span>
+                                            <span className="text-gray-600">{taxName} ({taxRateDisplay})</span>
                                             <span className="font-semibold">{formatCurrency(taxAmount)}</span>
                                         </div>
                                     )}
