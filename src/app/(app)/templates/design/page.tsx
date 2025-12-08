@@ -111,11 +111,17 @@ export default function DocumentDesignPage() {
 
     const form = useForm<DesignSettingsFormData>({
         resolver: zodResolver(designSettingsSchema),
-        defaultValues: {},
+        defaultValues: {
+            backgroundColor: '#FFFFFF',
+            headerImage: '',
+            footerImage: '',
+            backgroundImage: '',
+            watermarkImage: '',
+        },
     });
 
     useEffect(() => {
-        if (isLoading || !config) return;
+        if (!config) return;
 
         let doc: Invoice | Quotation | null = null;
         let design: Partial<DesignSettings> = {};
@@ -142,11 +148,12 @@ export default function DocumentDesignPage() {
         
         if (doc) {
             setDocument(doc);
-            design = doc.design || {};
+            design = (doc as any).design || {};
         } else if (!isNew) {
-            setDocument(null);
-            const defaultTemplateKey = documentType === 'invoice' ? 'defaultInvoiceTemplate' : 'defaultQuotationTemplate';
-            design = config.profile[defaultTemplateKey] || {};
+             const defaultTemplateKey = documentType === 'invoice' ? 'defaultInvoiceTemplate' : documentType === 'quotation' ? 'defaultQuotationTemplate' : null;
+             if (defaultTemplateKey && typeof config.profile[defaultTemplateKey] === 'object') {
+                design = config.profile[defaultTemplateKey] || {};
+             }
         }
 
         const initialValues = {
@@ -162,14 +169,8 @@ export default function DocumentDesignPage() {
         setFooterPreview(initialValues.footerImage);
         setBackgroundPreview(initialValues.backgroundImage);
         setWatermarkPreview(initialValues.watermarkImage);
-
-    // Using JSON.stringify on getFormData() is a way to create a stable dependency if the object's contents are the same.
-    // This is still a bit of a hack but avoids the infinite loop.
-    }, [config, documentId, documentType, isNew, isLoading, form]);
-
-    useEffect(() => {
-      if(config) setIsLoading(false);
-    }, [config])
+        setIsLoading(false);
+    }, [config, documentId, documentType, isNew, form, getFormData]);
 
     const onSubmit = (data: DesignSettingsFormData) => {
         if (!config) return;
@@ -210,24 +211,38 @@ export default function DocumentDesignPage() {
     const watchedValues = form.watch();
     const livePreviewConfig = useMemo(() => {
         if (!config) return null;
+        
+        const currentDesign: DesignSettings = {
+            backgroundColor: watchedValues.backgroundColor,
+            headerImage: watchedValues.headerImage,
+            footerImage: watchedValues.footerImage,
+            backgroundImage: watchedValues.backgroundImage,
+            watermarkImage: watchedValues.watermarkImage,
+        };
+
+        const documentSpecificDesign = (document as any)?.design || {};
+        
+        const defaultTemplateKey = documentType === 'invoice' ? 'defaultInvoiceTemplate' : documentType === 'quotation' ? 'defaultQuotationTemplate' : null;
+        const defaultTemplate = defaultTemplateKey ? config.profile[defaultTemplateKey] : {};
+
         return {
             ...config,
             brand: {
                 ...config.brand,
-                backgroundColor: watchedValues.backgroundColor || config.brand.backgroundColor,
-                headerImage: watchedValues.headerImage || config.brand.headerImage,
-                footerImage: watchedValues.footerImage || config.brand.footerImage,
-                backgroundImage: watchedValues.backgroundImage || config.brand.backgroundImage,
-                watermarkImage: watchedValues.watermarkImage || config.brand.watermarkImage,
+                backgroundColor: currentDesign.backgroundColor ?? documentSpecificDesign.backgroundColor ?? defaultTemplate?.backgroundColor ?? config.brand.backgroundColor,
+                headerImage: currentDesign.headerImage ?? documentSpecificDesign.headerImage ?? defaultTemplate?.headerImage ?? config.brand.headerImage,
+                footerImage: currentDesign.footerImage ?? documentSpecificDesign.footerImage ?? defaultTemplate?.footerImage ?? config.brand.footerImage,
+                backgroundImage: currentDesign.backgroundImage ?? documentSpecificDesign.backgroundImage ?? defaultTemplate?.backgroundImage ?? config.brand.backgroundImage,
+                watermarkImage: currentDesign.watermarkImage ?? documentSpecificDesign.watermarkImage ?? defaultTemplate?.watermarkImage ?? config.brand.watermarkImage,
             },
         };
-    }, [config, watchedValues]);
+    }, [config, watchedValues, document, documentType]);
     
     const previewCustomer = useMemo(() => {
         if(!config || !document) return null;
-        const customerId = isNew ? (document as any).customerId : config.customers.find(c => c.name === (document as any).customer)?.id;
-        return config.customers.find(c => c.id === customerId) || null;
-    }, [config, document, isNew]);
+        const customerId = (document as any).customerId;
+        return config.customers.find(c => c.id === customerId) || config.customers[0] || null;
+    }, [config, document]);
 
 
     if (isLoading) {
@@ -310,7 +325,7 @@ export default function DocumentDesignPage() {
                                 config={livePreviewConfig}
                                 customer={previewCustomer}
                                 invoiceData={document as Invoice}
-                                invoiceId={documentId}
+                                invoiceId={(document as Invoice).invoiceId}
                             />
                         )}
                         {documentType === 'quotation' && (
@@ -318,7 +333,7 @@ export default function DocumentDesignPage() {
                                 config={livePreviewConfig}
                                 customer={previewCustomer}
                                 quotationData={document as Quotation}
-                                quotationId={documentId}
+                                quotationId={(document as Quotation).quotationId}
                             />
                         )}
                     </>
