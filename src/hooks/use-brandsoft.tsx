@@ -64,6 +64,8 @@ export interface DesignSettings {
     showPaymentDetails?: boolean;
     showNotes?: boolean;
     showBrandsoftFooter?: boolean;
+    showHeader?: boolean;
+    showFooter?: boolean;
 }
 
 export type Invoice = {
@@ -147,6 +149,8 @@ export type BrandsoftConfig = {
     showPaymentDetails?: boolean;
     showNotes?: boolean;
     showBrandsoftFooter?: boolean;
+    showHeader?: boolean;
+    showFooter?: boolean;
   };
   profile: {
     address: string;

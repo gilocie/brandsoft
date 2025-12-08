@@ -117,6 +117,8 @@ export function QuotationPreview({
             showPaymentDetails: brand.showPaymentDetails ?? true,
             showNotes: brand.showNotes ?? true,
             showBrandsoftFooter: brand.brandsoftFooter ?? true,
+            showHeader: brand.showHeader ?? true,
+            showFooter: brand.showFooter ?? true,
         };
         
         const merge = (target: any, source: any) => {
@@ -217,12 +219,15 @@ export function QuotationPreview({
                 {quotationData.status && watermarkText && <QuotationStatusWatermark status={watermarkText} design={design} />}
                 
                  <div className='relative z-10 flex flex-col flex-grow'>
+                    {design.showHeader && design.headerImage && (
+                        <div className="w-full h-auto flex-shrink-0">
+                             <img src={design.headerImage} className="w-full h-full object-cover z-10" style={{maxHeight: '60px', opacity: design.headerImageOpacity}} alt="header"/>
+                        </div>
+                    )}
+                    {design.showHeader && !design.headerImage && (
+                        <div className="w-full flex-shrink-0 relative z-10" style={{ backgroundColor: accentColor, height: '35px' }}></div>
+                    )}
                     <div className='p-[12mm] pb-0 flex-grow flex flex-col'>
-                        {design.headerImage ? (
-                             <img src={design.headerImage} className="w-full h-auto object-contain z-10 mb-5" style={{maxHeight: '60px', opacity: design.headerImageOpacity}} alt="header"/>
-                        ) : (
-                            <div className="w-full flex-shrink-0 relative z-10 mb-5" style={{ backgroundColor: accentColor, height: '35px' }}></div>
-                        )}
 
 
                         <header className="flex justify-between items-start relative z-10">
@@ -345,10 +350,10 @@ export function QuotationPreview({
                     </div>
 
                     <footer className="w-full relative z-10 mt-auto">
-                        {design.footerImage ? (
-                           <img src={design.footerImage} className="w-full h-auto object-contain z-10 mb-2" style={{maxHeight: '60px', opacity: design.footerImageOpacity}} alt="footer"/>
+                        {design.showFooter && design.footerImage ? (
+                           <img src={design.footerImage} className="w-full h-auto object-cover z-10" style={{maxHeight: '60px', opacity: design.footerImageOpacity}} alt="footer"/>
                         ) : (
-                           <div className="w-full flex items-center justify-center text-white py-4" style={{ backgroundColor: footerColor }}>
+                           design.showFooter && <div className="w-full flex items-center justify-center text-white py-4" style={{ backgroundColor: footerColor }}>
                                 <div className="text-center">
                                      {design.showBrandsoftFooter && (
                                         <p className="text-[10px]">Created by <span className="font-bold">BrandSoft</span></p>

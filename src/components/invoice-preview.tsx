@@ -124,6 +124,8 @@ export function InvoicePreview({
             showPaymentDetails: brand.showPaymentDetails ?? true,
             showNotes: brand.showNotes ?? true,
             showBrandsoftFooter: brand.brandsoftFooter ?? true,
+            showHeader: brand.showHeader ?? true,
+            showFooter: brand.showFooter ?? true,
         };
         
         const merge = (target: any, source: any) => {
@@ -229,11 +231,12 @@ export function InvoicePreview({
                 
                 <div className='relative z-10 flex flex-col flex-grow'>
                     
-                    {design.headerImage ? (
-                        <div className="w-full h-[60px] flex-shrink-0">
-                             <img src={design.headerImage} className="w-full h-full object-cover z-10" style={{opacity: design.headerImageOpacity}} alt="header"/>
+                    {design.showHeader && design.headerImage && (
+                        <div className="w-full h-auto flex-shrink-0">
+                             <img src={design.headerImage} className="w-full h-full object-cover z-10" style={{maxHeight: '60px', opacity: design.headerImageOpacity}} alt="header"/>
                         </div>
-                    ) : (
+                    )}
+                    {design.showHeader && !design.headerImage && (
                         <div className="w-full flex-shrink-0 relative z-10" style={{ backgroundColor: accentColor, height: '35px' }}></div>
                     )}
                     <div className='p-[12mm] flex-grow flex flex-col'>
@@ -365,10 +368,10 @@ export function InvoicePreview({
                     </div>
 
                     <footer className="w-full relative z-10 mt-auto flex-shrink-0">
-                        {design.footerImage ? (
+                        {design.showFooter && design.footerImage ? (
                             <img src={design.footerImage} className="w-full h-auto object-cover z-10" style={{maxHeight: '60px', opacity: design.footerImageOpacity}} alt="footer"/>
                         ) : (
-                           <div className="w-full flex items-center justify-center text-white py-4" style={{ backgroundColor: footerColor }}>
+                           design.showFooter && <div className="w-full flex items-center justify-center text-white py-4" style={{ backgroundColor: footerColor }}>
                                 <div className="text-center">
                                      {design.showBrandsoftFooter && (
                                         <p className="text-[10px]">Created by <span className="font-bold">BrandSoft</span></p>
