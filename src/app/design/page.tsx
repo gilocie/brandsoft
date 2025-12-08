@@ -487,7 +487,8 @@ function DocumentDesignPage() {
         
         form.reset(initialValues);
         setIsLoading(false);
-    }, [config, documentId, documentType, isNew, stableGetFormData, getDefaultTemplate, form]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [documentType, documentId, isNew]);
     
     const handleSave = useCallback(() => {
         if (isLoading || !config) return;
@@ -588,7 +589,7 @@ function DocumentDesignPage() {
             )}>
                  <Button 
                     size="icon" 
-                    variant="primary"
+                    variant="default"
                     onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                     className="absolute top-4 -translate-y-1/2 rounded-l-none rounded-r-md transition-all duration-300 z-50 right-[-40px] lg:hidden"
                  >
@@ -658,5 +659,3 @@ export default dynamic(() => Promise.resolve(DocumentDesignPage), {
     ssr: false,
     loading: () => <div className="w-full h-screen flex items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>
 });
-
-    
