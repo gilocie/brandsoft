@@ -242,6 +242,8 @@ export default function NewInvoicePage() {
     }
   }
 
+  const isCustomizeDisabled = !watchedValues.customerId || watchedValues.lineItems.length === 0 || !watchedValues.lineItems[0]?.description;
+
   return (
     <div className="container mx-auto max-w-4xl space-y-6">
        <div className="flex items-center justify-between">
@@ -250,7 +252,7 @@ export default function NewInvoicePage() {
             <p className="text-muted-foreground">Fill in the details below to create a new invoice.</p>
           </div>
             <div className="flex items-center gap-2">
-                 <Button asChild>
+                 <Button asChild disabled={isCustomizeDisabled}>
                     <Link href={`/templates/design?documentType=invoice&isNew=true`}><Palette className="mr-2 h-4 w-4"/> Customize</Link>
                 </Button>
                 <Button variant="outline" asChild>
