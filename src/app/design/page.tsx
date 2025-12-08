@@ -21,6 +21,7 @@ import { InvoicePreview } from '@/components/invoice-preview';
 import { QuotationPreview } from '@/components/quotation-preview';
 import dynamic from 'next/dynamic';
 import { cn } from '@/lib/utils';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from '@/components/ui/drawer';
 
 const designSettingsSchema = z.object({
   backgroundColor: z.string().optional(),
@@ -126,7 +127,7 @@ function SettingsPanel({ form, documentType, documentId, isNew, onSubmit, return
                     </CardDescription>
                 </div>
                 {onClose && (
-                    <Button variant="ghost" size="icon" onClick={onClose} className="shrink-0">
+                    <Button variant="ghost" size="icon" onClick={onClose} className="shrink-0 lg:hidden">
                         <X className="h-4 w-4" />
                     </Button>
                 )}
@@ -358,24 +359,25 @@ function DocumentDesignPage() {
         <div className="flex h-screen overflow-hidden">
             <aside className={cn(
                 "fixed top-0 left-0 z-40 w-80 h-screen transition-transform bg-background border-r lg:relative lg:translate-x-0",
-                isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+                isSidebarOpen ? "translate-x-0" : "-translate-x-full",
+                 "lg:translate-x-0"
             )}>
                 <SettingsPanel form={form} documentType={documentType} documentId={documentId} isNew={isNew} onSubmit={onSubmit} returnUrl={returnUrl} onClose={() => setIsSidebarOpen(false)} />
             </aside>
             
             <div className={cn(
                 "flex-1 transition-all duration-300 h-screen flex flex-col",
-                isSidebarOpen && "lg:ml-0"
+                 isSidebarOpen && "lg:ml-0"
             )}>
                 <header className="h-16 flex-shrink-0 bg-background border-b flex items-center px-4 gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
+                    <Button variant="default" size="icon" onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="shrink-0">
                         {isSidebarOpen ? <X className="h-5 w-5" /> : <PanelLeft className="h-5 w-5"/>}
                     </Button>
                     <div className="flex-1 text-center font-semibold capitalize">{documentType} Design</div>
                     <div className="w-9 h-9" /> {/* Spacer */}
                 </header>
                 <main className="flex-1 w-full bg-slate-100 overflow-y-auto flex justify-center items-start p-8">
-                     <div className="flex-shrink-0 shadow-2xl transform origin-top scale-[0.65] md:scale-[0.75] lg:scale-[0.85] xl:scale-[0.95] 2xl:scale-100">
+                     <div className="flex-shrink-0 shadow-2xl transform origin-top md:scale-[0.75] lg:scale-[0.85] xl:scale-[0.95]">
                         {hasContentForPreview ? (
                             <>
                                 {documentType === 'invoice' && (
@@ -421,3 +423,4 @@ export default dynamic(() => Promise.resolve(DocumentDesignPage), {
     loading: () => <div className="w-full h-screen flex items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>
 });
 
+    
