@@ -6,12 +6,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useBrandsoft, type BrandsoftConfig, type DesignSettings, type Quotation, type Invoice } from '@/hooks/use-brandsoft.tsx';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
-import { UploadCloud, Paintbrush, Layers, Trash2, ArrowLeft, Loader2, PanelLeft, Settings2, Hash, Eye, Wallet, Coins } from 'lucide-react';
+import { UploadCloud, Paintbrush, Layers, Trash2, ArrowLeft, Loader2, PanelLeft, Eye, Hash, Wallet, Coins } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Link from 'next/link';
@@ -57,6 +56,8 @@ const designSettingsSchema = z.object({
   // Numbering
   invoicePrefix: z.string().optional(),
   invoiceStartNumber: z.coerce.number().optional(),
+  quotationPrefix: z.string().optional(),
+  quotationStartNumber: z.coerce.number().optional(),
   // Payments
   paymentDetails: z.string().optional(),
   // Regional
@@ -192,138 +193,133 @@ function SettingsPanel({ form, documentType, documentId, isNew, onSubmit, return
                     </div>
                     <div className="flex-grow p-2 space-y-2 overflow-y-auto">
                         <Accordion type="multiple" defaultValue={['appearance']} className="w-full">
-                             <Card className="border-0 shadow-none">
-                                <AccordionItem value="appearance">
-                                    <AccordionTrigger className="text-sm p-2"><div className="flex items-center gap-2"><Paintbrush className="h-4 w-4"/> Appearance</div></AccordionTrigger>
-                                    <AccordionContent className="p-2 space-y-3">
-                                        <ImageUploader form={form} fieldName="logo" label="Custom Logo" aspect='normal' />
-                                        <Separator />
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <FormField control={form.control} name="backgroundColor" render={({ field }) => (
-                                                <FormItem><FormLabel className="text-xs">Page BG</FormLabel><FormControl><Input type="color" {...field} value={field.value || '#FFFFFF'} className="h-8 w-full p-1 cursor-pointer" /></FormControl></FormItem>
-                                            )} />
-                                            <FormField control={form.control} name="textColor" render={({ field }) => (
-                                                <FormItem><FormLabel className="text-xs">Text</FormLabel><FormControl><Input type="color" {...field} value={field.value || '#000000'} className="h-8 w-full p-1 cursor-pointer" /></FormControl></FormItem>
-                                            )} />
-                                        </div>
-                                        <Separator />
-                                        <ImageUploader form={form} fieldName="backgroundImage" opacityFieldName="backgroundImageOpacity" label="Background Image" aspect='normal' />
-                                    </AccordionContent>
-                                </AccordionItem>
-                             </Card>
+                             <AccordionItem value="appearance" className="border-0">
+                                <AccordionTrigger className="text-sm p-2"><div className="flex items-center gap-2"><Paintbrush className="h-4 w-4"/> Appearance</div></AccordionTrigger>
+                                <AccordionContent className="p-2 space-y-3">
+                                    <ImageUploader form={form} fieldName="logo" label="Custom Logo" aspect='normal' />
+                                    <Separator />
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <FormField control={form.control} name="backgroundColor" render={({ field }) => (
+                                            <FormItem><FormLabel className="text-xs">Page BG</FormLabel><FormControl><Input type="color" {...field} value={field.value || '#FFFFFF'} className="h-8 w-full p-1 cursor-pointer" /></FormControl></FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="textColor" render={({ field }) => (
+                                            <FormItem><FormLabel className="text-xs">Text</FormLabel><FormControl><Input type="color" {...field} value={field.value || '#000000'} className="h-8 w-full p-1 cursor-pointer" /></FormControl></FormItem>
+                                        )} />
+                                    </div>
+                                    <Separator />
+                                    <ImageUploader form={form} fieldName="backgroundImage" opacityFieldName="backgroundImageOpacity" label="Background Image" aspect='normal' />
+                                </AccordionContent>
+                             </AccordionItem>
                              
-                              <Card className="border-0 shadow-none">
-                                <AccordionItem value="elements">
-                                    <AccordionTrigger className="text-sm p-2"><div className="flex items-center gap-2"><Eye className="h-4 w-4"/> Visible Elements</div></AccordionTrigger>
-                                    <AccordionContent className="p-2 space-y-2">
-                                        {[
-                                            {name: 'showLogo', label: 'Company Logo'},
-                                            {name: 'showBusinessAddress', label: 'Company Address'},
-                                            {name: 'showInvoiceTitle', label: 'Document Title'},
-                                            {name: 'showBillingAddress', label: 'Billing Address'},
-                                            {name: 'showDates', label: 'Dates'},
-                                            {name: 'showPaymentDetails', label: 'Payment Details'},
-                                            {name: 'showNotes', label: 'Notes Section'},
-                                            {name: 'showBrandsoftFooter', label: '"Created By" Footer'},
-                                        ].map(item => (
-                                             <FormField key={item.name} control={form.control} name={item.name as any} render={({ field }) => (
-                                                <FormItem className="flex flex-row items-center justify-between rounded-md border p-2">
-                                                    <FormLabel className="text-xs">{item.label}</FormLabel>
-                                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                                </FormItem>
-                                             )} />
-                                        ))}
-                                    </AccordionContent>
-                                </AccordionItem>
-                             </Card>
-
-                             <Card className="border-0 shadow-none">
-                                <AccordionItem value="layout">
-                                    <AccordionTrigger className="text-sm p-2"><div className="flex items-center gap-2"><Layers className="h-4 w-4"/> Layout & Watermark</div></AccordionTrigger>
-                                    <AccordionContent className="p-2">
-                                        <Tabs defaultValue="header" className="w-full">
-                                            <TabsList className="grid w-full grid-cols-3 h-8">
-                                                <TabsTrigger value="header" className="text-xs h-6">Header</TabsTrigger>
-                                                <TabsTrigger value="footer" className="text-xs h-6">Footer</TabsTrigger>
-                                                <TabsTrigger value="watermark" className="text-xs h-6">Watermark</TabsTrigger>
-                                            </TabsList>
-                                            <TabsContent value="header" className="pt-3 space-y-3">
-                                                <FormField control={form.control} name="headerColor" render={({ field }) => (
-                                                    <FormItem><FormLabel className="text-xs">Header Bar Color</FormLabel><FormControl><Input type="color" {...field} value={field.value || '#000000'} className="h-8 w-full p-1 cursor-pointer" /></FormControl></FormItem>
-                                                )} />
-                                                <ImageUploader form={form} fieldName="headerImage" opacityFieldName="headerImageOpacity" label="Header Image" aspect='wide' />
-                                            </TabsContent>
-                                            <TabsContent value="footer" className="pt-3 space-y-3">
-                                                <FormField control={form.control} name="footerColor" render={({ field }) => (
-                                                    <FormItem><FormLabel className="text-xs">Footer Bar Color</FormLabel><FormControl><Input type="color" {...field} value={field.value || '#000000'} className="h-8 w-full p-1 cursor-pointer" /></FormControl></FormItem>
-                                                )} />
-                                                <ImageUploader form={form} fieldName="footerImage" opacityFieldName="footerImageOpacity" label="Footer Image" aspect='wide' />
-                                            </TabsContent>
-                                            <TabsContent value="watermark" className="pt-3 space-y-3">
-                                                <div className="space-y-1"><FormLabel className="text-xs">Watermark Text</FormLabel>
-                                                    <Select onValueChange={handleWatermarkPresetChange} defaultValue={customWatermark ? 'CUSTOM' : form.getValues('watermarkText') || ''}>
-                                                        <SelectTrigger className="w-full h-8 text-xs"><SelectValue placeholder="Select preset or custom" /></SelectTrigger>
-                                                        <SelectContent>{WATERMARK_PRESETS.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
-                                                    </Select>
-                                                </div>
-                                            {customWatermark && (
-                                                    <FormField control={form.control} name="watermarkText" render={({ field }) => (
-                                                    <FormItem><FormLabel className="text-xs">Custom Text</FormLabel><FormControl><Input placeholder="CONFIDENTIAL" {...field} className="h-8 text-xs" /></FormControl></FormItem>
-                                                )} />
-                                            )}
-                                            <FormField control={form.control} name="watermarkColor" render={({ field }) => (
-                                                <FormItem><FormLabel className="text-xs">Color</FormLabel><FormControl><Input type="color" {...field} value={field.value || '#dddddd'} className="h-8 w-full p-1" /></FormControl></FormItem>
-                                            )} />
-                                                <FormField control={form.control} name="watermarkOpacity" render={({ field }) => (<FormItem><FormLabel className="text-xs">Opacity</FormLabel><FormControl><Slider value={[ (field.value ?? 1) * 100]} onValueChange={(v) => field.onChange(v[0] / 100)} max={100} step={1} /></FormControl></FormItem>)} />
-                                                <FormField control={form.control} name="watermarkFontSize" render={({ field }) => (<FormItem><FormLabel className="text-xs">Font Size</FormLabel><FormControl><Slider value={[field.value ?? 96]} onValueChange={(v) => field.onChange(v[0])} min={12} max={200} step={1} /></FormControl></FormItem>)} />
-                                                <FormField control={form.control} name="watermarkAngle" render={({ field }) => (<FormItem><FormLabel className="text-xs">Angle</FormLabel><FormControl><Slider value={[field.value ?? 0]} onValueChange={(v) => field.onChange(v[0])} min={-90} max={90} step={5} /></FormControl></FormItem>)} />
-                                            </TabsContent>
-                                        </Tabs>
-                                    </AccordionContent>
-                                </AccordionItem>
-                             </Card>
-                             
-                              <Card className="border-0 shadow-none">
-                                <AccordionItem value="payments">
-                                    <AccordionTrigger className="text-sm p-2"><div className="flex items-center gap-2"><Wallet className="h-4 w-4"/> Payment Details</div></AccordionTrigger>
-                                    <AccordionContent className="p-2">
-                                        <FormField control={form.control} name="paymentDetails" render={({ field }) => (
-                                            <FormItem>
-                                                <FormControl>
-                                                    <Textarea placeholder="e.g., Bank Name, Account Number..." {...field} rows={4} className="text-xs" />
-                                                </FormControl>
-                                                <FormMessage />
+                              <AccordionItem value="elements" className="border-0">
+                                <AccordionTrigger className="text-sm p-2"><div className="flex items-center gap-2"><Eye className="h-4 w-4"/> Visible Elements</div></AccordionTrigger>
+                                <AccordionContent className="p-2 space-y-2">
+                                    {[
+                                        {name: 'showLogo', label: 'Company Logo'},
+                                        {name: 'showBusinessAddress', label: 'Company Address'},
+                                        {name: 'showInvoiceTitle', label: 'Document Title'},
+                                        {name: 'showBillingAddress', label: 'Billing Address'},
+                                        {name: 'showDates', label: 'Dates'},
+                                        {name: 'showPaymentDetails', label: 'Payment Details'},
+                                        {name: 'showNotes', label: 'Notes Section'},
+                                        {name: 'showBrandsoftFooter', label: '"Created By" Footer'},
+                                    ].map(item => (
+                                         <FormField key={item.name} control={form.control} name={item.name as any} render={({ field }) => (
+                                            <FormItem className="flex flex-row items-center justify-between rounded-md border p-2">
+                                                <FormLabel className="text-xs">{item.label}</FormLabel>
+                                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                                             </FormItem>
+                                         )} />
+                                    ))}
+                                </AccordionContent>
+                              </AccordionItem>
+
+                             <AccordionItem value="layout" className="border-0">
+                                <AccordionTrigger className="text-sm p-2"><div className="flex items-center gap-2"><Layers className="h-4 w-4"/> Layout & Watermark</div></AccordionTrigger>
+                                <AccordionContent className="p-2">
+                                    <Tabs defaultValue="header" className="w-full">
+                                        <TabsList className="grid w-full grid-cols-3 h-8">
+                                            <TabsTrigger value="header" className="text-xs h-6">Header</TabsTrigger>
+                                            <TabsTrigger value="footer" className="text-xs h-6">Footer</TabsTrigger>
+                                            <TabsTrigger value="watermark" className="text-xs h-6">Watermark</TabsTrigger>
+                                        </TabsList>
+                                        <TabsContent value="header" className="pt-3 space-y-3">
+                                            <FormField control={form.control} name="headerColor" render={({ field }) => (
+                                                <FormItem><FormLabel className="text-xs">Header Bar Color</FormLabel><FormControl><Input type="color" {...field} value={field.value || '#000000'} className="h-8 w-full p-1 cursor-pointer" /></FormControl></FormItem>
+                                            )} />
+                                            <ImageUploader form={form} fieldName="headerImage" opacityFieldName="headerImageOpacity" label="Header Image" aspect='wide' />
+                                        </TabsContent>
+                                        <TabsContent value="footer" className="pt-3 space-y-3">
+                                            <FormField control={form.control} name="footerColor" render={({ field }) => (
+                                                <FormItem><FormLabel className="text-xs">Footer Bar Color</FormLabel><FormControl><Input type="color" {...field} value={field.value || '#000000'} className="h-8 w-full p-1 cursor-pointer" /></FormControl></FormItem>
+                                            )} />
+                                            <ImageUploader form={form} fieldName="footerImage" opacityFieldName="footerImageOpacity" label="Footer Image" aspect='wide' />
+                                        </TabsContent>
+                                        <TabsContent value="watermark" className="pt-3 space-y-3">
+                                            <div className="space-y-1"><FormLabel className="text-xs">Watermark Text</FormLabel>
+                                                <Select onValueChange={handleWatermarkPresetChange} defaultValue={customWatermark ? 'CUSTOM' : form.getValues('watermarkText') || ''}>
+                                                    <SelectTrigger className="w-full h-8 text-xs"><SelectValue placeholder="Select preset or custom" /></SelectTrigger>
+                                                    <SelectContent>{WATERMARK_PRESETS.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+                                                </Select>
+                                            </div>
+                                        {customWatermark && (
+                                                <FormField control={form.control} name="watermarkText" render={({ field }) => (
+                                                <FormItem><FormLabel className="text-xs">Custom Text</FormLabel><FormControl><Input placeholder="CONFIDENTIAL" {...field} className="h-8 text-xs" /></FormControl></FormItem>
+                                            )} />
+                                        )}
+                                        <FormField control={form.control} name="watermarkColor" render={({ field }) => (
+                                            <FormItem><FormLabel className="text-xs">Color</FormLabel><FormControl><Input type="color" {...field} value={field.value || '#dddddd'} className="h-8 w-full p-1" /></FormControl></FormItem>
                                         )} />
-                                    </AccordionContent>
-                                </AccordionItem>
-                             </Card>
+                                            <FormField control={form.control} name="watermarkOpacity" render={({ field }) => (<FormItem><FormLabel className="text-xs">Opacity</FormLabel><FormControl><Slider value={[ (field.value ?? 1) * 100]} onValueChange={(v) => field.onChange(v[0] / 100)} max={100} step={1} /></FormControl></FormItem>)} />
+                                            <FormField control={form.control} name="watermarkFontSize" render={({ field }) => (<FormItem><FormLabel className="text-xs">Font Size</FormLabel><FormControl><Slider value={[field.value ?? 96]} onValueChange={(v) => field.onChange(v[0])} min={12} max={200} step={1} /></FormControl></FormItem>)} />
+                                            <FormField control={form.control} name="watermarkAngle" render={({ field }) => (<FormItem><FormLabel className="text-xs">Angle</FormLabel><FormControl><Slider value={[field.value ?? 0]} onValueChange={(v) => field.onChange(v[0])} min={-90} max={90} step={5} /></FormControl></FormItem>)} />
+                                        </TabsContent>
+                                    </Tabs>
+                                </AccordionContent>
+                             </AccordionItem>
+                             
+                              <AccordionItem value="payments" className="border-0">
+                                <AccordionTrigger className="text-sm p-2"><div className="flex items-center gap-2"><Wallet className="h-4 w-4"/> Payment Details</div></AccordionTrigger>
+                                <AccordionContent className="p-2">
+                                    <FormField control={form.control} name="paymentDetails" render={({ field }) => (
+                                        <FormItem>
+                                            <FormControl>
+                                                <Textarea placeholder="e.g., Bank Name, Account Number..." {...field} rows={4} className="text-xs" />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )} />
+                                </AccordionContent>
+                              </AccordionItem>
 
 
-                             <Card className="border-0 shadow-none">
-                                <AccordionItem value="numbering">
-                                    <AccordionTrigger className="text-sm p-2"><div className="flex items-center gap-2"><Hash className="h-4 w-4"/> Document Numbering</div></AccordionTrigger>
-                                    <AccordionContent className="p-2 space-y-3">
-                                         <FormField control={form.control} name="invoicePrefix" render={({ field }) => (
-                                            <FormItem><FormLabel className="text-xs">Invoice Prefix</FormLabel><FormControl><Input placeholder="INV-" {...field} className="h-8 text-xs"/></FormControl><FormMessage /></FormItem>
-                                        )} />
-                                        <FormField control={form.control} name="invoiceStartNumber" render={({ field }) => (
-                                            <FormItem><FormLabel className="text-xs">Next Invoice Number</FormLabel><FormControl><Input type="number" placeholder="101" {...field} className="h-8 text-xs" /></FormControl><FormMessage /></FormItem>
-                                        )} />
-                                    </AccordionContent>
-                                </AccordionItem>
-                             </Card>
+                             <AccordionItem value="numbering" className="border-0">
+                                <AccordionTrigger className="text-sm p-2"><div className="flex items-center gap-2"><Hash className="h-4 w-4"/> Document Numbering</div></AccordionTrigger>
+                                <AccordionContent className="p-2 space-y-3">
+                                     <FormField control={form.control} name="invoicePrefix" render={({ field }) => (
+                                        <FormItem><FormLabel className="text-xs">Invoice Prefix</FormLabel><FormControl><Input placeholder="INV-" {...field} className="h-8 text-xs"/></FormControl><FormMessage /></FormItem>
+                                    )} />
+                                    <FormField control={form.control} name="invoiceStartNumber" render={({ field }) => (
+                                        <FormItem><FormLabel className="text-xs">Next Invoice Number</FormLabel><FormControl><Input type="number" placeholder="101" {...field} className="h-8 text-xs" /></FormControl><FormMessage /></FormItem>
+                                    )} />
+                                    <Separator />
+                                     <FormField control={form.control} name="quotationPrefix" render={({ field }) => (
+                                        <FormItem><FormLabel className="text-xs">Quotation Prefix</FormLabel><FormControl><Input placeholder="QUO-" {...field} className="h-8 text-xs"/></FormControl><FormMessage /></FormItem>
+                                    )} />
+                                    <FormField control={form.control} name="quotationStartNumber" render={({ field }) => (
+                                        <FormItem><FormLabel className="text-xs">Next Quotation Number</FormLabel><FormControl><Input type="number" placeholder="101" {...field} className="h-8 text-xs" /></FormControl><FormMessage /></FormItem>
+                                    )} />
+                                </AccordionContent>
+                             </AccordionItem>
 
-                             <Card className="border-0 shadow-none">
-                                <AccordionItem value="regional">
-                                    <AccordionTrigger className="text-sm p-2"><div className="flex items-center gap-2"><Coins className="h-4 w-4"/> Regional</div></AccordionTrigger>
-                                    <AccordionContent className="p-2 space-y-3">
-                                         <FormField control={form.control} name="defaultCurrency" render={({ field }) => (
-                                            <FormItem><FormLabel className="text-xs">Default Currency</FormLabel><FormControl><Input placeholder="USD" {...field} className="h-8 text-xs"/></FormControl><FormMessage /></FormItem>
-                                        )} />
-                                    </AccordionContent>
-                                </AccordionItem>
-                             </Card>
+                             <AccordionItem value="regional" className="border-0">
+                                <AccordionTrigger className="text-sm p-2"><div className="flex items-center gap-2"><Coins className="h-4 w-4"/> Regional</div></AccordionTrigger>
+                                <AccordionContent className="p-2 space-y-3">
+                                     <FormField control={form.control} name="defaultCurrency" render={({ field }) => (
+                                        <FormItem><FormLabel className="text-xs">Default Currency</FormLabel><FormControl><Input placeholder="USD" {...field} className="h-8 text-xs"/></FormControl><FormMessage /></FormItem>
+                                    )} />
+                                </AccordionContent>
+                             </AccordionItem>
                         </Accordion>
                     </div>
                     <div className="p-4 border-t bg-background flex-shrink-0 flex gap-2 sticky bottom-0">
@@ -383,6 +379,8 @@ function DocumentDesignPage() {
             showBrandsoftFooter: true,
             invoicePrefix: 'INV-',
             invoiceStartNumber: 101,
+            quotationPrefix: 'QUO-',
+            quotationStartNumber: 101,
             paymentDetails: '',
             defaultCurrency: 'USD',
         },
@@ -481,6 +479,8 @@ function DocumentDesignPage() {
             showBrandsoftFooter: existingDesign.showBrandsoftFooter ?? brand.brandsoftFooter ?? true,
             invoicePrefix: profile.invoicePrefix || 'INV-',
             invoiceStartNumber: profile.invoiceStartNumber || 101,
+            quotationPrefix: profile.quotationPrefix || 'QUO-',
+            quotationStartNumber: profile.quotationStartNumber || 101,
             paymentDetails: profile.paymentDetails || '',
             defaultCurrency: profile.defaultCurrency || 'USD',
         };
@@ -489,48 +489,54 @@ function DocumentDesignPage() {
         setIsLoading(false);
     }, [config, documentId, documentType, isNew, stableGetFormData, getDefaultTemplate, form]);
     
+    const handleSave = useCallback(() => {
+        if (isLoading || !config) return;
+
+        const values = form.getValues();
+        const newDesignSettings: DesignSettings = {
+            logo: values.logo, backgroundColor: values.backgroundColor, textColor: values.textColor,
+            headerImage: values.headerImage, headerImageOpacity: values.headerImageOpacity,
+            footerImage: values.footerImage, footerImageOpacity: values.footerImageOpacity,
+            backgroundImage: values.backgroundImage, backgroundImageOpacity: values.backgroundImageOpacity,
+            watermarkText: values.watermarkText, watermarkColor: values.watermarkColor,
+            watermarkOpacity: values.watermarkOpacity, watermarkFontSize: values.watermarkFontSize,
+            watermarkAngle: values.watermarkAngle, headerColor: values.headerColor, footerColor: values.footerColor,
+            showLogo: values.showLogo, showBusinessAddress: values.showBusinessAddress, showInvoiceTitle: values.showInvoiceTitle,
+            showBillingAddress: values.showBillingAddress, showDates: values.showDates,
+            showPaymentDetails: values.showPaymentDetails, showNotes: values.showNotes, showBrandsoftFooter: values.showBrandsoftFooter,
+        };
+        
+        const newProfileSettings = {
+            ...config.profile,
+            invoicePrefix: values.invoicePrefix,
+            invoiceStartNumber: values.invoiceStartNumber,
+            quotationPrefix: values.quotationPrefix,
+            quotationStartNumber: values.quotationStartNumber,
+            paymentDetails: values.paymentDetails,
+            defaultCurrency: values.defaultCurrency,
+        };
+
+        if (isNew && documentType) {
+            const templateKey = documentType === 'invoice' ? 'defaultInvoiceTemplate' : 'defaultQuotationTemplate';
+            saveConfig({ ...config, profile: { ...newProfileSettings, [templateKey]: newDesignSettings } }, { redirect: false });
+        } else if (document && documentId && documentType) {
+            const updateFn = documentType === 'invoice' ? updateInvoice : updateQuotation;
+            updateFn(documentId, { design: newDesignSettings });
+            saveConfig({ ...config, profile: newProfileSettings }, { redirect: false });
+        } else if (documentType) {
+             const templateKey = documentType === 'invoice' ? 'defaultInvoiceTemplate' : 'defaultQuotationTemplate';
+            saveConfig({ ...config, profile: { ...newProfileSettings, [templateKey]: newDesignSettings } }, { redirect: false });
+        }
+    }, [isLoading, config, form, isNew, documentType, document, documentId, saveConfig, updateInvoice, updateQuotation]);
+    
     useEffect(() => {
-        const subscription = form.watch((values) => {
-            if (isLoading || !config) return;
-
-            const newDesignSettings: DesignSettings = {
-                logo: values.logo, backgroundColor: values.backgroundColor, textColor: values.textColor,
-                headerImage: values.headerImage, headerImageOpacity: values.headerImageOpacity,
-                footerImage: values.footerImage, footerImageOpacity: values.footerImageOpacity,
-                backgroundImage: values.backgroundImage, backgroundImageOpacity: values.backgroundImageOpacity,
-                watermarkText: values.watermarkText, watermarkColor: values.watermarkColor,
-                watermarkOpacity: values.watermarkOpacity, watermarkFontSize: values.watermarkFontSize,
-                watermarkAngle: values.watermarkAngle, headerColor: values.headerColor, footerColor: values.footerColor,
-                showLogo: values.showLogo, showBusinessAddress: values.showBusinessAddress, showInvoiceTitle: values.showInvoiceTitle,
-                showBillingAddress: values.showBillingAddress, showDates: values.showDates,
-                showPaymentDetails: values.showPaymentDetails, showNotes: values.showNotes, showBrandsoftFooter: values.showBrandsoftFooter,
-            };
-            
-             const newProfileSettings = {
-                ...config.profile,
-                invoicePrefix: values.invoicePrefix,
-                invoiceStartNumber: values.invoiceStartNumber,
-                paymentDetails: values.paymentDetails,
-                defaultCurrency: values.defaultCurrency,
-            };
-
-            if (isNew) {
-                const templateKey = documentType === 'invoice' ? 'defaultInvoiceTemplate' : 'defaultQuotationTemplate';
-                saveConfig({ ...config, profile: { ...newProfileSettings, [templateKey]: newDesignSettings } }, { redirect: false });
-            } else if (document && documentId) {
-                const updateFn = documentType === 'invoice' ? updateInvoice : updateQuotation;
-                updateFn(documentId, { design: newDesignSettings });
-                 saveConfig({ ...config, profile: newProfileSettings }, { redirect: false });
-            } else {
-                 const templateKey = documentType === 'invoice' ? 'defaultInvoiceTemplate' : 'defaultQuotationTemplate';
-                saveConfig({ ...config, profile: { ...newProfileSettings, [templateKey]: newDesignSettings } }, { redirect: false });
-            }
-        });
+        const subscription = form.watch(() => handleSave());
         return () => subscription.unsubscribe();
-    }, [form, isLoading, config, isNew, documentType, documentId, document, saveConfig, updateInvoice, updateQuotation]);
+    }, [form, handleSave]);
 
 
     const onSubmit = (data: DesignSettingsFormData) => {
+        handleSave();
         toast({ title: "Design Saved", description: "Your changes have been saved." });
         router.push(returnUrl);
     };
@@ -584,7 +590,7 @@ function DocumentDesignPage() {
                     size="icon" 
                     variant="primary"
                     onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                    className="absolute top-4 rounded-l-none rounded-r-md transition-all duration-300 z-50 right-[-40px] lg:hidden"
+                    className="absolute top-4 -translate-y-1/2 rounded-l-none rounded-r-md transition-all duration-300 z-50 right-[-40px] lg:hidden"
                  >
                     <PanelLeft className="h-5 w-5"/>
                 </Button>
@@ -653,3 +659,4 @@ export default dynamic(() => Promise.resolve(DocumentDesignPage), {
     loading: () => <div className="w-full h-screen flex items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>
 });
 
+    
