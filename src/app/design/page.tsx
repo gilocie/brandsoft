@@ -190,7 +190,7 @@ function SettingsPanel({ form, documentType, documentId, isNew, onSubmit, return
                         </p>
                     </div>
                     <div className="flex-grow p-2 space-y-2 overflow-y-auto">
-                        <Accordion type="multiple" defaultValue={['appearance', 'elements', 'layout', 'numbering', 'payments', 'regional']} className="w-full">
+                        <Accordion type="multiple" defaultValue={['appearance']} className="w-full">
                              <Card className="border-0 shadow-none">
                                 <AccordionItem value="appearance">
                                     <AccordionTrigger className="text-sm p-2"><div className="flex items-center gap-2"><Paintbrush className="h-4 w-4"/> Appearance</div></AccordionTrigger>
@@ -477,7 +477,7 @@ function DocumentDesignPage() {
             showDates: existingDesign.showDates ?? brand.showDates ?? true,
             showPaymentDetails: existingDesign.showPaymentDetails ?? brand.showPaymentDetails ?? true,
             showNotes: existingDesign.showNotes ?? brand.showNotes ?? true,
-            showBrandsoftFooter: existingDesign.showBrandsoftFooter ?? brand.showBrandsoftFooter ?? true,
+            showBrandsoftFooter: existingDesign.showBrandsoftFooter ?? brand.brandsoftFooter ?? true,
             invoicePrefix: profile.invoicePrefix || 'INV-',
             invoiceStartNumber: profile.invoiceStartNumber || 101,
             paymentDetails: profile.paymentDetails || '',
