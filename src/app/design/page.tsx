@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm, useWatch } from 'react-hook-form';
@@ -141,100 +140,100 @@ function SettingsPanel({ form, documentType, documentId, isNew, onSubmit, return
 }) {
   return (
     <div className="h-full overflow-y-auto">
-      <Form {...form}>
-        <div className="flex flex-col h-full">
-          <Card className="border-0 shadow-none rounded-none flex-1 flex flex-col">
-            <CardHeader className="p-4">
-              <CardTitle className="capitalize">Customize {documentType || 'Design'}</CardTitle>
-              <CardDescription>
-                {isNew ? `Customizing default ${documentType} design.` : `Design for ${documentId}`}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex-grow p-4 space-y-6 overflow-y-auto">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base"><Paintbrush className="h-4 w-4"/> Appearance</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField control={form.control} name="backgroundColor" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-xs">Page Background</FormLabel>
-                        <FormControl>
-                          <div className="flex gap-2">
-                            <Input type="color" {...field} value={field.value || '#FFFFFF'} className="h-10 w-16 p-1 cursor-pointer" />
-                          </div>
-                        </FormControl>
-                      </FormItem>
-                    )} />
-                    <FormField control={form.control} name="textColor" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-xs">Text Color</FormLabel>
-                        <FormControl>
-                          <div className="flex gap-2">
-                            <Input type="color" {...field} value={field.value || '#000000'} className="h-10 w-16 p-1 cursor-pointer" />
-                          </div>
-                        </FormControl>
-                      </FormItem>
-                    )} />
-                  </div>
-                  <Separator />
-                  <ImageUploader form={form} fieldName="backgroundImage" opacityFieldName="backgroundImageOpacity" label="Background Image" description="A4 aspect ratio recommended." aspect='normal' />
-                </CardContent>
-              </Card>
+        <Form {...form}>
+            <div className="flex flex-col h-full">
+                <Card className="border-0 shadow-none rounded-none flex-1 flex flex-col">
+                    <CardHeader className="p-4">
+                        <CardTitle className="capitalize">Customize {documentType || 'Design'}</CardTitle>
+                        <CardDescription>
+                            {isNew ? `Customizing default ${documentType} design.` : `Design for ${documentId}`}
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex-grow p-4 space-y-6 overflow-y-auto">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-base"><Paintbrush className="h-4 w-4"/> Appearance</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <FormField control={form.control} name="backgroundColor" render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className="text-xs">Page Background</FormLabel>
+                                            <FormControl>
+                                                <div className="flex gap-2">
+                                                    <Input type="color" {...field} value={field.value || '#FFFFFF'} className="h-10 w-16 p-1 cursor-pointer" />
+                                                </div>
+                                            </FormControl>
+                                        </FormItem>
+                                    )} />
+                                    <FormField control={form.control} name="textColor" render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className="text-xs">Text Color</FormLabel>
+                                            <FormControl>
+                                                <div className="flex gap-2">
+                                                    <Input type="color" {...field} value={field.value || '#000000'} className="h-10 w-16 p-1 cursor-pointer" />
+                                                </div>
+                                            </FormControl>
+                                        </FormItem>
+                                    )} />
+                                </div>
+                                <Separator />
+                                <ImageUploader form={form} fieldName="backgroundImage" opacityFieldName="backgroundImageOpacity" label="Background Image" description="A4 aspect ratio recommended." aspect='normal' />
+                            </CardContent>
+                        </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base"><Layers className="h-4 w-4"/> Layout & Watermark</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Tabs defaultValue="header" className="w-full">
-                    <TabsList className="grid w-full grid-cols-3">
-                      <TabsTrigger value="header">Header</TabsTrigger>
-                      <TabsTrigger value="footer">Footer</TabsTrigger>
-                      <TabsTrigger value="watermark">Watermark</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="header" className="pt-4">
-                      <ImageUploader form={form} fieldName="headerImage" opacityFieldName="headerImageOpacity" label="Header" description="Full width top banner." aspect='wide' />
-                    </TabsContent>
-                    <TabsContent value="footer" className="pt-4">
-                      <ImageUploader form={form} fieldName="footerImage" opacityFieldName="footerImageOpacity" label="Footer" description="Full width bottom banner." aspect='wide' />
-                    </TabsContent>
-                    <TabsContent value="watermark" className="pt-4 space-y-4">
-                        <FormField control={form.control} name="watermarkText" render={({ field }) => (
-                           <FormItem>
-                               <FormLabel className="text-xs">Watermark Text</FormLabel>
-                               <FormControl>
-                                   <Input placeholder="e.g., PAID, DRAFT" {...field} />
-                               </FormControl>
-                               <FormDescription>Leave blank to use document status.
-                               </FormDescription>
-                           </FormItem>
-                       )} />
-                       <FormField control={form.control} name="watermarkColor" render={({ field }) => (
-                           <FormItem>
-                               <FormLabel className="text-xs">Watermark Color</FormLabel>
-                               <FormControl>
-                                   <div className="flex gap-2">
-                                       <Input type="color" {...field} value={field.value || '#dddddd'} className="h-10 w-16 p-1 cursor-pointer" />
-                                   </div>
-                               </FormControl>
-                           </FormItem>
-                       )} />
-                    </TabsContent>
-                  </Tabs>
-                </CardContent>
-              </Card>
-            </CardContent>
-            <CardFooter className="p-4 border-t bg-background flex-shrink-0 flex gap-2 sticky bottom-0">
-              <Button type="button" variant="outline" asChild className="flex-1">
-                <Link href={returnUrl}><ArrowLeft className="mr-2 h-4 w-4"/> Back</Link>
-              </Button>
-              <Button type="button" onClick={form.handleSubmit(onSubmit)} className="flex-1">Save Design</Button>
-            </CardFooter>
-          </Card>
-        </div>
-      </Form>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-base"><Layers className="h-4 w-4"/> Layout & Watermark</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <Tabs defaultValue="header" className="w-full">
+                                    <TabsList className="grid w-full grid-cols-3">
+                                        <TabsTrigger value="header">Header</TabsTrigger>
+                                        <TabsTrigger value="footer">Footer</TabsTrigger>
+                                        <TabsTrigger value="watermark">Watermark</TabsTrigger>
+                                    </TabsList>
+                                    <TabsContent value="header" className="pt-4">
+                                        <ImageUploader form={form} fieldName="headerImage" opacityFieldName="headerImageOpacity" label="Header" description="Full width top banner." aspect='wide' />
+                                    </TabsContent>
+                                    <TabsContent value="footer" className="pt-4">
+                                        <ImageUploader form={form} fieldName="footerImage" opacityFieldName="footerImageOpacity" label="Footer" description="Full width bottom banner." aspect='wide' />
+                                    </TabsContent>
+                                    <TabsContent value="watermark" className="pt-4 space-y-4">
+                                        <FormField control={form.control} name="watermarkText" render={({ field }) => (
+                                           <FormItem>
+                                               <FormLabel className="text-xs">Watermark Text</FormLabel>
+                                               <FormControl>
+                                                   <Input placeholder="e.g., PAID, DRAFT" {...field} />
+                                               </FormControl>
+                                               <FormDescription>Leave blank to use document status.
+                                               </FormDescription>
+                                           </FormItem>
+                                       )} />
+                                       <FormField control={form.control} name="watermarkColor" render={({ field }) => (
+                                           <FormItem>
+                                               <FormLabel className="text-xs">Watermark Color</FormLabel>
+                                               <FormControl>
+                                                   <div className="flex gap-2">
+                                                       <Input type="color" {...field} value={field.value || '#dddddd'} className="h-10 w-16 p-1 cursor-pointer" />
+                                                   </div>
+                                               </FormControl>
+                                           </FormItem>
+                                       )} />
+                                    </TabsContent>
+                                </Tabs>
+                            </CardContent>
+                        </Card>
+                    </CardContent>
+                    <CardFooter className="p-4 border-t bg-background flex-shrink-0 flex gap-2 sticky bottom-0">
+                        <Button type="button" variant="outline" asChild className="flex-1">
+                            <Link href={returnUrl}><ArrowLeft className="mr-2 h-4 w-4"/> Back</Link>
+                        </Button>
+                        <Button type="button" onClick={form.handleSubmit(onSubmit)} className="flex-1">Save Design</Button>
+                    </CardFooter>
+                </Card>
+            </div>
+        </Form>
     </div>
   );
 }
@@ -415,11 +414,11 @@ function DocumentDesignPage() {
                 isSidebarOpen ? "translate-x-0" : "-translate-x-full",
                 "lg:translate-x-0"
             )}>
-                <Button 
+                 <Button 
                     variant="default"
                     size="icon" 
                     onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                    className="absolute top-4 -right-10 z-50 rounded-r-md rounded-l-none lg:hidden"
+                    className="absolute top-4 -right-10 z-50 rounded-r-md rounded-l-none"
                 >
                     <PanelLeft className="h-5 w-5"/>
                 </Button>
@@ -434,8 +433,8 @@ function DocumentDesignPage() {
             </aside>
             
             <main className="flex-1 w-full flex flex-col h-screen overflow-hidden">
-                <header className="h-16 flex-shrink-0 bg-white border-b flex items-center px-4 gap-3 shadow-sm">
-                    <h1 className="flex-1 text-center font-semibold text-lg capitalize">
+                <header className="h-16 flex-shrink-0 bg-white border-b flex items-center justify-center px-4 gap-3 shadow-sm">
+                    <h1 className="font-semibold text-lg capitalize">
                         {documentType} Design
                     </h1>
                 </header>
