@@ -200,7 +200,7 @@ export function QuotationPreview({
                 id={`quotation-preview-${quotationId}`} 
                 className={cn(
                     "bg-white relative text-black overflow-hidden flex flex-col font-sans",
-                    "w-[210mm] h-[297mm]" 
+                    "w-[8.5in] h-[11in]" 
                 )}
                 style={{ backgroundColor: design.backgroundColor || '#FFFFFF', color: design.textColor || '#000000' }}
             >
@@ -210,18 +210,16 @@ export function QuotationPreview({
                 
                 {quotationData.status && watermarkText && <QuotationStatusWatermark status={watermarkText} design={design} />}
                 
-                <div className='relative z-10 flex flex-col flex-grow'>
-                    <div className='p-[12mm] pb-0'>
-                        <div 
-                            className="w-full flex-shrink-0 relative z-10" 
-                            style={{ 
-                                backgroundColor: accentColor,
-                                height: '35px' 
-                            }}
-                        ></div>
-                    </div>
+                <div className='relative z-10 flex flex-col flex-grow p-[12mm]'>
+                    <div 
+                        className="w-full flex-shrink-0 relative z-10 mb-6" 
+                        style={{ 
+                            backgroundColor: accentColor,
+                            height: '35px' 
+                        }}
+                    ></div>
 
-                    <header className="px-[12mm] pt-8 pb-4 flex justify-between items-start relative z-10 mb-5">
+                    <header className="flex justify-between items-start relative z-10 mb-12">
                         <div className="flex items-center gap-4">
                             {(design.logo || config.brand.logo) && (
                                 <img src={design.logo || config.brand.logo} alt="Logo" className="h-20 w-auto object-contain" />
@@ -229,7 +227,7 @@ export function QuotationPreview({
                             <h1 className="text-4xl font-bold tracking-tight ml-2" style={{ color: accentColor }}>Quotation</h1>
                         </div>
 
-                        <div className="text-right text-sm leading-relaxed" style={{color: design.textColor ? design.textColor : 'inherit'}}>
+                        <div className="text-right text-sm leading-relaxed ml-10" style={{color: design.textColor ? design.textColor : 'inherit'}}>
                             <p className="font-bold text-lg mb-1" style={{color: design.textColor ? design.textColor : 'inherit'}}>{config.brand?.businessName}</p>
                             <p>{config.profile?.address}</p>
                             <p>{config.profile?.email}</p>
@@ -237,7 +235,7 @@ export function QuotationPreview({
                         </div>
                     </header>
 
-                    <main className="flex-grow px-[12mm] relative z-10">
+                    <main className="flex-grow relative z-10">
                         <section className="flex justify-between items-start mb-10">
                             <div className="w-1/2">
                                 <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Quote For</h3>
@@ -336,10 +334,9 @@ export function QuotationPreview({
 
                     <footer className="w-full relative z-10 mt-auto">
                          <div 
-                            className="w-full flex items-center justify-center text-white" 
+                            className="w-full flex items-center justify-center text-white py-2" 
                             style={{ 
-                                backgroundColor: footerColor,
-                                height: '25px' 
+                                backgroundColor: footerColor
                             }}
                         >
                             <div className="text-center">

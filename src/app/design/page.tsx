@@ -540,13 +540,14 @@ function DocumentDesignPage() {
             <aside className={cn(
                 "fixed lg:relative top-0 left-0 z-40 w-80 h-screen transition-transform duration-300 bg-white border-r",
                 isSidebarOpen ? "translate-x-0" : "-translate-x-full",
-                "lg:translate-x-0 lg:shadow-none"
+                "lg:translate-x-0" 
             )}>
                  <Button 
                     size="icon" 
+                    variant="primary"
                     onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                     className={cn(
-                        "absolute top-1/2 -translate-y-1/2 rounded-l-none rounded-r-md transition-all duration-300 z-50",
+                        "absolute top-4 -translate-y-1/2 rounded-l-none rounded-r-md transition-all duration-300 z-50",
                         isSidebarOpen ? "right-[-40px]" : "right-[-40px]",
                         "lg:hidden"
                     )}
