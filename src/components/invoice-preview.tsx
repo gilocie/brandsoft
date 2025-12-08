@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useMemo } from 'react';
@@ -188,14 +189,14 @@ export function InvoicePreview({
     };
     
     const topPadding = design.headerImage ? 'pt-[35mm]' : 'pt-[10mm]';
-    const bottomPadding = design.footerImage ? 'pb-[35mm]' : 'pb-[15mm]';
+    const bottomPadding = 'pb-[55px]'; // Fixed padding to accommodate the 50px footer + some buffer
 
     return (
         <Wrapper>
             <div 
                 id={`invoice-preview-${invoiceId}`} 
                 className={cn(
-                    "bg-white relative text-black overflow-hidden flex flex-col font-sans",
+                    "bg-white relative text-black overflow-hidden",
                     "w-[210mm] h-[297mm]" 
                 )}
                 style={{ backgroundColor: design.backgroundColor || '#FFFFFF' }}
@@ -213,17 +214,17 @@ export function InvoicePreview({
                         <img src={design.headerImage} className="w-full h-full object-cover" alt="header" />
                     </div>
                 )}
-
-                <footer className="absolute bottom-0 left-0 w-full z-20">
+                
+                <footer className="absolute bottom-0 left-0 w-full z-20 h-[50px] bg-white">
                     {design.footerImage ? (
-                        <div className="w-full h-[30mm]">
+                        <div className="w-full h-full">
                             <img src={design.footerImage} className="w-full h-full object-cover" alt="footer" />
                         </div>
                     ) : (
-                        <div className="w-full">
+                        <div className="w-full h-full relative">
                             <div className="h-4 w-full" style={{ backgroundColor: footerColor }}></div>
                             {design.brandsoftFooter && (
-                                <div className="bg-white py-2 text-center text-[10px] text-gray-400 border-t">
+                                <div className="absolute bottom-2 w-full text-center text-[10px] text-gray-400">
                                     Created by BrandSoft
                                 </div>
                             )}
@@ -312,7 +313,7 @@ export function InvoicePreview({
                             </Table>
                         </section>
                         
-                        <div className="mt-8">
+                         <div className="mt-auto">
                            <div className="flex flex-row gap-12 items-start">
                                 <div className="flex-1">
                                     <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Payment Details</h3>
