@@ -349,6 +349,8 @@ function DocumentDesignPage() {
 
     const [document, setDocument] = useState<Invoice | Quotation | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const isInitialLoad = useRef(true);
+
 
     const form = useForm<DesignSettingsFormData>({
         resolver: zodResolver(designSettingsSchema),
@@ -430,7 +432,7 @@ function DocumentDesignPage() {
     const stableGetFormData = useCallback(getFormData, []);
 
     useEffect(() => {
-        if (!config || !documentType) return;
+        if (!config || !documentType || !isInitialLoad.current) return;
 
         let doc: Invoice | Quotation | null = null;
         let existingDesign: Partial<DesignSettings> = {};
@@ -487,8 +489,8 @@ function DocumentDesignPage() {
         
         form.reset(initialValues);
         setIsLoading(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [documentType, documentId, isNew]);
+        isInitialLoad.current = false;
+    }, [config, documentType, documentId, isNew, stableGetFormData, getDefaultTemplate, form]);
     
     const handleSave = useCallback(() => {
         if (isLoading || !config) return;
