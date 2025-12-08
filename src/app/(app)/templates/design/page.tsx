@@ -130,6 +130,7 @@ function DocumentDesignPage() {
         },
     });
 
+    // Use useWatch for reactive form values
     const backgroundColor = useWatch({ control: form.control, name: 'backgroundColor' });
     const headerImage = useWatch({ control: form.control, name: 'headerImage' });
     const footerImage = useWatch({ control: form.control, name: 'footerImage' });
@@ -191,7 +192,7 @@ function DocumentDesignPage() {
         
         form.reset(initialValues);
         setIsLoading(false);
-    }, [config, documentId, documentType, isNew, stableGetFormData, getDefaultTemplate, form]);
+    }, [config, documentId, documentType, isNew, stableGetFormData, getDefaultTemplate]);
 
     const onSubmit = (data: DesignSettingsFormData) => {
         if (!config || !documentType) return;
@@ -205,6 +206,7 @@ function DocumentDesignPage() {
         };
 
         if (isNew) {
+            // Save as default template for the specific document type
             const templateKey = documentType === 'invoice' ? 'defaultInvoiceTemplate' : 'defaultQuotationTemplate';
             saveConfig({
                 ...config,
@@ -221,6 +223,7 @@ function DocumentDesignPage() {
             router.push(returnUrl);
 
         } else if (document && documentId) {
+            // Save design to specific document
             if (documentType === 'invoice') {
                 updateInvoice(documentId, { design: newDesignSettings });
             } else if (documentType === 'quotation') {
@@ -233,6 +236,7 @@ function DocumentDesignPage() {
             const returnUrl = `/${documentType}s/${documentId}/edit`;
             router.push(returnUrl);
         } else {
+            // Fallback: save as default template
             const templateKey = documentType === 'invoice' ? 'defaultInvoiceTemplate' : 'defaultQuotationTemplate';
             saveConfig({
                 ...config,
@@ -305,7 +309,7 @@ function DocumentDesignPage() {
     const hasContentForPreview = finalDocumentData && previewCustomer;
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] h-full">
+        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] h-screen">
             <div className="lg:col-span-1 bg-background border-r h-full flex flex-col">
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
@@ -399,7 +403,7 @@ function DocumentDesignPage() {
                 </Form>
             </div>
              <div className="w-full h-full flex items-start justify-center overflow-auto bg-muted/40 p-4 sm:p-8">
-                <div className="scale-[0.5] sm:scale-[0.6] md:scale-[0.75] lg:scale-[0.85] xl:scale-100 origin-top shadow-2xl">
+                <div className="scale-[0.6] sm:scale-[0.7] md:scale-[0.85] lg:scale-[0.9] origin-top shadow-2xl">
                     {hasContentForPreview ? (
                         <>
                             {documentType === 'invoice' && (
