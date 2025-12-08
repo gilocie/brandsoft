@@ -538,10 +538,21 @@ function DocumentDesignPage() {
         <div className="flex h-screen overflow-hidden bg-gray-50 relative">
             
             <aside className={cn(
-                "fixed lg:relative top-0 left-0 z-40 w-80 h-screen transition-transform duration-300 bg-white border-r shadow-lg",
+                "fixed lg:relative top-0 left-0 z-40 w-80 h-screen transition-transform duration-300 bg-white border-r",
                 isSidebarOpen ? "translate-x-0" : "-translate-x-full",
                 "lg:translate-x-0 lg:shadow-none"
             )}>
+                 <Button 
+                    size="icon" 
+                    onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                    className={cn(
+                        "absolute top-1/2 -translate-y-1/2 rounded-l-none rounded-r-md transition-all duration-300 z-50",
+                        isSidebarOpen ? "right-[-40px]" : "right-[-40px]",
+                        "lg:hidden"
+                    )}
+                 >
+                    <PanelLeft className="h-5 w-5"/>
+                </Button>
                 <SettingsPanel 
                     form={form} 
                     documentType={documentType} 
@@ -560,16 +571,6 @@ function DocumentDesignPage() {
             )}
             
             <div className="flex-1 flex flex-col h-screen overflow-hidden">
-                 <header className="h-16 flex-shrink-0 bg-white border-b flex items-center px-4 gap-3 shadow-sm lg:hidden">
-                    <Button 
-                        variant="outline"
-                        size="icon" 
-                        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                        className="shrink-0"
-                    >
-                        <PanelLeft className="h-5 w-5"/>
-                    </Button>
-                </header>
                 <main className="flex-1 w-full bg-slate-100 overflow-y-auto flex justify-center items-start p-4 md:p-8">
                     <div className="flex-shrink-0 shadow-2xl transform origin-top scale-[0.8] md:scale-[0.9] lg:scale-100">
                         {hasContentForPreview ? (
