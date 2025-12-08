@@ -637,4 +637,8 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
 
 export function useBrandsoft() {
   const context = useContext(BrandsoftContext);
-  
+  if (!context) {
+    throw new Error('useBrandsoft must be used within a BrandsoftProvider');
+  }
+  return context;
+}
