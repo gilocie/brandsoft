@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useMemo } from 'react';
@@ -179,11 +180,7 @@ export function InvoicePreview({
     const Wrapper = ({ children }: { children: React.ReactNode }) => {
         if (forPdf) return <>{children}</>;
         return (
-            <div className="w-full h-full flex items-start justify-center overflow-auto bg-gray-100/50 p-4 sm:p-8">
-                <div className="scale-[0.5] sm:scale-[0.6] md:scale-[0.75] lg:scale-[0.85] xl:scale-100 origin-top shadow-2xl">
-                    {children}
-                </div>
-            </div>
+             <div className="w-full h-full flex items-start justify-center overflow-auto p-0">{children}</div>
         );
     };
     
@@ -214,18 +211,10 @@ export function InvoicePreview({
                     </div>
                 )}
                 
-                <footer className="absolute bottom-0 left-0 w-full z-20 h-[50px]">
-                    {design.footerImage ? (
-                        <div className="w-full h-full">
-                            <img src={design.footerImage} className="w-full h-full object-cover" alt="footer" />
-                        </div>
-                    ) : (
-                        <div className="w-full h-full relative flex items-center justify-center" style={{backgroundColor: footerColor}}>
-                           {design.brandsoftFooter && (
-                                <div className="text-center text-[10px] text-white">
-                                    Created by BrandSoft
-                                </div>
-                            )}
+                <footer className="absolute bottom-0 left-0 w-full z-20 h-[50px] flex items-center justify-center" style={{backgroundColor: footerColor}}>
+                   {design.brandsoftFooter && (
+                        <div className="text-center text-xs text-white">
+                            Created by BrandSoft
                         </div>
                     )}
                 </footer>
@@ -311,14 +300,16 @@ export function InvoicePreview({
                             </Table>
                         </section>
                         
-                         <div className="flex flex-col gap-4">
+                         <div className="flex flex-col gap-4 mt-8">
                             <div className="flex flex-row gap-12 items-start">
                                 <div className="flex-1">
-                                     {invoiceData.notes && (
-                                        <div>
-                                            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Notes</h3>
-                                            <p className="text-xs text-gray-600">{invoiceData.notes}</p>
-                                        </div>
+                                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Payment Details</h3>
+                                    {config.profile.paymentDetails ? (
+                                        <p className="text-xs text-gray-600 whitespace-pre-wrap leading-relaxed">
+                                            {config.profile.paymentDetails}
+                                        </p>
+                                    ) : (
+                                        <p className="text-xs text-gray-400 italic">No payment details provided.</p>
                                     )}
                                 </div>
                                 <div className="w-[40%] min-w-[260px] space-y-2 text-sm">
@@ -348,13 +339,11 @@ export function InvoicePreview({
                             </div>
                              <div className="flex flex-row gap-12 items-start">
                                 <div className="flex-1">
-                                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Payment Details</h3>
-                                    {config.profile.paymentDetails ? (
-                                        <p className="text-xs text-gray-600 whitespace-pre-wrap leading-relaxed">
-                                            {config.profile.paymentDetails}
-                                        </p>
-                                    ) : (
-                                        <p className="text-xs text-gray-400 italic">No payment details provided.</p>
+                                     {invoiceData.notes && (
+                                        <div>
+                                            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Notes</h3>
+                                            <p className="text-xs text-gray-600">{invoiceData.notes}</p>
+                                        </div>
                                     )}
                                 </div>
                                 <div className="w-[40%] min-w-[260px]">
@@ -433,5 +422,3 @@ export const downloadInvoiceAsPdf = async (props: InvoicePreviewProps) => {
 
     pdf.save(`Invoice-${props.invoiceId}.pdf`);
 };
-
-    

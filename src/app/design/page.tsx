@@ -323,40 +323,40 @@ function DocumentDesignPage() {
                 <SettingsPanel form={form} documentType={documentType} documentId={documentId} isNew={isNew} onSubmit={onSubmit} returnUrl={returnUrl} />
             </div>
             
-            <div className="relative w-full h-full bg-slate-100 overflow-auto flex justify-center py-10">
-                <div className="origin-top scale-[0.55] sm:scale-[0.65] md:scale-[0.75] xl:scale-[0.85] 2xl:scale-100 transition-transform duration-200">
-                    {hasContentForPreview ? (
-                        <div className="shadow-2xl">
-                            {documentType === 'invoice' && (
-                                <InvoicePreview
-                                    key={designKey}
-                                    config={config}
-                                    customer={previewCustomer}
-                                    invoiceData={finalDocumentData as Invoice}
-                                    invoiceId={(finalDocumentData as Invoice).invoiceId}
-                                    designOverride={currentDesignSettings}
-                                />
-                            )}
-                            {documentType === 'quotation' && (
-                                <QuotationPreview
-                                    key={designKey}
-                                    config={config}
-                                    customer={previewCustomer}
-                                    quotationData={finalDocumentData as Quotation}
-                                    quotationId={(finalDocumentData as Quotation).quotationId}
-                                    designOverride={currentDesignSettings}
-                                />
-                            )}
+            <div className="relative w-full h-full overflow-auto flex justify-center p-4 sm:p-6 lg:p-8">
+                {hasContentForPreview ? (
+                    <div className="shadow-2xl w-full max-w-[210mm] flex-shrink-0">
+                        {documentType === 'invoice' && (
+                            <InvoicePreview
+                                key={designKey}
+                                config={config}
+                                customer={previewCustomer}
+                                invoiceData={finalDocumentData as Invoice}
+                                invoiceId={(finalDocumentData as Invoice).invoiceId}
+                                designOverride={currentDesignSettings}
+                                forPdf={true}
+                            />
+                        )}
+                        {documentType === 'quotation' && (
+                            <QuotationPreview
+                                key={designKey}
+                                config={config}
+                                customer={previewCustomer}
+                                quotationData={finalDocumentData as Quotation}
+                                quotationId={(finalDocumentData as Quotation).quotationId}
+                                designOverride={currentDesignSettings}
+                                forPdf={true}
+                            />
+                        )}
+                    </div>
+                ) : (
+                    <div className="w-[210mm] h-[297mm] bg-white shadow-lg flex items-center justify-center border flex-shrink-0">
+                        <div className="text-center p-8">
+                            <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
+                            <h3 className="text-xl font-semibold mb-2">Loading Preview...</h3>
                         </div>
-                    ) : (
-                         <div className="w-[210mm] h-[297mm] bg-white shadow-lg flex items-center justify-center border">
-                            <div className="text-center p-8">
-                                <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
-                                <h3 className="text-xl font-semibold mb-2">Loading Preview...</h3>
-                            </div>
-                        </div>
-                    )}
-                </div>
+                    </div>
+                )}
             </div>
 
              {/* Mobile Drawer */}
@@ -382,5 +382,3 @@ export default dynamic(() => Promise.resolve(DocumentDesignPage), {
     ssr: false,
     loading: () => <div className="flex items-center justify-center h-full"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>
 });
-
-    
