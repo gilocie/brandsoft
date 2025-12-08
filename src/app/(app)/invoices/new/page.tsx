@@ -261,7 +261,7 @@ export default function NewInvoicePage() {
           </div>
             <div className="flex items-center gap-2">
                  <Button asChild disabled={isCustomizeDisabled}>
-                    <Link href={`/templates/design?documentType=invoice&isNew=true`}><Palette className="mr-2 h-4 w-4"/> Customize</Link>
+                    <Link href={`/design?documentType=invoice&isNew=true`}><Palette className="mr-2 h-4 w-4"/> Customize</Link>
                 </Button>
                 <Button variant="outline" asChild>
                     <Link href="/invoices">Cancel</Link>
@@ -740,4 +740,3 @@ export default function NewInvoicePage() {
     </div>
   );
 }
-
