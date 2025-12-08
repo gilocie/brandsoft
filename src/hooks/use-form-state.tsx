@@ -4,40 +4,46 @@
 import { create } from 'zustand';
 import { useCallback } from 'react';
 
-type FormState = {
-  formData: any;
-  setFormData: (data: any) => void;
-  getFormData: () => any;
+type FormStateStore = {
+  forms: { [key: string]: any };
+  setFormData: (key: string, data: any) => void;
+  getFormData: (key: string) => any;
 };
 
-const useFormStateStore = create<FormState>((set, get) => ({
-  formData: null,
-  setFormData: (data) => set({ formData: data }),
-  getFormData: () => get().formData,
+const useFormStateStore = create<FormStateStore>((set, get) => ({
+  forms: {},
+  setFormData: (key, data) => set(state => ({
+    forms: { ...state.forms, [key]: data }
+  })),
+  getFormData: (key) => get().forms[key],
 }));
 
-export function useFormState() {
+export function useFormState(formKey: string = 'default') {
   const { setFormData: setStoreData, getFormData: getStoreData } = useFormStateStore();
 
   const handleFormChange = useCallback((data: any) => {
-    sessionStorage.setItem('form-data', JSON.stringify(data));
-    setStoreData(data);
-  }, [setStoreData]);
+    try {
+      const sessionData = JSON.stringify(data);
+      sessionStorage.setItem(formKey, sessionData);
+      setStoreData(formKey, data);
+    } catch (e) {
+      console.error("Could not stringify or set form data in session storage", e);
+    }
+  }, [setStoreData, formKey]);
   
   const getStoredFormData = useCallback(() => {
     if (typeof window !== 'undefined') {
         try {
-            const storedData = sessionStorage.getItem('form-data');
-            return storedData ? JSON.parse(storedData) : getStoreData();
+            const storedData = sessionStorage.getItem(formKey);
+            if (storedData) {
+              return JSON.parse(storedData);
+            }
         } catch (e) {
             console.error("Could not parse form data from session storage", e);
-            return getStoreData();
         }
     }
-    return getStoreData();
-  }, [getStoreData]);
+    return getStoreData(formKey);
+  }, [getStoreData, formKey]);
 
-  // A bit of a hack to get around passing reactive data via router
-  // In a real app, this would be handled by a proper state management solution like Redux or Jotai with a shared router instance.
   return { setFormData: handleFormChange, getFormData: getStoredFormData };
 }

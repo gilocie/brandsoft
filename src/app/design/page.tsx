@@ -162,15 +162,14 @@ const ImageUploader = ({
 
 const WATERMARK_PRESETS = ['PAID', 'DRAFT', 'PENDING', 'OVERDUE', 'CANCELED', 'CUSTOM'];
 
-function SettingsPanel({ form, documentType, documentId, isNew, onSubmit, returnUrl }: {
+function SettingsPanel({ form, documentType, onSubmit, returnUrl }: {
   form: any,
   documentType: string | null,
-  documentId: string | null,
-  isNew: boolean,
   onSubmit: (data: any) => void,
   returnUrl: string
 }) {
   const [customWatermark, setCustomWatermark] = useState(form.getValues('watermarkText') && !WATERMARK_PRESETS.includes(form.getValues('watermarkText')));
+  const { setFormData } = useFormState();
   
   const handleWatermarkPresetChange = (value: string) => {
     if (value === 'CUSTOM') {
@@ -182,6 +181,14 @@ function SettingsPanel({ form, documentType, documentId, isNew, onSubmit, return
     }
   }
 
+  const handleBack = () => {
+    setFormData(null); // Clear session storage on explicit back navigation
+    router.push(returnUrl);
+  };
+  
+  const router = useRouter();
+
+
   return (
     <div className="h-full overflow-y-auto">
         <Form {...form}>
@@ -190,7 +197,7 @@ function SettingsPanel({ form, documentType, documentId, isNew, onSubmit, return
                     <div className="p-4 border-b">
                         <h2 className="text-lg font-semibold capitalize">Customize {documentType || 'Design'}</h2>
                         <p className="text-sm text-muted-foreground">
-                            {isNew ? `Customizing default ${documentType} design.` : `Design for ${documentId}`}
+                            Changes are saved automatically.
                         </p>
                     </div>
                     <div className="flex-grow p-2 space-y-2 overflow-y-auto">
@@ -340,8 +347,8 @@ function SettingsPanel({ form, documentType, documentId, isNew, onSubmit, return
                         </Accordion>
                     </div>
                     <div className="p-4 border-t bg-background flex-shrink-0 flex gap-2 sticky bottom-0">
-                        <Button type="button" variant="outline" asChild className="flex-1">
-                            <Link href={returnUrl}><ArrowLeft className="mr-2 h-4 w-4"/> Back</Link>
+                        <Button type="button" variant="outline" onClick={handleBack} className="flex-1">
+                           <ArrowLeft className="mr-2 h-4 w-4"/> Back
                         </Button>
                         <Button type="button" onClick={form.handleSubmit(onSubmit)} className="flex-1">Save Design</Button>
                     </div>
@@ -354,7 +361,7 @@ function SettingsPanel({ form, documentType, documentId, isNew, onSubmit, return
 
 function DocumentDesignPage() {
     const { config, updateInvoice, updateQuotation, saveConfig } = useBrandsoft();
-    const { getFormData } = useFormState();
+    const { getFormData, setFormData } = useFormState('designFormData');
     const { toast } = useToast();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -385,6 +392,14 @@ function DocumentDesignPage() {
     });
 
     const watchedValues = form.watch();
+    
+    // Auto-save to session storage
+    useEffect(() => {
+        if (!isLoading) {
+            setFormData(watchedValues);
+        }
+    }, [watchedValues, isLoading, setFormData]);
+
 
     const currentDesignSettings: DesignSettings = useMemo(() => ({
         logo: watchedValues.logo,
@@ -431,6 +446,15 @@ function DocumentDesignPage() {
 
     useEffect(() => {
         if (!config || !documentType || !isInitialLoad.current) return;
+        
+        const sessionData = stableGetFormData();
+
+        if (sessionData && Object.keys(sessionData).length > 0) {
+            form.reset(sessionData);
+            setIsLoading(false);
+            isInitialLoad.current = false;
+            return;
+        }
 
         let doc: Invoice | Quotation | null = null;
         let existingDesign: Partial<DesignSettings> = {};
@@ -471,7 +495,6 @@ function DocumentDesignPage() {
             footerColor: existingDesign.footerColor ?? defaultTemplate.footerColor ?? brand.secondaryColor ?? '#1E40AF',
             showLogo: existingDesign.showLogo ?? brand.showLogo ?? true,
             showBusinessAddress: existingDesign.showBusinessAddress ?? brand.showBusinessAddress ?? true,
-
             showInvoiceTitle: existingDesign.showInvoiceTitle ?? brand.showInvoiceTitle ?? true,
             showBillingAddress: existingDesign.showBillingAddress ?? brand.showBillingAddress ?? true,
             showDates: existingDesign.showDates ?? brand.showDates ?? true,
@@ -494,45 +517,40 @@ function DocumentDesignPage() {
         isInitialLoad.current = false;
     }, [config, documentType, documentId, isNew, stableGetFormData, getDefaultTemplate, form]);
     
-    const handleSave = useCallback(() => {
-        if (isLoading || !config) return;
-        const values = form.getValues();
+    
+     const onSubmit = (data: DesignSettingsFormData) => {
+        if (isLoading || !config || !documentType) return;
+        
         const newDesignSettings = currentDesignSettings;
         const newProfileSettings = {
             ...config.profile,
-            invoicePrefix: values.invoicePrefix,
-            invoiceStartNumber: values.invoiceStartNumber,
-            quotationPrefix: values.quotationPrefix,
-            quotationStartNumber: values.quotationStartNumber,
-            paymentDetails: values.paymentDetails,
-            defaultCurrency: values.defaultCurrency,
+            invoicePrefix: data.invoicePrefix,
+            invoiceStartNumber: data.invoiceStartNumber,
+            quotationPrefix: data.quotationPrefix,
+            quotationStartNumber: data.quotationStartNumber,
+            paymentDetails: data.paymentDetails,
+            defaultCurrency: data.defaultCurrency,
         };
-         if (isNew && documentType) {
+
+        if (isNew) {
             const templateKey = documentType === 'invoice' ? 'defaultInvoiceTemplate' : 'defaultQuotationTemplate';
-            saveConfig({ ...config, profile: { ...newProfileSettings, [templateKey]: newDesignSettings } }, { redirect: false });
-        } else if (document && documentId && documentType) {
+            saveConfig({ ...config, profile: { ...newProfileSettings, [templateKey]: newDesignSettings } });
+        } else if (document && documentId) {
             const updateFn = documentType === 'invoice' ? updateInvoice : updateQuotation;
             updateFn(documentId, { design: newDesignSettings });
-            saveConfig({ ...config, profile: newProfileSettings }, { redirect: false });
-        } else if (documentType) {
+            saveConfig({ ...config, profile: newProfileSettings });
+        } else if (documentType) { // Fallback for safety
              const templateKey = documentType === 'invoice' ? 'defaultInvoiceTemplate' : 'defaultQuotationTemplate';
-            saveConfig({ ...config, profile: { ...newProfileSettings, [templateKey]: newDesignSettings } }, { redirect: false });
+            saveConfig({ ...config, profile: { ...newProfileSettings, [templateKey]: newDesignSettings } });
         }
-    }, [isLoading, config, form, isNew, documentType, document, documentId, saveConfig, updateInvoice, updateQuotation, currentDesignSettings]);
-    
-    useEffect(() => {
-        const subscription = form.watch(() => handleSave());
-        return () => subscription.unsubscribe();
-    }, [form, handleSave]);
-
-     const onSubmit = (data: DesignSettingsFormData) => {
-        handleSave();
+        
+        setFormData(null); // Clear session storage after saving
         toast({ title: "Design Saved", description: "Your changes have been saved." });
         router.push(returnUrl);
     };
 
     const finalDocumentData = useMemo(() => {
-        const formData = getFormData();
+        const formData = getFormData('newDocumentData');
         
         const dynamicId = documentType === 'invoice' 
             ? `${watchedValues.invoicePrefix}${config ? config.invoices.length + (watchedValues.invoiceStartNumber || 0) : watchedValues.invoiceStartNumber}`
@@ -600,8 +618,6 @@ function DocumentDesignPage() {
                 <SettingsPanel 
                     form={form} 
                     documentType={documentType} 
-                    documentId={documentId} 
-                    isNew={isNew} 
                     onSubmit={onSubmit} 
                     returnUrl={returnUrl}
                 />
