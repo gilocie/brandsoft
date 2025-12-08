@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { UploadCloud, Paintbrush, Layers, Stamp, Trash2, ArrowLeft } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
@@ -19,6 +19,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
+import { useFormState } from '@/hooks/use-form-state';
+import { InvoicePreview } from '@/components/invoice-preview';
+import { QuotationPreview } from '@/components/quotation-preview';
 
 const designSettingsSchema = z.object({
   backgroundColor: z.string().optional(),
@@ -88,13 +91,15 @@ const ImageUploader = ({ form, fieldName, previewState, setPreviewState, label, 
 
 
 export default function DocumentDesignPage() {
-    const { config, updateInvoice, updateQuotation } = useBrandsoft();
+    const { config, updateInvoice, updateQuotation, saveConfig } = useBrandsoft();
+    const { getFormData } = useFormState();
     const { toast } = useToast();
     const router = useRouter();
     const searchParams = useSearchParams();
 
     const documentType = searchParams.get('documentType');
     const documentId = searchParams.get('documentId');
+    const isNew = searchParams.get('isNew') === 'true';
 
     const [document, setDocument] = useState<Invoice | Quotation | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -103,6 +108,8 @@ export default function DocumentDesignPage() {
     const [footerPreview, setFooterPreview] = useState<string | null>(null);
     const [backgroundPreview, setBackgroundPreview] = useState<string | null>(null);
     const [watermarkPreview, setWatermarkPreview] = useState<string | null>(null);
+    
+    const newDocumentFormData = useMemo(() => isNew ? getFormData() : null, [isNew, getFormData]);
 
     const form = useForm<DesignSettingsFormData>({
         resolver: zodResolver(designSettingsSchema),
@@ -110,16 +117,24 @@ export default function DocumentDesignPage() {
     });
 
     useEffect(() => {
-        if (config && documentType && documentId) {
-            let doc;
-            if (documentType === 'invoice') {
-                doc = config.invoices.find(inv => inv.invoiceId === documentId);
-            } else if (documentType === 'quotation') {
-                doc = config.quotations.find(q => q.quotationId === documentId);
+        if (config) {
+            let doc: Invoice | Quotation | undefined;
+            if (!isNew && documentId) {
+                if (documentType === 'invoice') {
+                    doc = config.invoices.find(inv => inv.invoiceId === documentId);
+                } else if (documentType === 'quotation') {
+                    doc = config.quotations.find(q => q.quotationId === documentId);
+                }
+            } else if (isNew && newDocumentFormData) {
+                // Create a temporary document object for preview
+                doc = {
+                    ...(newDocumentFormData as any),
+                    [documentType === 'invoice' ? 'invoiceId' : 'quotationId']: 'PREVIEW',
+                };
             }
 
             if (doc) {
-                setDocument(doc);
+                setDocument(doc as Invoice | Quotation);
                 const design = doc.design || {};
                 const brand = config.brand || {};
                 form.reset({
@@ -135,30 +150,68 @@ export default function DocumentDesignPage() {
                 setWatermarkPreview(design.watermarkImage || brand.watermarkImage || null);
             }
             setIsLoading(false);
-        } else if (config) {
-            setIsLoading(false);
         }
-    }, [config, documentType, documentId, form]);
+    }, [config, documentType, documentId, isNew, newDocumentFormData, form]);
 
     const onSubmit = (data: DesignSettingsFormData) => {
-        if (!document || !documentType || !documentId) return;
+        if (!config) return;
         
         const newDesignSettings: DesignSettings = data;
 
-        if (documentType === 'invoice') {
-            updateInvoice(documentId, { design: newDesignSettings });
-        } else if (documentType === 'quotation') {
-            updateQuotation(documentId, { design: newDesignSettings });
-        }
+        if (isNew) {
+            // Save as a global default template
+            const templateKey = documentType === 'invoice' ? 'defaultInvoiceTemplate' : 'defaultQuotationTemplate';
+             saveConfig({
+                ...config,
+                profile: {
+                    ...config.profile,
+                    [templateKey]: newDesignSettings as any,
+                }
+            });
+            toast({
+                title: "Default Design Saved",
+                description: `The new design is now the default for all new ${documentType}s.`,
+            });
+            const returnUrl = `/${documentType}s/new`;
+            router.push(returnUrl);
 
-        toast({
-            title: "Design Saved",
-            description: `The custom design for ${documentType} ${documentId} has been saved.`,
-        });
-        
-        const returnUrl = `/${documentType}s/${documentId}/edit`;
-        router.push(returnUrl);
+        } else if (document && documentId) {
+            if (documentType === 'invoice') {
+                updateInvoice(documentId, { design: newDesignSettings });
+            } else if (documentType === 'quotation') {
+                updateQuotation(documentId, { design: newDesignSettings });
+            }
+            toast({
+                title: "Design Saved",
+                description: `The custom design for ${documentType} ${documentId} has been saved.`,
+            });
+            const returnUrl = `/${documentType}s/${documentId}/edit`;
+            router.push(returnUrl);
+        }
     };
+    
+    const watchedValues = form.watch();
+    const livePreviewConfig = useMemo(() => {
+        if (!config) return null;
+        return {
+            ...config,
+            brand: {
+                ...config.brand,
+                backgroundColor: watchedValues.backgroundColor || config.brand.backgroundColor,
+                headerImage: watchedValues.headerImage || config.brand.headerImage,
+                footerImage: watchedValues.footerImage || config.brand.footerImage,
+                backgroundImage: watchedValues.backgroundImage || config.brand.backgroundImage,
+                watermarkImage: watchedValues.watermarkImage || config.brand.watermarkImage,
+            },
+        };
+    }, [config, watchedValues]);
+    
+    const previewCustomer = useMemo(() => {
+        if(!config || !document) return null;
+        const customerId = isNew ? (document as any).customerId : (document as any).customer;
+        return config.customers.find(c => isNew ? c.id === customerId : c.name === customerId) || null;
+    }, [config, document, isNew]);
+
 
     if (isLoading) {
         return <div className="h-screen w-screen flex items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
@@ -168,73 +221,141 @@ export default function DocumentDesignPage() {
         return (
              <div className="h-screen w-screen flex flex-col items-center justify-center text-center">
                 <h1 className="text-2xl font-bold">Document Not Found</h1>
-                <p className="text-muted-foreground">The requested document could not be found.</p>
+                <p className="text-muted-foreground">The requested document could not be found, or required data is missing.</p>
                 <Button asChild className="mt-4"><Link href="/dashboard">Return to Dashboard</Link></Button>
             </div>
         )
     }
+    
+    const returnUrl = isNew ? `/${documentType}s/new` : `/${documentType}s/${documentId}/edit`;
+
 
     return (
-        <div className="min-h-screen bg-muted/40 p-4 sm:p-6 md:p-8">
-            <div className="max-w-4xl mx-auto">
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                        <div className="flex items-center justify-between gap-4">
-                             <div>
-                                <h1 className="text-3xl font-bold font-headline capitalize">Design {documentType}</h1>
-                                <p className="text-muted-foreground">
-                                Customizing design for <span className="font-semibold text-primary">{documentId}</span>. These changes will only apply to this document.
+        <div className="min-h-screen bg-muted/40">
+            <div className="grid grid-cols-1 lg:grid-cols-3 h-screen">
+                <div className="lg:col-span-1 bg-background border-r h-full flex flex-col">
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+                            <div className="p-4 border-b">
+                                 <h1 className="text-lg font-semibold font-headline capitalize">Customize {documentType}</h1>
+                                <p className="text-sm text-muted-foreground">
+                                   {isNew ? "Customizing default design." : `Design for ${documentId}`}
                                 </p>
                             </div>
-                            <Button variant="outline" asChild>
-                                <Link href={`/${documentType}s/${documentId}/edit`}><ArrowLeft className="mr-2 h-4 w-4"/> Back to Editor</Link>
-                            </Button>
-                        </div>
-                        
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2"><Paintbrush className="h-5 w-5"/> Document Layout & Appearance</CardTitle>
-                                <CardDescription>Customize headers, footers, and background elements for this document.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-6">
-                                <FormField control={form.control} name="backgroundColor" render={({ field }) => (
-                                    <FormItem className="max-w-xs">
-                                        <FormLabel>Page Background Color</FormLabel>
-                                        <FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl>
-                                        <FormDescription>Overrides the default page color.</FormDescription>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}/>
-                                <Separator />
-                                <Tabs defaultValue="header" className="w-full">
-                                    <TabsList className="grid w-full grid-cols-4">
-                                        <TabsTrigger value="header">Header</TabsTrigger>
-                                        <TabsTrigger value="footer">Footer</TabsTrigger>
-                                        <TabsTrigger value="background">Background</TabsTrigger>
-                                        <TabsTrigger value="watermark">Watermark</TabsTrigger>
-                                    </TabsList>
-                                    <TabsContent value="header" className="pt-6">
-                                        <ImageUploader form={form} fieldName="headerImage" previewState={headerPreview} setPreviewState={setHeaderPreview} label="Header Image" description="Recommended: 2480px wide for A4 headers." aspect='wide' />
-                                    </TabsContent>
-                                    <TabsContent value="footer" className="pt-6">
-                                        <ImageUploader form={form} fieldName="footerImage" previewState={footerPreview} setPreviewState={setFooterPreview} label="Footer Image" description="Recommended: 2480px wide for A4 footers." aspect='wide' />
-                                    </TabsContent>
-                                    <TabsContent value="background" className="pt-6">
-                                        <ImageUploader form={form} fieldName="backgroundImage" previewState={backgroundPreview} setPreviewState={setBackgroundPreview} label="Background Image" description="Recommended: A4 aspect ratio. Use a subtle design." aspect='normal' />
-                                    </TabsContent>
-                                    <TabsContent value="watermark" className="pt-6">
-                                        <ImageUploader form={form} fieldName="watermarkImage" previewState={watermarkPreview} setPreviewState={setWatermarkPreview} label="Watermark Image" description="A semi-transparent PNG image works best." aspect='normal' />
-                                    </TabsContent>
-                                </Tabs>
-                            </CardContent>
-                        </Card>
-                        
-                        <div className="flex justify-end pt-4">
-                            <Button type="submit" size="lg">Save Document Design</Button>
-                        </div>
-                    </form>
-                </Form>
+                            
+                            <div className="flex-grow overflow-y-auto p-4 space-y-6">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="flex items-center gap-2 text-base"><Paintbrush className="h-4 w-4"/> Appearance</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <FormField control={form.control} name="backgroundColor" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="text-xs">Page Background Color</FormLabel>
+                                                <FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}/>
+                                    </CardContent>
+                                </Card>
+                                <Card>
+                                     <CardHeader>
+                                        <CardTitle className="flex items-center gap-2 text-base"><Layers className="h-4 w-4"/> Layout Images</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                          <Tabs defaultValue="header" className="w-full">
+                                            <TabsList className="grid w-full grid-cols-4">
+                                                <TabsTrigger value="header">Header</TabsTrigger>
+                                                <TabsTrigger value="footer">Footer</TabsTrigger>
+                                                <TabsTrigger value="background">BG</TabsTrigger>
+                                                <TabsTrigger value="watermark">Watermark</TabsTrigger>
+                                            </TabsList>
+                                            <TabsContent value="header" className="pt-6">
+                                                <ImageUploader form={form} fieldName="headerImage" previewState={headerPreview} setPreviewState={setHeaderPreview} label="Header" description="2480px wide recommended." aspect='wide' />
+                                            </TabsContent>
+                                            <TabsContent value="footer" className="pt-6">
+                                                <ImageUploader form={form} fieldName="footerImage" previewState={footerPreview} setPreviewState={setFooterPreview} label="Footer" description="2480px wide recommended." aspect='wide' />
+                                            </TabsContent>
+                                            <TabsContent value="background" className="pt-6">
+                                                <ImageUploader form={form} fieldName="backgroundImage" previewState={backgroundPreview} setPreviewState={setBackgroundPreview} label="Background" description="A4 aspect ratio recommended." aspect='normal' />
+                                            </TabsContent>
+                                            <TabsContent value="watermark" className="pt-6">
+                                                <ImageUploader form={form} fieldName="watermarkImage" previewState={watermarkPreview} setPreviewState={setWatermarkPreview} label="Watermark" description="Semi-transparent PNG works best." aspect='normal' />
+                                            </TabsContent>
+                                        </Tabs>
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            <div className="p-4 border-t flex gap-2">
+                                <Button type="button" variant="outline" asChild className="flex-1">
+                                    <Link href={returnUrl}><ArrowLeft className="mr-2 h-4 w-4"/> Back</Link>
+                                </Button>
+                                <Button type="submit" className="flex-1">Save Design</Button>
+                            </div>
+                        </form>
+                    </Form>
+                </div>
+                <div className="hidden lg:col-span-2 lg:flex items-center justify-center h-full overflow-y-auto p-8">
+                     {documentType === 'invoice' && (
+                        <InvoicePreview
+                            config={livePreviewConfig}
+                            customer={previewCustomer}
+                            invoiceData={document as Invoice}
+                            invoiceId={documentId}
+                        />
+                    )}
+                    {documentType === 'quotation' && (
+                        <QuotationPreview
+                            config={livePreviewConfig}
+                            customer={previewCustomer}
+                            quotationData={document as Quotation}
+                            quotationId={documentId}
+                        />
+                    )}
+                </div>
             </div>
         </div>
     );
+}
+
+```
+  </change>
+  <change>
+    <file>src/hooks/use-form-state.tsx</file>
+    <content><![CDATA[
+'use client';
+
+import { create } from 'zustand';
+
+type FormState = {
+  formData: any;
+  setFormData: (data: any) => void;
+  getFormData: () => any;
+};
+
+const useFormStateStore = create<FormState>((set, get) => ({
+  formData: null,
+  setFormData: (data) => set({ formData: data }),
+  getFormData: () => get().formData,
+}));
+
+export function useFormState() {
+  const { setFormData, getFormData } = useFormStateStore();
+
+  const handleFormChange = (data: any) => {
+    sessionStorage.setItem('form-data', JSON.stringify(data));
+  };
+  
+  const getStoredFormData = () => {
+    if (typeof window !== 'undefined') {
+        const storedData = sessionStorage.getItem('form-data');
+        return storedData ? JSON.parse(storedData) : null;
+    }
+    return null;
+  }
+
+  // A bit of a hack to get around passing reactive data via router
+  // In a real app, this would be handled by a proper state management solution like Redux or Jotai with a shared router instance.
+  return { setFormData: handleFormChange, getFormData: getStoredFormData };
 }

@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -27,6 +27,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { InvoicePreview } from '@/components/invoice-preview';
+import { useFormState } from '@/hooks/use-form-state';
 
 const currencySymbols: { [key: string]: string } = {
   USD: '$',
@@ -75,6 +76,7 @@ type NewCustomerFormData = z.infer<typeof NewCustomerFormSchema>;
 
 export default function NewInvoicePage() {
   const { config, addCustomer, addInvoice } = useBrandsoft();
+  const { setFormData } = useFormState();
   const router = useRouter();
   const { toast } = useToast();
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
@@ -106,6 +108,13 @@ export default function NewInvoicePage() {
     control: form.control,
     name: "lineItems",
   });
+  
+  const watchedValues = form.watch();
+
+  useEffect(() => {
+    setFormData(watchedValues);
+  }, [watchedValues, setFormData]);
+
 
   const newCustomerForm = useForm<NewCustomerFormData>({
     resolver: zodResolver(NewCustomerFormSchema),
@@ -195,7 +204,6 @@ export default function NewInvoicePage() {
     }
   }
 
-  const watchedValues = form.watch();
   const currencySymbol = config ? (currencySymbols[watchedValues.currency] || watchedValues.currency) : '$';
   
   const formatCurrency = (value: number) => {
@@ -732,3 +740,4 @@ export default function NewInvoicePage() {
     </div>
   );
 }
+
