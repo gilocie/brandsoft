@@ -324,8 +324,8 @@ function DocumentDesignPage() {
                 <SettingsPanel form={form} documentType={documentType} documentId={documentId} isNew={isNew} onSubmit={onSubmit} returnUrl={returnUrl} />
             </div>
             
-            <div className="relative w-full h-full bg-slate-100 overflow-auto flex justify-center py-10 lg:py-10">
-                <div className="origin-top scale-[0.55] sm:scale-[0.65] md:scale-[0.75] xl:scale-[0.85] 2xl:scale-100 transition-transform duration-200">
+            <div className="relative w-full h-full bg-slate-100 overflow-auto flex justify-center">
+                <div className="origin-top scale-[0.55] sm:scale-[0.65] md:scale-[0.75] xl:scale-[0.85] 2xl:scale-100 transition-transform duration-200 my-10">
                     {hasContentForPreview ? (
                         <div className="shadow-2xl">
                             {documentType === 'invoice' && (
