@@ -24,6 +24,9 @@ import { cn } from '@/lib/utils';
 import {
   Drawer,
   DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer"
 import { SlidersHorizontal } from 'lucide-react';
@@ -340,7 +343,7 @@ function DocumentDesignPage() {
             </div>
             
             <div className="relative w-full h-full bg-slate-100 overflow-y-auto flex justify-center items-start p-8">
-                 <div className="flex-shrink-0 shadow-2xl transform origin-top">
+                 <div className="flex-shrink-0 shadow-2xl transform origin-top scale-[0.85]">
                     {hasContentForPreview ? (
                         <>
                             {documentType === 'invoice' && (
@@ -386,6 +389,12 @@ function DocumentDesignPage() {
                         </Button>
                     </DrawerTrigger>
                     <DrawerContent className="h-[85vh]">
+                        <DrawerHeader className="text-left">
+                            <DrawerTitle>Customize Design</DrawerTitle>
+                            <DrawerDescription>
+                                {isNew ? `Set the default design for new ${documentType}s.` : `Customize the design for ${documentId}.`}
+                            </DrawerDescription>
+                        </DrawerHeader>
                         <div className="overflow-y-auto">
                            <SettingsPanel form={form} documentType={documentType} documentId={documentId} isNew={isNew} onSubmit={(data) => { onSubmit(data); setIsDrawerOpen(false); }} returnUrl={returnUrl} />
                         </div>
