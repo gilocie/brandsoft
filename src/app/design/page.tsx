@@ -11,7 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { useToast } from '@/hooks/use-toast';
 import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
-import { UploadCloud, Paintbrush, Layers, Stamp, Trash2, ArrowLeft, Loader2, Image as ImageIcon, FileImage } from 'lucide-react';
+import { UploadCloud, Paintbrush, Layers, Stamp, Trash2, ArrowLeft, Loader2, Image as ImageIcon, FileImage, SlidersHorizontal, PanelLeft } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Link from 'next/link';
@@ -21,16 +21,6 @@ import { InvoicePreview } from '@/components/invoice-preview';
 import { QuotationPreview } from '@/components/quotation-preview';
 import dynamic from 'next/dynamic';
 import { cn } from '@/lib/utils';
-import {
-  Drawer,
-  DrawerContent,
-  DrawerDescription,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer"
-import { SlidersHorizontal } from 'lucide-react';
-
 
 const designSettingsSchema = z.object({
   backgroundColor: z.string().optional(),
@@ -200,7 +190,7 @@ function DocumentDesignPage() {
     const { toast } = useToast();
     const router = useRouter();
     const searchParams = useSearchParams();
-    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     const documentType = searchParams.get('documentType') as 'invoice' | 'quotation' | null;
     const documentId = searchParams.get('documentId');
@@ -234,8 +224,14 @@ function DocumentDesignPage() {
     
     const getDefaultTemplate = useCallback((type: 'invoice' | 'quotation'): Partial<DesignSettings> => {
         if (!config?.profile) return {};
-        return type === 'invoice' ? config.profile.defaultInvoiceTemplate || {} : config.profile.defaultQuotationTemplate || {};
-    }, [config?.profile]);
+        const key = type === 'invoice' ? 'defaultInvoiceTemplate' : 'defaultQuotationTemplate';
+        const templateId = config.profile[key as keyof typeof config.profile];
+        if (typeof templateId === 'string' && config.templates) {
+            const template = config.templates.find(t => t.id === templateId);
+            return template?.pages?.[0]?.pageDetails || {};
+        }
+        return (config.profile as any)[key] || {};
+    }, [config]);
 
     const stableGetFormData = useCallback(getFormData, []);
 
@@ -301,6 +297,7 @@ function DocumentDesignPage() {
             saveConfig({ ...config, profile: { ...config.profile, [templateKey]: newDesignSettings } });
             toast({ title: "Default Design Saved", description: `The new design is now the default for all new ${documentType}s.` });
         }
+        setIsSidebarOpen(false);
     };
 
     const finalDocumentData = useMemo(() => {
@@ -336,71 +333,62 @@ function DocumentDesignPage() {
     const hasContentForPreview = finalDocumentData && previewCustomer;
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-[350px_1fr] h-[calc(100vh-4rem)] overflow-hidden">
-            {/* Desktop Sidebar */}
-            <div className="bg-background border-r h-full flex-col overflow-hidden hidden lg:flex">
+        <div className="flex h-screen overflow-hidden">
+            <aside className={cn(
+                "fixed top-0 left-0 z-40 w-80 h-screen transition-transform -translate-x-full sm:translate-x-0 bg-background border-r",
+                isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+            )}>
                 <SettingsPanel form={form} documentType={documentType} documentId={documentId} isNew={isNew} onSubmit={onSubmit} returnUrl={returnUrl} />
-            </div>
-            
-            <div className="relative w-full h-full bg-slate-100 overflow-y-auto flex justify-center items-start p-8">
-                 <div className="flex-shrink-0 shadow-2xl transform origin-top scale-[0.85]">
-                    {hasContentForPreview ? (
-                        <>
-                            {documentType === 'invoice' && (
-                                <InvoicePreview
-                                    key={designKey}
-                                    config={config}
-                                    customer={previewCustomer}
-                                    invoiceData={finalDocumentData as Invoice}
-                                    invoiceId={(finalDocumentData as Invoice).invoiceId}
-                                    designOverride={currentDesignSettings}
-                                    forPdf={true}
-                                />
-                            )}
-                            {documentType === 'quotation' && (
-                                <QuotationPreview
-                                    key={designKey}
-                                    config={config}
-                                    customer={previewCustomer}
-                                    quotationData={finalDocumentData as Quotation}
-                                    quotationId={(finalDocumentData as Quotation).quotationId}
-                                    designOverride={currentDesignSettings}
-                                    forPdf={true}
-                                />
-                            )}
-                        </>
-                    ) : (
-                        <div className="w-[210mm] h-[297mm] bg-white shadow-lg flex items-center justify-center border flex-shrink-0">
-                            <div className="text-center p-8">
-                                <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
-                                <h3 className="text-xl font-semibold mb-2">Loading Preview...</h3>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
+            </aside>
 
-             {/* Mobile Drawer */}
-            <div className="lg:hidden fixed bottom-4 right-4 z-50">
-                 <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
-                    <DrawerTrigger asChild>
-                        <Button size="icon" className="h-14 w-14 rounded-full shadow-lg">
-                            <SlidersHorizontal className="h-6 w-6" />
-                        </Button>
-                    </DrawerTrigger>
-                    <DrawerContent className="h-[85vh]">
-                        <DrawerHeader className="text-left">
-                            <DrawerTitle>Customize Design</DrawerTitle>
-                            <DrawerDescription>
-                                {isNew ? `Set the default design for new ${documentType}s.` : `Customize the design for ${documentId}.`}
-                            </DrawerDescription>
-                        </DrawerHeader>
-                        <div className="overflow-y-auto">
-                           <SettingsPanel form={form} documentType={documentType} documentId={documentId} isNew={isNew} onSubmit={(data) => { onSubmit(data); setIsDrawerOpen(false); }} returnUrl={returnUrl} />
-                        </div>
-                    </DrawerContent>
-                </Drawer>
-            </div>
+            <main className={cn(
+                "flex-1 transition-all duration-300 h-screen flex flex-col",
+                isSidebarOpen ? "sm:ml-80" : "ml-0"
+            )}>
+                <header className="h-16 flex-shrink-0 bg-background border-b flex items-center px-4">
+                    <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
+                        <PanelLeft className="h-5 w-5"/>
+                    </Button>
+                    <div className="flex-1 text-center font-semibold">{documentType} Design</div>
+                </header>
+                <div className="flex-1 w-full bg-slate-100 overflow-y-auto flex justify-center items-start p-8">
+                    <div className="flex-shrink-0 shadow-2xl transform origin-top scale-[0.85]">
+                        {hasContentForPreview ? (
+                            <>
+                                {documentType === 'invoice' && (
+                                    <InvoicePreview
+                                        key={designKey}
+                                        config={config}
+                                        customer={previewCustomer}
+                                        invoiceData={finalDocumentData as Invoice}
+                                        invoiceId={(finalDocumentData as Invoice).invoiceId}
+                                        designOverride={currentDesignSettings}
+                                        forPdf={true}
+                                    />
+                                )}
+                                {documentType === 'quotation' && (
+                                    <QuotationPreview
+                                        key={designKey}
+                                        config={config}
+                                        customer={previewCustomer}
+                                        quotationData={finalDocumentData as Quotation}
+                                        quotationId={(finalDocumentData as Quotation).quotationId}
+                                        designOverride={currentDesignSettings}
+                                        forPdf={true}
+                                    />
+                                )}
+                            </>
+                        ) : (
+                            <div className="w-[210mm] h-[297mm] bg-white shadow-lg flex items-center justify-center border flex-shrink-0">
+                                <div className="text-center p-8">
+                                    <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
+                                    <h3 className="text-xl font-semibold mb-2">Loading Preview...</h3>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </main>
         </div>
     );
 }
@@ -409,3 +397,5 @@ export default dynamic(() => Promise.resolve(DocumentDesignPage), {
     ssr: false,
     loading: () => <div className="w-full h-screen flex items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>
 });
+
+    
