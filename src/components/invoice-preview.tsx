@@ -85,19 +85,15 @@ export function InvoicePreview({
         );
     }
     
-    // Priority: designOverride > invoiceData.design > defaultInvoiceTemplate > brand
+    // Design Priority Logic
     const design = useMemo(() => {
         const brand = config.brand || {};
         const defaultTemplate = config.profile?.defaultInvoiceTemplate || {};
         const documentDesign = invoiceData?.design || {};
         const override = designOverride || {};
-        
-        // Check if designOverride was explicitly provided (not just undefined)
         const hasOverride = designOverride !== undefined && designOverride !== null;
         
-        // Build merged design with proper priority
         let mergedDesign = {
-            // Base: brand settings
             backgroundColor: brand.backgroundColor || '#FFFFFF',
             headerImage: brand.headerImage || '',
             footerImage: brand.footerImage || '',
@@ -105,21 +101,18 @@ export function InvoicePreview({
             watermarkImage: brand.watermarkImage || '',
         };
         
-        // Apply default template (only non-empty values)
         if (defaultTemplate.backgroundColor) mergedDesign.backgroundColor = defaultTemplate.backgroundColor;
         if (defaultTemplate.headerImage) mergedDesign.headerImage = defaultTemplate.headerImage;
         if (defaultTemplate.footerImage) mergedDesign.footerImage = defaultTemplate.footerImage;
         if (defaultTemplate.backgroundImage) mergedDesign.backgroundImage = defaultTemplate.backgroundImage;
         if (defaultTemplate.watermarkImage) mergedDesign.watermarkImage = defaultTemplate.watermarkImage;
         
-        // Apply document-specific design (only non-empty values)
         if (documentDesign.backgroundColor) mergedDesign.backgroundColor = documentDesign.backgroundColor;
         if (documentDesign.headerImage) mergedDesign.headerImage = documentDesign.headerImage;
         if (documentDesign.footerImage) mergedDesign.footerImage = documentDesign.footerImage;
         if (documentDesign.backgroundImage) mergedDesign.backgroundImage = documentDesign.backgroundImage;
         if (documentDesign.watermarkImage) mergedDesign.watermarkImage = documentDesign.watermarkImage;
         
-        // Apply real-time override (for customization page - include empty strings to allow clearing)
         if (hasOverride) {
             mergedDesign.backgroundColor = override.backgroundColor ?? mergedDesign.backgroundColor;
             mergedDesign.headerImage = override.headerImage ?? mergedDesign.headerImage;
@@ -130,7 +123,6 @@ export function InvoicePreview({
         
         return {
             ...mergedDesign,
-            // Always preserve these from brand
             logo: brand.logo,
             primaryColor: brand.primaryColor || '#000000',
             secondaryColor: brand.secondaryColor || '#666666',
@@ -139,12 +131,7 @@ export function InvoicePreview({
             footerContent: brand.footerContent,
             brandsoftFooter: brand.brandsoftFooter,
         };
-    }, [
-        config.brand, 
-        config.profile?.defaultInvoiceTemplate,
-        invoiceData?.design,
-        designOverride,
-    ]);
+    }, [config, invoiceData?.design, designOverride]);
 
     const currencyCode = invoiceData.currency || config.profile?.defaultCurrency || '$';
     const formatCurrency = (value: number) => `${currencyCode}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -174,23 +161,12 @@ export function InvoicePreview({
             taxAmount = invoiceData.taxValue;
             taxRateDisplay = formatCurrency(invoiceData.taxValue);
         }
-    } else if (invoiceData.tax && invoiceData.tax > 0 && subtotalAfterDiscount > 0) {
-        taxAmount = invoiceData.tax;
-        if (invoiceData.taxType === 'percentage' && invoiceData.taxValue) {
-            taxRateDisplay = `${invoiceData.taxValue}%`;
-        } else if (invoiceData.taxType === 'flat' && invoiceData.taxValue) {
-            taxRateDisplay = formatCurrency(invoiceData.taxValue);
-        } else {
-            const effectiveTaxRate = (taxAmount / subtotalAfterDiscount) * 100;
-            taxRateDisplay = `${effectiveTaxRate.toFixed(2)}%`;
-        }
     } else if (invoiceData.tax) {
         taxAmount = invoiceData.tax;
         taxRateDisplay = formatCurrency(taxAmount);
     }
 
     const shippingAmount = Number(invoiceData.applyShipping && invoiceData.shippingValue ? invoiceData.shippingValue : (invoiceData.shipping || 0));
-    
     const total = subtotalAfterDiscount + taxAmount + shippingAmount;
     
     const rawInvoiceDate = invoiceData.invoiceDate || invoiceData.date;
@@ -200,125 +176,155 @@ export function InvoicePreview({
     
     const taxName = invoiceData.taxName || 'Tax';
 
+    // Calculate margins based on if header/footer images exist
+    // 20mm is standard A4 margin (~75px)
+    const topMargin = design.headerImage ? 'pt-0' : 'pt-[15mm]';
+    const bottomMargin = design.footerImage ? 'pb-0' : 'pb-[15mm]';
+
     return (
-        <div className={cn(forPdf ? "" : "bg-gray-100 p-4 sm:p-8", "font-sans")}>
+        <div className={cn(forPdf ? "" : "bg-gray-100 p-4 sm:p-8", "font-sans flex justify-center")}>
+            {/* Main A4 Container */}
             <div 
                 id={`invoice-preview-${invoiceId}`} 
                 className={cn(
-                    "w-full max-w-4xl mx-auto bg-white shadow-lg relative text-black",
-                    "aspect-[8.5/11] p-12"
+                    "bg-white shadow-lg relative text-black overflow-hidden flex flex-col",
+                    // STRICT A4 DIMENSIONS
+                    "w-[210mm] min-h-[297mm]" 
                 )}
                 style={{
                     backgroundColor: design.backgroundColor || '#FFFFFF',
                 }}
             >
+                {/* 1. Background Image (Absolute) */}
                 {design.backgroundImage && (
                     <img src={design.backgroundImage} className="absolute inset-0 w-full h-full object-cover z-0" alt="background"/>
                 )}
 
+                {/* 2. Watermark (Absolute) */}
                 {design.watermarkImage && (
                     <img src={design.watermarkImage} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0 opacity-10 pointer-events-none max-w-[60%] max-h-[60%]" alt="watermark" />
                 )}
                 
+                {/* 3. Status Stamp (Absolute) */}
                 {invoiceData.status && !design.watermarkImage && <InvoiceStatusWatermark status={invoiceData.status} />}
                 
-                <div className="relative z-10">
-                    <header className="grid grid-cols-2 gap-8 mb-12">
-                        <div>
+                {/* 4. Header Image (Absolute to top) */}
+                {design.headerImage && (
+                    <div className="w-full h-[35mm] relative z-10">
+                         <img src={design.headerImage} className="w-full h-full object-cover object-top" alt="Header" />
+                    </div>
+                )}
+
+                {/* 5. Main Content Area (Flex Grow - Pushes Footer Down) */}
+                <div className={cn("flex-grow relative z-10 px-[15mm]", topMargin)}>
+                    
+                    {/* Header Details */}
+                    <header className="flex justify-between items-start mb-8 pt-6">
+                        <div className="w-1/2">
                             {design.logo && (
-                                <img src={design.logo} alt={config.brand.businessName} className="h-16 mb-4 object-contain" />
+                                <img src={design.logo} alt={config.brand.businessName} className="h-20 mb-3 object-contain" />
                             )}
                             <p className="font-bold text-lg">{config.brand.businessName}</p>
-                            <p className="text-sm text-gray-600">{config.profile.address}</p>
-                            <p className="text-sm text-gray-600">{config.profile.email}</p>
-                            <p className="text-sm text-gray-600">{config.profile.phone}</p>
+                            <div className="text-sm text-gray-600 mt-1 leading-snug">
+                                <p>{config.profile.address}</p>
+                                <p>{config.profile.email}</p>
+                                <p>{config.profile.phone}</p>
+                            </div>
                         </div>
-                        <div className="text-right">
-                            <h1 className="text-5xl font-bold uppercase" style={{color: design.primaryColor}}>Invoice</h1>
+                        <div className="w-1/2 text-right">
+                            <h1 className="text-4xl font-bold uppercase tracking-wide" style={{color: design.primaryColor}}>Invoice</h1>
                             <div className="mt-4 space-y-1 text-sm">
-                                <p><span className="text-gray-500">Invoice #: </span>{invoiceId || `${config.profile?.invoicePrefix || 'INV-'}${String(config.profile?.invoiceStartNumber || 1).padStart(3, '0')}`}</p>
-                                <p><span className="text-gray-500">Date: </span>{format(invoiceDate || new Date(), 'MM/dd/yyyy')}</p>
-                                <p><span className="text-gray-500">Due Date: </span>{format(dueDate || new Date(), 'MM/dd/yyyy')}</p>
+                                <p><span className="text-gray-500 font-semibold">INVOICE #: </span>{invoiceId || `${config.profile?.invoicePrefix || 'INV-'}${String(config.profile?.invoiceStartNumber || 1).padStart(3, '0')}`}</p>
+                                <p><span className="text-gray-500 font-semibold">DATE: </span>{format(invoiceDate || new Date(), 'MM/dd/yyyy')}</p>
+                                <p><span className="text-gray-500 font-semibold">DUE DATE: </span>{format(dueDate || new Date(), 'MM/dd/yyyy')}</p>
                             </div>
                         </div>
                     </header>
 
-                    <section className="mb-12">
-                        <p className="text-sm text-gray-500">Bill To</p>
-                        <p className="font-bold">{customer.companyName || customer.name}</p>
+                    <div className="h-px bg-gray-200 w-full mb-8"></div>
+
+                    {/* Bill To Section */}
+                    <section className="mb-10">
+                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Bill To</h3>
+                        <p className="font-bold text-lg">{customer.companyName || customer.name}</p>
                         {config.brand.showCustomerAddress && (
-                             <>
-                                {customer.companyName && <p className="text-sm text-gray-600">{customer.name}</p>}
-                                <p className="text-sm text-gray-600">{customer.address || customer.companyAddress || 'No address provided'}</p>
-                                <p className="text-sm text-gray-600">{customer.email}</p>
-                            </>
+                             <div className="text-sm text-gray-600 mt-1 leading-snug">
+                                {customer.companyName && <p>{customer.name}</p>}
+                                <p className="whitespace-pre-wrap">{customer.address || customer.companyAddress || 'No address provided'}</p>
+                                <p>{customer.email}</p>
+                            </div>
                         )}
                     </section>
 
-                    <section className="mb-12">
+                    {/* Table Section */}
+                    <section className="mb-8">
                         <Table>
                             <TableHeader>
-                                <TableRow style={{backgroundColor: design.primaryColor, color: 'white'}} className="text-white">
-                                    <TableHead className="w-1/2 text-white">Item</TableHead>
-                                    <TableHead className="text-right text-white">Quantity</TableHead>
-                                    <TableHead className="text-right text-white">Price</TableHead>
-                                    <TableHead className="text-right text-white">Amount</TableHead>
+                                <TableRow style={{backgroundColor: design.primaryColor}} className="hover:bg-opacity-100">
+                                    <TableHead className="w-[45%] text-white font-bold h-10">Description</TableHead>
+                                    <TableHead className="text-right text-white font-bold h-10">Qty</TableHead>
+                                    <TableHead className="text-right text-white font-bold h-10">Price</TableHead>
+                                    <TableHead className="text-right text-white font-bold h-10 rounded-tr-sm">Amount</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {invoiceData.lineItems?.map((item, index) => (
-                                    <TableRow key={index} className="border-b">
-                                        <TableCell className="font-medium">{item.description}</TableCell>
-                                        <TableCell className="text-right">{item.quantity}</TableCell>
-                                        <TableCell className="text-right">{formatCurrency(item.price)}</TableCell>
-                                        <TableCell className="text-right">{formatCurrency(item.quantity * item.price)}</TableCell>
+                                    <TableRow key={index} className="border-b border-gray-100">
+                                        <TableCell className="font-medium py-3 align-top">{item.description}</TableCell>
+                                        <TableCell className="text-right py-3 align-top">{item.quantity}</TableCell>
+                                        <TableCell className="text-right py-3 align-top">{formatCurrency(item.price)}</TableCell>
+                                        <TableCell className="text-right py-3 align-top font-semibold">{formatCurrency(item.quantity * item.price)}</TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
                         </Table>
                     </section>
 
-                    <section className="grid grid-cols-2 gap-8 items-start">
-                        <div className="text-sm">
+                    {/* Footer / Totals Section */}
+                    <section className="flex flex-row gap-8 items-start mb-8">
+                        {/* Left Side - Notes */}
+                        <div className="w-[60%] text-sm">
                             {invoiceData.notes && (
-                                <div>
-                                    <h3 className="font-bold mb-1">Notes</h3>
-                                    <p className="text-gray-600 text-xs">{invoiceData.notes}</p>
+                                <div className="mb-6">
+                                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Notes</h3>
+                                    <p className="text-gray-600 text-xs bg-gray-50 p-3 rounded">{invoiceData.notes}</p>
                                 </div>
                             )}
                             {config.profile.paymentDetails && (
-                                <div className="mt-4">
-                                    <h3 className="font-bold mb-1">Payment Details</h3>
+                                <div>
+                                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Payment Details</h3>
                                     <p className="text-gray-600 whitespace-pre-wrap text-xs">{config.profile.paymentDetails}</p>
                                 </div>
                             )}
                         </div>
-                         <div className="w-full space-y-2 text-sm">
-                             <div className="flex justify-between items-center">
+                        
+                         {/* Right Side - Totals */}
+                         <div className="w-[40%] space-y-3">
+                             <div className="flex justify-between items-center text-sm border-b border-gray-100 pb-2">
                                 <span className="text-gray-600">Subtotal</span>
-                                <span className="font-medium">{formatCurrency(subtotal)}</span>
+                                <span className="font-semibold">{formatCurrency(subtotal)}</span>
                             </div>
                             {discountAmount > 0 && (
-                                <div className="flex justify-between items-center">
-                                    <span className="text-gray-600">Discount</span>
-                                    <span className="font-medium">- {formatCurrency(discountAmount)}</span>
+                                <div className="flex justify-between items-center text-sm border-b border-gray-100 pb-2 text-green-600">
+                                    <span>Discount</span>
+                                    <span>- {formatCurrency(discountAmount)}</span>
                                 </div>
                             )}
                             {taxAmount > 0 && (
-                                <div className="flex justify-between items-center">
+                                <div className="flex justify-between items-center text-sm border-b border-gray-100 pb-2">
                                     <span className="text-gray-600">{taxName} ({taxRateDisplay})</span>
-                                    <span className="font-medium">{formatCurrency(taxAmount)}</span>
+                                    <span>{formatCurrency(taxAmount)}</span>
                                 </div>
                             )}
                             {shippingAmount > 0 && (
-                                <div className="flex justify-between items-center">
+                                <div className="flex justify-between items-center text-sm border-b border-gray-100 pb-2">
                                     <span className="text-gray-600">Shipping</span>
-                                    <span className="font-medium">{formatCurrency(shippingAmount)}</span>
+                                    <span>{formatCurrency(shippingAmount)}</span>
                                 </div>
                             )}
                             <div className="pt-2">
-                                <div className="flex items-center justify-between font-bold text-lg py-3 px-4 rounded" style={{backgroundColor: design.primaryColor, color: '#fff'}}>
-                                    <span className="mr-4">Total</span>
+                                <div className="flex items-center justify-between font-bold text-lg py-3 px-4 rounded text-white" style={{backgroundColor: design.primaryColor}}>
+                                    <span>Total</span>
                                     <span>{formatCurrency(total)}</span>
                                 </div>
                             </div>
@@ -326,9 +332,16 @@ export function InvoicePreview({
                     </section>
                 </div>
                 
-                <footer className="absolute bottom-0 left-12 right-12 text-center text-xs py-4 border-t">
-                    {design.footerContent && <p className="mb-1">{design.footerContent}</p>}
-                    {design.brandsoftFooter && <p><span className="font-bold">Created by BrandSoft</span></p>}
+                {/* 6. Footer (In flow, not absolute) */}
+                <footer className={cn("relative z-10 w-full mt-auto", bottomMargin)}>
+                    {design.footerImage ? (
+                        <img src={design.footerImage} className="w-full h-auto object-cover" alt="Footer" />
+                    ) : (
+                         <div className="border-t border-gray-200 pt-4 pb-8 px-[15mm] text-center text-xs text-gray-500">
+                            {design.footerContent && <p className="mb-1">{design.footerContent}</p>}
+                            {design.brandsoftFooter && <p>Generated by <span className="font-bold">BrandSoft</span></p>}
+                        </div>
+                    )}
                 </footer>
             </div>
         </div>
@@ -336,62 +349,68 @@ export function InvoicePreview({
 }
 
 export const downloadInvoiceAsPdf = async (props: InvoicePreviewProps) => {
+    // 1. Create a container off-screen
     const container = document.createElement('div');
     container.id = `pdf-container-${props.invoiceId}`;
     container.style.position = 'fixed';
     container.style.left = '-9999px';
     container.style.top = '0';
-    container.style.width = '816px';
+    // 210mm in pixels at ~96DPI is approx 794px. 
+    // Setting width explicitly ensures html2canvas renders at the correct break points.
+    container.style.width = '210mm'; 
     document.body.appendChild(container);
 
     const root = createRoot(container);
     root.render(<InvoicePreview {...props} forPdf={true} />);
 
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // Wait for render
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     const invoiceElement = container.querySelector(`#invoice-preview-${props.invoiceId}`) as HTMLElement;
     if (!invoiceElement) {
-        console.error("Invoice element not found for PDF generation.");
         root.unmount();
         document.body.removeChild(container);
         return;
     }
     
+    // Capture canvas
     const canvas = await html2canvas(invoiceElement, {
-        scale: 2,
+        scale: 2, // Higher scale for better quality
         useCORS: true,
         allowTaint: true,
         logging: false,
         backgroundColor: '#ffffff',
-        width: 816,
-        height: invoiceElement.scrollHeight
+        windowWidth: 794 // Force A4 width in pixels
     });
 
     root.unmount();
     document.body.removeChild(container);
 
+    // Initialize jsPDF with A4 format
     const pdf = new jsPDF({
         orientation: 'p',
-        unit: 'px',
-        format: [816, 1056]
+        unit: 'mm',
+        format: 'a4'
     });
 
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const pdfWidth = pdf.internal.pageSize.getWidth(); // 210
+    const pdfHeight = pdf.internal.pageSize.getHeight(); // 297
+    
     const imgWidth = pdfWidth;
     const imgHeight = (canvas.height * pdfWidth) / canvas.width;
 
     let heightLeft = imgHeight;
     let position = 0;
 
-    pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, imgWidth, imgHeight);
+    // First Page
+    pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight);
     heightLeft -= pdfHeight;
 
+    // Subsequent Pages
     while (heightLeft > 0) {
-        position -= pdfHeight;
+        position = heightLeft - imgHeight;
         pdf.addPage();
         pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight);
-        
         heightLeft -= pdfHeight;
     }
 
