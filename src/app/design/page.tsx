@@ -11,7 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { useToast } from '@/hooks/use-toast';
 import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
-import { UploadCloud, Paintbrush, Layers, Stamp, Trash2, ArrowLeft, Loader2, Image as ImageIcon, FileImage, SlidersHorizontal, PanelLeft, X } from 'lucide-react';
+import { UploadCloud, Paintbrush, Layers, Stamp, Trash2, ArrowLeft, Loader2, Image as ImageIcon, FileImage, PanelLeft, X } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Link from 'next/link';
@@ -21,7 +21,6 @@ import { InvoicePreview } from '@/components/invoice-preview';
 import { QuotationPreview } from '@/components/quotation-preview';
 import dynamic from 'next/dynamic';
 import { cn } from '@/lib/utils';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from '@/components/ui/drawer';
 
 const designSettingsSchema = z.object({
   backgroundColor: z.string().optional(),
@@ -116,88 +115,88 @@ function SettingsPanel({ form, documentType, documentId, isNew, onSubmit, return
 }) {
   return (
     <div className="h-full overflow-y-auto">
-        <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
-                <Card className="border-0 shadow-none rounded-none">
-                    <CardHeader className="flex flex-row items-center justify-between p-4">
-                        <div>
-                            <CardTitle className="capitalize">Customize {documentType || 'Design'}</CardTitle>
-                            <CardDescription>
-                                {isNew ? `Customizing default ${documentType} design.` : `Design for ${documentId}`}
-                            </CardDescription>
-                        </div>
-                        {onClose && (
-                            <Button variant="ghost" size="icon" onClick={onClose} className="shrink-0 md:hidden">
-                                <X className="h-4 w-4" />
-                            </Button>
-                        )}
-                    </CardHeader>
-                    <CardContent className="flex-grow p-4 space-y-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-base"><Paintbrush className="h-4 w-4"/> Appearance</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <FormField control={form.control} name="backgroundColor" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel className="text-xs">Page Background</FormLabel>
-                                            <FormControl>
-                                                <div className="flex gap-2">
-                                                    <Input type="color" {...field} value={field.value || '#FFFFFF'} className="h-10 w-16 p-1 cursor-pointer" />
-                                                </div>
-                                            </FormControl>
-                                        </FormItem>
-                                    )} />
-                                    <FormField control={form.control} name="textColor" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel className="text-xs">Text Color</FormLabel>
-                                            <FormControl>
-                                                <div className="flex gap-2">
-                                                    <Input type="color" {...field} value={field.value || '#000000'} className="h-10 w-16 p-1 cursor-pointer" />
-                                                </div>
-                                            </FormControl>
-                                        </FormItem>
-                                    )} />
-                                </div>
-                                <Separator />
-                                <ImageUploader form={form} fieldName="backgroundImage" label="Background Image" description="A4 aspect ratio recommended." aspect='normal' />
-                            </CardContent>
-                        </Card>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+          <Card className="border-0 shadow-none rounded-none flex-1 flex flex-col">
+            <CardHeader className="flex flex-row items-start justify-between p-4">
+                <div>
+                    <CardTitle className="capitalize">Customize {documentType || 'Design'}</CardTitle>
+                    <CardDescription>
+                        {isNew ? `Customizing default ${documentType} design.` : `Design for ${documentId}`}
+                    </CardDescription>
+                </div>
+                {onClose && (
+                    <Button variant="ghost" size="icon" onClick={onClose} className="shrink-0">
+                        <X className="h-4 w-4" />
+                    </Button>
+                )}
+            </CardHeader>
+            <CardContent className="flex-grow p-4 space-y-6 overflow-y-auto">
+              <Card>
+                  <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-base"><Paintbrush className="h-4 w-4"/> Appearance</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                          <FormField control={form.control} name="backgroundColor" render={({ field }) => (
+                              <FormItem>
+                                  <FormLabel className="text-xs">Page Background</FormLabel>
+                                  <FormControl>
+                                      <div className="flex gap-2">
+                                          <Input type="color" {...field} value={field.value || '#FFFFFF'} className="h-10 w-16 p-1 cursor-pointer" />
+                                      </div>
+                                  </FormControl>
+                              </FormItem>
+                          )} />
+                          <FormField control={form.control} name="textColor" render={({ field }) => (
+                              <FormItem>
+                                  <FormLabel className="text-xs">Text Color</FormLabel>
+                                  <FormControl>
+                                      <div className="flex gap-2">
+                                          <Input type="color" {...field} value={field.value || '#000000'} className="h-10 w-16 p-1 cursor-pointer" />
+                                      </div>
+                                  </FormControl>
+                              </FormItem>
+                          )} />
+                      </div>
+                      <Separator />
+                      <ImageUploader form={form} fieldName="backgroundImage" label="Background Image" description="A4 aspect ratio recommended." aspect='normal' />
+                  </CardContent>
+              </Card>
 
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-base"><Layers className="h-4 w-4"/> Layout Images</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <Tabs defaultValue="header" className="w-full">
-                                    <TabsList className="grid w-full grid-cols-3">
-                                        <TabsTrigger value="header">Header</TabsTrigger>
-                                        <TabsTrigger value="footer">Footer</TabsTrigger>
-                                        <TabsTrigger value="watermark">Watermark</TabsTrigger>
-                                    </TabsList>
-                                    <TabsContent value="header" className="pt-4">
-                                        <ImageUploader form={form} fieldName="headerImage" label="Header" description="Full width top banner." aspect='wide' />
-                                    </TabsContent>
-                                    <TabsContent value="footer" className="pt-4">
-                                        <ImageUploader form={form} fieldName="footerImage" label="Footer" description="Full width bottom banner." aspect='wide' />
-                                    </TabsContent>
-                                    <TabsContent value="watermark" className="pt-4">
-                                        <ImageUploader form={form} fieldName="watermarkImage" label="Watermark" description="Center page image." aspect='normal' />
-                                    </TabsContent>
-                                </Tabs>
-                            </CardContent>
-                        </Card>
-                    </CardContent>
-                    <CardFooter className="p-4 border-t bg-background flex-shrink-0 flex gap-2 sticky bottom-0">
-                        <Button type="button" variant="outline" asChild className="flex-1">
-                            <Link href={returnUrl}><ArrowLeft className="mr-2 h-4 w-4"/> Back</Link>
-                        </Button>
-                        <Button type="submit" className="flex-1">Save Design</Button>
-                    </CardFooter>
-                </Card>
-            </form>
-        </Form>
+              <Card>
+                  <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-base"><Layers className="h-4 w-4"/> Layout Images</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                      <Tabs defaultValue="header" className="w-full">
+                          <TabsList className="grid w-full grid-cols-3">
+                              <TabsTrigger value="header">Header</TabsTrigger>
+                              <TabsTrigger value="footer">Footer</TabsTrigger>
+                              <TabsTrigger value="watermark">Watermark</TabsTrigger>
+                          </TabsList>
+                          <TabsContent value="header" className="pt-4">
+                              <ImageUploader form={form} fieldName="headerImage" label="Header" description="Full width top banner." aspect='wide' />
+                          </TabsContent>
+                          <TabsContent value="footer" className="pt-4">
+                              <ImageUploader form={form} fieldName="footerImage" label="Footer" description="Full width bottom banner." aspect='wide' />
+                          </TabsContent>
+                          <TabsContent value="watermark" className="pt-4">
+                              <ImageUploader form={form} fieldName="watermarkImage" label="Watermark" description="Center page image." aspect='normal' />
+                          </TabsContent>
+                      </Tabs>
+                  </CardContent>
+              </Card>
+            </CardContent>
+            <CardFooter className="p-4 border-t bg-background flex-shrink-0 flex gap-2 sticky bottom-0">
+                <Button type="button" variant="outline" asChild className="flex-1">
+                    <Link href={returnUrl}><ArrowLeft className="mr-2 h-4 w-4"/> Back</Link>
+                </Button>
+                <Button type="submit" className="flex-1">Save Design</Button>
+            </CardFooter>
+          </Card>
+        </form>
+      </Form>
     </div>
   );
 }
@@ -209,7 +208,7 @@ function DocumentDesignPage() {
     const { toast } = useToast();
     const router = useRouter();
     const searchParams = useSearchParams();
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
     const documentType = searchParams.get('documentType') as 'invoice' | 'quotation' | null;
     const documentId = searchParams.get('documentId');
@@ -358,9 +357,8 @@ function DocumentDesignPage() {
     return (
         <div className="flex h-screen overflow-hidden">
             <aside className={cn(
-                "fixed top-0 left-0 z-40 w-80 h-screen transition-transform bg-background border-r",
-                isSidebarOpen ? "translate-x-0" : "-translate-x-full",
-                "lg:relative lg:translate-x-0 lg:w-80 lg:shrink-0"
+                "fixed top-0 left-0 z-40 w-80 h-screen transition-transform bg-background border-r lg:relative lg:translate-x-0",
+                isSidebarOpen ? "translate-x-0" : "-translate-x-full"
             )}>
                 <SettingsPanel form={form} documentType={documentType} documentId={documentId} isNew={isNew} onSubmit={onSubmit} returnUrl={returnUrl} onClose={() => setIsSidebarOpen(false)} />
             </aside>
@@ -369,14 +367,15 @@ function DocumentDesignPage() {
                 "flex-1 transition-all duration-300 h-screen flex flex-col",
                 isSidebarOpen && "lg:ml-0"
             )}>
-                <header className="h-16 flex-shrink-0 bg-background border-b flex items-center px-4">
-                    <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="lg:hidden">
-                        <PanelLeft className="h-5 w-5"/>
+                <header className="h-16 flex-shrink-0 bg-background border-b flex items-center px-4 gap-2">
+                    <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
+                        {isSidebarOpen ? <X className="h-5 w-5" /> : <PanelLeft className="h-5 w-5"/>}
                     </Button>
                     <div className="flex-1 text-center font-semibold capitalize">{documentType} Design</div>
+                    <div className="w-9 h-9" /> {/* Spacer */}
                 </header>
                 <main className="flex-1 w-full bg-slate-100 overflow-y-auto flex justify-center items-start p-8">
-                     <div className="flex-shrink-0 shadow-2xl transform origin-top md:scale-[0.55] lg:scale-[0.65] xl:scale-[0.85] 2xl:scale-100 scale-[0.55]">
+                     <div className="flex-shrink-0 shadow-2xl transform origin-top scale-[0.65] md:scale-[0.75] lg:scale-[0.85] xl:scale-[0.95] 2xl:scale-100">
                         {hasContentForPreview ? (
                             <>
                                 {documentType === 'invoice' && (
@@ -422,4 +421,3 @@ export default dynamic(() => Promise.resolve(DocumentDesignPage), {
     loading: () => <div className="w-full h-screen flex items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>
 });
 
-    
