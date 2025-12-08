@@ -323,40 +323,42 @@ function DocumentDesignPage() {
                 <SettingsPanel form={form} documentType={documentType} documentId={documentId} isNew={isNew} onSubmit={onSubmit} returnUrl={returnUrl} />
             </div>
             
-            <div className="relative w-full h-full bg-slate-100 overflow-auto flex justify-center p-8">
-                {hasContentForPreview ? (
-                    <div className="shadow-2xl flex-shrink-0">
-                        {documentType === 'invoice' && (
-                            <InvoicePreview
-                                key={designKey}
-                                config={config}
-                                customer={previewCustomer}
-                                invoiceData={finalDocumentData as Invoice}
-                                invoiceId={(finalDocumentData as Invoice).invoiceId}
-                                designOverride={currentDesignSettings}
-                                forPdf={true}
-                            />
-                        )}
-                        {documentType === 'quotation' && (
-                            <QuotationPreview
-                                key={designKey}
-                                config={config}
-                                customer={previewCustomer}
-                                quotationData={finalDocumentData as Quotation}
-                                quotationId={(finalDocumentData as Quotation).quotationId}
-                                designOverride={currentDesignSettings}
-                                forPdf={true}
-                            />
-                        )}
-                    </div>
-                ) : (
-                    <div className="w-[210mm] h-[297mm] bg-white shadow-lg flex items-center justify-center border flex-shrink-0">
-                        <div className="text-center p-8">
-                            <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
-                            <h3 className="text-xl font-semibold mb-2">Loading Preview...</h3>
+            <div className="relative w-full h-full bg-slate-100 overflow-auto flex justify-center items-start p-8">
+                <div className="flex-shrink-0 shadow-2xl transform scale-90 origin-top">
+                    {hasContentForPreview ? (
+                        <>
+                            {documentType === 'invoice' && (
+                                <InvoicePreview
+                                    key={designKey}
+                                    config={config}
+                                    customer={previewCustomer}
+                                    invoiceData={finalDocumentData as Invoice}
+                                    invoiceId={(finalDocumentData as Invoice).invoiceId}
+                                    designOverride={currentDesignSettings}
+                                    forPdf={true}
+                                />
+                            )}
+                            {documentType === 'quotation' && (
+                                <QuotationPreview
+                                    key={designKey}
+                                    config={config}
+                                    customer={previewCustomer}
+                                    quotationData={finalDocumentData as Quotation}
+                                    quotationId={(finalDocumentData as Quotation).quotationId}
+                                    designOverride={currentDesignSettings}
+                                    forPdf={true}
+                                />
+                            )}
+                        </>
+                    ) : (
+                        <div className="w-[210mm] h-[297mm] bg-white shadow-lg flex items-center justify-center border flex-shrink-0">
+                            <div className="text-center p-8">
+                                <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
+                                <h3 className="text-xl font-semibold mb-2">Loading Preview...</h3>
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
 
              {/* Mobile Drawer */}
