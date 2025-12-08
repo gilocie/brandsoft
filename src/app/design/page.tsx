@@ -119,7 +119,7 @@ function SettingsPanel({ form, documentType, documentId, isNew, onSubmit, return
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
                 <Card className="border-0 shadow-none rounded-none">
-                    <CardHeader className="flex flex-row items-center justify-between">
+                    <CardHeader className="flex flex-row items-center justify-between p-4">
                         <div>
                             <CardTitle className="capitalize">Customize {documentType || 'Design'}</CardTitle>
                             <CardDescription>
@@ -127,7 +127,7 @@ function SettingsPanel({ form, documentType, documentId, isNew, onSubmit, return
                             </CardDescription>
                         </div>
                         {onClose && (
-                            <Button variant="ghost" size="icon" onClick={onClose} className="shrink-0">
+                            <Button variant="ghost" size="icon" onClick={onClose} className="shrink-0 md:hidden">
                                 <X className="h-4 w-4" />
                             </Button>
                         )}
@@ -345,7 +345,11 @@ function DocumentDesignPage() {
     const designKey = useMemo(() => JSON.stringify(currentDesignSettings), [currentDesignSettings]);
 
     if (isLoading) {
-        return <div className="w-full h-screen flex items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
+        return (
+          <div className="w-full h-screen flex items-center justify-center">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          </div>
+        );
     }
     
     const returnUrl = isNew ? `/${documentType}s/new` : (documentId ? `/${documentType}s/${documentId}/edit` : `/${documentType}s`);
@@ -356,35 +360,23 @@ function DocumentDesignPage() {
             <aside className={cn(
                 "fixed top-0 left-0 z-40 w-80 h-screen transition-transform bg-background border-r",
                 isSidebarOpen ? "translate-x-0" : "-translate-x-full",
-                "md:translate-x-0 md:relative md:w-80 md:shrink-0"
+                "lg:relative lg:translate-x-0 lg:w-80 lg:shrink-0"
             )}>
                 <SettingsPanel form={form} documentType={documentType} documentId={documentId} isNew={isNew} onSubmit={onSubmit} returnUrl={returnUrl} onClose={() => setIsSidebarOpen(false)} />
             </aside>
             
-             <Drawer open={isSidebarOpen && window.innerWidth < 768} onOpenChange={setIsSidebarOpen}>
-                <DrawerContent>
-                    <div className="h-[75vh]">
-                        <DrawerHeader>
-                          <DrawerTitle>Customize Design</DrawerTitle>
-                          <DrawerDescription>Adjust the look and feel of your document.</DrawerDescription>
-                        </DrawerHeader>
-                        <SettingsPanel form={form} documentType={documentType} documentId={documentId} isNew={isNew} onSubmit={onSubmit} returnUrl={returnUrl} />
-                    </div>
-                </DrawerContent>
-            </Drawer>
-
-
             <div className={cn(
-                "flex-1 transition-all duration-300 h-screen flex flex-col"
+                "flex-1 transition-all duration-300 h-screen flex flex-col",
+                isSidebarOpen && "lg:ml-0"
             )}>
                 <header className="h-16 flex-shrink-0 bg-background border-b flex items-center px-4">
-                    <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="md:hidden">
+                    <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="lg:hidden">
                         <PanelLeft className="h-5 w-5"/>
                     </Button>
                     <div className="flex-1 text-center font-semibold capitalize">{documentType} Design</div>
                 </header>
                 <main className="flex-1 w-full bg-slate-100 overflow-y-auto flex justify-center items-start p-8">
-                     <div className="flex-shrink-0 shadow-2xl transform origin-top md:scale-[0.55] xl:scale-[0.85] 2xl:scale-100 scale-[0.55]">
+                     <div className="flex-shrink-0 shadow-2xl transform origin-top md:scale-[0.55] lg:scale-[0.65] xl:scale-[0.85] 2xl:scale-100 scale-[0.55]">
                         {hasContentForPreview ? (
                             <>
                                 {documentType === 'invoice' && (
@@ -429,3 +421,5 @@ export default dynamic(() => Promise.resolve(DocumentDesignPage), {
     ssr: false,
     loading: () => <div className="w-full h-screen flex items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>
 });
+
+    
