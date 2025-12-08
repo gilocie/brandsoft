@@ -10,7 +10,6 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { createRoot } from 'react-dom/client';
 
-// ... (Keep existing Type definitions here) ...
 type InvoiceData = Partial<Invoice> & {
     lineItems?: LineItem[],
     currency?: string;
@@ -37,7 +36,6 @@ export interface InvoicePreviewProps {
     designOverride?: DesignSettings;
 }
 
-// ... (Keep Watermark component here) ...
 const InvoiceStatusWatermark = ({ status }: { status: Invoice['status'] }) => {
     let text = '';
     let colorClass = '';
@@ -82,11 +80,11 @@ export function InvoicePreview({
     designOverride 
 }: InvoicePreviewProps) {
 
-    // ... (Keep existing Data preparation & Design Memo logic here) ...
-    if (!config || !customer || !invoiceData) return null;
-
+    if (!config || !customer || !invoiceData) {
+        return <div className="p-10">Loading...</div>;
+    }
+    
     const design = useMemo(() => {
-        // ... (Keep existing merge logic) ...
         const brand = config.brand || {};
         const defaultTemplate = config.profile?.defaultInvoiceTemplate || {};
         const documentDesign = invoiceData?.design || {};
@@ -131,159 +129,219 @@ export function InvoicePreview({
         };
     }, [config, invoiceData?.design, designOverride]);
 
-    // ... (Keep formatting helpers: formatCurrency, subtotal, total etc.) ...
-     const currencyCode = invoiceData.currency || config.profile.defaultCurrency || 'K';
-     const formatCurrency = (value: number) => `${currencyCode}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
- 
-     const subtotal = invoiceData.lineItems?.reduce((acc, item) => acc + (item.quantity * item.price), 0) || invoiceData.subtotal || 0;
-     const total = subtotal; // Placeholder, use your calculation
+    const currencyCode = invoiceData.currency || config.profile.defaultCurrency || 'K';
+    const formatCurrency = (value: number) => `${currencyCode}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
+    const subtotal = invoiceData.lineItems?.reduce((acc, item) => acc + (item.quantity * item.price), 0) || invoiceData.subtotal || 0;
+    
+    let discountAmount = 0;
+    if (invoiceData.applyDiscount && invoiceData.discountValue) {
+        if (invoiceData.discountType === 'percentage') {
+            discountAmount = subtotal * (invoiceData.discountValue / 100);
+        } else {
+            discountAmount = invoiceData.discountValue;
+        }
+    } else if (invoiceData.discount) {
+        discountAmount = invoiceData.discount;
+    }
+
+    const subtotalAfterDiscount = subtotal - discountAmount;
+    
+    let taxAmount = 0;
+    let taxRateDisplay = '0%';
+    if (invoiceData.applyTax && invoiceData.taxValue) {
+        if (invoiceData.taxType === 'percentage') {
+            taxAmount = subtotalAfterDiscount * (invoiceData.taxValue / 100);
+            taxRateDisplay = `${invoiceData.taxValue}%`;
+        } else {
+            taxAmount = invoiceData.taxValue;
+            taxRateDisplay = formatCurrency(invoiceData.taxValue);
+        }
+    } else if (invoiceData.tax) {
+        taxAmount = invoiceData.tax;
+        taxRateDisplay = formatCurrency(taxAmount);
+    }
+
+    const shippingAmount = Number(invoiceData.applyShipping && invoiceData.shippingValue ? invoiceData.shippingValue : (invoiceData.shipping || 0));
+    const total = subtotalAfterDiscount + taxAmount + shippingAmount;
+    
+    const formatDateSafe = (dateVal: Date | string | undefined) => {
+        if (!dateVal) return format(new Date(), 'MM/dd/yyyy');
+        const d = typeof dateVal === 'string' ? parseISO(dateVal) : dateVal;
+        return isValid(d) ? format(d, 'MM/dd/yyyy') : format(new Date(), 'MM/dd/yyyy');
+    };
+
+    const invoiceDateStr = formatDateSafe(invoiceData.invoiceDate || invoiceData.date);
+    const dueDateStr = formatDateSafe(invoiceData.dueDate || invoiceData.date);
+    const taxName = invoiceData.taxName || 'Tax';
     const accentColor = design.primaryColor;
     const footerColor = design.secondaryColor;
-    
-    // --- LAYOUT FIX STARTS HERE ---
-    
-    // Determine margins based on images to prevent overlap
-    const topPadding = design.headerImage ? 'pt-[35mm]' : 'pt-[10mm]';
-    const bottomPadding = design.footerImage ? 'pb-[35mm]' : 'pb-[15mm]';
+
+    const Wrapper = ({ children }: { children: React.ReactNode }) => {
+        if (forPdf) return <>{children}</>;
+        return (
+            <div className="w-full h-full flex items-start justify-center overflow-auto bg-gray-100/50 p-4 sm:p-8">
+                <div className="origin-top shadow-2xl">
+                    {children}
+                </div>
+            </div>
+        );
+    };
 
     return (
-        <div className={cn(forPdf ? "" : "flex justify-center", "font-sans")}>
+        <Wrapper>
             <div 
                 id={`invoice-preview-${invoiceId}`} 
                 className={cn(
-                    "bg-white relative text-black overflow-hidden shadow-2xl",
-                    // FIXED A4 SIZE: 210mm x 297mm. This forces the "Paper" look.
-                    "w-[210mm] h-[297mm]" 
+                    "bg-white relative text-black overflow-hidden flex flex-col font-sans",
+                    "w-[210mm] min-h-[297mm]" 
                 )}
                 style={{ backgroundColor: design.backgroundColor || '#FFFFFF' }}
             >
-                {/* 1. Background Layer (Absolute) */}
                 {design.backgroundImage && (
                     <img src={design.backgroundImage} className="absolute inset-0 w-full h-full object-cover z-0" alt="background"/>
                 )}
                 
-                {/* 2. Header Image (Absolute Top) */}
-                {design.headerImage ? (
-                     <div className="absolute top-0 left-0 w-full h-[35mm] z-10">
-                        <img src={design.headerImage} className="w-full h-full object-cover" alt="header" />
-                    </div>
-                ) : (
-                    // Default Color Bar if no image
-                    <div className="absolute top-0 left-0 w-full h-4 z-10" style={{ backgroundColor: accentColor }}></div>
-                )}
+                {invoiceData.status && <InvoiceStatusWatermark status={invoiceData.status} />}
+                
+                <div className="h-6 w-full flex-shrink-0 relative z-10" style={{ backgroundColor: accentColor }}></div>
 
-                {/* 3. Footer Image/Content (Absolute Bottom) */}
-                {/* This fixes the "Footer not at bottom" issue */}
-                <footer className="absolute bottom-0 left-0 w-full z-20">
-                    {design.footerImage ? (
-                        <div className="w-full h-[30mm]">
-                            <img src={design.footerImage} className="w-full h-full object-cover" alt="footer" />
-                        </div>
-                    ) : (
-                        <div className="w-full">
-                            <div className="h-4 w-full" style={{ backgroundColor: footerColor }}></div>
-                            {design.brandsoftFooter && (
-                                <div className="bg-white py-2 text-center text-[10px] text-gray-400 border-t">
-                                    Created by BrandSoft
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </footer>
-
-                {/* 4. Main Content Scrollable Area */}
-                {/* We use padding top/bottom to ensure text doesn't hide behind absolute header/footer */}
-                <div className={cn("relative z-10 w-full h-full flex flex-col px-[12mm]", topPadding, bottomPadding)}>
-                    
-                    {/* Header Details */}
-                    <div className="flex justify-between items-start mb-8 mt-4">
-                         <div className="flex items-center gap-4">
-                            {design.logo && (
-                                <img src={design.logo} alt="Logo" className="h-16 w-auto max-w-[150px] object-contain" />
-                            )}
-                            {!design.logo && !design.headerImage && (
-                                <h1 className="text-4xl font-bold uppercase tracking-wide" style={{color: accentColor}}>Invoice</h1>
-                            )}
-                        </div>
-                        <div className="text-right text-sm text-gray-800">
-                            <p className="font-bold text-base mb-1">{config.brand.businessName}</p>
-                            <p>{config.profile.address}</p>
-                            <p>{config.profile.email}</p>
-                            <p>{config.profile.phone}</p>
-                        </div>
+                <header className="px-[12mm] py-8 flex justify-between items-start relative z-10">
+                    <div className="flex items-center gap-5">
+                        {design.logo && (
+                            <img src={design.logo} alt="Logo" className="h-20 w-auto object-contain" />
+                        )}
+                        <h1 className="text-5xl font-bold tracking-tight" style={{ color: accentColor }}>Invoice</h1>
                     </div>
+
+                    <div className="text-right text-sm leading-relaxed text-gray-800">
+                        <p className="font-bold text-base mb-1 text-black">{config.brand.businessName}</p>
+                        <p>{config.profile.address}</p>
+                        <p>{config.profile.email}</p>
+                        <p>{config.profile.phone}</p>
+                    </div>
+                </header>
+
+                <main className="flex-grow px-[12mm] relative z-10 mt-4">
                     
-                    {/* Grid Layout for Bill To / Invoice Details */}
-                    <section className="grid grid-cols-2 gap-10 mb-8">
+                    <section className="grid grid-cols-2 gap-10 mb-10">
+                        
                         <div>
-                            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Bill To</h3>
-                            <p className="font-bold text-xl text-black">{customer.companyName || customer.name}</p>
-                            <p className="text-sm text-gray-600 whitespace-pre-wrap">{customer.address}</p>
+                            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Bill To</h3>
+                            <p className="font-bold text-xl text-black mb-1">{customer.companyName || customer.name}</p>
+                            {customer.companyName && <p className="text-sm text-gray-800 font-medium">{customer.name}</p>}
+                            <p className="text-sm text-gray-600 mt-2 whitespace-pre-wrap leading-relaxed">
+                                {customer.address || customer.companyAddress}
+                            </p>
                             <p className="text-sm text-gray-600">{customer.email}</p>
                         </div>
-                        <div className="flex flex-col gap-2">
-                             <div className="flex justify-between border-b border-gray-100 pb-1">
-                                <span className="font-bold text-xs text-gray-500 uppercase">Invoice #</span>
-                                <span className="font-bold text-sm">{invoiceId}</span>
+
+                        <div className="flex flex-col gap-3">
+                            <div className="flex justify-between items-center border-b border-gray-100 pb-1">
+                                <span className="font-bold text-xs text-gray-500 uppercase tracking-wider">Invoice #</span>
+                                <span className="font-bold text-base text-black">{invoiceId || 'INV-001'}</span>
                             </div>
-                            <div className="flex justify-between border-b border-gray-100 pb-1">
-                                <span className="font-bold text-xs text-gray-500 uppercase">Date</span>
-                                <span className="font-medium text-sm">{format(new Date(), 'MM/dd/yyyy')}</span>
+                            <div className="flex justify-between items-center border-b border-gray-100 pb-1">
+                                <span className="font-bold text-xs text-gray-500 uppercase tracking-wider">Date</span>
+                                <span className="font-medium text-sm text-black">{invoiceDateStr}</span>
+                            </div>
+                            <div className="flex justify-between items-center border-b border-gray-100 pb-1">
+                                <span className="font-bold text-xs text-gray-500 uppercase tracking-wider">Due Date</span>
+                                <span className="font-medium text-sm text-black">{dueDateStr}</span>
                             </div>
                         </div>
                     </section>
 
-                    {/* Table */}
-                    <div className="mb-8">
-                         <Table>
+                    <section className="mb-10">
+                        <Table>
                             <TableHeader>
                                 <TableRow className="border-b-2 border-gray-800 hover:bg-transparent">
-                                    <TableHead className="w-[45%] text-black font-bold uppercase text-[11px] h-8 pl-0">Item</TableHead>
-                                    <TableHead className="w-[15%] text-right text-black font-bold uppercase text-[11px] h-8">Price</TableHead>
-                                    <TableHead className="w-[15%] text-right text-black font-bold uppercase text-[11px] h-8">Qty</TableHead>
-                                    <TableHead className="w-[25%] text-right text-black font-bold uppercase text-[11px] h-8 pr-0">Amount</TableHead>
+                                    <TableHead className="w-[40%] text-black font-bold uppercase text-[11px] h-10 pl-0">Item</TableHead>
+                                    <TableHead className="w-[20%] text-black font-bold uppercase text-[11px] h-10">Description</TableHead>
+                                    <TableHead className="w-[10%] text-right text-black font-bold uppercase text-[11px] h-10">Qty</TableHead>
+                                    <TableHead className="w-[15%] text-right text-black font-bold uppercase text-[11px] h-10">Price</TableHead>
+                                    <TableHead className="w-[15%] text-right text-black font-bold uppercase text-[11px] h-10 pr-0">Amount</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {invoiceData.lineItems?.map((item, index) => (
-                                    <TableRow key={index} className="border-b border-gray-100">
-                                        <TableCell className="py-2 pl-0 text-sm font-medium">{item.description}</TableCell>
-                                        <TableCell className="py-2 text-right text-sm">{formatCurrency(item.price)}</TableCell>
-                                        <TableCell className="py-2 text-right text-sm">{item.quantity}</TableCell>
-                                        <TableCell className="py-2 text-right text-sm font-bold pr-0">{formatCurrency(item.price * item.quantity)}</TableCell>
-                                    </TableRow>
-                                ))}
+                                {invoiceData.lineItems?.map((item, index) => {
+                                    const product = config?.products?.find(p => p.id === item.productId);
+                                    return (
+                                        <TableRow key={index} className="border-b border-gray-200 hover:bg-transparent">
+                                            <TableCell className="py-4 align-top pl-0">
+                                                <span className="font-bold text-sm text-black">{product ? product.name : item.description}</span>
+                                            </TableCell>
+                                            <TableCell className="py-4 align-top text-xs text-gray-600">
+                                                {product?.description || 'Standard Item'}
+                                            </TableCell>
+                                            <TableCell className="text-right py-4 align-top text-sm">{item.quantity}</TableCell>
+                                            <TableCell className="text-right py-4 align-top text-sm">{formatCurrency(item.price)}</TableCell>
+                                            <TableCell className="text-right py-4 align-top font-semibold text-sm pr-0">{formatCurrency(item.quantity * item.price)}</TableCell>
+                                        </TableRow>
+                                    )
+                                })}
                             </TableBody>
                         </Table>
-                    </div>
-
-                    {/* Totals Section - Pushed to bottom of flex container */}
-                    <div className="mt-auto mb-4 flex gap-8">
-                        <div className="flex-1 text-xs text-gray-500">
-                            {config.profile.paymentDetails && (
-                                <>
-                                    <h3 className="font-bold uppercase mb-1">Payment Details</h3>
-                                    <p className="whitespace-pre-wrap">{config.profile.paymentDetails}</p>
-                                </>
+                    </section>
+                </main>
+                
+                <footer className="relative z-10 w-full mt-auto px-[12mm] pb-8">
+                    <section className="flex flex-row gap-12 items-start">
+                        <div className="flex-1">
+                             <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Payment Details</h3>
+                             {config.profile.paymentDetails ? (
+                                <p className="text-xs text-gray-600 whitespace-pre-wrap leading-relaxed">
+                                    {config.profile.paymentDetails}
+                                </p>
+                            ) : (
+                                <p className="text-xs text-gray-400 italic">No payment details provided.</p>
+                            )}
+                            
+                            {invoiceData.notes && (
+                                <div className="mt-6">
+                                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Notes</h3>
+                                    <p className="text-xs text-gray-600">{invoiceData.notes}</p>
+                                </div>
                             )}
                         </div>
-                        <div className="w-[40%]">
-                             <div className="flex justify-between mb-2 text-sm">
-                                <span>Subtotal</span>
-                                <span className="font-bold">{formatCurrency(subtotal)}</span>
+
+                         <div className="w-[40%] min-w-[260px] space-y-3">
+                             <div className="flex justify-between items-center text-sm border-b border-gray-100 pb-2">
+                                <span className="text-gray-600">Subtotal</span>
+                                <span className="font-semibold">{formatCurrency(subtotal)}</span>
                             </div>
-                            <div className="p-3 rounded flex justify-between items-center" style={{backgroundColor: accentColor}}>
+                            {discountAmount > 0 && (
+                                <div className="flex justify-between items-center text-sm border-b border-gray-100 pb-2 text-green-700">
+                                    <span>Discount</span>
+                                    <span>- {formatCurrency(discountAmount)}</span>
+                                </div>
+                            )}
+                             <div className="flex justify-between items-center text-sm border-b border-gray-100 pb-2">
+                                <span className="text-gray-600">{taxName} ({taxRateDisplay})</span>
+                                <span className="font-semibold">{formatCurrency(taxAmount)}</span>
+                            </div>
+                            
+                            <div className="mt-4 flex items-center justify-between p-3 rounded-sm" style={{backgroundColor: accentColor}}>
                                 <span className="font-bold text-white text-lg">Total</span>
                                 <span className="font-bold text-white text-xl">{formatCurrency(total)}</span>
                             </div>
                         </div>
-                    </div>
+                    </section>
+                </footer>
+                
+                <div className="relative z-10 w-full mt-auto">
+                    <div className="h-4 w-full" style={{ backgroundColor: footerColor }}></div>
+                    {design.brandsoftFooter && (
+                        <div className="text-center py-2 bg-white text-[10px] text-gray-400">
+                            Created by BrandSoft
+                        </div>
+                    )}
                 </div>
             </div>
-        </div>
+        </Wrapper>
     );
 }
+
 
 export const downloadInvoiceAsPdf = async (props: InvoicePreviewProps) => {
     const container = document.createElement('div');
@@ -291,13 +349,12 @@ export const downloadInvoiceAsPdf = async (props: InvoicePreviewProps) => {
     container.style.position = 'fixed';
     container.style.left = '-9999px';
     container.style.top = '0';
-    container.style.width = '210mm';
+    container.style.width = '210mm'; 
     document.body.appendChild(container);
 
     const root = createRoot(container);
     root.render(<InvoicePreview {...props} forPdf={true} />);
 
-    // Wait for fonts/images
     await new Promise(resolve => setTimeout(resolve, 2000));
 
     const invoiceElement = container.querySelector(`#invoice-preview-${props.invoiceId}`) as HTMLElement;
@@ -306,14 +363,14 @@ export const downloadInvoiceAsPdf = async (props: InvoicePreviewProps) => {
         document.body.removeChild(container);
         return;
     }
-
+    
     const canvas = await html2canvas(invoiceElement, {
-        scale: 2,
+        scale: 2, 
         useCORS: true,
         allowTaint: true,
         logging: false,
         backgroundColor: '#ffffff',
-        windowWidth: 794
+        windowWidth: 794,
     });
 
     root.unmount();
@@ -327,6 +384,7 @@ export const downloadInvoiceAsPdf = async (props: InvoicePreviewProps) => {
 
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
+    
     const imgWidth = pdfWidth;
     const imgHeight = (canvas.height * pdfWidth) / canvas.width;
 
@@ -345,5 +403,3 @@ export const downloadInvoiceAsPdf = async (props: InvoicePreviewProps) => {
 
     pdf.save(`Invoice-${props.invoiceId}.pdf`);
 };
-
-    
