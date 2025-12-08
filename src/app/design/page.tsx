@@ -6,12 +6,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useBrandsoft, type BrandsoftConfig, type DesignSettings, type Quotation, type Invoice } from '@/hooks/use-brandsoft.tsx';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
+import { Card } from '@/components/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
-import { UploadCloud, Paintbrush, Layers, Trash2, ArrowLeft, Loader2, PanelLeft, Settings2, Hash, Eye } from 'lucide-react';
+import { UploadCloud, Paintbrush, Layers, Trash2, ArrowLeft, Loader2, PanelLeft, Settings2, Hash, Eye, Wallet } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Link from 'next/link';
@@ -25,6 +25,7 @@ import { Slider } from '@/components/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 
 
 const designSettingsSchema = z.object({
@@ -56,6 +57,8 @@ const designSettingsSchema = z.object({
   // Numbering
   invoicePrefix: z.string().optional(),
   invoiceStartNumber: z.coerce.number().optional(),
+  // Payments
+  paymentDetails: z.string().optional(),
 });
 
 
@@ -185,7 +188,7 @@ function SettingsPanel({ form, documentType, documentId, isNew, onSubmit, return
                         </p>
                     </div>
                     <div className="flex-grow p-2 space-y-2 overflow-y-auto">
-                        <Accordion type="multiple" defaultValue={['appearance', 'elements', 'layout', 'numbering']} className="w-full">
+                        <Accordion type="multiple" defaultValue={['appearance', 'elements', 'layout', 'numbering', 'payments']} className="w-full">
                              <Card className="border-0 shadow-none">
                                 <AccordionItem value="appearance">
                                     <AccordionTrigger className="text-sm p-2"><div className="flex items-center gap-2"><Paintbrush className="h-4 w-4"/> Appearance</div></AccordionTrigger>
@@ -276,6 +279,23 @@ function SettingsPanel({ form, documentType, documentId, isNew, onSubmit, return
                                     </AccordionContent>
                                 </AccordionItem>
                              </Card>
+                             
+                              <Card className="border-0 shadow-none">
+                                <AccordionItem value="payments">
+                                    <AccordionTrigger className="text-sm p-2"><div className="flex items-center gap-2"><Wallet className="h-4 w-4"/> Payment Details</div></AccordionTrigger>
+                                    <AccordionContent className="p-2">
+                                        <FormField control={form.control} name="paymentDetails" render={({ field }) => (
+                                            <FormItem>
+                                                <FormControl>
+                                                    <Textarea placeholder="e.g., Bank Name, Account Number..." {...field} rows={4} className="text-xs" />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
+                                    </AccordionContent>
+                                </AccordionItem>
+                             </Card>
+
 
                              <Card className="border-0 shadow-none">
                                 <AccordionItem value="numbering">
@@ -349,6 +369,7 @@ function DocumentDesignPage() {
             showBrandsoftFooter: true,
             invoicePrefix: 'INV-',
             invoiceStartNumber: 101,
+            paymentDetails: '',
         },
     });
 
@@ -445,6 +466,7 @@ function DocumentDesignPage() {
             showBrandsoftFooter: existingDesign.showBrandsoftFooter ?? brand.showBrandsoftFooter ?? true,
             invoicePrefix: profile.invoicePrefix || 'INV-',
             invoiceStartNumber: profile.invoiceStartNumber || 101,
+            paymentDetails: profile.paymentDetails || '',
         };
         
         form.reset(initialValues);
@@ -473,18 +495,23 @@ function DocumentDesignPage() {
                 ...config.profile,
                 invoicePrefix: values.invoicePrefix,
                 invoiceStartNumber: values.invoiceStartNumber,
+                paymentDetails: values.paymentDetails,
             };
 
             if (isNew) {
                 const templateKey = documentType === 'invoice' ? 'defaultInvoiceTemplate' : 'defaultQuotationTemplate';
-                saveConfig({ ...config, profile: { ...config.profile, ...newProfileSettings, [templateKey]: newDesignSettings } }, { redirect: false });
+                saveConfig({ ...config, profile: { ...newProfileSettings, [templateKey]: newDesignSettings } }, { redirect: false });
             } else if (document && documentId) {
                 const updateFn = documentType === 'invoice' ? updateInvoice : updateQuotation;
                 updateFn(documentId, { design: newDesignSettings });
+                 saveConfig({ ...config, profile: newProfileSettings }, { redirect: false });
+            } else {
+                 const templateKey = documentType === 'invoice' ? 'defaultInvoiceTemplate' : 'defaultQuotationTemplate';
+                saveConfig({ ...config, profile: { ...newProfileSettings, [templateKey]: newDesignSettings } }, { redirect: false });
             }
         });
         return () => subscription.unsubscribe();
-    }, [form.watch, isLoading, config, isNew, documentType, documentId, document, saveConfig, updateInvoice, updateQuotation]);
+    }, [form, isLoading, config, isNew, documentType, documentId, document, saveConfig, updateInvoice, updateQuotation]);
 
 
     const onSubmit = (data: DesignSettingsFormData) => {
@@ -542,7 +569,7 @@ function DocumentDesignPage() {
                     size="icon" 
                     variant="primary"
                     onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                    className="absolute top-4 -translate-y-1/2 rounded-l-none rounded-r-md transition-all duration-300 z-50 right-[-40px] lg:hidden"
+                    className="absolute top-4 rounded-l-none rounded-r-md transition-all duration-300 z-50 right-[-40px] lg:hidden"
                  >
                     <PanelLeft className="h-5 w-5"/>
                 </Button>

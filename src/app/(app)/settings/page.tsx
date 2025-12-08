@@ -43,85 +43,16 @@ const settingsSchema = z.object({
   secondaryColor: z.string().optional(),
   font: z.string().optional(),
   defaultCurrency: z.string().min(1, "Default currency is required"),
-  brandsoftFooter: z.boolean().default(true),
-  showCustomerAddress: z.boolean().default(true),
-  paymentDetails: z.string().optional(),
-  headerImage: z.string().optional(),
-  footerImage: z.string().optional(),
-  backgroundImage: z.string().optional(),
-  watermarkImage: z.string().optional(),
-  footerContent: z.string().optional(),
-  invoicePrefix: z.string().optional(),
-  invoiceStartNumber: z.coerce.number().min(1, "Starting number must be at least 1").optional(),
 });
 
 type SettingsFormData = z.infer<typeof settingsSchema>;
 
-const ImageUploader = ({ form, fieldName, previewState, setPreviewState, label, description, aspect }: { form: any, fieldName: keyof SettingsFormData, previewState: string | null, setPreviewState: (url: string | null) => void, label: string, description: string, aspect: 'wide' | 'normal' }) => {
-    const inputRef = useRef<HTMLInputElement>(null);
-
-    const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                const dataUrl = reader.result as string;
-                setPreviewState(dataUrl);
-                form.setValue(fieldName, dataUrl, { shouldDirty: true });
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-    
-    const handleDeleteImage = () => {
-        setPreviewState(null);
-        form.setValue(fieldName, '', { shouldDirty: true });
-        if (inputRef.current) {
-            inputRef.current.value = '';
-        }
-    };
-
-    return (
-        <div className="space-y-4">
-            <div className={`relative flex flex-col items-center justify-center space-y-2 rounded-md border border-dashed p-4 w-full ${aspect === 'wide' ? 'h-24' : 'h-48'}`}>
-                {previewState ? (
-                    <>
-                        <img src={previewState} alt={`${label} preview`} className="max-h-full max-w-full object-contain"/>
-                        <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-7 w-7" onClick={handleDeleteImage}>
-                           <Trash2 className="h-4 w-4" />
-                        </Button>
-                    </>
-                ) : (
-                    <p className="text-sm text-muted-foreground">No {label.toLowerCase()} uploaded</p>
-                )}
-            </div>
-            <FormField control={form.control} name={fieldName} render={() => (
-                <FormItem>
-                    <FormControl>
-                        <div>
-                            <Input type="file" accept="image/*" className="hidden" ref={inputRef} onChange={handleImageChange} />
-                            <Button type="button" variant="outline" onClick={() => inputRef.current?.click()} className="w-full">
-                                <UploadCloud className="mr-2 h-4 w-4" /> Upload {label}
-                            </Button>
-                        </div>
-                    </FormControl>
-                     <FormDescription>{description}</FormDescription>
-                    <FormMessage />
-                </FormItem>
-            )} />
-        </div>
-    );
-};
 
 export default function SettingsPage() {
   const { config, saveConfig } = useBrandsoft();
   const { toast } = useToast();
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [headerPreview, setHeaderPreview] = useState<string | null>(null);
-  const [footerPreview, setFooterPreview] = useState<string | null>(null);
-  const [backgroundPreview, setBackgroundPreview] = useState<string | null>(null);
-  const [watermarkPreview, setWatermarkPreview] = useState<string | null>(null);
-
+  
   const logoInputRef = useRef<HTMLInputElement>(null);
   
   const form = useForm<SettingsFormData>({
@@ -133,16 +64,6 @@ export default function SettingsPage() {
       secondaryColor: '#D87093',
       font: 'Poppins',
       defaultCurrency: 'USD',
-      brandsoftFooter: true,
-      showCustomerAddress: true,
-      paymentDetails: '',
-      headerImage: '',
-      footerImage: '',
-      backgroundImage: '',
-      watermarkImage: '',
-      footerContent: '',
-      invoicePrefix: 'INV-',
-      invoiceStartNumber: 1,
     },
   });
   
@@ -155,22 +76,8 @@ export default function SettingsPage() {
             secondaryColor: config.brand.secondaryColor,
             font: config.brand.font,
             defaultCurrency: config.profile.defaultCurrency,
-            brandsoftFooter: config.brand.brandsoftFooter,
-            showCustomerAddress: config.brand.showCustomerAddress,
-            paymentDetails: config.profile.paymentDetails || '',
-            headerImage: config.brand.headerImage || '',
-            footerImage: config.brand.footerImage || '',
-            backgroundImage: config.brand.backgroundImage || '',
-            watermarkImage: config.brand.watermarkImage || '',
-            footerContent: config.brand.footerContent || '',
-            invoicePrefix: config.profile.invoicePrefix || 'INV-',
-            invoiceStartNumber: config.profile.invoiceStartNumber || 1,
         });
         setLogoPreview(config.brand.logo);
-        setHeaderPreview(config.brand.headerImage || null);
-        setFooterPreview(config.brand.footerImage || null);
-        setBackgroundPreview(config.brand.backgroundImage || null);
-        setWatermarkPreview(config.brand.watermarkImage || null);
     }
   }, [config, form]);
   
@@ -199,20 +106,10 @@ export default function SettingsPage() {
           primaryColor: data.primaryColor || '#9400D3',
           secondaryColor: data.secondaryColor || '#D87093',
           font: data.font || 'Poppins',
-          brandsoftFooter: data.brandsoftFooter,
-          showCustomerAddress: data.showCustomerAddress,
-          headerImage: data.headerImage || '',
-          footerImage: data.footerImage || '',
-          backgroundImage: data.backgroundImage || '',
-          watermarkImage: data.watermarkImage || '',
-          footerContent: data.footerContent || '',
         },
         profile: {
           ...config.profile,
           defaultCurrency: data.defaultCurrency,
-          paymentDetails: data.paymentDetails || '',
-          invoicePrefix: data.invoicePrefix,
-          invoiceStartNumber: data.invoiceStartNumber,
         },
       };
       saveConfig(newConfig);
@@ -239,11 +136,9 @@ export default function SettingsPage() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             <Tabs defaultValue="branding" className="w-full">
-                <TabsList className="grid w-full grid-cols-5">
+                <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="branding"><Paintbrush className="mr-2 h-4 w-4" />Branding</TabsTrigger>
                     <TabsTrigger value="general"><Cog className="mr-2 h-4 w-4" />General</TabsTrigger>
-                    <TabsTrigger value="payments"><CreditCard className="mr-2 h-4 w-4" />Payments</TabsTrigger>
-                    <TabsTrigger value="layout"><LayoutTemplate className="mr-2 h-4 w-4" />Layout</TabsTrigger>
                     <TabsTrigger value="options"><SlidersHorizontal className="mr-2 h-4 w-4" />Modules</TabsTrigger>
                 </TabsList>
                 
@@ -310,95 +205,6 @@ export default function SettingsPage() {
                     </Card>
                 </TabsContent>
                 
-                <TabsContent value="layout">
-                     <Card>
-                        <CardHeader>
-                            <CardTitle>Document & Layout</CardTitle>
-                            <CardDescription>Customize headers, footers, and content visibility.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            <FormField control={form.control} name="showCustomerAddress" render={({ field }) => (
-                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                                    <div className="space-y-0.5">
-                                        <FormLabel>Show Customer Address</FormLabel>
-                                        <FormDescription>Display the customer's billing address on invoices.</FormDescription>
-                                    </div>
-                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                </FormItem>
-                            )} />
-                             <Separator />
-                             <Tabs defaultValue="header" className="w-full">
-                                <TabsList className="grid w-full grid-cols-4">
-                                    <TabsTrigger value="header"><ImageIcon className="mr-2 h-4 w-4" />Header</TabsTrigger>
-                                    <TabsTrigger value="footer"><FileImage className="mr-2 h-4 w-4" />Footer</TabsTrigger>
-                                    <TabsTrigger value="background"><Layers className="mr-2 h-4 w-4" />Background</TabsTrigger>
-                                    <TabsTrigger value="watermark"><Stamp className="mr-2 h-4 w-4" />Watermark</TabsTrigger>
-                                </TabsList>
-                                <TabsContent value="header" className="pt-4">
-                                     <ImageUploader 
-                                        form={form}
-                                        fieldName="headerImage"
-                                        previewState={headerPreview}
-                                        setPreviewState={setHeaderPreview}
-                                        label="Header Image"
-                                        description="Recommended: 2480x70px PNG/JPG for A4 headers."
-                                        aspect='wide'
-                                     />
-                                </TabsContent>
-                                <TabsContent value="footer" className="pt-4">
-                                      <ImageUploader 
-                                        form={form}
-                                        fieldName="footerImage"
-                                        previewState={footerPreview}
-                                        setPreviewState={setFooterPreview}
-                                        label="Footer Image"
-                                        description="Recommended: 2480x70px PNG/JPG for A4 footers."
-                                        aspect='wide'
-                                     />
-                                </TabsContent>
-                                <TabsContent value="background" className="pt-4">
-                                     <ImageUploader 
-                                        form={form}
-                                        fieldName="backgroundImage"
-                                        previewState={backgroundPreview}
-                                        setPreviewState={setBackgroundPreview}
-                                        label="Background Image"
-                                        description="Recommended: A4 aspect ratio (e.g., 2480x3508px). Use a subtle design."
-                                        aspect='normal'
-                                     />
-                                </TabsContent>
-                                <TabsContent value="watermark" className="pt-4">
-                                     <ImageUploader 
-                                        form={form}
-                                        fieldName="watermarkImage"
-                                        previewState={watermarkPreview}
-                                        setPreviewState={setWatermarkPreview}
-                                        label="Watermark Image"
-                                        description="A semi-transparent PNG image works best."
-                                        aspect='normal'
-                                     />
-                                </TabsContent>
-                            </Tabs>
-                            <Separator />
-                            <FormField control={form.control} name="footerContent" render={({ field }) => (
-                                <FormItem><FormLabel>Custom Footer Text</FormLabel>
-                                <FormControl><Textarea placeholder="e.g., Thank you for your business!" {...field} rows={3} /></FormControl>
-                                <FormDescription>This text appears above the footer image or at the bottom of the page.</FormDescription>
-                                <FormMessage /></FormItem>
-                            )} />
-                            <Separator />
-                            <FormField control={form.control} name="brandsoftFooter" render={({ field }) => (
-                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                                    <div className="space-y-0.5">
-                                        <FormLabel>Enable BrandSoft Footer</FormLabel>
-                                        <FormDescription>Show "Created by BrandSoft" on your documents. This appears below all other footer content.</FormDescription>
-                                    </div>
-                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                                </FormItem>
-                            )} />
-                        </CardContent>
-                    </Card>
-                </TabsContent>
 
                 <TabsContent value="general">
                     <Card>
@@ -417,44 +223,8 @@ export default function SettingsPage() {
                             </div>
                         </CardContent>
                     </Card>
-                     <Card className="mt-6">
-                        <CardHeader>
-                            <CardTitle>Document Numbering</CardTitle>
-                            <CardDescription>Set prefixes and starting numbers for your documents.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <FormField control={form.control} name="invoicePrefix" render={({ field }) => (
-                                    <FormItem><FormLabel>Invoice Prefix</FormLabel>
-                                    <FormControl><Input placeholder="INV-" {...field} /></FormControl>
-                                    <FormMessage /></FormItem>
-                                )} />
-                                    <FormField control={form.control} name="invoiceStartNumber" render={({ field }) => (
-                                    <FormItem><FormLabel>Next Invoice Number</FormLabel>
-                                    <FormControl><Input type="number" placeholder="101" {...field} /></FormControl>
-                                    <FormMessage /></FormItem>
-                                )} />
-                            </div>
-                        </CardContent>
-                    </Card>
                 </TabsContent>
                 
-                <TabsContent value="payments">
-                     <Card>
-                        <CardHeader>
-                            <CardTitle>Payment Settings</CardTitle>
-                            <CardDescription>Configure how you get paid.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <FormField control={form.control} name="paymentDetails" render={({ field }) => (
-                                <FormItem><FormLabel>Payment Instructions</FormLabel>
-                                <FormControl><Textarea placeholder="e.g., Bank Name, Account Number, PayPal email, etc." {...field} rows={4} /></FormControl>
-                                <FormDescription>This will appear on your invoices.</FormDescription>
-                                <FormMessage /></FormItem>
-                            )} />
-                        </CardContent>
-                    </Card>
-                </TabsContent>
 
                 <TabsContent value="options">
                      <Card>
@@ -478,4 +248,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
