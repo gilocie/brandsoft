@@ -12,7 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
-import { UploadCloud, Paintbrush, Layers, Stamp, Trash2, ArrowLeft, Loader2 } from 'lucide-react';
+import { UploadCloud, Paintbrush, Layers, Stamp, Trash2, ArrowLeft, Loader2, Image as ImageIcon, FileImage } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Link from 'next/link';
@@ -124,16 +124,18 @@ export default function DocumentDesignPage() {
         let doc: Invoice | Quotation | null = null;
         let design: Partial<DesignSettings> = {};
         const brand = config.brand || {};
-    
-        if (isNew) {
-            const newDocumentFormData = getFormData();
-            if (newDocumentFormData) {
-                 const docTypeKey = documentType === 'invoice' ? 'invoiceId' : 'quotationId';
-                doc = {
-                    ...(newDocumentFormData as any),
-                    [docTypeKey]: 'PREVIEW',
-                };
-            }
+        
+        let newDocumentFormData: any = null;
+        if(isNew) {
+            newDocumentFormData = getFormData();
+        }
+
+        if (isNew && newDocumentFormData) {
+            const docTypeKey = documentType === 'invoice' ? 'invoiceId' : 'quotationId';
+            doc = {
+                ...(newDocumentFormData as any),
+                [docTypeKey]: 'PREVIEW',
+            };
         } else if (documentId) {
             if (documentType === 'invoice') {
                 doc = config.invoices.find(inv => inv.invoiceId === documentId) || null;
@@ -141,7 +143,7 @@ export default function DocumentDesignPage() {
                 doc = config.quotations.find(q => q.quotationId === documentId) || null;
             }
         }
-
+        
         if (doc) {
              if (JSON.stringify(document) !== JSON.stringify(doc)) {
                 setDocument(doc);
@@ -149,7 +151,7 @@ export default function DocumentDesignPage() {
             design = (doc as any).design || {};
         } else {
              const defaultTemplateKey = documentType === 'invoice' ? 'defaultInvoiceTemplate' : documentType === 'quotation' ? 'defaultQuotationTemplate' : null;
-            if (defaultTemplateKey && typeof config.profile[defaultTemplateKey] === 'object') {
+            if (defaultTemplateKey && typeof config.profile[defaultTemplateKey] === 'object' && config.profile[defaultTemplateKey] !== null) {
                 design = config.profile[defaultTemplateKey] || {};
             }
         }
@@ -229,7 +231,6 @@ export default function DocumentDesignPage() {
 
     const livePreviewConfig = useMemo(() => {
         if (!config) return null;
-        // Create a deep copy to avoid mutations
         const newConfig = JSON.parse(JSON.stringify(config)) as BrandsoftConfig;
         
         const currentDesign: DesignSettings = watchedValues;
@@ -254,27 +255,34 @@ export default function DocumentDesignPage() {
             return config.customers.find(c => c.name === (document as any).customer) || null;
         }
         
-        // For new documents that don't have a customer yet in the doc object
         const formData = getFormData();
         if (isNew && formData?.customerId) {
              return config.customers.find(c => c.id === formData.customerId) || null;
         }
 
-        return null;
+        return config.customers[0] || null; // Fallback to first customer
     }, [config, document, isNew, getFormData]);
 
     const finalDocumentData = useMemo(() => {
         if (document) return document;
-        if (isNew) {
-            const formData = getFormData();
-            if (formData) {
-                return {
-                    ...(formData as any),
-                    [documentType === 'invoice' ? 'invoiceId' : 'quotationId']: 'PREVIEW',
-                };
-            }
+        
+        const formData = getFormData();
+        if (isNew && formData && Object.keys(formData).length > 0) {
+            return {
+                ...(formData as any),
+                [documentType === 'invoice' ? 'invoiceId' : 'quotationId']: 'PREVIEW',
+            };
         }
-        return null;
+
+        // Create a minimal default document for preview
+        const defaultDoc = {
+            date: new Date(),
+            [documentType === 'invoice' ? 'invoiceId' : 'quotationId']: 'PREVIEW',
+            [documentType === 'invoice' ? 'dueDate' : 'validUntil']: new Date(new Date().setDate(new Date().getDate() + 30)),
+            lineItems: [{description: 'Sample Item', quantity: 1, price: 100}],
+        };
+
+        return defaultDoc as Invoice | Quotation;
     }, [document, isNew, getFormData, documentType]);
 
 
@@ -311,6 +319,16 @@ export default function DocumentDesignPage() {
                                             <FormMessage />
                                         </FormItem>
                                     )}/>
+                                    <Separator />
+                                     <ImageUploader 
+                                        form={form}
+                                        fieldName="backgroundImage"
+                                        previewState={backgroundPreview}
+                                        setPreviewState={setBackgroundPreview}
+                                        label="Background Image"
+                                        description="A4 aspect ratio recommended. Use a subtle design."
+                                        aspect='normal'
+                                     />
                                 </CardContent>
                             </Card>
                             <Card>
@@ -319,20 +337,16 @@ export default function DocumentDesignPage() {
                                 </CardHeader>
                                 <CardContent>
                                         <Tabs defaultValue="header" className="w-full">
-                                        <TabsList className="grid w-full grid-cols-4">
-                                            <TabsTrigger value="header">Header</TabsTrigger>
-                                            <TabsTrigger value="footer">Footer</TabsTrigger>
-                                            <TabsTrigger value="background">BG</TabsTrigger>
-                                            <TabsTrigger value="watermark">Watermark</TabsTrigger>
+                                        <TabsList className="grid w-full grid-cols-3">
+                                            <TabsTrigger value="header"><ImageIcon className="h-4 w-4 mr-1"/>Header</TabsTrigger>
+                                            <TabsTrigger value="footer"><FileImage className="h-4 w-4 mr-1"/>Footer</TabsTrigger>
+                                            <TabsTrigger value="watermark"><Stamp className="h-4 w-4 mr-1"/>Watermark</TabsTrigger>
                                         </TabsList>
                                         <TabsContent value="header" className="pt-6">
                                             <ImageUploader form={form} fieldName="headerImage" previewState={headerPreview} setPreviewState={setHeaderPreview} label="Header" description="2480px wide recommended." aspect='wide' />
                                         </TabsContent>
                                         <TabsContent value="footer" className="pt-6">
                                             <ImageUploader form={form} fieldName="footerImage" previewState={footerPreview} setPreviewState={setFooterPreview} label="Footer" description="2480px wide recommended." aspect='wide' />
-                                        </TabsContent>
-                                        <TabsContent value="background" className="pt-6">
-                                            <ImageUploader form={form} fieldName="backgroundImage" previewState={backgroundPreview} setPreviewState={setBackgroundPreview} label="Background" description="A4 aspect ratio recommended." aspect='normal' />
                                         </TabsContent>
                                         <TabsContent value="watermark" className="pt-6">
                                             <ImageUploader form={form} fieldName="watermarkImage" previewState={watermarkPreview} setPreviewState={setWatermarkPreview} label="Watermark" description="Semi-transparent PNG works best." aspect='normal' />
@@ -385,3 +399,5 @@ export default function DocumentDesignPage() {
         </div>
     );
 }
+
+    
