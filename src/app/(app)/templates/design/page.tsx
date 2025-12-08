@@ -190,7 +190,7 @@ function DocumentDesignPage() {
         
         form.reset(initialValues);
         setIsLoading(false);
-    }, [config, documentId, documentType, isNew, getFormData, form, getDefaultTemplate]);
+    }, [config, documentId, documentType, isNew, getFormData, getDefaultTemplate]);
 
     const onSubmit = (data: DesignSettingsFormData) => {
         if (!config || !documentType) return;
