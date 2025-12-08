@@ -278,7 +278,7 @@ export function InvoicePreview({
                             </div>
                         </section>
 
-                        <section className="mb-10">
+                        <section className="mb-4">
                             <Table>
                                 <TableHeader>
                                     <TableRow className="border-b-2 border-gray-800 hover:bg-transparent">
@@ -313,7 +313,7 @@ export function InvoicePreview({
                         </section>
                         
                         <div className="mt-auto">
-                            <section className="flex flex-row gap-12 items-start mb-4">
+                           <div className="flex flex-row gap-12 items-start">
                                 <div className="flex-1">
                                     <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Payment Details</h3>
                                     {config.profile.paymentDetails ? (
@@ -323,17 +323,9 @@ export function InvoicePreview({
                                     ) : (
                                         <p className="text-xs text-gray-400 italic">No payment details provided.</p>
                                     )}
-                                    
-                                    {invoiceData.notes && (
-                                        <div className="mt-6">
-                                            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Notes</h3>
-                                            <p className="text-xs text-gray-600">{invoiceData.notes}</p>
-                                        </div>
-                                    )}
                                 </div>
-
-                                <div className="w-[40%] min-w-[260px] space-y-2">
-                                    <div className="flex justify-between items-center text-sm border-b border-gray-100 pb-2">
+                                <div className="w-[40%] min-w-[260px] space-y-2 text-sm">
+                                    <div className="flex justify-between items-center border-b border-gray-100 pb-2">
                                         <span className="text-gray-600">Subtotal</span>
                                         <span className="font-semibold">{formatCurrency(subtotal)}</span>
                                     </div>
@@ -355,13 +347,24 @@ export function InvoicePreview({
                                             <span className="font-semibold">{formatCurrency(shippingAmount)}</span>
                                         </div>
                                     )}
-                                    
-                                    <div className="mt-4 flex items-center justify-between p-3 rounded-sm" style={{backgroundColor: accentColor}}>
+                                </div>
+                            </div>
+                             <div className="flex flex-row gap-12 items-start mt-4">
+                                <div className="flex-1">
+                                     {invoiceData.notes && (
+                                        <div>
+                                            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Notes</h3>
+                                            <p className="text-xs text-gray-600">{invoiceData.notes}</p>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="w-[40%] min-w-[260px]">
+                                     <div className="mt-4 flex items-center justify-between p-3 rounded-sm" style={{backgroundColor: accentColor}}>
                                         <span className="font-bold text-white text-lg">Total</span>
                                         <span className="font-bold text-white text-xl">{formatCurrency(total)}</span>
                                     </div>
                                 </div>
-                            </section>
+                            </div>
                         </div>
                     </main>
                 </div>
