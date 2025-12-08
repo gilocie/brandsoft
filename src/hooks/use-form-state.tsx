@@ -2,6 +2,7 @@
 'use client';
 
 import { create } from 'zustand';
+import { useCallback } from 'react';
 
 type FormState = {
   formData: any;
@@ -16,19 +17,25 @@ const useFormStateStore = create<FormState>((set, get) => ({
 }));
 
 export function useFormState() {
-  const { setFormData, getFormData } = useFormStateStore();
+  const { setFormData: setStoreData, getFormData: getStoreData } = useFormStateStore();
 
-  const handleFormChange = (data: any) => {
+  const handleFormChange = useCallback((data: any) => {
     sessionStorage.setItem('form-data', JSON.stringify(data));
-  };
+    setStoreData(data);
+  }, [setStoreData]);
   
-  const getStoredFormData = () => {
+  const getStoredFormData = useCallback(() => {
     if (typeof window !== 'undefined') {
-        const storedData = sessionStorage.getItem('form-data');
-        return storedData ? JSON.parse(storedData) : null;
+        try {
+            const storedData = sessionStorage.getItem('form-data');
+            return storedData ? JSON.parse(storedData) : getStoreData();
+        } catch (e) {
+            console.error("Could not parse form data from session storage", e);
+            return getStoreData();
+        }
     }
-    return null;
-  }
+    return getStoreData();
+  }, [getStoreData]);
 
   // A bit of a hack to get around passing reactive data via router
   // In a real app, this would be handled by a proper state management solution like Redux or Jotai with a shared router instance.

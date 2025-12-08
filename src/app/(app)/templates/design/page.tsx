@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm, useWatch } from 'react-hook-form';
@@ -129,16 +130,20 @@ function DocumentDesignPage() {
         },
     });
 
-    const watchedValues = form.watch();
+    const backgroundColor = useWatch({ control: form.control, name: 'backgroundColor' });
+    const headerImage = useWatch({ control: form.control, name: 'headerImage' });
+    const footerImage = useWatch({ control: form.control, name: 'footerImage' });
+    const backgroundImage = useWatch({ control: form.control, name: 'backgroundImage' });
+    const watermarkImage = useWatch({ control: form.control, name: 'watermarkImage' });
 
     // Current design settings derived from watched form values
     const currentDesignSettings = useMemo((): DesignSettings => ({
-        backgroundColor: watchedValues.backgroundColor || '#FFFFFF',
-        headerImage: watchedValues.headerImage || '',
-        footerImage: watchedValues.footerImage || '',
-        backgroundImage: watchedValues.backgroundImage || '',
-        watermarkImage: watchedValues.watermarkImage || '',
-    }), [watchedValues.backgroundColor, watchedValues.headerImage, watchedValues.footerImage, watchedValues.backgroundImage, watchedValues.watermarkImage]);
+        backgroundColor: backgroundColor || '#FFFFFF',
+        headerImage: headerImage || '',
+        footerImage: footerImage || '',
+        backgroundImage: backgroundImage || '',
+        watermarkImage: watermarkImage || '',
+    }), [backgroundColor, headerImage, footerImage, backgroundImage, watermarkImage]);
 
     // Get default template based on document type
     const getDefaultTemplate = useCallback((type: 'invoice' | 'quotation'): Partial<DesignSettings> => {
@@ -149,7 +154,7 @@ function DocumentDesignPage() {
         } else {
             return config.profile.defaultQuotationTemplate || {};
         }
-    }, [config?.profile]);
+    }, [config?.profile.defaultInvoiceTemplate, config?.profile.defaultQuotationTemplate]);
 
     useEffect(() => {
         if (!config || !documentType) return;
@@ -184,7 +189,7 @@ function DocumentDesignPage() {
         
         form.reset(initialValues);
         setIsLoading(false);
-    }, [config, documentId, documentType, isNew, getFormData, form, getDefaultTemplate]);
+    }, [config, documentId, documentType, isNew, getFormData, getDefaultTemplate]);
 
     const onSubmit = (data: DesignSettingsFormData) => {
         if (!config || !documentType) return;
@@ -198,7 +203,6 @@ function DocumentDesignPage() {
         };
 
         if (isNew) {
-            // Save as default template for the specific document type
             const templateKey = documentType === 'invoice' ? 'defaultInvoiceTemplate' : 'defaultQuotationTemplate';
             saveConfig({
                 ...config,
@@ -215,7 +219,6 @@ function DocumentDesignPage() {
             router.push(returnUrl);
 
         } else if (document && documentId) {
-            // Save design to specific document
             if (documentType === 'invoice') {
                 updateInvoice(documentId, { design: newDesignSettings });
             } else if (documentType === 'quotation') {
@@ -228,7 +231,6 @@ function DocumentDesignPage() {
             const returnUrl = `/${documentType}s/${documentId}/edit`;
             router.push(returnUrl);
         } else {
-            // Fallback: save as default template
             const templateKey = documentType === 'invoice' ? 'defaultInvoiceTemplate' : 'defaultQuotationTemplate';
             saveConfig({
                 ...config,
@@ -247,7 +249,7 @@ function DocumentDesignPage() {
     // Build final document data for preview with current design settings
     const finalDocumentData = useMemo(() => {
         const formData = getFormData();
-    
+
         if (document) {
             return { ...document, design: currentDesignSettings };
         }
