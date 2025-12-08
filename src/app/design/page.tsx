@@ -219,7 +219,7 @@ function DocumentDesignPage() {
     const getDefaultTemplate = useCallback((type: 'invoice' | 'quotation'): Partial<DesignSettings> => {
         if (!config?.profile) return {};
         return type === 'invoice' ? config.profile.defaultInvoiceTemplate || {} : config.profile.defaultQuotationTemplate || {};
-    }, [config?.profile?.defaultInvoiceTemplate, config?.profile?.defaultQuotationTemplate]);
+    }, [config?.profile]);
 
     const stableGetFormData = useCallback(getFormData, []);
 
