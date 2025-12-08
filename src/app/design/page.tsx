@@ -27,7 +27,9 @@ const designSettingsSchema = z.object({
   backgroundColor: z.string().optional(),
   textColor: z.string().optional(),
   headerImage: z.string().optional(),
-  footerImage: z.string().optional(),
+  footerImage: z
+    .string()
+    .optional(),
   backgroundImage: z.string().optional(),
   watermarkImage: z.string().optional(),
 });
@@ -116,88 +118,88 @@ function SettingsPanel({ form, documentType, documentId, isNew, onSubmit, return
 }) {
   return (
     <div className="h-full overflow-y-auto">
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
-          <Card className="border-0 shadow-none rounded-none flex-1 flex flex-col">
-            <CardHeader className="flex flex-row items-start justify-between p-4">
-                <div>
-                    <CardTitle className="capitalize">Customize {documentType || 'Design'}</CardTitle>
-                    <CardDescription>
-                        {isNew ? `Customizing default ${documentType} design.` : `Design for ${documentId}`}
-                    </CardDescription>
-                </div>
-                {onClose && (
-                    <Button size="icon" onClick={onClose} className="shrink-0 lg:hidden">
-                        <X className="h-4 w-4" />
-                    </Button>
-                )}
-            </CardHeader>
-            <CardContent className="flex-grow p-4 space-y-6 overflow-y-auto">
-              <Card>
-                  <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-base"><Paintbrush className="h-4 w-4"/> Appearance</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                          <FormField control={form.control} name="backgroundColor" render={({ field }) => (
-                              <FormItem>
-                                  <FormLabel className="text-xs">Page Background</FormLabel>
-                                  <FormControl>
-                                      <div className="flex gap-2">
-                                          <Input type="color" {...field} value={field.value || '#FFFFFF'} className="h-10 w-16 p-1 cursor-pointer" />
-                                      </div>
-                                  </FormControl>
-                              </FormItem>
-                          )} />
-                          <FormField control={form.control} name="textColor" render={({ field }) => (
-                              <FormItem>
-                                  <FormLabel className="text-xs">Text Color</FormLabel>
-                                  <FormControl>
-                                      <div className="flex gap-2">
-                                          <Input type="color" {...field} value={field.value || '#000000'} className="h-10 w-16 p-1 cursor-pointer" />
-                                      </div>
-                                  </FormControl>
-                              </FormItem>
-                          )} />
-                      </div>
-                      <Separator />
-                      <ImageUploader form={form} fieldName="backgroundImage" label="Background Image" description="A4 aspect ratio recommended." aspect='normal' />
-                  </CardContent>
-              </Card>
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+                <Card className="border-0 shadow-none rounded-none flex-1 flex flex-col">
+                    <CardHeader className="flex flex-row items-start justify-between p-4">
+                        <div>
+                            <CardTitle className="capitalize">Customize {documentType || 'Design'}</CardTitle>
+                            <CardDescription>
+                                {isNew ? `Customizing default ${documentType} design.` : `Design for ${documentId}`}
+                            </CardDescription>
+                        </div>
+                        {onClose && (
+                            <Button size="icon" onClick={onClose} className="shrink-0">
+                                <X className="h-4 w-4" />
+                            </Button>
+                        )}
+                    </CardHeader>
+                    <CardContent className="flex-grow p-4 space-y-6 overflow-y-auto">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-base"><Paintbrush className="h-4 w-4"/> Appearance</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <FormField control={form.control} name="backgroundColor" render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className="text-xs">Page Background</FormLabel>
+                                            <FormControl>
+                                                <div className="flex gap-2">
+                                                    <Input type="color" {...field} value={field.value || '#FFFFFF'} className="h-10 w-16 p-1 cursor-pointer" />
+                                                </div>
+                                            </FormControl>
+                                        </FormItem>
+                                    )} />
+                                    <FormField control={form.control} name="textColor" render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className="text-xs">Text Color</FormLabel>
+                                            <FormControl>
+                                                <div className="flex gap-2">
+                                                    <Input type="color" {...field} value={field.value || '#000000'} className="h-10 w-16 p-1 cursor-pointer" />
+                                                </div>
+                                            </FormControl>
+                                        </FormItem>
+                                    )} />
+                                </div>
+                                <Separator />
+                                <ImageUploader form={form} fieldName="backgroundImage" label="Background Image" description="A4 aspect ratio recommended." aspect='normal' />
+                            </CardContent>
+                        </Card>
 
-              <Card>
-                  <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-base"><Layers className="h-4 w-4"/> Layout Images</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                      <Tabs defaultValue="header" className="w-full">
-                          <TabsList className="grid w-full grid-cols-3">
-                              <TabsTrigger value="header">Header</TabsTrigger>
-                              <TabsTrigger value="footer">Footer</TabsTrigger>
-                              <TabsTrigger value="watermark">Watermark</TabsTrigger>
-                          </TabsList>
-                          <TabsContent value="header" className="pt-4">
-                              <ImageUploader form={form} fieldName="headerImage" label="Header" description="Full width top banner." aspect='wide' />
-                          </TabsContent>
-                          <TabsContent value="footer" className="pt-4">
-                              <ImageUploader form={form} fieldName="footerImage" label="Footer" description="Full width bottom banner." aspect='wide' />
-                          </TabsContent>
-                          <TabsContent value="watermark" className="pt-4">
-                              <ImageUploader form={form} fieldName="watermarkImage" label="Watermark" description="Center page image." aspect='normal' />
-                          </TabsContent>
-                      </Tabs>
-                  </CardContent>
-              </Card>
-            </CardContent>
-            <CardFooter className="p-4 border-t bg-background flex-shrink-0 flex gap-2 sticky bottom-0">
-                <Button type="button" variant="outline" asChild className="flex-1">
-                    <Link href={returnUrl}><ArrowLeft className="mr-2 h-4 w-4"/> Back</Link>
-                </Button>
-                <Button type="submit" className="flex-1">Save Design</Button>
-            </CardFooter>
-          </Card>
-        </form>
-      </Form>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-base"><Layers className="h-4 w-4"/> Layout Images</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <Tabs defaultValue="header" className="w-full">
+                                    <TabsList className="grid w-full grid-cols-3">
+                                        <TabsTrigger value="header">Header</TabsTrigger>
+                                        <TabsTrigger value="footer">Footer</TabsTrigger>
+                                        <TabsTrigger value="watermark">Watermark</TabsTrigger>
+                                    </TabsList>
+                                    <TabsContent value="header" className="pt-4">
+                                        <ImageUploader form={form} fieldName="headerImage" label="Header" description="Full width top banner." aspect='wide' />
+                                    </TabsContent>
+                                    <TabsContent value="footer" className="pt-4">
+                                        <ImageUploader form={form} fieldName="footerImage" label="Footer" description="Full width bottom banner." aspect='wide' />
+                                    </TabsContent>
+                                    <TabsContent value="watermark" className="pt-4">
+                                        <ImageUploader form={form} fieldName="watermarkImage" label="Watermark" description="Center page image." aspect='normal' />
+                                    </TabsContent>
+                                </Tabs>
+                            </CardContent>
+                        </Card>
+                    </CardContent>
+                    <CardFooter className="p-4 border-t bg-background flex-shrink-0 flex gap-2 sticky bottom-0">
+                        <Button type="button" variant="outline" asChild className="flex-1">
+                            <Link href={returnUrl}><ArrowLeft className="mr-2 h-4 w-4"/> Back</Link>
+                        </Button>
+                        <Button type="submit" className="flex-1">Save Design</Button>
+                    </CardFooter>
+                </Card>
+            </form>
+        </Form>
     </div>
   );
 }
@@ -421,4 +423,3 @@ export default dynamic(() => Promise.resolve(DocumentDesignPage), {
     ssr: false,
     loading: () => <div className="w-full h-screen flex items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>
 });
-
