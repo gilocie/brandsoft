@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useBrandsoft, type BrandsoftConfig, type DesignSettings, type Quotation, type Invoice } from '@/hooks/use-brandsoft.tsx';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
@@ -21,7 +21,6 @@ import { InvoicePreview } from '@/components/invoice-preview';
 import { QuotationPreview } from '@/components/quotation-preview';
 import dynamic from 'next/dynamic';
 import { cn } from '@/lib/utils';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from '@/components/ui/drawer';
 
 const designSettingsSchema = z.object({
   backgroundColor: z.string().optional(),
@@ -370,7 +369,7 @@ function DocumentDesignPage() {
                     <div className="flex-1 text-center font-semibold capitalize">{documentType} Design</div>
                 </header>
                 <main className="flex-1 w-full bg-slate-100 overflow-y-auto p-8 flex justify-center items-start">
-                     <div className="flex-shrink-0 shadow-2xl transform origin-top md:scale-[0.75] xl:scale-[0.85] 2xl:scale-100 scale-[0.55]">
+                     <div className="flex-shrink-0 shadow-2xl transform origin-top md:scale-[0.55] xl:scale-[0.85] 2xl:scale-100 scale-[0.55]">
                         {hasContentForPreview ? (
                             <>
                                 {documentType === 'invoice' && (
@@ -415,3 +414,5 @@ export default dynamic(() => Promise.resolve(DocumentDesignPage), {
     ssr: false,
     loading: () => <div className="w-full h-screen flex items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>
 });
+
+    
