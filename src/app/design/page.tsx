@@ -342,7 +342,7 @@ function DocumentDesignPage() {
                 <SettingsPanel form={form} documentType={documentType} documentId={documentId} isNew={isNew} onSubmit={onSubmit} returnUrl={returnUrl} />
             </aside>
 
-            <main className={cn(
+            <div className={cn(
                 "flex-1 transition-all duration-300 h-screen flex flex-col",
                 isSidebarOpen ? "sm:ml-80" : "ml-0"
             )}>
@@ -352,44 +352,46 @@ function DocumentDesignPage() {
                     </Button>
                     <div className="flex-1 text-center font-semibold">{documentType} Design</div>
                 </header>
-                <div className="flex-1 w-full bg-slate-100 overflow-y-auto flex justify-center items-start p-8">
-                     <div className="flex-shrink-0 shadow-2xl transform origin-top scale-[0.55] md:scale-[0.75] xl:scale-[0.85]">
-                        {hasContentForPreview ? (
-                            <>
-                                {documentType === 'invoice' && (
-                                    <InvoicePreview
-                                        key={designKey}
-                                        config={config}
-                                        customer={previewCustomer}
-                                        invoiceData={finalDocumentData as Invoice}
-                                        invoiceId={(finalDocumentData as Invoice).invoiceId}
-                                        designOverride={currentDesignSettings}
-                                        forPdf={true}
-                                    />
-                                )}
-                                {documentType === 'quotation' && (
-                                    <QuotationPreview
-                                        key={designKey}
-                                        config={config}
-                                        customer={previewCustomer}
-                                        quotationData={finalDocumentData as Quotation}
-                                        quotationId={(finalDocumentData as Quotation).quotationId}
-                                        designOverride={currentDesignSettings}
-                                        forPdf={true}
-                                    />
-                                )}
-                            </>
-                        ) : (
-                            <div className="w-[210mm] h-[297mm] bg-white shadow-lg flex items-center justify-center border flex-shrink-0">
-                                <div className="text-center p-8">
-                                    <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
-                                    <h3 className="text-xl font-semibold mb-2">Loading Preview...</h3>
+                <main className="flex-1 w-full bg-slate-100 overflow-y-auto p-8">
+                     <div className="flex justify-center items-start">
+                        <div className="flex-shrink-0 shadow-2xl transform origin-top md:scale-[0.75] xl:scale-[0.85] scale-[0.55]">
+                            {hasContentForPreview ? (
+                                <>
+                                    {documentType === 'invoice' && (
+                                        <InvoicePreview
+                                            key={designKey}
+                                            config={config}
+                                            customer={previewCustomer}
+                                            invoiceData={finalDocumentData as Invoice}
+                                            invoiceId={(finalDocumentData as Invoice).invoiceId}
+                                            designOverride={currentDesignSettings}
+                                            forPdf={true}
+                                        />
+                                    )}
+                                    {documentType === 'quotation' && (
+                                        <QuotationPreview
+                                            key={designKey}
+                                            config={config}
+                                            customer={previewCustomer}
+                                            quotationData={finalDocumentData as Quotation}
+                                            quotationId={(finalDocumentData as Quotation).quotationId}
+                                            designOverride={currentDesignSettings}
+                                            forPdf={true}
+                                        />
+                                    )}
+                                </>
+                            ) : (
+                                <div className="w-[210mm] h-[297mm] bg-white shadow-lg flex items-center justify-center border flex-shrink-0">
+                                    <div className="text-center p-8">
+                                        <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
+                                        <h3 className="text-xl font-semibold mb-2">Loading Preview...</h3>
+                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
-                </div>
-            </main>
+                </main>
+            </div>
         </div>
     );
 }
