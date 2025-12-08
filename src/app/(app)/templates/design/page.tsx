@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -147,6 +148,19 @@ export default function DocumentDesignPage() {
                 setFooterPreview(design.footerImage || brand.footerImage || null);
                 setBackgroundPreview(design.backgroundImage || brand.backgroundImage || null);
                 setWatermarkPreview(design.watermarkImage || brand.watermarkImage || null);
+            } else {
+                 const brand = config.brand || {};
+                 form.reset({
+                    backgroundColor: brand.backgroundColor || '#FFFFFF',
+                    headerImage: brand.headerImage || '',
+                    footerImage: brand.footerImage || '',
+                    backgroundImage: brand.backgroundImage || '',
+                    watermarkImage: brand.watermarkImage || '',
+                });
+                setHeaderPreview(brand.headerImage || null);
+                setFooterPreview(brand.footerImage || null);
+                setBackgroundPreview(brand.backgroundImage || null);
+                setWatermarkPreview(brand.watermarkImage || null);
             }
             setIsLoading(false);
         }
@@ -215,18 +229,8 @@ export default function DocumentDesignPage() {
     if (isLoading) {
         return <div className="flex items-center justify-center h-full"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
     }
-
-    if (!document) {
-        return (
-             <div className="flex flex-col items-center justify-center text-center h-full">
-                <h1 className="text-2xl font-bold">Document Not Found</h1>
-                <p className="text-muted-foreground">The requested document could not be found, or required data is missing.</p>
-                <Button asChild className="mt-4"><Link href="/dashboard">Return to Dashboard</Link></Button>
-            </div>
-        )
-    }
     
-    const returnUrl = isNew ? `/${documentType}s/new` : `/${documentType}s/${documentId}/edit`;
+    const returnUrl = isNew ? `/${documentType}s/new` : (documentId ? `/${documentType}s/${documentId}/edit` : `/${documentType}s`);
 
 
     return (
@@ -236,7 +240,7 @@ export default function DocumentDesignPage() {
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
                             <div className="p-4 border-b">
-                                 <h1 className="text-lg font-semibold font-headline capitalize">Customize {documentType}</h1>
+                                 <h1 className="text-lg font-semibold font-headline capitalize">Customize {documentType || 'Design'}</h1>
                                 <p className="text-sm text-muted-foreground">
                                    {isNew ? "Customizing default design." : `Design for ${documentId}`}
                                 </p>
@@ -296,21 +300,29 @@ export default function DocumentDesignPage() {
                     </Form>
                 </div>
                 <div className="lg:col-span-2 flex items-center justify-center h-full overflow-y-auto p-8 bg-muted/40">
-                     {documentType === 'invoice' && (
-                        <InvoicePreview
-                            config={livePreviewConfig}
-                            customer={previewCustomer}
-                            invoiceData={document as Invoice}
-                            invoiceId={documentId}
-                        />
-                    )}
-                    {documentType === 'quotation' && (
-                        <QuotationPreview
-                            config={livePreviewConfig}
-                            customer={previewCustomer}
-                            quotationData={document as Quotation}
-                            quotationId={documentId}
-                        />
+                     {document ? (
+                        <>
+                           {documentType === 'invoice' && (
+                                <InvoicePreview
+                                    config={livePreviewConfig}
+                                    customer={previewCustomer}
+                                    invoiceData={document as Invoice}
+                                    invoiceId={documentId}
+                                />
+                            )}
+                            {documentType === 'quotation' && (
+                                <QuotationPreview
+                                    config={livePreviewConfig}
+                                    customer={previewCustomer}
+                                    quotationData={document as Quotation}
+                                    quotationId={documentId}
+                                />
+                            )}
+                        </>
+                    ) : (
+                        <div className="w-full max-w-[8.5in] mx-auto bg-white shadow-lg aspect-[8.5/11] flex items-center justify-center border">
+                           <p className="text-muted-foreground">Select a document to preview its design.</p>
+                        </div>
                     )}
                 </div>
             </div>
