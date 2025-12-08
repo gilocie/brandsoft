@@ -323,9 +323,9 @@ function DocumentDesignPage() {
                 <SettingsPanel form={form} documentType={documentType} documentId={documentId} isNew={isNew} onSubmit={onSubmit} returnUrl={returnUrl} />
             </div>
             
-            <div className="relative w-full h-full overflow-auto flex justify-center p-4 sm:p-6 lg:p-8">
+            <div className="relative w-full h-full bg-slate-100 overflow-auto flex justify-center p-8">
                 {hasContentForPreview ? (
-                    <div className="shadow-2xl w-full max-w-[210mm] flex-shrink-0">
+                    <div className="shadow-2xl flex-shrink-0">
                         {documentType === 'invoice' && (
                             <InvoicePreview
                                 key={designKey}
