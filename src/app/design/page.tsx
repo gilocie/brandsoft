@@ -90,7 +90,7 @@ const ImageUploader = ({
                         </Button>
                     </>
                 ) : (
-                    <p className="text-sm text-muted-foreground">No {label.toLowerCase()} uploaded</p>
+                    <p className="text-sm text-muted-foreground">No ${label.toLowerCase()} uploaded</p>
                 )}
             </div>
             <FormField control={form.control} name={fieldName} render={() => (
