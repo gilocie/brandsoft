@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -20,6 +19,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useFormState } from '@/hooks/use-form-state';
 import { InvoicePreview } from '@/components/invoice-preview';
 import { QuotationPreview } from '@/components/quotation-preview';
+import dynamic from 'next/dynamic';
 
 const designSettingsSchema = z.object({
   backgroundColor: z.string().optional(),
@@ -88,7 +88,7 @@ const ImageUploader = ({ form, fieldName, previewState, setPreviewState, label, 
 };
 
 
-export default function DocumentDesignPage() {
+function DocumentDesignPage() {
     const { config, updateInvoice, updateQuotation, saveConfig } = useBrandsoft();
     const { getFormData } = useFormState();
     const { toast } = useToast();
@@ -231,12 +231,14 @@ export default function DocumentDesignPage() {
 
     const livePreviewConfig = useMemo(() => {
         if (!config) return null;
-        const newConfig = JSON.parse(JSON.stringify(config)) as BrandsoftConfig;
+        const newConfig = JSON.parse(JSON.stringify(config));
         
         const currentDesign: DesignSettings = watchedValues;
         
+        // This is key: we create a new brand object that is a merge
+        // of the original brand settings and the current form values.
         newConfig.brand = {
-            ...newConfig.brand,
+            ...config.brand,
             ...currentDesign
         };
 
@@ -251,7 +253,6 @@ export default function DocumentDesignPage() {
             if (customerId) {
                 return config.customers.find(c => c.id === customerId) || null;
             }
-            // Fallback for older data structure without customerId
             return config.customers.find(c => c.name === (document as any).customer) || null;
         }
         
@@ -260,29 +261,27 @@ export default function DocumentDesignPage() {
              return config.customers.find(c => c.id === formData.customerId) || null;
         }
 
-        return config.customers[0] || null; // Fallback to first customer
+        return config.customers[0] || null;
     }, [config, document, isNew, getFormData]);
 
     const finalDocumentData = useMemo(() => {
+        const formData = getFormData();
         if (document) return document;
         
-        const formData = getFormData();
         if (isNew && formData && Object.keys(formData).length > 0) {
             return {
                 ...(formData as any),
                 [documentType === 'invoice' ? 'invoiceId' : 'quotationId']: 'PREVIEW',
             };
         }
-
-        // Create a minimal default document for preview
-        const defaultDoc = {
+        
+        return {
             date: new Date(),
             [documentType === 'invoice' ? 'invoiceId' : 'quotationId']: 'PREVIEW',
             [documentType === 'invoice' ? 'dueDate' : 'validUntil']: new Date(new Date().setDate(new Date().getDate() + 30)),
             lineItems: [{description: 'Sample Item', quantity: 1, price: 100}],
-        };
+        } as Invoice | Quotation;
 
-        return defaultDoc as Invoice | Quotation;
     }, [document, isNew, getFormData, documentType]);
 
 
@@ -315,7 +314,7 @@ export default function DocumentDesignPage() {
                                     <FormField control={form.control} name="backgroundColor" render={({ field }) => (
                                         <FormItem>
                                             <FormLabel className="text-xs">Page Background Color</FormLabel>
-                                            <FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl>
+                                            <FormControl><Input type="color" {...field} value={field.value || ''} className="h-10 p-1" /></FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )}/>
@@ -399,5 +398,10 @@ export default function DocumentDesignPage() {
         </div>
     );
 }
+
+export default dynamic(() => Promise.resolve(DocumentDesignPage), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center h-full"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>
+});
 
     
