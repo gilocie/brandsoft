@@ -118,24 +118,22 @@ function DocumentDesignPage() {
         },
     });
 
-     useEffect(() => {
+    useEffect(() => {
         if (!config) return;
 
         let doc: Invoice | Quotation | null = null;
         let design: Partial<DesignSettings> = {};
         const brand = config.brand || {};
-        
-        let newDocumentFormData: any = null;
-        if(isNew) {
-            newDocumentFormData = getFormData();
-        }
 
-        if (isNew && newDocumentFormData) {
-            const docTypeKey = documentType === 'invoice' ? 'invoiceId' : 'quotationId';
-            doc = {
-                ...(newDocumentFormData as any),
-                [docTypeKey]: 'PREVIEW',
-            };
+        if (isNew) {
+            const newDocumentFormData = getFormData();
+            if (newDocumentFormData) {
+                const docTypeKey = documentType === 'invoice' ? 'invoiceId' : 'quotationId';
+                doc = {
+                    ...(newDocumentFormData as any),
+                    [docTypeKey]: 'PREVIEW',
+                };
+            }
         } else if (documentId) {
             if (documentType === 'invoice') {
                 doc = config.invoices.find(inv => inv.invoiceId === documentId) || null;
@@ -143,9 +141,9 @@ function DocumentDesignPage() {
                 doc = config.quotations.find(q => q.quotationId === documentId) || null;
             }
         }
-        
+
         if (doc) {
-             if (JSON.stringify(document) !== JSON.stringify(doc)) {
+            if (JSON.stringify(document) !== JSON.stringify(doc)) {
                 setDocument(doc);
             }
             design = (doc as any).design || {};
@@ -210,7 +208,7 @@ function DocumentDesignPage() {
             const returnUrl = `/${documentType}s/${documentId}/edit`;
             router.push(returnUrl);
         } else {
-             const templateKey = documentType === 'invoice' ? 'defaultInvoiceTemplate' : documentType === 'quotation' ? 'defaultQuotationTemplate' : null;
+             const templateKey = documentType === 'invoice' ? 'defaultInvoiceTemplate' : 'defaultQuotationTemplate' : null;
              if (templateKey) {
                  saveConfig({
                     ...config,
@@ -231,35 +229,26 @@ function DocumentDesignPage() {
 
     const livePreviewConfig = useMemo(() => {
         if (!config) return null;
-        
-        const newConfig = JSON.parse(JSON.stringify(config));
-        const currentDesign: DesignSettings = watchedValues;
-        
-        // Merge live design changes into the brand settings for the preview
-        newConfig.brand = {
-            ...newConfig.brand,
-            ...currentDesign
-        };
-        
-        return newConfig;
-    }, [config, watchedValues]);
-    
+        return config;
+    }, [config]);
+
     const previewCustomer = useMemo(() => {
         if (!config) return null;
         
-        const doc = document;
-        const formData = getFormData();
+        let customerId: string | undefined;
+        if (document) {
+            customerId = (document as any).customerId;
+        } else if (isNew) {
+            const formData = getFormData();
+            customerId = formData?.customerId;
+        }
 
-        if (doc) {
-            const customerId = (doc as any).customerId;
-            if (customerId) {
-                return config.customers.find(c => c.id === customerId) || null;
-            }
-            return config.customers.find(c => c.name === (doc as any).customer) || null;
+        if (customerId) {
+            return config.customers.find(c => c.id === customerId) || null;
         }
         
-        if (isNew && formData?.customerId) {
-             return config.customers.find(c => c.id === formData.customerId) || null;
+        if (document?.customer) {
+            return config.customers.find(c => c.name === document.customer) || null;
         }
 
         return config.customers[0] || null;
@@ -267,7 +256,13 @@ function DocumentDesignPage() {
 
     const finalDocumentData = useMemo(() => {
         const formData = getFormData();
-        const currentDesign: DesignSettings = watchedValues; 
+        const currentDesign: DesignSettings = {
+            backgroundColor: watchedValues.backgroundColor,
+            headerImage: watchedValues.headerImage,
+            footerImage: watchedValues.footerImage,
+            backgroundImage: watchedValues.backgroundImage,
+            watermarkImage: watchedValues.watermarkImage,
+        };
         
         if (document) {
             return {
@@ -280,7 +275,7 @@ function DocumentDesignPage() {
             return {
                 ...(formData as any),
                 [documentType === 'invoice' ? 'invoiceId' : 'quotationId']: 'PREVIEW',
-                design: currentDesign 
+                design: currentDesign
             };
         }
         
@@ -292,8 +287,12 @@ function DocumentDesignPage() {
             design: currentDesign
         } as Invoice | Quotation;
 
-    }, [document, isNew, getFormData, documentType, watchedValues]); 
+    }, [document, isNew, getFormData, documentType, watchedValues.backgroundColor, watchedValues.headerImage, watchedValues.footerImage, watchedValues.backgroundImage, watchedValues.watermarkImage]);
 
+    const designKey = useMemo(() => 
+        `${watchedValues.backgroundColor}-${watchedValues.headerImage?.substring(0, 20)}-${watchedValues.footerImage?.substring(0, 20)}-${watchedValues.backgroundImage?.substring(0, 20)}-${watchedValues.watermarkImage?.substring(0, 20)}`,
+        [watchedValues]
+    );
 
     if (isLoading) {
         return <div className="flex items-center justify-center h-full"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
@@ -379,6 +378,7 @@ function DocumentDesignPage() {
                     <>
                         {documentType === 'invoice' && (
                             <InvoicePreview
+                                key={designKey}
                                 config={livePreviewConfig}
                                 customer={previewCustomer}
                                 invoiceData={finalDocumentData as Invoice}
@@ -387,6 +387,7 @@ function DocumentDesignPage() {
                         )}
                         {documentType === 'quotation' && (
                             <QuotationPreview
+                                key={designKey}
                                 config={livePreviewConfig}
                                 customer={previewCustomer}
                                 quotationData={finalDocumentData as Quotation}

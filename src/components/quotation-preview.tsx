@@ -1,6 +1,7 @@
 
 'use client';
 
+import React from 'react';
 import { BrandsoftConfig, Customer, Quotation, DesignSettings } from '@/hooks/use-brandsoft';
 import { format, parseISO } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
@@ -86,7 +87,27 @@ export function QuotationPreview({ config, customer, quotationData, quotationId,
         );
     }
     
-    const design = (quotationData as any).design || config.brand;
+    const design = React.useMemo(() => {
+        const customDesign = (quotationData as any)?.design;
+        
+        if (customDesign) {
+            // Merge custom design with brand defaults
+            return {
+                ...config.brand,
+                ...customDesign,
+                // Ensure we always have these required fields from brand
+                logo: config.brand.logo,
+                primaryColor: config.brand.primaryColor || '#000000',
+                secondaryColor: config.brand.secondaryColor || '#666666',
+                businessName: config.brand.businessName,
+                showCustomerAddress: config.brand.showCustomerAddress,
+                footerContent: config.brand.footerContent,
+                brandsoftFooter: config.brand.brandsoftFooter,
+            };
+        }
+        
+        return config.brand;
+    }, [config.brand, quotationData]);
 
     const currencyCode = quotationData.currency || config.profile.defaultCurrency;
     const formatCurrency = (value: number) => `${currencyCode}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;

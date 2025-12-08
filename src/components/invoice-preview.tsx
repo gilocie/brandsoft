@@ -1,6 +1,7 @@
 
 'use client';
 
+import React from 'react';
 import { BrandsoftConfig, Customer, Invoice, LineItem, DesignSettings } from '@/hooks/use-brandsoft';
 import { format, parseISO } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
@@ -83,7 +84,27 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
         );
     }
     
-    const design = (invoiceData as any).design || config.brand;
+    const design = React.useMemo(() => {
+        const customDesign = (invoiceData as any)?.design;
+        
+        if (customDesign) {
+            // Merge custom design with brand defaults
+            return {
+                ...config.brand,
+                ...customDesign,
+                // Ensure we always have these required fields from brand
+                logo: config.brand.logo,
+                primaryColor: config.brand.primaryColor || '#000000',
+                secondaryColor: config.brand.secondaryColor || '#666666',
+                businessName: config.brand.businessName,
+                showCustomerAddress: config.brand.showCustomerAddress,
+                footerContent: config.brand.footerContent,
+                brandsoftFooter: config.brand.brandsoftFooter,
+            };
+        }
+        
+        return config.brand;
+    }, [config.brand, invoiceData]);
 
     const currencyCode = invoiceData.currency || config.profile.defaultCurrency;
     const formatCurrency = (value: number) => `${currencyCode}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
