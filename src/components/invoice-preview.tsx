@@ -222,7 +222,7 @@ export function InvoicePreview({
                 )}
                 
                 <div className="relative z-10">
-                    <header className="flex justify-between items-start mb-12">
+                    <header className="flex justify-between items-start mb-5">
                         <div className="flex items-center gap-4">
                             {(design.logo || config.brand?.logo) && (
                                 <img src={design.logo || config.brand.logo} alt={config.brand?.businessName || 'Logo'} className="h-16 w-16 sm:h-20 sm:w-20 object-contain" />

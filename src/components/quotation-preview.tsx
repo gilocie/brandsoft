@@ -41,8 +41,10 @@ export interface QuotationPreviewProps {
     designOverride?: DesignSettings;
 }
 
-const QuotationStatusWatermark = ({ status, color, opacity }: { status: string, color: string, opacity: number }) => {
-     const hexToRgb = (hex: string) => {
+const QuotationStatusWatermark = ({ status, design }: { status?: string, design: DesignSettings }) => {
+    if (!status) return null;
+
+    const hexToRgb = (hex: string) => {
         let r = 0, g = 0, b = 0;
         if (hex.length === 4) {
             r = parseInt(hex[1] + hex[1], 16);
@@ -56,17 +58,17 @@ const QuotationStatusWatermark = ({ status, color, opacity }: { status: string, 
         return { r, g, b };
     };
 
-    const rgb = hexToRgb(color || '#000000');
-    const finalColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${opacity})`;
-
+    const rgb = hexToRgb(design.watermarkColor || '#dddddd');
+    const finalColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${design.watermarkOpacity ?? 0.05})`;
 
     return (
         <div
-            className={cn(
-                "absolute top-[45%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-0",
-                "text-[8rem] sm:text-[10rem] font-black tracking-[1rem] leading-none select-none pointer-events-none uppercase",
-            )}
-            style={{ color: finalColor }}
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0 font-black tracking-[1rem] leading-none select-none pointer-events-none uppercase"
+            style={{
+                fontSize: `${design.watermarkFontSize || 96}px`,
+                color: finalColor,
+                transform: `translate(-50%, -50%) rotate(${design.watermarkAngle || 0}deg)`,
+            }}
         >
             {status}
         </div>
@@ -207,7 +209,7 @@ export function QuotationPreview({
                     <img src={design.backgroundImage} className="absolute inset-0 w-full h-full object-cover z-0" style={{opacity: design.backgroundImageOpacity}} alt="background"/>
                 )}
 
-                 {watermarkText && <QuotationStatusWatermark status={watermarkText} color={design.watermarkColor || '#dddddd'} opacity={design.watermarkOpacity ?? 0.05} />}
+                 {watermarkText && <QuotationStatusWatermark status={watermarkText} design={design} />}
 
                 <div className="absolute top-0 left-0 right-0 h-[60px] z-30" style={{backgroundColor: design.headerColor}}></div>
 
@@ -218,10 +220,10 @@ export function QuotationPreview({
                 )}
                 
                 <div className="relative z-10">
-                    <header className="flex justify-between items-start mb-8 pt-2">
+                    <header className="flex justify-between items-start mb-5">
                         <div className="flex items-center gap-4">
-                            {design.logo && (
-                                <img src={design.logo} alt={config.brand?.businessName || 'Logo'} className="h-16 w-16 sm:h-20 sm:w-20 object-contain" />
+                            {(design.logo || config.brand?.logo) && (
+                                <img src={design.logo || config.brand.logo} alt={config.brand?.businessName || 'Logo'} className="h-16 w-16 sm:h-20 sm:w-20 object-contain" />
                             )}
                             <div>
                                 <h1 className="text-3xl sm:text-4xl font-bold" style={{color: design.headerColor}}>Quotation</h1>
