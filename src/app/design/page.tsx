@@ -108,6 +108,7 @@ const ImageUploader = ({
 
     return (
         <div className="space-y-2">
+            <FormLabel className="text-xs">{label}</FormLabel>
             <div className={`relative flex flex-col items-center justify-center space-y-2 rounded-md border border-dashed p-2 w-full ${aspect === 'wide' ? 'h-16' : 'h-32'}`}>
                 {fieldValue ? (
                     <>
@@ -651,3 +652,4 @@ export default dynamic(() => Promise.resolve(DocumentDesignPage), {
     ssr: false,
     loading: () => <div className="w-full h-screen flex items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>
 });
+
