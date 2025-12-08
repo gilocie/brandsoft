@@ -294,9 +294,6 @@ export default function EditQuotationPage() {
             <p className="text-muted-foreground">Update the details for this quotation.</p>
           </div>
            <div className="flex items-center gap-2">
-            <Button asChild>
-                <Link href={`/templates/design?documentType=quotation&documentId=${quotationId}`}><Palette className="mr-2 h-4 w-4"/> Customize</Link>
-            </Button>
             <Button variant="outline" asChild>
                 <Link href="/quotations">Cancel</Link>
             </Button>

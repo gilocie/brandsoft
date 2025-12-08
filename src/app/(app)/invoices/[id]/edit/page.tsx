@@ -295,9 +295,6 @@ export default function EditInvoicePage() {
             <p className="text-muted-foreground">Update the details for this invoice.</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button asChild>
-                <Link href={`/templates/design?documentType=invoice&documentId=${invoiceId}`}><Palette className="mr-2 h-4 w-4"/> Customize</Link>
-            </Button>
             <Button variant="outline" asChild>
                 <Link href="/invoices">Cancel</Link>
             </Button>
