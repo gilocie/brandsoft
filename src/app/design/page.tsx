@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm, useWatch } from 'react-hook-form';
@@ -10,7 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { useToast } from '@/hooks/use-toast';
 import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
-import { UploadCloud, Paintbrush, Layers, Trash2, ArrowLeft, Loader2, PanelLeft } from 'lucide-react';
+import { UploadCloud, Paintbrush, Layers, Trash2, ArrowLeft, Loader2, PanelLeft, X } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Link from 'next/link';
@@ -109,7 +110,7 @@ function SettingsPanel({ form, documentType, documentId, isNew, onSubmit, return
   documentId: string | null,
   isNew: boolean,
   onSubmit: (data: any) => void,
-  returnUrl: string
+  returnUrl: string,
 }) {
   return (
     <div className="h-full overflow-y-auto">
@@ -345,11 +346,18 @@ function DocumentDesignPage() {
 
     return (
         <div className="flex h-screen overflow-hidden bg-gray-50">
-            {/* Sidebar with slide animation */}
             <aside className={cn(
-                "fixed md:relative top-0 left-0 z-40 w-80 h-screen transition-transform duration-300 bg-white border-r shadow-lg md:shadow-none",
-                isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+                "fixed lg:relative top-0 left-0 z-40 w-80 h-screen transition-transform duration-300 bg-white border-r",
+                isSidebarOpen ? "translate-x-0" : "-translate-x-full",
+                "lg:translate-x-0"
             )}>
+                <Button 
+                    size="icon" 
+                    onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                    className="absolute top-4 -right-10 z-50 rounded-r-md rounded-l-none lg:hidden"
+                >
+                    {isSidebarOpen ? <X className="h-5 w-5"/> : <PanelLeft className="h-5 w-5"/>}
+                </Button>
                 <SettingsPanel 
                     form={form} 
                     documentType={documentType} 
@@ -359,35 +367,15 @@ function DocumentDesignPage() {
                     returnUrl={returnUrl}
                 />
             </aside>
-
-            {/* Overlay for mobile when sidebar is open */}
-            {isSidebarOpen && (
-                <div 
-                    className="fixed inset-0 bg-black/50 z-30 md:hidden"
-                    onClick={() => setIsSidebarOpen(false)}
-                />
-            )}
             
-            {/* Main content area */}
-            <div className="flex-1 flex flex-col h-screen overflow-hidden">
-                {/* Header */}
+            <main className="flex-1 flex flex-col h-screen overflow-hidden">
                 <header className="h-16 flex-shrink-0 bg-white border-b flex items-center px-4 gap-3 shadow-sm">
-                    <Button 
-                        variant="outline"
-                        size="icon" 
-                        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                        className="shrink-0 md:hidden"
-                    >
-                        <PanelLeft className="h-5 w-5"/>
-                    </Button>
-                    <h1 className="flex-1 text-center md:text-left font-semibold text-lg capitalize">
+                    <h1 className="flex-1 text-center font-semibold text-lg capitalize">
                         {documentType} Design
                     </h1>
-                    <div className="w-10 md:hidden" />
                 </header>
 
-                {/* Preview area */}
-                <main className="flex-1 w-full bg-slate-100 overflow-y-auto flex justify-center items-start p-4 md:p-8">
+                <div className="flex-1 w-full bg-slate-100 overflow-y-auto flex justify-center items-start p-4 md:p-8">
                     <div className="flex-shrink-0 shadow-2xl transform origin-top scale-75 md:scale-90 lg:scale-95">
                         {hasContentForPreview ? (
                             <>
@@ -423,8 +411,8 @@ function DocumentDesignPage() {
                             </div>
                         )}
                     </div>
-                </main>
-            </div>
+                </div>
+            </main>
         </div>
     );
 }
