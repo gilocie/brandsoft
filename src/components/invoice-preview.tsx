@@ -36,37 +36,16 @@ export interface InvoicePreviewProps {
     designOverride?: DesignSettings;
 }
 
-const InvoiceStatusWatermark = ({ status }: { status: Invoice['status'] }) => {
-    let text = '';
-    let colorClass = '';
-
-    switch (status) {
-        case 'Pending':
-        case 'Overdue':
-            text = 'UNPAID';
-            colorClass = 'text-red-500/10';
-            break;
-        case 'Paid':
-            text = 'PAID';
-            colorClass = 'text-green-500/10';
-            break;
-        case 'Canceled':
-            text = 'CANCELED';
-            colorClass = 'text-gray-500/10';
-            break;
-        default:
-            return null;
-    }
-
-    if (!text) return null;
-
+const InvoiceStatusWatermark = ({ status, color }: { status: string, color: string }) => {
     return (
-        <div className={cn(
-            "absolute top-[45%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-0",
-            "text-[8rem] sm:text-[10rem] font-black tracking-[1rem] leading-none select-none pointer-events-none uppercase",
-            colorClass
-        )}>
-            {text}
+        <div
+            className={cn(
+                "absolute top-[45%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-0",
+                "text-[8rem] sm:text-[10rem] font-black tracking-[1rem] leading-none select-none pointer-events-none uppercase",
+            )}
+            style={{ color: color || 'rgba(0, 0, 0, 0.05)' }}
+        >
+            {status}
         </div>
     );
 };
@@ -91,40 +70,43 @@ export function InvoicePreview({
         const override = designOverride || {};
         const hasOverride = designOverride !== undefined && designOverride !== null;
         
-        let mergedDesign = {
+        let mergedDesign: DesignSettings = {
             backgroundColor: brand.backgroundColor || '#FFFFFF',
             textColor: brand.textColor || '#000000',
             headerImage: brand.headerImage || '',
+            headerImageOpacity: 1,
             footerImage: brand.footerImage || '',
+            footerImageOpacity: 1,
             backgroundImage: brand.backgroundImage || '',
-            watermarkImage: brand.watermarkImage || '',
+            backgroundImageOpacity: 1,
+            watermarkText: '',
+            watermarkColor: '#dddddd',
         };
         
         const merge = (target: any, source: any) => {
             if (source.backgroundColor) target.backgroundColor = source.backgroundColor;
             if (source.textColor) target.textColor = source.textColor;
             if (source.headerImage) target.headerImage = source.headerImage;
+            if (source.headerImageOpacity !== undefined) target.headerImageOpacity = source.headerImageOpacity;
             if (source.footerImage) target.footerImage = source.footerImage;
+            if (source.footerImageOpacity !== undefined) target.footerImageOpacity = source.footerImageOpacity;
             if (source.backgroundImage) target.backgroundImage = source.backgroundImage;
-            if (source.watermarkImage) target.watermarkImage = source.watermarkImage;
+            if (source.backgroundImageOpacity !== undefined) target.backgroundImageOpacity = source.backgroundImageOpacity;
+            if (source.watermarkText) target.watermarkText = source.watermarkText;
+            if (source.watermarkColor) target.watermarkColor = source.watermarkColor;
         };
 
         merge(mergedDesign, defaultTemplate);
         merge(mergedDesign, documentDesign);
         if (hasOverride) {
-            mergedDesign.backgroundColor = override.backgroundColor ?? mergedDesign.backgroundColor;
-            mergedDesign.textColor = override.textColor ?? mergedDesign.textColor;
-            mergedDesign.headerImage = override.headerImage ?? mergedDesign.headerImage;
-            mergedDesign.footerImage = override.footerImage ?? mergedDesign.footerImage;
-            mergedDesign.backgroundImage = override.backgroundImage ?? mergedDesign.backgroundImage;
-            mergedDesign.watermarkImage = override.watermarkImage ?? mergedDesign.watermarkImage;
+           Object.assign(mergedDesign, Object.fromEntries(Object.entries(override).filter(([_, v]) => v != null)));
         }
         
         return {
             ...mergedDesign,
             logo: brand.logo,
-            primaryColor: brand.primaryColor || '#F97316', // Default Orange
-            secondaryColor: brand.secondaryColor || '#1E40AF', // Default Blue
+            primaryColor: brand.primaryColor || '#F97316',
+            secondaryColor: brand.secondaryColor || '#1E40AF',
             businessName: brand.businessName,
             showCustomerAddress: brand.showCustomerAddress,
             footerContent: brand.footerContent,
@@ -180,6 +162,8 @@ export function InvoicePreview({
     const accentColor = design.primaryColor;
     const footerColor = design.secondaryColor;
 
+    const watermarkText = design.watermarkText || invoiceData.status;
+
     const Wrapper = ({ children }: { children: React.ReactNode }) => {
         if (forPdf) return <>{children}</>;
         return (
@@ -187,8 +171,8 @@ export function InvoicePreview({
         );
     };
     
-    const topPadding = design.headerImage ? 'pt-[35mm]' : 'pt-[10mm]';
-    const bottomPadding = 'pb-[55px]'; // Fixed padding to accommodate the 50px footer + some buffer
+    const topPadding = design.headerImage ? 'pt-[40px]' : 'pt-[10mm]';
+    const bottomPadding = design.footerImage ? 'pb-[95px]' : 'pb-[55px]';
 
     return (
         <Wrapper>
@@ -201,22 +185,27 @@ export function InvoicePreview({
                 style={{ backgroundColor: design.backgroundColor || '#FFFFFF', color: design.textColor || '#000000' }}
             >
                 {design.backgroundImage && (
-                    <img src={design.backgroundImage} className="absolute inset-0 w-full h-full object-cover z-0" alt="background"/>
+                    <img src={design.backgroundImage} className="absolute inset-0 w-full h-full object-cover z-0" style={{opacity: design.backgroundImageOpacity ?? 1}} alt="background"/>
                 )}
                 
-                {invoiceData.status && <InvoiceStatusWatermark status={invoiceData.status} />}
+                {watermarkText && <InvoiceStatusWatermark status={watermarkText} color={design.watermarkColor || 'rgba(0,0,0,0.05)'} />}
                 
                 <div className="h-[50px] w-full flex-shrink-0 relative z-10" style={{ backgroundColor: accentColor }}></div>
 
                 {design.headerImage && (
-                     <div className="absolute top-0 left-0 w-full h-[35mm] z-10">
-                        <img src={design.headerImage} className="w-full h-full object-cover" alt="header" />
+                     <div className="absolute top-0 left-0 w-full h-[40px] z-10">
+                        <img src={design.headerImage} className="w-full h-full object-cover" style={{ opacity: design.headerImageOpacity ?? 1 }} alt="header" />
                     </div>
                 )}
                 
-                <footer className="absolute bottom-0 left-0 w-full z-20 h-[50px] flex items-center justify-center" style={{backgroundColor: footerColor}}>
+                <footer className="absolute bottom-0 left-0 w-full z-20">
+                     {design.footerImage && (
+                        <div className="w-full h-[40px]">
+                           <img src={design.footerImage} className="w-full h-full object-cover" style={{ opacity: design.footerImageOpacity ?? 1 }} alt="footer" />
+                        </div>
+                    )}
                    {design.brandsoftFooter && (
-                        <div className="text-center text-xs text-white">
+                        <div className="text-center text-xs py-2 px-4" style={{backgroundColor: footerColor, color: '#fff'}}>
                             Created by BrandSoft
                         </div>
                     )}

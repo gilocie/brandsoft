@@ -41,9 +41,13 @@ export interface DesignSettings {
     backgroundColor?: string;
     textColor?: string;
     headerImage?: string;
+    headerImageOpacity?: number;
     footerImage?: string;
+    footerImageOpacity?: number;
     backgroundImage?: string;
-    watermarkImage?: string;
+    backgroundImageOpacity?: number;
+    watermarkText?: string;
+    watermarkColor?: string;
 }
 
 export type Invoice = {
