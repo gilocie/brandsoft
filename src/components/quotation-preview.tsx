@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useMemo } from 'react';
@@ -90,43 +91,37 @@ export function QuotationPreview({
         );
     }
     
-    // Priority: designOverride > quotationData.design > defaultQuotationTemplate > brand
     const design = useMemo(() => {
         const brand = config.brand || {};
         const defaultTemplate = config.profile?.defaultQuotationTemplate || {};
         const documentDesign = quotationData?.design || {};
         const override = designOverride || {};
         
-        // Check if designOverride was explicitly provided (not just undefined)
         const hasOverride = designOverride !== undefined && designOverride !== null;
         
-        // Build merged design with proper priority
         let mergedDesign = {
-            // Base: brand settings
             backgroundColor: brand.backgroundColor || '#FFFFFF',
+            textColor: brand.textColor || '#000000',
             headerImage: brand.headerImage || '',
             footerImage: brand.footerImage || '',
             backgroundImage: brand.backgroundImage || '',
             watermarkImage: brand.watermarkImage || '',
         };
         
-        // Apply default template (only non-empty values)
-        if (defaultTemplate.backgroundColor) mergedDesign.backgroundColor = defaultTemplate.backgroundColor;
-        if (defaultTemplate.headerImage) mergedDesign.headerImage = defaultTemplate.headerImage;
-        if (defaultTemplate.footerImage) mergedDesign.footerImage = defaultTemplate.footerImage;
-        if (defaultTemplate.backgroundImage) mergedDesign.backgroundImage = defaultTemplate.backgroundImage;
-        if (defaultTemplate.watermarkImage) mergedDesign.watermarkImage = defaultTemplate.watermarkImage;
-        
-        // Apply document-specific design (only non-empty values)
-        if (documentDesign.backgroundColor) mergedDesign.backgroundColor = documentDesign.backgroundColor;
-        if (documentDesign.headerImage) mergedDesign.headerImage = documentDesign.headerImage;
-        if (documentDesign.footerImage) mergedDesign.footerImage = documentDesign.footerImage;
-        if (documentDesign.backgroundImage) mergedDesign.backgroundImage = documentDesign.backgroundImage;
-        if (documentDesign.watermarkImage) mergedDesign.watermarkImage = documentDesign.watermarkImage;
-        
-        // Apply real-time override (for customization page - include empty strings to allow clearing)
+        const merge = (target: any, source: any) => {
+            if (source.backgroundColor) target.backgroundColor = source.backgroundColor;
+            if (source.textColor) target.textColor = source.textColor;
+            if (source.headerImage) target.headerImage = source.headerImage;
+            if (source.footerImage) target.footerImage = source.footerImage;
+            if (source.backgroundImage) target.backgroundImage = source.backgroundImage;
+            if (source.watermarkImage) target.watermarkImage = source.watermarkImage;
+        };
+
+        merge(mergedDesign, defaultTemplate);
+        merge(mergedDesign, documentDesign);
         if (hasOverride) {
             mergedDesign.backgroundColor = override.backgroundColor ?? mergedDesign.backgroundColor;
+            mergedDesign.textColor = override.textColor ?? mergedDesign.textColor;
             mergedDesign.headerImage = override.headerImage ?? mergedDesign.headerImage;
             mergedDesign.footerImage = override.footerImage ?? mergedDesign.footerImage;
             mergedDesign.backgroundImage = override.backgroundImage ?? mergedDesign.backgroundImage;
@@ -135,7 +130,6 @@ export function QuotationPreview({
         
         return {
             ...mergedDesign,
-            // Always preserve these from brand
             logo: brand.logo,
             primaryColor: brand.primaryColor || '#000000',
             secondaryColor: brand.secondaryColor || '#666666',
@@ -146,21 +140,8 @@ export function QuotationPreview({
         };
     }, [
         config.brand, 
-        config.profile?.defaultQuotationTemplate?.backgroundColor,
-        config.profile?.defaultQuotationTemplate?.headerImage,
-        config.profile?.defaultQuotationTemplate?.footerImage,
-        config.profile?.defaultQuotationTemplate?.backgroundImage,
-        config.profile?.defaultQuotationTemplate?.watermarkImage,
-        quotationData?.design?.backgroundColor,
-        quotationData?.design?.headerImage,
-        quotationData?.design?.footerImage,
-        quotationData?.design?.backgroundImage,
-        quotationData?.design?.watermarkImage,
-        designOverride?.backgroundColor,
-        designOverride?.headerImage,
-        designOverride?.footerImage,
-        designOverride?.backgroundImage,
-        designOverride?.watermarkImage,
+        config.profile?.defaultQuotationTemplate,
+        quotationData?.design,
         designOverride,
     ]);
 
@@ -231,6 +212,7 @@ export function QuotationPreview({
                 )}
                 style={{
                     backgroundColor: design.backgroundColor || '#FFFFFF',
+                    color: design.textColor || '#000000',
                     paddingLeft: '48px',
                     paddingRight: '48px',
                     paddingBottom: '100px',

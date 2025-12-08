@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
@@ -38,6 +39,7 @@ export type LineItem = {
 
 export interface DesignSettings {
     backgroundColor?: string;
+    textColor?: string;
     headerImage?: string;
     footerImage?: string;
     backgroundImage?: string;
@@ -114,6 +116,8 @@ export type BrandsoftConfig = {
     watermarkImage?: string;
     footerContent?: string;
     showCustomerAddress: boolean;
+    backgroundColor?: string;
+    textColor?: string;
   };
   profile: {
     address: string;

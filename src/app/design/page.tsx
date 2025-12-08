@@ -31,6 +31,7 @@ import { SlidersHorizontal } from 'lucide-react';
 
 const designSettingsSchema = z.object({
   backgroundColor: z.string().optional(),
+  textColor: z.string().optional(),
   headerImage: z.string().optional(),
   footerImage: z.string().optional(),
   backgroundImage: z.string().optional(),
@@ -127,17 +128,28 @@ function SettingsPanel({ form, documentType, documentId, isNew, onSubmit, return
                             <CardTitle className="flex items-center gap-2 text-base"><Paintbrush className="h-4 w-4"/> Appearance</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <FormField control={form.control} name="backgroundColor" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel className="text-xs">Page Background Color</FormLabel>
-                                    <FormControl>
-                                        <div className="flex gap-2">
-                                            <Input type="color" {...field} value={field.value || '#FFFFFF'} className="h-10 w-16 p-1 cursor-pointer" />
-                                            <Input {...field} value={field.value || '#FFFFFF'} className="flex-1" />
-                                        </div>
-                                    </FormControl>
-                                </FormItem>
-                            )} />
+                             <div className="grid grid-cols-2 gap-4">
+                                <FormField control={form.control} name="backgroundColor" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-xs">Page Background</FormLabel>
+                                        <FormControl>
+                                            <div className="flex gap-2">
+                                                <Input type="color" {...field} value={field.value || '#FFFFFF'} className="h-10 w-16 p-1 cursor-pointer" />
+                                            </div>
+                                        </FormControl>
+                                    </FormItem>
+                                )} />
+                                 <FormField control={form.control} name="textColor" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-xs">Text Color</FormLabel>
+                                        <FormControl>
+                                            <div className="flex gap-2">
+                                                <Input type="color" {...field} value={field.value || '#000000'} className="h-10 w-16 p-1 cursor-pointer" />
+                                            </div>
+                                        </FormControl>
+                                    </FormItem>
+                                )} />
+                            </div>
                             <Separator />
                             <ImageUploader form={form} fieldName="backgroundImage" label="Background Image" description="A4 aspect ratio recommended." aspect='normal' />
                         </CardContent>
@@ -198,6 +210,7 @@ function DocumentDesignPage() {
         resolver: zodResolver(designSettingsSchema),
         defaultValues: {
             backgroundColor: '#FFFFFF',
+            textColor: '#000000',
             headerImage: '',
             footerImage: '',
             backgroundImage: '',
@@ -209,6 +222,7 @@ function DocumentDesignPage() {
     
     const currentDesignSettings = useMemo((): DesignSettings => ({
         backgroundColor: watchedValues.backgroundColor || '#FFFFFF',
+        textColor: watchedValues.textColor || '#000000',
         headerImage: watchedValues.headerImage || '',
         footerImage: watchedValues.footerImage || '',
         backgroundImage: watchedValues.backgroundImage || '',
@@ -246,6 +260,7 @@ function DocumentDesignPage() {
         
         const initialValues: DesignSettingsFormData = {
             backgroundColor: existingDesign.backgroundColor ?? defaultTemplate.backgroundColor ?? brand.backgroundColor ?? '#FFFFFF',
+            textColor: existingDesign.textColor ?? defaultTemplate.textColor ?? brand.textColor ?? '#000000',
             headerImage: existingDesign.headerImage ?? defaultTemplate.headerImage ?? brand.headerImage ?? '',
             footerImage: existingDesign.footerImage ?? defaultTemplate.footerImage ?? brand.footerImage ?? '',
             backgroundImage: existingDesign.backgroundImage ?? defaultTemplate.backgroundImage ?? brand.backgroundImage ?? '',
@@ -261,6 +276,7 @@ function DocumentDesignPage() {
         
         const newDesignSettings: DesignSettings = {
             backgroundColor: data.backgroundColor || '',
+            textColor: data.textColor || '',
             headerImage: data.headerImage || '',
             footerImage: data.footerImage || '',
             backgroundImage: data.backgroundImage || '',
@@ -323,8 +339,8 @@ function DocumentDesignPage() {
                 <SettingsPanel form={form} documentType={documentType} documentId={documentId} isNew={isNew} onSubmit={onSubmit} returnUrl={returnUrl} />
             </div>
             
-            <div className="relative w-full h-full bg-slate-100 overflow-auto flex justify-center items-start p-8">
-                <div className="flex-shrink-0 shadow-2xl transform scale-90 origin-top">
+            <div className="relative w-full h-full bg-slate-100 overflow-hidden flex justify-center items-start p-8">
+                <div className="flex-shrink-0 shadow-2xl transform scale-[0.8] origin-top">
                     {hasContentForPreview ? (
                         <>
                             {documentType === 'invoice' && (

@@ -93,6 +93,7 @@ export function InvoicePreview({
         
         let mergedDesign = {
             backgroundColor: brand.backgroundColor || '#FFFFFF',
+            textColor: brand.textColor || '#000000',
             headerImage: brand.headerImage || '',
             footerImage: brand.footerImage || '',
             backgroundImage: brand.backgroundImage || '',
@@ -101,6 +102,7 @@ export function InvoicePreview({
         
         const merge = (target: any, source: any) => {
             if (source.backgroundColor) target.backgroundColor = source.backgroundColor;
+            if (source.textColor) target.textColor = source.textColor;
             if (source.headerImage) target.headerImage = source.headerImage;
             if (source.footerImage) target.footerImage = source.footerImage;
             if (source.backgroundImage) target.backgroundImage = source.backgroundImage;
@@ -111,6 +113,7 @@ export function InvoicePreview({
         merge(mergedDesign, documentDesign);
         if (hasOverride) {
             mergedDesign.backgroundColor = override.backgroundColor ?? mergedDesign.backgroundColor;
+            mergedDesign.textColor = override.textColor ?? mergedDesign.textColor;
             mergedDesign.headerImage = override.headerImage ?? mergedDesign.headerImage;
             mergedDesign.footerImage = override.footerImage ?? mergedDesign.footerImage;
             mergedDesign.backgroundImage = override.backgroundImage ?? mergedDesign.backgroundImage;
@@ -192,10 +195,10 @@ export function InvoicePreview({
             <div 
                 id={`invoice-preview-${invoiceId}`} 
                 className={cn(
-                    "bg-white relative text-black overflow-hidden",
+                    "bg-white relative overflow-hidden",
                     "w-[210mm] h-[297mm]" 
                 )}
-                style={{ backgroundColor: design.backgroundColor || '#FFFFFF' }}
+                style={{ backgroundColor: design.backgroundColor || '#FFFFFF', color: design.textColor || '#000000' }}
             >
                 {design.backgroundImage && (
                     <img src={design.backgroundImage} className="absolute inset-0 w-full h-full object-cover z-0" alt="background"/>
@@ -229,8 +232,8 @@ export function InvoicePreview({
                             <h1 className="text-5xl font-bold tracking-tight" style={{ color: accentColor }}>Invoice</h1>
                         </div>
 
-                        <div className="text-right text-sm leading-relaxed text-gray-800">
-                            <p className="font-bold text-base mb-1 text-black">{config.brand.businessName}</p>
+                        <div className="text-right text-sm leading-relaxed" style={{color: design.textColor ? design.textColor : 'inherit'}}>
+                            <p className="font-bold text-base mb-1" style={{color: design.textColor ? design.textColor : 'inherit'}}>{config.brand.businessName}</p>
                             <p>{config.profile.address}</p>
                             <p>{config.profile.email}</p>
                             <p>{config.profile.phone}</p>
@@ -241,27 +244,27 @@ export function InvoicePreview({
                         <section className="grid grid-cols-2 gap-10 mb-10">
                             
                             <div>
-                                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Bill To</h3>
-                                <p className="font-bold text-xl text-black mb-1">{customer.companyName || customer.name}</p>
-                                {customer.companyName && <p className="text-sm text-gray-800 font-medium">{customer.name}</p>}
-                                <p className="text-sm text-gray-600 mt-2 whitespace-pre-wrap leading-relaxed">
+                                <h3 className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: design.textColor ? design.textColor : 'rgb(107 114 128)' }}>Bill To</h3>
+                                <p className="font-bold text-xl mb-1" style={{color: design.textColor ? design.textColor : 'inherit'}}>{customer.companyName || customer.name}</p>
+                                {customer.companyName && <p className="text-sm font-medium" style={{color: design.textColor ? design.textColor : 'inherit'}}>{customer.name}</p>}
+                                <p className="text-sm mt-2 whitespace-pre-wrap leading-relaxed" style={{color: design.textColor ? design.textColor : 'rgb(75 85 99)'}}>
                                     {customer.address || customer.companyAddress}
                                 </p>
-                                <p className="text-sm text-gray-600">{customer.email}</p>
+                                <p className="text-sm" style={{color: design.textColor ? design.textColor : 'rgb(75 85 99)'}}>{customer.email}</p>
                             </div>
 
                             <div className="flex flex-col gap-3">
                                 <div className="flex justify-between items-center border-b border-gray-100 pb-1">
-                                    <span className="font-bold text-xs text-gray-500 uppercase tracking-wider">Invoice #</span>
-                                    <span className="font-bold text-base text-black">{invoiceId || 'INV-001'}</span>
+                                    <span className="font-bold text-xs uppercase tracking-wider" style={{ color: design.textColor ? design.textColor : 'rgb(107 114 128)' }}>Invoice #</span>
+                                    <span className="font-bold text-base" style={{color: design.textColor ? design.textColor : 'inherit'}}>{invoiceId || 'INV-001'}</span>
                                 </div>
                                 <div className="flex justify-between items-center border-b border-gray-100 pb-1">
-                                    <span className="font-bold text-xs text-gray-500 uppercase tracking-wider">Date</span>
-                                    <span className="font-medium text-sm text-black">{invoiceDateStr}</span>
+                                    <span className="font-bold text-xs uppercase tracking-wider" style={{ color: design.textColor ? design.textColor : 'rgb(107 114 128)' }}>Date</span>
+                                    <span className="font-medium text-sm" style={{color: design.textColor ? design.textColor : 'inherit'}}>{invoiceDateStr}</span>
                                 </div>
                                 <div className="flex justify-between items-center border-b border-gray-100 pb-1">
-                                    <span className="font-bold text-xs text-gray-500 uppercase tracking-wider">Due Date</span>
-                                    <span className="font-medium text-sm text-black">{dueDateStr}</span>
+                                    <span className="font-bold text-xs uppercase tracking-wider" style={{ color: design.textColor ? design.textColor : 'rgb(107 114 128)' }}>Due Date</span>
+                                    <span className="font-medium text-sm" style={{color: design.textColor ? design.textColor : 'inherit'}}>{dueDateStr}</span>
                                 </div>
                             </div>
                         </section>
@@ -269,13 +272,13 @@ export function InvoicePreview({
                         <section className="mb-4">
                             <Table>
                                 <TableHeader>
-                                    <TableRow className="border-b-2 border-gray-800 hover:bg-transparent">
-                                        <TableHead className="w-[40%] text-black font-bold uppercase text-[11px] h-10 pl-0">Item</TableHead>
-                                        <TableHead className="w-[20%] text-black font-bold uppercase text-[11px] h-10">Description</TableHead>
-                                        <TableHead className="text-right text-black font-bold uppercase text-[11px] h-10">Qty</TableHead>
-                                        <TableHead className="text-right text-black font-bold uppercase text-[11px] h-10">Price</TableHead>
-                                        <TableHead className="text-right text-black font-bold uppercase text-[11px] h-10">Tax</TableHead>
-                                        <TableHead className="text-right text-black font-bold uppercase text-[11px] h-10 pr-0">Amount</TableHead>
+                                    <TableRow className="border-b-2 hover:bg-transparent" style={{ borderColor: design.textColor ? design.textColor : 'rgb(31 41 55)' }}>
+                                        <TableHead className="w-[40%] font-bold uppercase text-[11px] h-10 pl-0" style={{color: design.textColor ? design.textColor : 'inherit'}}>Item</TableHead>
+                                        <TableHead className="w-[20%] font-bold uppercase text-[11px] h-10" style={{color: design.textColor ? design.textColor : 'inherit'}}>Description</TableHead>
+                                        <TableHead className="text-right font-bold uppercase text-[11px] h-10" style={{color: design.textColor ? design.textColor : 'inherit'}}>Qty</TableHead>
+                                        <TableHead className="text-right font-bold uppercase text-[11px] h-10" style={{color: design.textColor ? design.textColor : 'inherit'}}>Price</TableHead>
+                                        <TableHead className="text-right font-bold uppercase text-[11px] h-10" style={{color: design.textColor ? design.textColor : 'inherit'}}>Tax</TableHead>
+                                        <TableHead className="text-right font-bold uppercase text-[11px] h-10 pr-0" style={{color: design.textColor ? design.textColor : 'inherit'}}>Amount</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -284,9 +287,9 @@ export function InvoicePreview({
                                         return (
                                             <TableRow key={index} className="border-b border-gray-200 hover:bg-transparent">
                                                 <TableCell className="py-4 align-top pl-0">
-                                                    <span className="font-bold text-sm text-black">{product ? product.name : item.description}</span>
+                                                    <span className="font-bold text-sm" style={{color: design.textColor ? design.textColor : 'inherit'}}>{product ? product.name : item.description}</span>
                                                 </TableCell>
-                                                <TableCell className="py-4 align-top text-xs text-gray-600">
+                                                <TableCell className="py-4 align-top text-xs" style={{color: design.textColor ? design.textColor : 'rgb(75 85 99)'}}>
                                                     {product?.description || 'Standard Item'}
                                                 </TableCell>
                                                 <TableCell className="text-right py-4 align-top text-sm">{item.quantity}</TableCell>
@@ -301,20 +304,20 @@ export function InvoicePreview({
                         </section>
                         
                          <div className="flex flex-col gap-4 mt-8">
-                            <div className="flex flex-row gap-12 items-start">
-                                <div className="flex-1">
-                                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Payment Details</h3>
-                                    {config.profile.paymentDetails ? (
-                                        <p className="text-xs text-gray-600 whitespace-pre-wrap leading-relaxed">
-                                            {config.profile.paymentDetails}
-                                        </p>
-                                    ) : (
-                                        <p className="text-xs text-gray-400 italic">No payment details provided.</p>
-                                    )}
-                                </div>
+                             <div className="flex flex-row gap-12 items-start">
+                                 <div className="flex-1">
+                                     <h3 className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: design.textColor ? design.textColor : 'rgb(107 114 128)' }}>Payment Details</h3>
+                                     {config.profile.paymentDetails ? (
+                                         <p className="text-xs whitespace-pre-wrap leading-relaxed" style={{ color: design.textColor ? design.textColor : 'rgb(75 85 99)' }}>
+                                             {config.profile.paymentDetails}
+                                         </p>
+                                     ) : (
+                                         <p className="text-xs italic" style={{ color: design.textColor ? design.textColor : 'rgb(156 163 175)' }}>No payment details provided.</p>
+                                     )}
+                                 </div>
                                 <div className="w-[40%] min-w-[260px] space-y-2 text-sm">
                                     <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-                                        <span className="text-gray-600">Subtotal</span>
+                                        <span style={{color: design.textColor ? design.textColor : 'rgb(75 85 99)'}}>Subtotal</span>
                                         <span className="font-semibold">{formatCurrency(subtotal)}</span>
                                     </div>
                                     {discountAmount > 0 && (
@@ -325,24 +328,24 @@ export function InvoicePreview({
                                     )}
                                     {taxAmount > 0 && (
                                         <div className="flex justify-between items-center text-sm border-b border-gray-100 pb-2">
-                                            <span className="text-gray-600">{taxName} ({taxRateDisplay})</span>
+                                            <span style={{color: design.textColor ? design.textColor : 'rgb(75 85 99)'}}>{taxName} ({taxRateDisplay})</span>
                                             <span className="font-semibold">{formatCurrency(taxAmount)}</span>
                                         </div>
                                     )}
                                      {shippingAmount > 0 && (
                                         <div className="flex justify-between items-center text-sm border-b border-gray-100 pb-2">
-                                            <span className="text-gray-600">Shipping</span>
+                                            <span style={{color: design.textColor ? design.textColor : 'rgb(75 85 99)'}}>Shipping</span>
                                             <span className="font-semibold">{formatCurrency(shippingAmount)}</span>
                                         </div>
                                     )}
                                 </div>
-                            </div>
-                             <div className="flex flex-row gap-12 items-start">
+                             </div>
+                            <div className="flex flex-row gap-12 items-start">
                                 <div className="flex-1">
                                      {invoiceData.notes && (
                                         <div>
-                                            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Notes</h3>
-                                            <p className="text-xs text-gray-600">{invoiceData.notes}</p>
+                                            <h3 className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: design.textColor ? design.textColor : 'rgb(107 114 128)' }}>Notes</h3>
+                                            <p className="text-xs" style={{ color: design.textColor ? design.textColor : 'rgb(75 85 99)' }}>{invoiceData.notes}</p>
                                         </div>
                                     )}
                                 </div>
