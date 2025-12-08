@@ -21,8 +21,10 @@ import { QuotationPreview } from '@/components/quotation-preview';
 import dynamic from 'next/dynamic';
 import { cn } from '@/lib/utils';
 import { Slider } from '@/components/ui/slider';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const designSettingsSchema = z.object({
+  logo: z.string().optional(),
   backgroundColor: z.string().optional(),
   textColor: z.string().optional(),
   headerImage: z.string().optional(),
@@ -33,7 +35,11 @@ const designSettingsSchema = z.object({
   backgroundImageOpacity: z.number().min(0).max(1).optional(),
   watermarkText: z.string().optional(),
   watermarkColor: z.string().optional(),
+  watermarkOpacity: z.number().min(0).max(1).optional(),
+  headerColor: z.string().optional(),
+  footerColor: z.string().optional(),
 });
+
 
 type DesignSettingsFormData = z.infer<typeof designSettingsSchema>;
 
@@ -47,7 +53,7 @@ const ImageUploader = ({
 }: {
     form: any,
     fieldName: keyof DesignSettingsFormData,
-    opacityFieldName: keyof DesignSettingsFormData,
+    opacityFieldName?: keyof DesignSettingsFormData,
     label: string,
     description: string,
     aspect: 'wide' | 'normal'
@@ -55,7 +61,7 @@ const ImageUploader = ({
     const inputRef = useRef<HTMLInputElement>(null);
 
     const fieldValue = useWatch({ control: form.control, name: fieldName });
-    const opacityValue = useWatch({ control: form.control, name: opacityFieldName });
+    const opacityValue = opacityFieldName ? useWatch({ control: form.control, name: opacityFieldName }) : 1;
 
     const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -64,7 +70,7 @@ const ImageUploader = ({
             reader.onloadend = () => {
                 const dataUrl = reader.result as string;
                 form.setValue(fieldName, dataUrl, { shouldDirty: true, shouldValidate: true });
-                 if (form.getValues(opacityFieldName) === undefined) {
+                 if (opacityFieldName && form.getValues(opacityFieldName) === undefined) {
                     form.setValue(opacityFieldName, 1, { shouldDirty: true });
                 }
             };
@@ -107,7 +113,7 @@ const ImageUploader = ({
                     <FormMessage />
                 </FormItem>
             )} />
-            {fieldValue && (
+            {opacityFieldName && fieldValue && (
                  <FormField
                     control={form.control}
                     name={opacityFieldName}
@@ -130,24 +136,44 @@ const ImageUploader = ({
     );
 };
 
-function SettingsPanel({ form, documentType, documentId, isNew, onSubmit, returnUrl }: {
+const WATERMARK_PRESETS = ['PAID', 'DRAFT', 'PENDING', 'OVERDUE', 'CANCELED', 'CUSTOM'];
+
+function SettingsPanel({ form, documentType, documentId, isNew, onSubmit, returnUrl, onToggle }: {
   form: any,
   documentType: string | null,
   documentId: string | null,
   isNew: boolean,
   onSubmit: (data: any) => void,
-  returnUrl: string
+  returnUrl: string,
+  onToggle: () => void,
 }) {
+  const [customWatermark, setCustomWatermark] = useState(form.getValues('watermarkText') && !WATERMARK_PRESETS.includes(form.getValues('watermarkText')));
+  
+  const handleWatermarkPresetChange = (value: string) => {
+    if (value === 'CUSTOM') {
+        setCustomWatermark(true);
+        form.setValue('watermarkText', '');
+    } else {
+        setCustomWatermark(false);
+        form.setValue('watermarkText', value);
+    }
+  }
+
   return (
     <div className="h-full overflow-y-auto">
         <Form {...form}>
             <div className="flex flex-col h-full">
                 <Card className="border-0 shadow-none rounded-none flex-1 flex flex-col">
-                    <CardHeader className="p-4">
-                        <CardTitle className="capitalize">Customize {documentType || 'Design'}</CardTitle>
-                        <CardDescription>
-                            {isNew ? `Customizing default ${documentType} design.` : `Design for ${documentId}`}
-                        </CardDescription>
+                    <CardHeader className="p-4 flex-row items-center justify-between">
+                       <div>
+                            <CardTitle className="capitalize">Customize {documentType || 'Design'}</CardTitle>
+                            <CardDescription>
+                                {isNew ? `Customizing default ${documentType} design.` : `Design for ${documentId}`}
+                            </CardDescription>
+                       </div>
+                       <Button size="icon" onClick={onToggle} className="lg:hidden shrink-0">
+                            <ArrowLeft className="h-5 w-5" />
+                       </Button>
                     </CardHeader>
                     <CardContent className="flex-grow p-4 space-y-6 overflow-y-auto">
                         <Card>
@@ -155,13 +181,15 @@ function SettingsPanel({ form, documentType, documentId, isNew, onSubmit, return
                                 <CardTitle className="flex items-center gap-2 text-base"><Paintbrush className="h-4 w-4"/> Appearance</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
+                                <ImageUploader form={form} fieldName="logo" label="Custom Logo" description="Overrides default company logo for this design." aspect='normal' />
+                                <Separator />
                                 <div className="grid grid-cols-2 gap-4">
                                     <FormField control={form.control} name="backgroundColor" render={({ field }) => (
                                         <FormItem>
                                             <FormLabel className="text-xs">Page Background</FormLabel>
                                             <FormControl>
                                                 <div className="flex gap-2">
-                                                    <Input type="color" {...field} value={field.value || '#FFFFFF'} className="h-10 w-16 p-1 cursor-pointer" />
+                                                    <Input type="color" {...field} value={field.value || '#FFFFFF'} className="h-10 w-full p-1 cursor-pointer" />
                                                 </div>
                                             </FormControl>
                                         </FormItem>
@@ -171,7 +199,7 @@ function SettingsPanel({ form, documentType, documentId, isNew, onSubmit, return
                                             <FormLabel className="text-xs">Text Color</FormLabel>
                                             <FormControl>
                                                 <div className="flex gap-2">
-                                                    <Input type="color" {...field} value={field.value || '#000000'} className="h-10 w-16 p-1 cursor-pointer" />
+                                                    <Input type="color" {...field} value={field.value || '#000000'} className="h-10 w-full p-1 cursor-pointer" />
                                                 </div>
                                             </FormControl>
                                         </FormItem>
@@ -193,33 +221,75 @@ function SettingsPanel({ form, documentType, documentId, isNew, onSubmit, return
                                         <TabsTrigger value="footer">Footer</TabsTrigger>
                                         <TabsTrigger value="watermark">Watermark</TabsTrigger>
                                     </TabsList>
-                                    <TabsContent value="header" className="pt-4">
+                                    <TabsContent value="header" className="pt-4 space-y-4">
+                                        <FormField control={form.control} name="headerColor" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="text-xs">Header Bar Color</FormLabel>
+                                                <FormControl>
+                                                    <Input type="color" {...field} value={field.value || '#000000'} className="h-10 w-full p-1 cursor-pointer" />
+                                                </FormControl>
+                                            </FormItem>
+                                        )} />
                                         <ImageUploader form={form} fieldName="headerImage" opacityFieldName="headerImageOpacity" label="Header" description="Full width top banner." aspect='wide' />
                                     </TabsContent>
-                                    <TabsContent value="footer" className="pt-4">
+                                    <TabsContent value="footer" className="pt-4 space-y-4">
+                                         <FormField control={form.control} name="footerColor" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="text-xs">Footer Bar Color</FormLabel>
+                                                <FormControl>
+                                                    <Input type="color" {...field} value={field.value || '#000000'} className="h-10 w-full p-1 cursor-pointer" />
+                                                </FormControl>
+                                            </FormItem>
+                                        )} />
                                         <ImageUploader form={form} fieldName="footerImage" opacityFieldName="footerImageOpacity" label="Footer" description="Full width bottom banner." aspect='wide' />
                                     </TabsContent>
                                     <TabsContent value="watermark" className="pt-4 space-y-4">
-                                        <FormField control={form.control} name="watermarkText" render={({ field }) => (
-                                           <FormItem>
-                                               <FormLabel className="text-xs">Watermark Text</FormLabel>
-                                               <FormControl>
-                                                   <Input placeholder="e.g., PAID, DRAFT" {...field} />
-                                               </FormControl>
-                                               <FormDescription>Leave blank to use document status.
-                                               </FormDescription>
-                                           </FormItem>
-                                       )} />
+                                        <div className="space-y-2">
+                                            <FormLabel className="text-xs">Watermark Text</FormLabel>
+                                            <Select onValueChange={handleWatermarkPresetChange} defaultValue={customWatermark ? 'CUSTOM' : form.getValues('watermarkText') || ''}>
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue placeholder="Select a preset or enter custom text" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {WATERMARK_PRESETS.map(preset => <SelectItem key={preset} value={preset}>{preset}</SelectItem>)}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                       {customWatermark && (
+                                            <FormField control={form.control} name="watermarkText" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="text-xs">Custom Text</FormLabel>
+                                                <FormControl>
+                                                    <Input placeholder="e.g., CONFIDENTIAL" {...field} />
+                                                </FormControl>
+                                            </FormItem>
+                                        )} />
+                                       )}
                                        <FormField control={form.control} name="watermarkColor" render={({ field }) => (
                                            <FormItem>
                                                <FormLabel className="text-xs">Watermark Color</FormLabel>
                                                <FormControl>
-                                                   <div className="flex gap-2">
-                                                       <Input type="color" {...field} value={field.value || '#dddddd'} className="h-10 w-16 p-1 cursor-pointer" />
-                                                   </div>
+                                                    <Input type="color" {...field} value={field.value || '#dddddd'} className="h-10 w-full p-1 cursor-pointer" />
                                                </FormControl>
                                            </FormItem>
                                        )} />
+                                        <FormField
+                                            control={form.control}
+                                            name="watermarkOpacity"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="text-xs">Opacity</FormLabel>
+                                                    <FormControl>
+                                                    <Slider
+                                                            value={[ (field.value ?? 1) * 100]}
+                                                            onValueChange={(value) => field.onChange(value[0] / 100)}
+                                                            max={100}
+                                                            step={1}
+                                                        />
+                                                    </FormControl>
+                                                </FormItem>
+                                            )}
+                                        />
                                     </TabsContent>
                                 </Tabs>
                             </CardContent>
@@ -256,6 +326,7 @@ function DocumentDesignPage() {
     const form = useForm<DesignSettingsFormData>({
         resolver: zodResolver(designSettingsSchema),
         defaultValues: {
+            logo: '',
             backgroundColor: '#FFFFFF',
             textColor: '#000000',
             headerImage: '',
@@ -266,12 +337,16 @@ function DocumentDesignPage() {
             backgroundImageOpacity: 1,
             watermarkText: '',
             watermarkColor: '#dddddd',
+            watermarkOpacity: 0.05,
+            headerColor: '#F97316',
+            footerColor: '#1E40AF'
         },
     });
 
     const watchedValues = form.watch();
 
     const currentDesignSettings: DesignSettings = useMemo(() => ({
+        logo: watchedValues.logo,
         backgroundColor: watchedValues.backgroundColor,
         textColor: watchedValues.textColor,
         headerImage: watchedValues.headerImage,
@@ -282,6 +357,9 @@ function DocumentDesignPage() {
         backgroundImageOpacity: watchedValues.backgroundImageOpacity,
         watermarkText: watchedValues.watermarkText,
         watermarkColor: watchedValues.watermarkColor,
+        watermarkOpacity: watchedValues.watermarkOpacity,
+        headerColor: watchedValues.headerColor,
+        footerColor: watchedValues.footerColor,
     }), [watchedValues]);
 
     const getDefaultTemplate = useCallback((type: 'invoice' | 'quotation'): Partial<DesignSettings> => {
@@ -321,6 +399,7 @@ function DocumentDesignPage() {
         if (doc) setDocument(doc);
         
         const initialValues: DesignSettingsFormData = {
+            logo: existingDesign.logo ?? '',
             backgroundColor: existingDesign.backgroundColor ?? defaultTemplate.backgroundColor ?? brand.backgroundColor ?? '#FFFFFF',
             textColor: existingDesign.textColor ?? defaultTemplate.textColor ?? brand.textColor ?? '#000000',
             headerImage: existingDesign.headerImage ?? defaultTemplate.headerImage ?? brand.headerImage ?? '',
@@ -331,6 +410,9 @@ function DocumentDesignPage() {
             backgroundImageOpacity: existingDesign.backgroundImageOpacity ?? defaultTemplate.backgroundImageOpacity ?? 1,
             watermarkText: existingDesign.watermarkText ?? defaultTemplate.watermarkText ?? '',
             watermarkColor: existingDesign.watermarkColor ?? defaultTemplate.watermarkColor ?? '#dddddd',
+            watermarkOpacity: existingDesign.watermarkOpacity ?? defaultTemplate.watermarkOpacity ?? 0.05,
+            headerColor: existingDesign.headerColor ?? defaultTemplate.headerColor ?? brand.primaryColor ?? '#F97316',
+            footerColor: existingDesign.footerColor ?? defaultTemplate.footerColor ?? brand.secondaryColor ?? '#1E40AF',
         };
         
         form.reset(initialValues);
@@ -341,6 +423,7 @@ function DocumentDesignPage() {
         if (!config || !documentType) return;
         
         const newDesignSettings: DesignSettings = {
+            logo: data.logo,
             backgroundColor: data.backgroundColor,
             textColor: data.textColor,
             headerImage: data.headerImage,
@@ -351,6 +434,9 @@ function DocumentDesignPage() {
             backgroundImageOpacity: data.backgroundImageOpacity,
             watermarkText: data.watermarkText,
             watermarkColor: data.watermarkColor,
+            watermarkOpacity: data.watermarkOpacity,
+            headerColor: data.headerColor,
+            footerColor: data.footerColor,
         };
 
         const templateKey = documentType === 'invoice' ? 'defaultInvoiceTemplate' : 'defaultQuotationTemplate';
@@ -410,15 +496,17 @@ function DocumentDesignPage() {
     return (
         <div className="flex h-screen overflow-hidden bg-gray-50">
             <aside className={cn(
-                "fixed lg:relative top-0 left-0 z-40 w-80 h-screen transition-transform duration-300 bg-white border-r",
-                isSidebarOpen ? "translate-x-0" : "-translate-x-full",
-                "lg:translate-x-0"
+                "fixed md:relative top-0 left-0 z-40 w-80 h-screen transition-transform duration-300 bg-white border-r",
+                isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
             )}>
                  <Button 
                     variant="default"
                     size="icon" 
                     onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                    className="absolute top-4 -right-10 z-50 rounded-r-md rounded-l-none"
+                    className={cn(
+                        "absolute top-4 -right-10 z-50 rounded-r-md rounded-l-none transition-all duration-300",
+                        !isSidebarOpen && "md:hidden"
+                    )}
                 >
                     <PanelLeft className="h-5 w-5"/>
                 </Button>
@@ -429,17 +517,37 @@ function DocumentDesignPage() {
                     isNew={isNew} 
                     onSubmit={onSubmit} 
                     returnUrl={returnUrl}
+                    onToggle={() => setIsSidebarOpen(false)}
                 />
             </aside>
             
-            <main className="flex-1 w-full flex flex-col h-screen overflow-hidden">
-                <header className="h-16 flex-shrink-0 bg-white border-b flex items-center justify-center px-4 gap-3 shadow-sm">
-                    <h1 className="font-semibold text-lg capitalize">
+            {isSidebarOpen && (
+                <div 
+                    className="fixed inset-0 bg-black/50 z-30 md:hidden"
+                    onClick={() => setIsSidebarOpen(false)}
+                />
+            )}
+            
+            <div className="flex-1 flex flex-col h-screen overflow-hidden">
+                <header className="h-16 flex-shrink-0 bg-white border-b flex items-center px-4 gap-3 shadow-sm">
+                    <Button 
+                        variant="outline"
+                        size="icon" 
+                        onClick={() => setIsSidebarOpen(true)}
+                        className={cn(
+                            "shrink-0",
+                            isSidebarOpen ? "md:hidden" : "md:inline-flex"
+                        )}
+                    >
+                        <PanelLeft className="h-5 w-5"/>
+                    </Button>
+                    <h1 className="flex-1 text-center md:text-left font-semibold text-lg capitalize">
                         {documentType} Design
                     </h1>
+                    <div className="w-10 md:hidden" />
                 </header>
 
-                <div className="flex-1 w-full bg-slate-100 overflow-y-auto flex justify-center items-start p-4 md:p-8">
+                <main className="flex-1 w-full bg-slate-100 overflow-y-auto flex justify-center items-start p-4 md:p-8">
                     <div className="flex-shrink-0 shadow-2xl transform origin-top scale-75 md:scale-90 lg:scale-95">
                         {hasContentForPreview ? (
                             <>
@@ -475,8 +583,8 @@ function DocumentDesignPage() {
                             </div>
                         )}
                     </div>
-                </div>
-            </main>
+                </main>
+            </div>
         </div>
     );
 }

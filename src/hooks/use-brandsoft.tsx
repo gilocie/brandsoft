@@ -38,6 +38,7 @@ export type LineItem = {
 };
 
 export interface DesignSettings {
+    logo?: string;
     backgroundColor?: string;
     textColor?: string;
     headerImage?: string;
@@ -48,6 +49,9 @@ export interface DesignSettings {
     backgroundImageOpacity?: number;
     watermarkText?: string;
     watermarkColor?: string;
+    watermarkOpacity?: number;
+    headerColor?: string;
+    footerColor?: string;
 }
 
 export type Invoice = {

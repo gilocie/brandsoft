@@ -36,14 +36,32 @@ export interface InvoicePreviewProps {
     designOverride?: DesignSettings;
 }
 
-const InvoiceStatusWatermark = ({ status, color }: { status: string, color: string }) => {
+const InvoiceStatusWatermark = ({ status, color, opacity }: { status: string, color: string, opacity: number }) => {
+    const hexToRgb = (hex: string) => {
+        let r = 0, g = 0, b = 0;
+        if (hex.length === 4) {
+            r = parseInt(hex[1] + hex[1], 16);
+            g = parseInt(hex[2] + hex[2], 16);
+            b = parseInt(hex[3] + hex[3], 16);
+        } else if (hex.length === 7) {
+            r = parseInt(hex.slice(1, 3), 16);
+            g = parseInt(hex.slice(3, 5), 16);
+            b = parseInt(hex.slice(5, 7), 16);
+        }
+        return { r, g, b };
+    };
+
+    const rgb = hexToRgb(color || '#000000');
+    const finalColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${opacity})`;
+
+
     return (
         <div
             className={cn(
                 "absolute top-[45%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-0",
                 "text-[8rem] sm:text-[10rem] font-black tracking-[1rem] leading-none select-none pointer-events-none uppercase",
             )}
-            style={{ color: color || 'rgba(0, 0, 0, 0.05)' }}
+            style={{ color: finalColor }}
         >
             {status}
         </div>
@@ -71,6 +89,7 @@ export function InvoicePreview({
         const hasOverride = designOverride !== undefined && designOverride !== null;
         
         let mergedDesign: DesignSettings = {
+            logo: brand.logo || '',
             backgroundColor: brand.backgroundColor || '#FFFFFF',
             textColor: brand.textColor || '#000000',
             headerImage: brand.headerImage || '',
@@ -81,33 +100,27 @@ export function InvoicePreview({
             backgroundImageOpacity: 1,
             watermarkText: '',
             watermarkColor: '#dddddd',
+            watermarkOpacity: 0.05,
+            headerColor: brand.primaryColor || '#F97316',
+            footerColor: brand.secondaryColor || '#1E40AF',
         };
         
         const merge = (target: any, source: any) => {
-            if (source.backgroundColor) target.backgroundColor = source.backgroundColor;
-            if (source.textColor) target.textColor = source.textColor;
-            if (source.headerImage) target.headerImage = source.headerImage;
-            if (source.headerImageOpacity !== undefined) target.headerImageOpacity = source.headerImageOpacity;
-            if (source.footerImage) target.footerImage = source.footerImage;
-            if (source.footerImageOpacity !== undefined) target.footerImageOpacity = source.footerImageOpacity;
-            if (source.backgroundImage) target.backgroundImage = source.backgroundImage;
-            if (source.backgroundImageOpacity !== undefined) target.backgroundImageOpacity = source.backgroundImageOpacity;
-            if (source.watermarkText) target.watermarkText = source.watermarkText;
-            if (source.watermarkColor) target.watermarkColor = source.watermarkColor;
+            Object.keys(source).forEach(key => {
+                if (source[key] !== undefined && source[key] !== null && source[key] !== '') {
+                    target[key] = source[key];
+                }
+            });
         };
 
         merge(mergedDesign, defaultTemplate);
         merge(mergedDesign, documentDesign);
         if (hasOverride) {
-           Object.assign(mergedDesign, Object.fromEntries(Object.entries(override).filter(([_, v]) => v != null)));
+           merge(mergedDesign, override);
         }
         
         return {
             ...mergedDesign,
-            logo: brand.logo,
-            primaryColor: brand.primaryColor || '#F97316',
-            secondaryColor: brand.secondaryColor || '#1E40AF',
-            businessName: brand.businessName,
             showCustomerAddress: brand.showCustomerAddress,
             footerContent: brand.footerContent,
             brandsoftFooter: brand.brandsoftFooter,
@@ -159,8 +172,6 @@ export function InvoicePreview({
     const invoiceDateStr = formatDateSafe(invoiceData.invoiceDate || invoiceData.date);
     const dueDateStr = formatDateSafe(invoiceData.dueDate || invoiceData.date);
     const taxName = invoiceData.taxName || 'Tax';
-    const accentColor = design.primaryColor;
-    const footerColor = design.secondaryColor;
 
     const watermarkText = design.watermarkText || invoiceData.status;
 
@@ -171,7 +182,7 @@ export function InvoicePreview({
         );
     };
     
-    const topPadding = design.headerImage ? 'pt-[40px]' : 'pt-[10mm]';
+    const topPadding = design.headerImage ? 'pt-[60px]' : 'pt-[10mm]';
     const bottomPadding = design.footerImage ? 'pb-[95px]' : 'pb-[55px]';
 
     return (
@@ -188,24 +199,24 @@ export function InvoicePreview({
                     <img src={design.backgroundImage} className="absolute inset-0 w-full h-full object-cover z-0" style={{opacity: design.backgroundImageOpacity ?? 1}} alt="background"/>
                 )}
                 
-                {watermarkText && <InvoiceStatusWatermark status={watermarkText} color={design.watermarkColor || 'rgba(0,0,0,0.05)'} />}
+                {watermarkText && <InvoiceStatusWatermark status={watermarkText} color={design.watermarkColor || '#dddddd'} opacity={design.watermarkOpacity ?? 0.05} />}
                 
-                <div className="h-[50px] w-full flex-shrink-0 relative z-10" style={{ backgroundColor: accentColor }}></div>
+                <div className="absolute top-0 left-0 w-full h-[60px] z-10" style={{ backgroundColor: design.headerColor }}></div>
 
                 {design.headerImage && (
-                     <div className="absolute top-0 left-0 w-full h-[40px] z-10">
+                     <div className="absolute top-0 left-0 w-full h-[60px] z-10">
                         <img src={design.headerImage} className="w-full h-full object-cover" style={{ opacity: design.headerImageOpacity ?? 1 }} alt="header" />
                     </div>
                 )}
                 
                 <footer className="absolute bottom-0 left-0 w-full z-20">
                      {design.footerImage && (
-                        <div className="w-full h-[40px]">
+                        <div className="w-full h-[60px]">
                            <img src={design.footerImage} className="w-full h-full object-cover" style={{ opacity: design.footerImageOpacity ?? 1 }} alt="footer" />
                         </div>
                     )}
                    {design.brandsoftFooter && (
-                        <div className="text-center text-xs py-2 px-4" style={{backgroundColor: footerColor, color: '#fff'}}>
+                        <div className="text-center text-xs py-2 px-4" style={{backgroundColor: design.footerColor, color: '#fff'}}>
                             Created by BrandSoft
                         </div>
                     )}
@@ -218,7 +229,7 @@ export function InvoicePreview({
                             {design.logo && (
                                 <img src={design.logo} alt="Logo" className="h-20 w-auto object-contain" />
                             )}
-                            <h1 className="text-5xl font-bold tracking-tight" style={{ color: accentColor }}>Invoice</h1>
+                            <h1 className="text-5xl font-bold tracking-tight" style={{ color: design.headerColor }}>Invoice</h1>
                         </div>
 
                         <div className="text-right text-sm leading-relaxed" style={{color: design.textColor ? design.textColor : 'inherit'}}>
@@ -339,7 +350,7 @@ export function InvoicePreview({
                                     )}
                                 </div>
                                 <div className="w-[40%] min-w-[260px]">
-                                     <div className="mt-4 flex items-center justify-between p-3 rounded-sm" style={{backgroundColor: accentColor}}>
+                                     <div className="mt-4 flex items-center justify-between p-3 rounded-sm" style={{backgroundColor: design.headerColor}}>
                                         <span className="font-bold text-white text-lg">Total</span>
                                         <span className="font-bold text-white text-xl">{formatCurrency(total)}</span>
                                     </div>

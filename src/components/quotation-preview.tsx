@@ -3,7 +3,7 @@
 
 import React, { useMemo } from 'react';
 import { BrandsoftConfig, Customer, Quotation, DesignSettings } from '@/hooks/use-brandsoft';
-import { format, parseISO } from "date-fns";
+import { format, parseISO, isValid } from "date-fns";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { cn } from '@/lib/utils';
 import jsPDF from 'jspdf';
@@ -41,35 +41,34 @@ export interface QuotationPreviewProps {
     designOverride?: DesignSettings;
 }
 
-const QuotationStatusWatermark = ({ status }: { status: Quotation['status'] }) => {
-    let text = '';
-    let colorClass = '';
+const QuotationStatusWatermark = ({ status, color, opacity }: { status: string, color: string, opacity: number }) => {
+     const hexToRgb = (hex: string) => {
+        let r = 0, g = 0, b = 0;
+        if (hex.length === 4) {
+            r = parseInt(hex[1] + hex[1], 16);
+            g = parseInt(hex[2] + hex[2], 16);
+            b = parseInt(hex[3] + hex[3], 16);
+        } else if (hex.length === 7) {
+            r = parseInt(hex.slice(1, 3), 16);
+            g = parseInt(hex.slice(3, 5), 16);
+            b = parseInt(hex.slice(5, 7), 16);
+        }
+        return { r, g, b };
+    };
 
-    switch (status) {
-        case 'Draft':
-        case 'Sent':
-            text = status.toUpperCase();
-            colorClass = 'text-blue-500/20';
-            break;
-        case 'Accepted':
-            text = 'ACCEPTED';
-            colorClass = 'text-green-500/20';
-            break;
-        case 'Declined':
-            text = 'DECLINED';
-            colorClass = 'text-red-500/20';
-            break;
-        default:
-            return null;
-    }
+    const rgb = hexToRgb(color || '#000000');
+    const finalColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${opacity})`;
+
 
     return (
-        <div className={cn(
-            "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0",
-            "text-[8rem] font-black tracking-widest leading-none transform -rotate-12 select-none pointer-events-none",
-            colorClass
-        )}>
-            {text}
+        <div
+            className={cn(
+                "absolute top-[45%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-0",
+                "text-[8rem] sm:text-[10rem] font-black tracking-[1rem] leading-none select-none pointer-events-none uppercase",
+            )}
+            style={{ color: finalColor }}
+        >
+            {status}
         </div>
     );
 };
@@ -96,54 +95,46 @@ export function QuotationPreview({
         const defaultTemplate = config.profile?.defaultQuotationTemplate || {};
         const documentDesign = quotationData?.design || {};
         const override = designOverride || {};
-        
         const hasOverride = designOverride !== undefined && designOverride !== null;
         
-        let mergedDesign = {
+        let mergedDesign: DesignSettings = {
+            logo: brand.logo || '',
             backgroundColor: brand.backgroundColor || '#FFFFFF',
             textColor: brand.textColor || '#000000',
             headerImage: brand.headerImage || '',
+            headerImageOpacity: 1,
             footerImage: brand.footerImage || '',
+            footerImageOpacity: 1,
             backgroundImage: brand.backgroundImage || '',
-            watermarkImage: brand.watermarkImage || '',
+            backgroundImageOpacity: 1,
+            watermarkText: '',
+            watermarkColor: '#dddddd',
+            watermarkOpacity: 0.05,
+            headerColor: brand.primaryColor || '#000000',
+            footerColor: brand.secondaryColor || '#666666',
         };
         
         const merge = (target: any, source: any) => {
-            if (source.backgroundColor) target.backgroundColor = source.backgroundColor;
-            if (source.textColor) target.textColor = source.textColor;
-            if (source.headerImage) target.headerImage = source.headerImage;
-            if (source.footerImage) target.footerImage = source.footerImage;
-            if (source.backgroundImage) target.backgroundImage = source.backgroundImage;
-            if (source.watermarkImage) target.watermarkImage = source.watermarkImage;
+            Object.keys(source).forEach(key => {
+                if (source[key] !== undefined && source[key] !== null && source[key] !== '') {
+                    target[key] = source[key];
+                }
+            });
         };
 
         merge(mergedDesign, defaultTemplate);
         merge(mergedDesign, documentDesign);
         if (hasOverride) {
-            mergedDesign.backgroundColor = override.backgroundColor ?? mergedDesign.backgroundColor;
-            mergedDesign.textColor = override.textColor ?? mergedDesign.textColor;
-            mergedDesign.headerImage = override.headerImage ?? mergedDesign.headerImage;
-            mergedDesign.footerImage = override.footerImage ?? mergedDesign.footerImage;
-            mergedDesign.backgroundImage = override.backgroundImage ?? mergedDesign.backgroundImage;
-            mergedDesign.watermarkImage = override.watermarkImage ?? mergedDesign.watermarkImage;
+           merge(mergedDesign, override);
         }
         
         return {
             ...mergedDesign,
-            logo: brand.logo,
-            primaryColor: brand.primaryColor || '#000000',
-            secondaryColor: brand.secondaryColor || '#666666',
-            businessName: brand.businessName,
             showCustomerAddress: brand.showCustomerAddress,
             footerContent: brand.footerContent,
             brandsoftFooter: brand.brandsoftFooter,
         };
-    }, [
-        config.brand, 
-        config.profile?.defaultQuotationTemplate,
-        quotationData?.design,
-        designOverride,
-    ]);
+    }, [config, quotationData?.design, designOverride]);
 
     const currencyCode = quotationData.currency || config.profile?.defaultCurrency || '$';
     const formatCurrency = (value: number) => `${currencyCode}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -173,16 +164,6 @@ export function QuotationPreview({
             taxAmount = quotationData.taxValue;
             taxRateDisplay = formatCurrency(quotationData.taxValue);
         }
-    } else if (quotationData.tax && quotationData.tax > 0 && subtotalAfterDiscount > 0) {
-        taxAmount = quotationData.tax;
-        if (quotationData.taxType === 'percentage' && quotationData.taxValue) {
-            taxRateDisplay = `${quotationData.taxValue}%`;
-        } else if (quotationData.taxType === 'flat' && quotationData.taxValue) {
-            taxRateDisplay = formatCurrency(quotationData.taxValue);
-        } else {
-            const effectiveTaxRate = (taxAmount / subtotalAfterDiscount) * 100;
-            taxRateDisplay = `${effectiveTaxRate.toFixed(2)}%`;
-        }
     } else if (quotationData.tax) {
         taxAmount = quotationData.tax;
         taxRateDisplay = formatCurrency(taxAmount);
@@ -192,15 +173,18 @@ export function QuotationPreview({
     
     const total = subtotalAfterDiscount + taxAmount + shippingAmount;
     
-    const rawQuotationDate = quotationData.quotationDate || quotationData.date;
-    const rawValidUntil = quotationData.validUntil || quotationData.date;
-    const quotationDate = typeof rawQuotationDate === 'string' ? parseISO(rawQuotationDate) : rawQuotationDate;
-    const validUntil = typeof rawValidUntil === 'string' ? parseISO(rawValidUntil) : rawValidUntil;
+    const formatDateSafe = (dateVal: Date | string | undefined) => {
+        if (!dateVal) return format(new Date(), 'MM/dd/yyyy');
+        const d = typeof dateVal === 'string' ? parseISO(dateVal) : dateVal;
+        return isValid(d) ? format(d, 'MM/dd/yyyy') : format(new Date(), 'MM/dd/yyyy');
+    };
+
+    const quotationDateStr = formatDateSafe(quotationData.quotationDate || quotationData.date);
+    const validUntilStr = formatDateSafe(quotationData.validUntil || quotationData.date);
     
     const taxName = quotationData.taxName || 'Tax';
     
-    const headerHeight = design.headerImage ? '80px' : '40px';
-    const contentPaddingTop = design.headerImage ? 'pt-24' : 'pt-14';
+    const watermarkText = design.watermarkText || quotationData.status;
 
     return (
         <div className={forPdf ? "" : "bg-gray-100 p-4 sm:p-8 rounded-lg"}>
@@ -216,38 +200,35 @@ export function QuotationPreview({
                     paddingLeft: '48px',
                     paddingRight: '48px',
                     paddingBottom: '100px',
+                    paddingTop: '60px'
                 }}
             >
                 {design.backgroundImage && (
-                    <img src={design.backgroundImage} className="absolute inset-0 w-full h-full object-cover z-0" alt="background"/>
+                    <img src={design.backgroundImage} className="absolute inset-0 w-full h-full object-cover z-0" style={{opacity: design.backgroundImageOpacity}} alt="background"/>
                 )}
 
-                {design.watermarkImage && (
-                    <img src={design.watermarkImage} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0 opacity-10 pointer-events-none max-w-[60%] max-h-[60%]" alt="watermark" />
-                )}
-                
-                {quotationData.status && !design.watermarkImage && <QuotationStatusWatermark status={quotationData.status} />}
+                 {watermarkText && <QuotationStatusWatermark status={watermarkText} color={design.watermarkColor || '#dddddd'} opacity={design.watermarkOpacity ?? 0.05} />}
 
-                {design.headerImage ? (
-                    <div className="absolute top-0 left-0 right-0 h-20 z-30">
-                        <img src={design.headerImage} className="w-full h-full object-cover" alt="Letterhead"/>
+                <div className="absolute top-0 left-0 right-0 h-[60px] z-30" style={{backgroundColor: design.headerColor}}></div>
+
+                {design.headerImage && (
+                    <div className="absolute top-0 left-0 right-0 h-[60px] z-30">
+                        <img src={design.headerImage} className="w-full h-full object-cover" style={{opacity: design.headerImageOpacity}} alt="Letterhead"/>
                     </div>
-                ) : (
-                    <div className="absolute top-0 left-0 right-0 h-10 z-30" style={{backgroundColor: design.primaryColor}}></div>
                 )}
                 
-                <div className={cn("relative z-10", contentPaddingTop)} style={{ paddingTop: headerHeight }}>
+                <div className="relative z-10">
                     <header className="flex justify-between items-start mb-8 pt-2">
                         <div className="flex items-center gap-4">
                             {design.logo && (
                                 <img src={design.logo} alt={config.brand?.businessName || 'Logo'} className="h-16 w-16 sm:h-20 sm:w-20 object-contain" />
                             )}
                             <div>
-                                <h1 className="text-3xl sm:text-4xl font-bold" style={{color: design.primaryColor}}>Quotation</h1>
+                                <h1 className="text-3xl sm:text-4xl font-bold" style={{color: design.headerColor}}>Quotation</h1>
                             </div>
                         </div>
-                        <div className="text-right text-sm text-gray-600">
-                            <p className="font-bold text-base text-black">{config.brand?.businessName}</p>
+                        <div className="text-right text-sm" style={{color: design.textColor}}>
+                            <p className="font-bold text-base">{config.brand?.businessName}</p>
                             <p>{config.profile?.address}</p>
                             <p>{config.profile?.email}</p>
                             <p>{config.profile?.phone}</p>
@@ -257,29 +238,29 @@ export function QuotationPreview({
 
                     <section className="grid grid-cols-2 gap-8 mb-4">
                         <div>
-                            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">Quote To</h3>
+                            <h3 className="text-sm font-semibold uppercase tracking-wider mb-1" style={{color: design.textColor ? design.textColor : 'rgb(107 114 128)'}}>Quote To</h3>
                             <p className="font-bold text-lg">{customer.companyName || customer.name}</p>
                             {config.brand?.showCustomerAddress ? (
                                 <>
-                                    {customer.companyName && <p className="text-gray-600">{customer.name}</p>}
-                                    <p className="text-gray-600">{customer.address || customer.companyAddress || 'No address provided'}</p>
-                                    <p className="text-gray-600">{customer.email}</p>
+                                    {customer.companyName && <p style={{color: design.textColor}}>{customer.name}</p>}
+                                    <p style={{color: design.textColor}}>{customer.address || customer.companyAddress || 'No address provided'}</p>
+                                    <p style={{color: design.textColor}}>{customer.email}</p>
                                 </>
                             ) : null}
                         </div>
                         <div className="text-right">
                             <div className="space-y-2">
                                 <div className="grid grid-cols-2 gap-2">
-                                    <span className="text-sm font-semibold text-gray-500">QUOTATION #</span>
+                                    <span className="text-sm font-semibold" style={{color: design.textColor ? design.textColor : 'rgb(107 114 128)'}}>QUOTATION #</span>
                                     <span className="font-medium">{quotationId || `${config.profile?.quotationPrefix || 'QUO-'}${String(config.profile?.quotationStartNumber || 1).padStart(3, '0')}`}</span>
                                 </div>
                                 <div className="grid grid-cols-2 gap-2">
-                                    <span className="text-sm font-semibold text-gray-500">DATE</span>
-                                    <span className="font-medium">{format(quotationDate || new Date(), 'MM/dd/yy')}</span>
+                                    <span className="text-sm font-semibold" style={{color: design.textColor ? design.textColor : 'rgb(107 114 128)'}}>DATE</span>
+                                    <span className="font-medium">{quotationDateStr}</span>
                                 </div>
                                 <div className="grid grid-cols-2 gap-2">
-                                    <span className="text-sm font-semibold text-gray-500">VALID UNTIL</span>
-                                    <span className="font-medium">{format(validUntil || new Date(), 'MM/dd/yy')}</span>
+                                    <span className="text-sm font-semibold" style={{color: design.textColor ? design.textColor : 'rgb(107 114 128)'}}>VALID UNTIL</span>
+                                    <span className="font-medium">{validUntilStr}</span>
                                 </div>
                             </div>
                         </div>
@@ -288,22 +269,22 @@ export function QuotationPreview({
                     <section className="mb-8">
                         <Table>
                             <TableHeader>
-                                <TableRow className="bg-transparent border-b-2 border-black">
-                                    <TableHead className="w-2/5 text-black font-bold uppercase tracking-wider text-xs">Item</TableHead>
-                                    <TableHead className="w-2/5 text-black font-bold uppercase tracking-wider text-xs">Description</TableHead>
-                                    <TableHead className="text-right text-black font-bold uppercase tracking-wider text-xs">Qty</TableHead>
-                                    <TableHead className="text-right text-black font-bold uppercase tracking-wider text-xs">Price</TableHead>
-                                    <TableHead className="text-right text-black font-bold uppercase tracking-wider text-xs">Tax</TableHead>
-                                    <TableHead className="text-right text-black font-bold uppercase tracking-wider text-xs">Amount</TableHead>
+                                <TableRow className="bg-transparent border-b-2" style={{borderColor: design.textColor}}>
+                                    <TableHead className="w-2/5 font-bold uppercase tracking-wider text-xs" style={{color: design.textColor}}>Item</TableHead>
+                                    <TableHead className="w-2/5 font-bold uppercase tracking-wider text-xs" style={{color: design.textColor}}>Description</TableHead>
+                                    <TableHead className="text-right font-bold uppercase tracking-wider text-xs" style={{color: design.textColor}}>Qty</TableHead>
+                                    <TableHead className="text-right font-bold uppercase tracking-wider text-xs" style={{color: design.textColor}}>Price</TableHead>
+                                    <TableHead className="text-right font-bold uppercase tracking-wider text-xs" style={{color: design.textColor}}>Tax</TableHead>
+                                    <TableHead className="text-right font-bold uppercase tracking-wider text-xs" style={{color: design.textColor}}>Amount</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {quotationData.lineItems?.map((item, index) => {
                                     const product = config?.products?.find(p => p.name === item.description);
                                     return (
-                                        <TableRow key={index} className="border-b border-gray-300">
+                                        <TableRow key={index} className="border-b" style={{borderColor: design.textColor ? `${design.textColor}20` : '#e5e7eb'}}>
                                             <TableCell className="font-medium py-3 align-top text-sm">{product ? product.name : item.description}</TableCell>
-                                            <TableCell className="py-3 align-top text-sm text-muted-foreground">{product?.description || ''}</TableCell>
+                                            <TableCell className="py-3 align-top text-sm" style={{color: design.textColor ? `${design.textColor}b3` : '#6b7280'}}>{product?.description || ''}</TableCell>
                                             <TableCell className="text-right py-3 align-top text-sm">{item.quantity}</TableCell>
                                             <TableCell className="text-right py-3 align-top text-sm">{formatCurrency(item.price)}</TableCell>
                                             <TableCell className="text-right py-3 align-top text-sm">{taxRateDisplay}</TableCell>
@@ -319,36 +300,36 @@ export function QuotationPreview({
                         <div className="text-sm">
                             {quotationData.notes && (
                                 <div>
-                                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Notes</h3>
-                                    <p className="text-gray-600 mt-1 text-xs">{quotationData.notes}</p>
+                                    <h3 className="text-sm font-semibold uppercase tracking-wider" style={{color: design.textColor ? design.textColor : 'rgb(107 114 128)'}}>Notes</h3>
+                                    <p className="mt-1 text-xs" style={{color: design.textColor}}>{quotationData.notes}</p>
                                 </div>
                             )}
                         </div>
                         <div className="w-full space-y-2 text-sm">
                             <div className="flex justify-between items-center">
-                                <span className="text-gray-600">Subtotal</span>
+                                <span style={{color: design.textColor}}>Subtotal</span>
                                 <span className="font-medium">{formatCurrency(subtotal)}</span>
                             </div>
                             {discountAmount > 0 && (
                                 <div className="flex justify-between items-center">
-                                    <span className="text-gray-600">Discount</span>
+                                    <span style={{color: design.textColor}}>Discount</span>
                                     <span className="font-medium">- {formatCurrency(discountAmount)}</span>
                                 </div>
                             )}
                             {taxAmount > 0 && (
                                 <div className="flex justify-between items-center">
-                                    <span className="text-gray-600">{taxName}</span>
+                                    <span style={{color: design.textColor}}>{taxName}</span>
                                     <span className="font-medium">{formatCurrency(taxAmount)}</span>
                                 </div>
                             )}
                             {shippingAmount > 0 && (
                                 <div className="flex justify-between items-center">
-                                    <span className="text-gray-600">Shipping</span>
+                                    <span style={{color: design.textColor}}>Shipping</span>
                                     <span className="font-medium">{formatCurrency(shippingAmount)}</span>
                                 </div>
                             )}
                             <div className="pt-2">
-                                <div className="flex items-center justify-between font-bold text-lg py-3 px-4 rounded" style={{backgroundColor: design.primaryColor, color: '#fff'}}>
+                                <div className="flex items-center justify-between font-bold text-lg py-3 px-4 rounded" style={{backgroundColor: design.headerColor, color: '#fff'}}>
                                     <span className="mr-4">Total</span>
                                     <span>{formatCurrency(total)}</span>
                                 </div>
@@ -359,9 +340,11 @@ export function QuotationPreview({
 
                 <footer className="absolute bottom-0 left-0 right-0 z-30">
                     {design.footerImage && (
-                        <img src={design.footerImage} className="w-full h-auto" alt="Footer"/>
+                        <div className="w-full h-[60px]">
+                            <img src={design.footerImage} className="w-full h-full object-cover" style={{opacity: design.footerImageOpacity}} alt="Footer"/>
+                        </div>
                     )}
-                    <div className="text-center text-xs py-3 px-4" style={{backgroundColor: design.secondaryColor, color: 'white'}}>
+                    <div className="text-center text-xs py-3 px-4" style={{backgroundColor: design.footerColor, color: 'white'}}>
                         {design.footerContent && <p className="mb-1">{design.footerContent}</p>}
                         {design.brandsoftFooter && <p><span className="font-bold">Created by BrandSoft</span></p>}
                     </div>
