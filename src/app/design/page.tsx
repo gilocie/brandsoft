@@ -414,8 +414,7 @@ function DocumentDesignPage() {
 
     const watchedValues = form.watch();
 
-    // Auto-save to session storage
-    useEffect(() => {
+     useEffect(() => {
         if (isLoading) return;
         const subscription = form.watch((value) => {
             setFormData(value);
@@ -577,8 +576,8 @@ function DocumentDesignPage() {
         const formData = getFormData('newDocumentData');
         
         const dynamicId = documentType === 'invoice' 
-            ? `${watchedValues.invoicePrefix || ''}${((config?.invoices?.length || 0) + (watchedValues.invoiceStartNumber || 0))}`
-            : `${watchedValues.quotationPrefix || ''}${((config?.quotations?.length || 0) + (watchedValues.quotationStartNumber || 0))}`;
+            ? `${watchedValues.invoicePrefix || ''}${(Number(config?.invoices?.length || 0) + Number(watchedValues.invoiceStartNumber || 0))}`
+            : `${watchedValues.quotationPrefix || ''}${(Number(config?.quotations?.length || 0) + Number(watchedValues.quotationStartNumber || 0))}`;
 
 
         if (document) {
@@ -709,4 +708,3 @@ export default dynamic(() => Promise.resolve(DocumentDesignPage), {
     loading: () => <div className="w-full h-screen flex items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>
 });
 
-    
