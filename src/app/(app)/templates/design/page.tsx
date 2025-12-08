@@ -20,6 +20,7 @@ import { useFormState } from '@/hooks/use-form-state';
 import { InvoicePreview } from '@/components/invoice-preview';
 import { QuotationPreview } from '@/components/quotation-preview';
 import dynamic from 'next/dynamic';
+import { cn } from '@/lib/utils';
 
 const designSettingsSchema = z.object({
   backgroundColor: z.string().optional(),
@@ -119,64 +120,45 @@ function DocumentDesignPage() {
     });
 
     useEffect(() => {
-    if (!config) return;
+        if (!config || !documentType) return;
 
-    let doc: Invoice | Quotation | null = null;
-    let design: Partial<DesignSettings> = {};
-    const brand = config.brand || {};
+        let doc: Invoice | Quotation | null = null;
+        let design: Partial<DesignSettings> = {};
+        const brand = config.brand || {};
 
-    if (isNew) {
-        const newDocumentFormData = getFormData();
-        if (newDocumentFormData) {
-            const docTypeKey = documentType === 'invoice' ? 'invoiceId' : 'quotationId';
-            doc = {
-                ...(newDocumentFormData as any),
-                [docTypeKey]: 'PREVIEW',
-            };
+        if (isNew) {
+            doc = getFormData();
+        } else if (documentId) {
+            if (documentType === 'invoice') {
+                doc = config.invoices.find(inv => inv.invoiceId === documentId) || null;
+            } else if (documentType === 'quotation') {
+                doc = config.quotations.find(q => q.quotationId === documentId) || null;
+            }
         }
-    } else if (documentId) {
-        if (documentType === 'invoice') {
-            doc = config.invoices.find(inv => inv.invoiceId === documentId) || null;
-        } else if (documentType === 'quotation') {
-            doc = config.quotations.find(q => q.quotationId === documentId) || null;
-        }
-    }
+        
+        if (doc) setDocument(doc);
+        
+        design = (doc as any)?.design || {};
 
-    if (doc) {
-        if (JSON.stringify(document) !== JSON.stringify(doc)) {
-            setDocument(doc);
-        }
-        design = (doc as any).design || {};
-    } else {
-        const defaultTemplateKey = documentType === 'invoice' ? 'defaultInvoiceTemplate' : documentType === 'quotation' ? 'defaultQuotationTemplate' : null;
-        if (defaultTemplateKey && typeof config.profile[defaultTemplateKey] === 'object' && config.profile[defaultTemplateKey] !== null) {
-            design = config.profile[defaultTemplateKey] || {};
-        }
-    }
-
-    const initialValues = {
-        backgroundColor: design.backgroundColor || brand.backgroundColor || '#FFFFFF',
-        headerImage: design.headerImage || brand.headerImage || '',
-        footerImage: design.footerImage || brand.footerImage || '',
-        backgroundImage: design.backgroundImage || brand.backgroundImage || '',
-        watermarkImage: design.watermarkImage || brand.watermarkImage || '',
-    };
-    
-    const currentFormValues = form.getValues();
-    // Only reset if the determined initial values are different from the current form values
-    if (JSON.stringify(currentFormValues) !== JSON.stringify(initialValues)) {
+        const initialValues = {
+            backgroundColor: design.backgroundColor || brand.backgroundColor || '#FFFFFF',
+            headerImage: design.headerImage || brand.headerImage || '',
+            footerImage: design.footerImage || brand.footerImage || '',
+            backgroundImage: design.backgroundImage || brand.backgroundImage || '',
+            watermarkImage: design.watermarkImage || brand.watermarkImage || '',
+        };
+        
         form.reset(initialValues);
         setHeaderPreview(initialValues.headerImage);
         setFooterPreview(initialValues.footerImage);
         setBackgroundPreview(initialValues.backgroundImage);
         setWatermarkPreview(initialValues.watermarkImage);
-    }
-
-    setIsLoading(false);
-}, [config, documentId, documentType, isNew, getFormData, document, form]);
+        
+        setIsLoading(false);
+    }, [config, documentId, documentType, isNew, getFormData, form]);
 
     const onSubmit = (data: DesignSettingsFormData) => {
-        if (!config) return;
+        if (!config || !documentType) return;
         
         const newDesignSettings: DesignSettings = data;
 
@@ -229,69 +211,51 @@ function DocumentDesignPage() {
     const watchedValues = form.watch();
 
     const finalDocumentData = useMemo(() => {
-    const formData = getFormData();
-    
-    // Create design object from current form values
-    const currentDesign: DesignSettings = {
-        backgroundColor: watchedValues.backgroundColor,
-        headerImage: watchedValues.headerImage,
-        footerImage: watchedValues.footerImage,
-        backgroundImage: watchedValues.backgroundImage,
-        watermarkImage: watchedValues.watermarkImage,
-    };
-    
-    if (document) {
-        // For existing documents, merge in the live design changes
-        return {
-            ...document,
-            design: currentDesign
+        const formData = getFormData();
+        const currentDesign: DesignSettings = {
+            backgroundColor: watchedValues.backgroundColor,
+            headerImage: watchedValues.headerImage,
+            footerImage: watchedValues.footerImage,
+            backgroundImage: watchedValues.backgroundImage,
+            watermarkImage: watchedValues.watermarkImage,
         };
-    }
-    
-    if (isNew && formData && Object.keys(formData).length > 0) {
+
+        if (document) {
+            return { ...document, design: currentDesign };
+        }
+        
+        if (isNew && formData && Object.keys(formData).length > 0) {
+            return {
+                ...(formData as any),
+                [documentType === 'invoice' ? 'invoiceId' : 'quotationId']: 'PREVIEW',
+                design: currentDesign,
+            };
+        }
+        
         return {
-            ...(formData as any),
+            date: new Date(),
             [documentType === 'invoice' ? 'invoiceId' : 'quotationId']: 'PREVIEW',
-            design: currentDesign // Add the live design
-        };
-    }
-    
-    return {
-        date: new Date(),
-        [documentType === 'invoice' ? 'invoiceId' : 'quotationId']: 'PREVIEW',
-        [documentType === 'invoice' ? 'dueDate' : 'validUntil']: new Date(new Date().setDate(new Date().getDate() + 30)),
-        lineItems: [{description: 'Sample Item', quantity: 1, price: 100}],
-        design: currentDesign // Add the live design
-    } as Invoice | Quotation;
+            [documentType === 'invoice' ? 'dueDate' : 'validUntil']: new Date(new Date().setDate(new Date().getDate() + 30)),
+            lineItems: [{description: 'Sample Item', quantity: 1, price: 100}],
+            design: currentDesign,
+        } as Invoice | Quotation;
 
-}, [document, isNew, getFormData, documentType, watchedValues.backgroundColor, watchedValues.headerImage, watchedValues.footerImage, watchedValues.backgroundImage, watchedValues.watermarkImage]);
-
-     const livePreviewConfig = useMemo(() => {
-        if (!config) return null;
-        return config;
-    }, [config]);
+    }, [document, isNew, getFormData, documentType, watchedValues.backgroundColor, watchedValues.headerImage, watchedValues.footerImage, watchedValues.backgroundImage, watchedValues.watermarkImage]);
 
     const previewCustomer = useMemo(() => {
         if (!config) return null;
         
         let customerId: string | undefined;
-        if (document) {
-            customerId = (document as any).customerId;
-        } else if (isNew) {
-            const formData = getFormData();
-            customerId = formData?.customerId;
+        if (finalDocumentData) {
+            customerId = (finalDocumentData as any).customerId;
         }
 
         if (customerId) {
-            return config.customers.find(c => c.id === customerId) || null;
+            return config.customers.find(c => c.id === customerId) || config.customers[0] || null;
         }
         
-        if (document?.customer) {
-            return config.customers.find(c => c.name === document.customer) || null;
-        }
-
         return config.customers[0] || null;
-    }, [config, document, isNew, getFormData]);
+    }, [config, finalDocumentData]);
 
 
     const designKey = useMemo(() => 
@@ -379,12 +343,13 @@ function DocumentDesignPage() {
                 </Form>
             </div>
             <div className="lg:col-span-1 flex items-center justify-center h-full overflow-y-auto p-8 bg-muted/40">
+                 <div className="w-full max-w-md mx-auto aspect-[8.5/11]">
                     {hasContentForPreview ? (
                     <>
                         {documentType === 'invoice' && (
                             <InvoicePreview
                                 key={designKey}
-                                config={livePreviewConfig}
+                                config={config}
                                 customer={previewCustomer}
                                 invoiceData={finalDocumentData as Invoice}
                                 invoiceId={(finalDocumentData as Invoice).invoiceId}
@@ -393,23 +358,24 @@ function DocumentDesignPage() {
                         {documentType === 'quotation' && (
                             <QuotationPreview
                                 key={designKey}
-                                config={livePreviewConfig}
+                                config={config}
                                 customer={previewCustomer}
                                 quotationData={finalDocumentData as Quotation}
                                 quotationId={(finalDocumentData as Quotation).quotationId}
                             />
                         )}
                     </>
-                ) : (
-                     <div className="w-full max-w-[8.5in] mx-auto bg-white shadow-lg aspect-[8.5/11] flex items-center justify-center border">
-                        <div className="text-center p-8">
-                          <h3 className="text-xl font-semibold mb-2">Live Preview</h3>
-                           <p className="text-muted-foreground">
-                            {isNew ? "Select a customer and add items on the previous page to see a preview." : "Loading document data..."}
-                           </p>
+                    ) : (
+                        <div className="w-full bg-white shadow-lg aspect-[8.5/11] flex items-center justify-center border">
+                            <div className="text-center p-8">
+                            <h3 className="text-xl font-semibold mb-2">Live Preview</h3>
+                            <p className="text-muted-foreground">
+                                {isNew ? "Select a customer and add items on the previous page to see a preview." : "Loading document data..."}
+                            </p>
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
+                 </div>
             </div>
         </div>
     );
@@ -419,5 +385,3 @@ export default dynamic(() => Promise.resolve(DocumentDesignPage), {
   ssr: false,
   loading: () => <div className="flex items-center justify-center h-full"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>
 });
-
-    
