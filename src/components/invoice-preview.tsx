@@ -60,7 +60,7 @@ const InvoiceStatusWatermark = ({ status }: { status: Invoice['status'] }) => {
     return (
         <div className={cn(
             "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0",
-            "text-[8rem] font-black tracking-widest leading-none transform -rotate-12 select-none pointer-events-none",
+            "text-[10rem] font-black tracking-widest leading-none transform -rotate-12 select-none pointer-events-none",
             colorClass
         )}>
             {text}
@@ -130,14 +130,9 @@ export function InvoicePreview({
             footerContent: brand.footerContent,
             brandsoftFooter: brand.brandsoftFooter,
         };
-    }, [
-        config.brand, 
-        config.profile?.defaultInvoiceTemplate,
-        invoiceData?.design,
-        designOverride,
-    ]);
+    }, [config, invoiceData?.design, designOverride]);
 
-    const currencyCode = invoiceData.currency || config.profile.defaultCurrency;
+    const currencyCode = invoiceData.currency || config.profile.defaultCurrency || 'K';
     const formatCurrency = (value: number) => `${currencyCode}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
     const subtotal = invoiceData.lineItems?.reduce((acc, item) => acc + (item.quantity * item.price), 0) || invoiceData.subtotal || 0;
@@ -179,6 +174,9 @@ export function InvoicePreview({
     const dueDate = typeof rawDueDate === 'string' ? parseISO(rawDueDate) : rawDueDate;
     
     const taxName = invoiceData.taxName || 'Tax';
+    
+    const accentColor = design.primaryColor || '#F97316';
+    const footerColor = design.secondaryColor || '#1E40AF';
 
     return (
         <div className={cn(forPdf ? "" : "bg-gray-100 p-4 sm:p-8", "font-sans flex justify-center")}>
@@ -195,137 +193,127 @@ export function InvoicePreview({
                 {design.backgroundImage && (
                     <img src={design.backgroundImage} className="absolute inset-0 w-full h-full object-cover z-0" alt="background"/>
                 )}
-
-                {design.watermarkImage && (
-                    <img src={design.watermarkImage} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0 opacity-10 pointer-events-none max-w-[60%] max-h-[60%]" alt="watermark" />
-                )}
                 
-                {invoiceData.status && !design.watermarkImage && <InvoiceStatusWatermark status={invoiceData.status} />}
+                {invoiceData.status && <InvoiceStatusWatermark status={invoiceData.status} />}
                 
-                {design.headerImage && (
-                    <div className="w-full h-auto flex-shrink-0 relative z-10">
-                         <img src={design.headerImage} className="w-full h-full object-cover" alt="Header" />
-                    </div>
-                )}
-
-                <div className={cn("flex-grow flex flex-col relative z-10 px-[15mm] py-[15mm]")}>
-                    <header className="flex justify-between items-start mb-8 flex-shrink-0">
-                        <div className="w-1/2">
+                {/* Header Section */}
+                <header className="flex-shrink-0 relative z-10">
+                    <div className="h-10" style={{ backgroundColor: accentColor }}></div>
+                    <div className="px-12 py-8 flex justify-between items-start">
+                         <div className="flex items-center gap-4">
                             {design.logo && (
-                                <img src={design.logo} alt={config.brand.businessName} className="h-16 mb-4 object-contain object-left" />
+                                <img src={design.logo} alt={config.brand.businessName} className="h-14 w-14 object-contain" />
                             )}
-                            <p className="font-bold text-lg" style={{ color: design.primaryColor }}>{config.brand.businessName}</p>
-                            <div className="text-xs text-gray-600 mt-1 leading-snug">
-                                <p className="whitespace-pre-wrap">{config.profile.address}</p>
-                                <p>{config.profile.email}</p>
-                                <p>{config.profile.phone}</p>
-                            </div>
+                            <h1 className="text-4xl font-bold uppercase tracking-wide" style={{color: accentColor}}>Invoice</h1>
                         </div>
-                        <div className="w-1/2 text-right">
-                            <h1 className="text-4xl font-bold uppercase tracking-wide" style={{color: design.primaryColor}}>Invoice</h1>
-                            <div className="mt-4 space-y-1 text-sm">
-                                <p><span className="text-gray-500 font-semibold">INVOICE #: </span>{invoiceId || `${config.profile?.invoicePrefix || 'INV-'}${String(config.profile?.invoiceStartNumber || 1).padStart(3, '0')}`}</p>
-                                <p><span className="text-gray-500 font-semibold">DATE: </span>{format(invoiceDate || new Date(), 'MM/dd/yyyy')}</p>
-                                <p><span className="text-gray-500 font-semibold">DUE DATE: </span>{format(dueDate || new Date(), 'MM/dd/yyyy')}</p>
-                            </div>
+                        <div className="text-right text-xs">
+                            <p className="font-bold text-sm">{config.brand.businessName}</p>
+                            <p>{config.profile.address}</p>
+                            <p>{config.profile.email}</p>
+                            <p>{config.profile.phone}</p>
                         </div>
-                    </header>
+                    </div>
+                </header>
 
-                    <section className="mb-10 flex-shrink-0">
-                        <div className="w-1/2">
+                {/* Main Content */}
+                <main className="flex-grow px-12 relative z-10">
+                    <section className="grid grid-cols-2 gap-8 mb-8">
+                        <div>
                             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Bill To</h3>
-                            <p className="font-bold text-base">{customer.companyName || customer.name}</p>
-                            {config.brand.showCustomerAddress && (
-                                 <div className="text-xs text-gray-600 mt-1 leading-snug">
-                                    {customer.companyName && <p>{customer.name}</p>}
-                                    <p className="whitespace-pre-wrap">{customer.address || customer.companyAddress || 'No address provided'}</p>
-                                    <p>{customer.email}</p>
+                            <p className="font-bold text-lg">{customer.companyName || customer.name}</p>
+                        </div>
+                        <div className="text-right">
+                            <div className="space-y-1 text-sm">
+                                <div className="grid grid-cols-2 items-center">
+                                    <span className="font-semibold text-gray-500">INVOICE #</span>
+                                    <span className="font-medium">{invoiceId || `${config.profile?.invoicePrefix || 'INV-'}${String(config.profile?.invoiceStartNumber || 1).padStart(3, '0')}`}</span>
                                 </div>
-                            )}
+                                <div className="grid grid-cols-2 items-center">
+                                    <span className="font-semibold text-gray-500">DATE</span>
+                                    <span className="font-medium">{format(invoiceDate || new Date(), 'MM/dd/yy')}</span>
+                                </div>
+                                <div className="grid grid-cols-2 items-center">
+                                    <span className="font-semibold text-gray-500">DUE DATE</span>
+                                    <span className="font-medium">{format(dueDate || new Date(), 'MM/dd/yy')}</span>
+                                </div>
+                            </div>
                         </div>
                     </section>
-                    
-                    <main className="flex-grow mb-8">
+
+                    <section className="mb-8">
                         <Table>
                             <TableHeader>
-                                <TableRow style={{backgroundColor: design.primaryColor}} className="hover:bg-opacity-100">
-                                    <TableHead className="w-[45%] text-white font-bold h-9">Description</TableHead>
-                                    <TableHead className="text-right text-white font-bold h-9 w-[15%]">Qty</TableHead>
-                                    <TableHead className="text-right text-white font-bold h-9 w-[20%]">Price</TableHead>
-                                    <TableHead className="text-right text-white font-bold h-9 w-[20%] rounded-tr-sm">Amount</TableHead>
+                                <TableRow className="border-b-2 border-gray-300 hover:bg-transparent">
+                                    <TableHead className="text-gray-500 font-bold uppercase tracking-wider text-xs">Item</TableHead>
+                                    <TableHead className="text-gray-500 font-bold uppercase tracking-wider text-xs">Description</TableHead>
+                                    <TableHead className="text-right text-gray-500 font-bold uppercase tracking-wider text-xs">Qty</TableHead>
+                                    <TableHead className="text-right text-gray-500 font-bold uppercase tracking-wider text-xs">Price</TableHead>
+                                    <TableHead className="text-right text-gray-500 font-bold uppercase tracking-wider text-xs">Tax</TableHead>
+                                    <TableHead className="text-right text-gray-500 font-bold uppercase tracking-wider text-xs">Amount</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {invoiceData.lineItems?.map((item, index) => (
-                                    <TableRow key={index} className="border-b border-gray-100">
-                                        <TableCell className="font-medium py-2.5 align-top text-xs">{item.description}</TableCell>
-                                        <TableCell className="text-right py-2.5 align-top text-xs">{item.quantity}</TableCell>
-                                        <TableCell className="text-right py-2.5 align-top text-xs">{formatCurrency(item.price)}</TableCell>
-                                        <TableCell className="text-right py-2.5 align-top text-xs font-semibold">{formatCurrency(item.quantity * item.price)}</TableCell>
-                                    </TableRow>
-                                ))}
+                                {invoiceData.lineItems?.map((item, index) => {
+                                     const product = config?.products?.find(p => p.name === item.description);
+                                    return (
+                                        <TableRow key={index} className="border-b border-gray-200">
+                                            <TableCell className="font-medium py-3 align-top">{product ? product.name : item.description}</TableCell>
+                                            <TableCell className="py-3 align-top text-gray-600 text-xs">{product?.description || ''}</TableCell>
+                                            <TableCell className="text-right py-3 align-top">{item.quantity}</TableCell>
+                                            <TableCell className="text-right py-3 align-top">{formatCurrency(item.price)}</TableCell>
+                                            <TableCell className="text-right py-3 align-top">{taxRateDisplay}</TableCell>
+                                            <TableCell className="text-right py-3 align-top font-semibold">{formatCurrency(item.quantity * item.price)}</TableCell>
+                                        </TableRow>
+                                    )
+                                })}
                             </TableBody>
                         </Table>
-                    </main>
+                    </section>
 
-                    <section className="flex flex-row gap-8 items-start mt-auto flex-shrink-0">
+                    <section className="flex flex-row gap-8 items-start mb-8">
                         <div className="w-[60%] text-xs">
-                            {invoiceData.notes && (
-                                <div className="mb-4">
-                                    <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Notes</h3>
-                                    <p className="text-gray-600 whitespace-pre-wrap">{invoiceData.notes}</p>
-                                </div>
-                            )}
-                            {config.profile.paymentDetails && (
+                             {config.profile.paymentDetails && (
                                 <div>
-                                    <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Payment Details</h3>
+                                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Payment Details</h3>
                                     <p className="text-gray-600 whitespace-pre-wrap">{config.profile.paymentDetails}</p>
                                 </div>
                             )}
                         </div>
-                        
-                         <div className="w-[40%] space-y-2 text-xs">
-                             <div className="flex justify-between items-center border-b border-gray-100 pb-1.5">
+                        <div className="w-[40%] space-y-2 text-sm">
+                             <div className="flex justify-between items-center border-b border-gray-100 py-1">
                                 <span className="text-gray-600">Subtotal</span>
-                                <span className="font-semibold">{formatCurrency(subtotal)}</span>
+                                <span className="font-medium">{formatCurrency(subtotal)}</span>
                             </div>
                             {discountAmount > 0 && (
-                                <div className="flex justify-between items-center border-b border-gray-100 pb-1.5 text-green-600">
-                                    <span>Discount</span>
-                                    <span>- {formatCurrency(discountAmount)}</span>
+                                <div className="flex justify-between items-center border-b border-gray-100 py-1">
+                                    <span className="text-gray-600">Discount</span>
+                                    <span className="font-medium">- {formatCurrency(discountAmount)}</span>
                                 </div>
                             )}
                             {taxAmount > 0 && (
-                                <div className="flex justify-between items-center border-b border-gray-100 pb-1.5">
-                                    <span className="text-gray-600">{taxName} ({taxRateDisplay})</span>
-                                    <span>{formatCurrency(taxAmount)}</span>
+                                <div className="flex justify-between items-center border-b border-gray-100 py-1">
+                                    <span className="text-gray-600">{taxName}</span>
+                                    <span className="font-medium">{formatCurrency(taxAmount)}</span>
                                 </div>
                             )}
-                            {shippingAmount > 0 && (
-                                <div className="flex justify-between items-center border-b border-gray-100 pb-1.5">
-                                    <span className="text-gray-600">Shipping</span>
-                                    <span>{formatCurrency(shippingAmount)}</span>
-                                </div>
-                            )}
-                            <div className="pt-1">
-                                <div className="flex items-center justify-between font-bold text-base py-2 px-3 rounded text-white" style={{backgroundColor: design.primaryColor}}>
+                            <div className="pt-2 mt-2">
+                                <div className="flex items-center justify-between font-bold text-lg py-3 px-4 rounded" style={{backgroundColor: accentColor, color: '#fff'}}>
                                     <span>Total</span>
                                     <span>{formatCurrency(total)}</span>
                                 </div>
                             </div>
                         </div>
                     </section>
-                </div>
-                
-                <footer className={cn("relative z-10 w-full flex-shrink-0")}>
-                    {design.footerImage ? (
-                        <img src={design.footerImage} className="w-full h-auto object-cover" alt="Footer" />
-                    ) : (
-                         <div className="border-t border-gray-200 pt-4 pb-4 px-[15mm] text-center text-[10px] text-gray-500">
-                            {design.footerContent && <p className="mb-1">{design.footerContent}</p>}
-                            {design.brandsoftFooter && <p>Generated by <span className="font-bold">BrandSoft</span></p>}
+                </main>
+
+                {/* Footer Section */}
+                <footer className="w-full mt-auto relative z-10 flex-shrink-0">
+                    <div className="h-4" style={{ backgroundColor: footerColor }}></div>
+                     {design.brandsoftFooter && (
+                        <div className="bg-gray-100 py-2 text-center text-[10px] text-gray-500">
+                            Created by <span className="font-bold">BrandSoft</span>
                         </div>
-                    )}
+                     )}
                 </footer>
             </div>
         </div>
