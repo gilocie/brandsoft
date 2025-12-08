@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useMemo } from 'react';
@@ -215,16 +214,15 @@ export function InvoicePreview({
                     </div>
                 )}
                 
-                <footer className="absolute bottom-0 left-0 w-full z-20 h-[50px] bg-white">
+                <footer className="absolute bottom-0 left-0 w-full z-20 h-[50px]">
                     {design.footerImage ? (
                         <div className="w-full h-full">
                             <img src={design.footerImage} className="w-full h-full object-cover" alt="footer" />
                         </div>
                     ) : (
-                        <div className="w-full h-full relative">
-                            <div className="h-2 w-full absolute top-0" style={{ backgroundColor: footerColor }}></div>
-                            {design.brandsoftFooter && (
-                                <div className="absolute bottom-2 w-full text-center text-[10px] text-gray-400">
+                        <div className="w-full h-full relative flex items-center justify-center" style={{backgroundColor: footerColor}}>
+                           {design.brandsoftFooter && (
+                                <div className="text-center text-[10px] text-white">
                                     Created by BrandSoft
                                 </div>
                             )}
