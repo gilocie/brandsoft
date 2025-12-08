@@ -107,7 +107,7 @@ const ImageUploader = ({
 
 function DocumentDesignPage() {
     const { config, updateInvoice, updateQuotation, saveConfig } = useBrandsoft();
-    const { getFormData } = useFormState();
+    const { getFormData: getStoredFormData } = useFormState();
     const { toast } = useToast();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -156,6 +156,10 @@ function DocumentDesignPage() {
             return config.profile.defaultQuotationTemplate || {};
         }
     }, [config?.profile]);
+
+    const getFormData = useCallback(() => {
+      return getStoredFormData();
+    }, [getStoredFormData]);
 
     useEffect(() => {
         if (!config || !documentType) return;
