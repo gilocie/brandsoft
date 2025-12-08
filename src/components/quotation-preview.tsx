@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useMemo } from 'react';
@@ -31,7 +30,6 @@ type QuotationData = Partial<Quotation> & {
     shippingValue?: number;
     design?: DesignSettings;
 };
-
 
 export interface QuotationPreviewProps {
     config: BrandsoftConfig | null;
@@ -75,8 +73,14 @@ const QuotationStatusWatermark = ({ status }: { status: Quotation['status'] }) =
     );
 };
 
-
-export function QuotationPreview({ config, customer, quotationData, quotationId, forPdf = false, designOverride }: QuotationPreviewProps) {
+export function QuotationPreview({ 
+    config, 
+    customer, 
+    quotationData, 
+    quotationId, 
+    forPdf = false, 
+    designOverride 
+}: QuotationPreviewProps) {
 
     if (!config || !customer || !quotationData) {
         return (
@@ -86,23 +90,52 @@ export function QuotationPreview({ config, customer, quotationData, quotationId,
         );
     }
     
+    // Priority: designOverride > quotationData.design > defaultQuotationTemplate > brand
     const design = useMemo(() => {
         const brand = config.brand || {};
         const defaultTemplate = config.profile?.defaultQuotationTemplate || {};
         const documentDesign = quotationData?.design || {};
         const override = designOverride || {};
         
-        const hasOverride = designOverride && Object.values(designOverride).some(v => v);
-
-        return {
+        // Check if designOverride was explicitly provided (not just undefined)
+        const hasOverride = designOverride !== undefined && designOverride !== null;
+        
+        // Build merged design with proper priority
+        let mergedDesign = {
+            // Base: brand settings
             backgroundColor: brand.backgroundColor || '#FFFFFF',
             headerImage: brand.headerImage || '',
             footerImage: brand.footerImage || '',
             backgroundImage: brand.backgroundImage || '',
             watermarkImage: brand.watermarkImage || '',
-            ...defaultTemplate,
-            ...documentDesign,
-            ...(hasOverride && override),
+        };
+        
+        // Apply default template (only non-empty values)
+        if (defaultTemplate.backgroundColor) mergedDesign.backgroundColor = defaultTemplate.backgroundColor;
+        if (defaultTemplate.headerImage) mergedDesign.headerImage = defaultTemplate.headerImage;
+        if (defaultTemplate.footerImage) mergedDesign.footerImage = defaultTemplate.footerImage;
+        if (defaultTemplate.backgroundImage) mergedDesign.backgroundImage = defaultTemplate.backgroundImage;
+        if (defaultTemplate.watermarkImage) mergedDesign.watermarkImage = defaultTemplate.watermarkImage;
+        
+        // Apply document-specific design (only non-empty values)
+        if (documentDesign.backgroundColor) mergedDesign.backgroundColor = documentDesign.backgroundColor;
+        if (documentDesign.headerImage) mergedDesign.headerImage = documentDesign.headerImage;
+        if (documentDesign.footerImage) mergedDesign.footerImage = documentDesign.footerImage;
+        if (documentDesign.backgroundImage) mergedDesign.backgroundImage = documentDesign.backgroundImage;
+        if (documentDesign.watermarkImage) mergedDesign.watermarkImage = documentDesign.watermarkImage;
+        
+        // Apply real-time override (for customization page - include empty strings to allow clearing)
+        if (hasOverride) {
+            mergedDesign.backgroundColor = override.backgroundColor ?? mergedDesign.backgroundColor;
+            mergedDesign.headerImage = override.headerImage ?? mergedDesign.headerImage;
+            mergedDesign.footerImage = override.footerImage ?? mergedDesign.footerImage;
+            mergedDesign.backgroundImage = override.backgroundImage ?? mergedDesign.backgroundImage;
+            mergedDesign.watermarkImage = override.watermarkImage ?? mergedDesign.watermarkImage;
+        }
+        
+        return {
+            ...mergedDesign,
+            // Always preserve these from brand
             logo: brand.logo,
             primaryColor: brand.primaryColor || '#000000',
             secondaryColor: brand.secondaryColor || '#666666',
@@ -113,12 +146,25 @@ export function QuotationPreview({ config, customer, quotationData, quotationId,
         };
     }, [
         config.brand, 
-        config.profile?.defaultQuotationTemplate,
-        quotationData?.design,
-        designOverride
+        config.profile?.defaultQuotationTemplate?.backgroundColor,
+        config.profile?.defaultQuotationTemplate?.headerImage,
+        config.profile?.defaultQuotationTemplate?.footerImage,
+        config.profile?.defaultQuotationTemplate?.backgroundImage,
+        config.profile?.defaultQuotationTemplate?.watermarkImage,
+        quotationData?.design?.backgroundColor,
+        quotationData?.design?.headerImage,
+        quotationData?.design?.footerImage,
+        quotationData?.design?.backgroundImage,
+        quotationData?.design?.watermarkImage,
+        designOverride?.backgroundColor,
+        designOverride?.headerImage,
+        designOverride?.footerImage,
+        designOverride?.backgroundImage,
+        designOverride?.watermarkImage,
+        designOverride,
     ]);
 
-    const currencyCode = quotationData.currency || config.profile.defaultCurrency;
+    const currencyCode = quotationData.currency || config.profile?.defaultCurrency || '$';
     const formatCurrency = (value: number) => `${currencyCode}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
     const subtotal = quotationData.lineItems?.reduce((acc, item) => acc + (item.quantity * item.price), 0) || quotationData.subtotal || 0;
@@ -131,7 +177,7 @@ export function QuotationPreview({ config, customer, quotationData, quotationId,
             discountAmount = quotationData.discountValue;
         }
     } else if (quotationData.discount) {
-      discountAmount = quotationData.discount;
+        discountAmount = quotationData.discount;
     }
 
     const subtotalAfterDiscount = subtotal - discountAmount;
@@ -147,20 +193,19 @@ export function QuotationPreview({ config, customer, quotationData, quotationId,
             taxRateDisplay = formatCurrency(quotationData.taxValue);
         }
     } else if (quotationData.tax && quotationData.tax > 0 && subtotalAfterDiscount > 0) {
-      taxAmount = quotationData.tax;
-      if (quotationData.taxType === 'percentage' && quotationData.taxValue) {
-        taxRateDisplay = `${quotationData.taxValue}%`;
-      } else if (quotationData.taxType === 'flat' && quotationData.taxValue) {
-        taxRateDisplay = formatCurrency(quotationData.taxValue);
-      } else {
-         const effectiveTaxRate = (taxAmount / subtotalAfterDiscount) * 100;
-         taxRateDisplay = `${effectiveTaxRate.toFixed(2)}%`;
-      }
+        taxAmount = quotationData.tax;
+        if (quotationData.taxType === 'percentage' && quotationData.taxValue) {
+            taxRateDisplay = `${quotationData.taxValue}%`;
+        } else if (quotationData.taxType === 'flat' && quotationData.taxValue) {
+            taxRateDisplay = formatCurrency(quotationData.taxValue);
+        } else {
+            const effectiveTaxRate = (taxAmount / subtotalAfterDiscount) * 100;
+            taxRateDisplay = `${effectiveTaxRate.toFixed(2)}%`;
+        }
     } else if (quotationData.tax) {
         taxAmount = quotationData.tax;
         taxRateDisplay = formatCurrency(taxAmount);
     }
-
 
     const shippingAmount = Number(quotationData.applyShipping && quotationData.shippingValue ? quotationData.shippingValue : (quotationData.shipping || 0));
     
@@ -213,18 +258,18 @@ export function QuotationPreview({ config, customer, quotationData, quotationId,
                     <header className="flex justify-between items-start mb-8 pt-2">
                         <div className="flex items-center gap-4">
                             {design.logo && (
-                            <img src={design.logo} alt={config.brand.businessName} className="h-16 w-16 sm:h-20 sm:w-20 object-contain" />
+                                <img src={design.logo} alt={config.brand?.businessName || 'Logo'} className="h-16 w-16 sm:h-20 sm:w-20 object-contain" />
                             )}
                             <div>
                                 <h1 className="text-3xl sm:text-4xl font-bold" style={{color: design.primaryColor}}>Quotation</h1>
                             </div>
                         </div>
                         <div className="text-right text-sm text-gray-600">
-                            <p className="font-bold text-base text-black">{config.brand.businessName}</p>
-                            <p>{config.profile.address}</p>
-                            <p>{config.profile.email}</p>
-                            <p>{config.profile.phone}</p>
-                            {config.profile.website && <p>{config.profile.website}</p>}
+                            <p className="font-bold text-base text-black">{config.brand?.businessName}</p>
+                            <p>{config.profile?.address}</p>
+                            <p>{config.profile?.email}</p>
+                            <p>{config.profile?.phone}</p>
+                            {config.profile?.website && <p>{config.profile.website}</p>}
                         </div>
                     </header>
 
@@ -232,7 +277,7 @@ export function QuotationPreview({ config, customer, quotationData, quotationId,
                         <div>
                             <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">Quote To</h3>
                             <p className="font-bold text-lg">{customer.companyName || customer.name}</p>
-                            {config.brand.showCustomerAddress ? (
+                            {config.brand?.showCustomerAddress ? (
                                 <>
                                     {customer.companyName && <p className="text-gray-600">{customer.name}</p>}
                                     <p className="text-gray-600">{customer.address || customer.companyAddress || 'No address provided'}</p>
@@ -242,9 +287,9 @@ export function QuotationPreview({ config, customer, quotationData, quotationId,
                         </div>
                         <div className="text-right">
                             <div className="space-y-2">
-                            <div className="grid grid-cols-2 gap-2">
+                                <div className="grid grid-cols-2 gap-2">
                                     <span className="text-sm font-semibold text-gray-500">QUOTATION #</span>
-                                    <span className="font-medium">{quotationId || `${config.profile.quotationPrefix || 'QUO-'}${String(config.profile.quotationStartNumber || 1).padStart(3, '0')}`}</span>
+                                    <span className="font-medium">{quotationId || `${config.profile?.quotationPrefix || 'QUO-'}${String(config.profile?.quotationStartNumber || 1).padStart(3, '0')}`}</span>
                                 </div>
                                 <div className="grid grid-cols-2 gap-2">
                                     <span className="text-sm font-semibold text-gray-500">DATE</span>
@@ -272,7 +317,7 @@ export function QuotationPreview({ config, customer, quotationData, quotationId,
                             </TableHeader>
                             <TableBody>
                                 {quotationData.lineItems?.map((item, index) => {
-                                    const product = config?.products.find(p => p.name === item.description);
+                                    const product = config?.products?.find(p => p.name === item.description);
                                     return (
                                         <TableRow key={index} className="border-b border-gray-300">
                                             <TableCell className="font-medium py-3 align-top text-sm">{product ? product.name : item.description}</TableCell>
@@ -321,7 +366,7 @@ export function QuotationPreview({ config, customer, quotationData, quotationId,
                                 </div>
                             )}
                             <div className="pt-2">
-                            <div className="flex items-center justify-between font-bold text-lg py-3 px-4 rounded" style={{backgroundColor: design.primaryColor, color: '#fff'}}>
+                                <div className="flex items-center justify-between font-bold text-lg py-3 px-4 rounded" style={{backgroundColor: design.primaryColor, color: '#fff'}}>
                                     <span className="mr-4">Total</span>
                                     <span>{formatCurrency(total)}</span>
                                 </div>
@@ -334,9 +379,9 @@ export function QuotationPreview({ config, customer, quotationData, quotationId,
                     {design.footerImage && (
                         <img src={design.footerImage} className="w-full h-auto" alt="Footer"/>
                     )}
-                     <div className="text-center text-xs py-3 px-4" style={{backgroundColor: design.secondaryColor, color: 'white'}}>
-                         {design.footerContent && <p className="mb-1">{design.footerContent}</p>}
-                         {design.brandsoftFooter && <p><span className="font-bold">Created by BrandSoft</span></p>}
+                    <div className="text-center text-xs py-3 px-4" style={{backgroundColor: design.secondaryColor, color: 'white'}}>
+                        {design.footerContent && <p className="mb-1">{design.footerContent}</p>}
+                        {design.brandsoftFooter && <p><span className="font-bold">Created by BrandSoft</span></p>}
                     </div>
                 </footer>
             </div>
@@ -368,7 +413,6 @@ export const downloadQuotationAsPdf = async (props: QuotationPreviewProps) => {
     
     const headerClone = quotationElement.querySelector('header')?.cloneNode(true) as HTMLElement | null;
     const footerClone = quotationElement.querySelector('footer.absolute')?.cloneNode(true) as HTMLElement | null;
-
 
     const canvas = await html2canvas(quotationElement, {
         scale: 2,

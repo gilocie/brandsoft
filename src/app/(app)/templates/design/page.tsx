@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm, useWatch } from 'react-hook-form';
@@ -107,7 +106,7 @@ const ImageUploader = ({
 
 function DocumentDesignPage() {
     const { config, updateInvoice, updateQuotation, saveConfig } = useBrandsoft();
-    const { getFormData: getStoredFormData } = useFormState();
+    const { getFormData } = useFormState();
     const { toast } = useToast();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -130,21 +129,16 @@ function DocumentDesignPage() {
         },
     });
 
-    // Use useWatch for reactive form values
-    const backgroundColor = useWatch({ control: form.control, name: 'backgroundColor' });
-    const headerImage = useWatch({ control: form.control, name: 'headerImage' });
-    const footerImage = useWatch({ control: form.control, name: 'footerImage' });
-    const backgroundImage = useWatch({ control: form.control, name: 'backgroundImage' });
-    const watermarkImage = useWatch({ control: form.control, name: 'watermarkImage' });
+    const watchedValues = form.watch();
 
     // Current design settings derived from watched form values
     const currentDesignSettings = useMemo((): DesignSettings => ({
-        backgroundColor: backgroundColor || '#FFFFFF',
-        headerImage: headerImage || '',
-        footerImage: footerImage || '',
-        backgroundImage: backgroundImage || '',
-        watermarkImage: watermarkImage || '',
-    }), [backgroundColor, headerImage, footerImage, backgroundImage, watermarkImage]);
+        backgroundColor: watchedValues.backgroundColor || '#FFFFFF',
+        headerImage: watchedValues.headerImage || '',
+        footerImage: watchedValues.footerImage || '',
+        backgroundImage: watchedValues.backgroundImage || '',
+        watermarkImage: watchedValues.watermarkImage || '',
+    }), [watchedValues.backgroundColor, watchedValues.headerImage, watchedValues.footerImage, watchedValues.backgroundImage, watchedValues.watermarkImage]);
 
     // Get default template based on document type
     const getDefaultTemplate = useCallback((type: 'invoice' | 'quotation'): Partial<DesignSettings> => {
@@ -156,10 +150,6 @@ function DocumentDesignPage() {
             return config.profile.defaultQuotationTemplate || {};
         }
     }, [config?.profile]);
-
-    const getFormData = useCallback(() => {
-      return getStoredFormData();
-    }, [getStoredFormData]);
 
     useEffect(() => {
         if (!config || !documentType) return;
@@ -194,7 +184,7 @@ function DocumentDesignPage() {
         
         form.reset(initialValues);
         setIsLoading(false);
-    }, [config, documentId, documentType, isNew, getFormData, getDefaultTemplate]);
+    }, [config, documentId, documentType, isNew, getFormData, form, getDefaultTemplate]);
 
     const onSubmit = (data: DesignSettingsFormData) => {
         if (!config || !documentType) return;
@@ -257,7 +247,7 @@ function DocumentDesignPage() {
     // Build final document data for preview with current design settings
     const finalDocumentData = useMemo(() => {
         const formData = getFormData();
-
+    
         if (document) {
             return { ...document, design: currentDesignSettings };
         }

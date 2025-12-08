@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useMemo } from 'react';
@@ -33,7 +32,7 @@ export interface InvoicePreviewProps {
     invoiceData: InvoiceData;
     invoiceId?: string;
     forPdf?: boolean;
-    designOverride?: DesignSettings; // New prop for real-time design updates
+    designOverride?: DesignSettings;
 }
 
 const InvoiceStatusWatermark = ({ status }: { status: Invoice['status'] }) => {
@@ -93,31 +92,44 @@ export function InvoicePreview({
         const documentDesign = invoiceData?.design || {};
         const override = designOverride || {};
         
-        // Check if designOverride has any actual values
-        const hasOverride = designOverride && Object.values(designOverride).some(v => v);
+        // Check if designOverride was explicitly provided (not just undefined)
+        const hasOverride = designOverride !== undefined && designOverride !== null;
         
-        // Merge in priority order
-        const mergedDesign = {
+        // Build merged design with proper priority
+        let mergedDesign = {
             // Base: brand settings
             backgroundColor: brand.backgroundColor || '#FFFFFF',
             headerImage: brand.headerImage || '',
             footerImage: brand.footerImage || '',
             backgroundImage: brand.backgroundImage || '',
             watermarkImage: brand.watermarkImage || '',
-            // Override with default template
-            ...(defaultTemplate.backgroundColor && { backgroundColor: defaultTemplate.backgroundColor }),
-            ...(defaultTemplate.headerImage && { headerImage: defaultTemplate.headerImage }),
-            ...(defaultTemplate.footerImage && { footerImage: defaultTemplate.footerImage }),
-            ...(defaultTemplate.backgroundImage && { backgroundImage: defaultTemplate.backgroundImage }),
-            ...(defaultTemplate.watermarkImage && { watermarkImage: defaultTemplate.watermarkImage }),
-            // Override with document-specific design
-            ...(documentDesign.backgroundColor && { backgroundColor: documentDesign.backgroundColor }),
-            ...(documentDesign.headerImage && { headerImage: documentDesign.headerImage }),
-            ...(documentDesign.footerImage && { footerImage: documentDesign.footerImage }),
-            ...(documentDesign.backgroundImage && { backgroundImage: documentDesign.backgroundImage }),
-            ...(documentDesign.watermarkImage && { watermarkImage: documentDesign.watermarkImage }),
-            // Override with real-time design settings (for customization page)
-            ...(hasOverride && override),
+        };
+        
+        // Apply default template (only non-empty values)
+        if (defaultTemplate.backgroundColor) mergedDesign.backgroundColor = defaultTemplate.backgroundColor;
+        if (defaultTemplate.headerImage) mergedDesign.headerImage = defaultTemplate.headerImage;
+        if (defaultTemplate.footerImage) mergedDesign.footerImage = defaultTemplate.footerImage;
+        if (defaultTemplate.backgroundImage) mergedDesign.backgroundImage = defaultTemplate.backgroundImage;
+        if (defaultTemplate.watermarkImage) mergedDesign.watermarkImage = defaultTemplate.watermarkImage;
+        
+        // Apply document-specific design (only non-empty values)
+        if (documentDesign.backgroundColor) mergedDesign.backgroundColor = documentDesign.backgroundColor;
+        if (documentDesign.headerImage) mergedDesign.headerImage = documentDesign.headerImage;
+        if (documentDesign.footerImage) mergedDesign.footerImage = documentDesign.footerImage;
+        if (documentDesign.backgroundImage) mergedDesign.backgroundImage = documentDesign.backgroundImage;
+        if (documentDesign.watermarkImage) mergedDesign.watermarkImage = documentDesign.watermarkImage;
+        
+        // Apply real-time override (for customization page - include empty strings to allow clearing)
+        if (hasOverride) {
+            mergedDesign.backgroundColor = override.backgroundColor ?? mergedDesign.backgroundColor;
+            mergedDesign.headerImage = override.headerImage ?? mergedDesign.headerImage;
+            mergedDesign.footerImage = override.footerImage ?? mergedDesign.footerImage;
+            mergedDesign.backgroundImage = override.backgroundImage ?? mergedDesign.backgroundImage;
+            mergedDesign.watermarkImage = override.watermarkImage ?? mergedDesign.watermarkImage;
+        }
+        
+        return {
+            ...mergedDesign,
             // Always preserve these from brand
             logo: brand.logo,
             primaryColor: brand.primaryColor || '#000000',
@@ -127,11 +139,13 @@ export function InvoicePreview({
             footerContent: brand.footerContent,
             brandsoftFooter: brand.brandsoftFooter,
         };
-        
-        return mergedDesign;
     }, [
         config.brand, 
-        config.profile?.defaultInvoiceTemplate,
+        config.profile?.defaultInvoiceTemplate?.backgroundColor,
+        config.profile?.defaultInvoiceTemplate?.headerImage,
+        config.profile?.defaultInvoiceTemplate?.footerImage,
+        config.profile?.defaultInvoiceTemplate?.backgroundImage,
+        config.profile?.defaultInvoiceTemplate?.watermarkImage,
         invoiceData?.design?.backgroundColor,
         invoiceData?.design?.headerImage,
         invoiceData?.design?.footerImage,
@@ -142,9 +156,10 @@ export function InvoicePreview({
         designOverride?.footerImage,
         designOverride?.backgroundImage,
         designOverride?.watermarkImage,
+        designOverride,
     ]);
 
-    const currencyCode = invoiceData.currency || config.profile.defaultCurrency;
+    const currencyCode = invoiceData.currency || config.profile?.defaultCurrency || '$';
     const formatCurrency = (value: number) => `${currencyCode}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
     const subtotal = invoiceData.lineItems?.reduce((acc, item) => acc + (item.quantity * item.price), 0) || invoiceData.subtotal || 0;
@@ -238,18 +253,18 @@ export function InvoicePreview({
                     <header className="flex justify-between items-start mb-8 pt-2">
                         <div className="flex items-center gap-4">
                             {design.logo && (
-                                <img src={design.logo} alt={config.brand.businessName} className="h-16 w-16 sm:h-20 sm:w-20 object-contain" />
+                                <img src={design.logo} alt={config.brand?.businessName || 'Logo'} className="h-16 w-16 sm:h-20 sm:w-20 object-contain" />
                             )}
                             <div>
                                 <h1 className="text-3xl sm:text-4xl font-bold" style={{color: design.primaryColor}}>Invoice</h1>
                             </div>
                         </div>
                         <div className="text-right text-sm text-gray-600">
-                            <p className="font-bold text-base text-black">{config.brand.businessName}</p>
-                            <p>{config.profile.address}</p>
-                            <p>{config.profile.email}</p>
-                            <p>{config.profile.phone}</p>
-                            {config.profile.website && <p>{config.profile.website}</p>}
+                            <p className="font-bold text-base text-black">{config.brand?.businessName}</p>
+                            <p>{config.profile?.address}</p>
+                            <p>{config.profile?.email}</p>
+                            <p>{config.profile?.phone}</p>
+                            {config.profile?.website && <p>{config.profile.website}</p>}
                         </div>
                     </header>
 
@@ -257,7 +272,7 @@ export function InvoicePreview({
                         <div>
                             <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">Bill To</h3>
                             <p className="font-bold text-lg">{customer.companyName || customer.name}</p>
-                            {config.brand.showCustomerAddress ? (
+                            {config.brand?.showCustomerAddress ? (
                                 <>
                                     {customer.companyName && <p className="text-gray-600">{customer.name}</p>}
                                     <p className="text-gray-600">{customer.address || customer.companyAddress || 'No address provided'}</p>
@@ -269,7 +284,7 @@ export function InvoicePreview({
                             <div className="space-y-2">
                                 <div className="grid grid-cols-2 gap-2">
                                     <span className="text-sm font-semibold text-gray-500">INVOICE #</span>
-                                    <span className="font-medium">{invoiceId || `${config.profile.invoicePrefix || 'INV-'}${String(config.profile.invoiceStartNumber || 1).padStart(3, '0')}`}</span>
+                                    <span className="font-medium">{invoiceId || `${config.profile?.invoicePrefix || 'INV-'}${String(config.profile?.invoiceStartNumber || 1).padStart(3, '0')}`}</span>
                                 </div>
                                 <div className="grid grid-cols-2 gap-2">
                                     <span className="text-sm font-semibold text-gray-500">DATE</span>
@@ -297,7 +312,7 @@ export function InvoicePreview({
                             </TableHeader>
                             <TableBody>
                                 {invoiceData.lineItems?.map((item, index) => {
-                                    const product = config?.products.find(p => p.name === item.description);
+                                    const product = config?.products?.find(p => p.name === item.description);
                                     return (
                                         <TableRow key={index} className="border-b border-gray-300">
                                             <TableCell className="font-medium py-3 align-top text-sm">{product ? product.name : item.description}</TableCell>
@@ -321,7 +336,7 @@ export function InvoicePreview({
                                     <p className="text-gray-600 mt-1 text-xs">{invoiceData.notes}</p>
                                 </div>
                             )}
-                            {config.profile.paymentDetails && (
+                            {config.profile?.paymentDetails && (
                                 <div className="mt-4">
                                     <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Payment Details</h3>
                                     <p className="text-gray-600 mt-1 whitespace-pre-wrap text-xs">{config.profile.paymentDetails}</p>
