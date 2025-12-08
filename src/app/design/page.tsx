@@ -26,7 +26,6 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 
-
 const designSettingsSchema = z.object({
   logo: z.string().optional(),
   backgroundColor: z.string().optional(),
@@ -65,7 +64,6 @@ const designSettingsSchema = z.object({
   // Regional
   defaultCurrency: z.string().optional(),
 });
-
 
 type DesignSettingsFormData = z.infer<typeof designSettingsSchema>;
 
@@ -380,14 +378,37 @@ function DocumentDesignPage() {
         resolver: zodResolver(designSettingsSchema),
         defaultValues: {
             logo: '',
+            backgroundColor: '#FFFFFF',
+            textColor: '#000000',
+            headerImage: '',
+            headerImageOpacity: 1,
+            footerImage: '',
+            footerImageOpacity: 1,
+            backgroundImage: '',
+            backgroundImageOpacity: 1,
+            watermarkText: '',
+            watermarkColor: '#dddddd',
+            watermarkOpacity: 0.05,
+            watermarkFontSize: 96,
+            watermarkAngle: -45,
+            headerColor: '#F97316',
+            footerColor: '#1E40AF',
+            showLogo: true,
+            showBusinessAddress: true,
+            showInvoiceTitle: true,
+            showBillingAddress: true,
+            showDates: true,
+            showPaymentDetails: true,
+            showNotes: true,
+            showBrandsoftFooter: true,
+            showHeader: true,
+            showFooter: true,
             invoicePrefix: 'INV-',
             invoiceStartNumber: 101,
             quotationPrefix: 'QUO-',
             quotationStartNumber: 101,
             paymentDetails: '',
             defaultCurrency: 'USD',
-            showHeader: true,
-            showFooter: true,
         },
     });
 
@@ -396,7 +417,7 @@ function DocumentDesignPage() {
     // Auto-save to session storage
     useEffect(() => {
         if (!isLoading) {
-            const subscription = form.watch((value) => {
+             const subscription = form.watch((value) => {
                 setFormData(value);
             });
             return () => subscription.unsubscribe();

@@ -478,7 +478,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
   
   const addInvoice = (invoice: Omit<Invoice, 'invoiceId'>): Invoice => {
     if (!config) throw new Error("Config not loaded");
-    const nextNumber = (config.profile.invoiceStartNumber || 1) + (config.invoices?.length || 0);
+    const nextNumber = (config.profile.invoiceStartNumber || 100) + (config.invoices?.length || 0);
     const prefix = config.profile.invoicePrefix || 'INV-';
     const newInvoice: Invoice = { ...invoice, invoiceId: `${prefix}${nextNumber}` };
     const newConfig = { ...config, invoices: [...(config.invoices || []), newInvoice] };
@@ -567,3 +567,5 @@ export function useBrandsoft() {
   }
   return context;
 }
+
+    
