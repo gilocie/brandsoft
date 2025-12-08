@@ -112,7 +112,7 @@ const ImageUploader = ({
                         </Button>
                     </>
                 ) : (
-                    <p className="text-xs text-muted-foreground">No {label.toLowerCase()}</p>
+                    <p className="text-xs text-muted-foreground">{label}</p>
                 )}
             </div>
             <FormField control={form.control} name={fieldName} render={() => (
@@ -121,7 +121,7 @@ const ImageUploader = ({
                         <div>
                             <Input type="file" accept="image/*" className="hidden" ref={inputRef} onChange={handleImageChange} />
                             <Button type="button" variant="outline" size="sm" onClick={() => inputRef.current?.click()} className="w-full h-8 text-xs">
-                                <UploadCloud className="mr-2 h-3 w-3" /> Upload {label}
+                                <UploadCloud className="mr-2 h-3 w-3" /> Upload
                             </Button>
                         </div>
                     </FormControl>
@@ -185,7 +185,7 @@ function SettingsPanel({ form, documentType, documentId, isNew, onSubmit, return
                         </p>
                     </div>
                     <div className="flex-grow p-2 space-y-2 overflow-y-auto">
-                        <Accordion type="multiple" defaultValue={['appearance']} className="w-full">
+                        <Accordion type="multiple" defaultValue={['appearance', 'elements', 'layout', 'numbering']} className="w-full">
                              <Card className="border-0 shadow-none">
                                 <AccordionItem value="appearance">
                                     <AccordionTrigger className="text-sm p-2"><div className="flex items-center gap-2"><Paintbrush className="h-4 w-4"/> Appearance</div></AccordionTrigger>
@@ -442,7 +442,7 @@ function DocumentDesignPage() {
             showDates: existingDesign.showDates ?? brand.showDates ?? true,
             showPaymentDetails: existingDesign.showPaymentDetails ?? brand.showPaymentDetails ?? true,
             showNotes: existingDesign.showNotes ?? brand.showNotes ?? true,
-            showBrandsoftFooter: existingDesign.showBrandsoftFooter ?? brand.brandsoftFooter ?? true,
+            showBrandsoftFooter: existingDesign.showBrandsoftFooter ?? brand.showBrandsoftFooter ?? true,
             invoicePrefix: profile.invoicePrefix || 'INV-',
             invoiceStartNumber: profile.invoiceStartNumber || 101,
         };
@@ -484,7 +484,7 @@ function DocumentDesignPage() {
             }
         });
         return () => subscription.unsubscribe();
-    }, [form, isLoading, config, isNew, documentType, documentId, document, saveConfig, updateInvoice, updateQuotation]);
+    }, [form.watch, isLoading, config, isNew, documentType, documentId, document, saveConfig, updateInvoice, updateQuotation]);
 
 
     const onSubmit = (data: DesignSettingsFormData) => {

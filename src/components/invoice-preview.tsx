@@ -41,6 +41,7 @@ const InvoiceStatusWatermark = ({ status, design }: { status?: string, design: D
 
     const hexToRgb = (hex: string) => {
         let r = 0, g = 0, b = 0;
+        if (!hex) return { r, g, b };
         if (hex.length === 4) {
             r = parseInt(hex[1] + hex[1], 16);
             g = parseInt(hex[2] + hex[2], 16);
@@ -122,7 +123,7 @@ export function InvoicePreview({
             showDates: brand.showDates ?? true,
             showPaymentDetails: brand.showPaymentDetails ?? true,
             showNotes: brand.showNotes ?? true,
-            showBrandsoftFooter: brand.showBrandsoftFooter ?? true,
+            showBrandsoftFooter: brand.brandsoftFooter ?? true,
         };
         
         const merge = (target: any, source: any) => {
@@ -207,6 +208,8 @@ export function InvoicePreview({
         );
     };
 
+    const displayLogo = design.logo || config.brand.logo;
+
     return (
         <Wrapper>
             <div 
@@ -226,12 +229,17 @@ export function InvoicePreview({
                 
                 <div className='relative z-10 flex flex-col flex-grow'>
                     
-                    <div className="w-full flex-shrink-0 relative z-10 mb-5" style={{ backgroundColor: accentColor, height: '35px' }}></div>
-                    <div className='p-[12mm] pt-0 flex-grow flex flex-col'>
+                    <div className='p-[12mm] pb-0 flex-grow flex flex-col'>
+                         {design.headerImage ? (
+                             <img src={design.headerImage} className="w-full h-auto object-contain z-10 mb-5" style={{maxHeight: '60px', opacity: design.headerImageOpacity}} alt="header"/>
+                        ) : (
+                            <div className="w-full flex-shrink-0 relative z-10 mb-5" style={{ backgroundColor: accentColor, height: '35px' }}></div>
+                        )}
+
                         <header className="flex justify-between items-start relative z-10">
                             <div className="flex items-center gap-4">
-                                {design.showLogo && (design.logo || config.brand.logo) && (
-                                    <img src={design.logo || config.brand.logo} alt="Logo" className="h-20 w-auto object-contain" />
+                                {design.showLogo && displayLogo && (
+                                    <img src={displayLogo} alt="Logo" className="h-20 w-auto object-contain" />
                                 )}
                                 {design.showInvoiceTitle && <h1 className="text-4xl font-bold tracking-tight ml-2" style={{ color: accentColor }}>Invoice</h1>}
                             </div>
@@ -358,9 +366,9 @@ export function InvoicePreview({
                         {design.footerImage ? (
                             <img src={design.footerImage} className="w-full h-auto object-contain z-10" style={{maxHeight: '60px', opacity: design.footerImageOpacity}} alt="footer"/>
                         ) : (
-                           <div className="w-full flex items-center justify-center text-white py-2" style={{ backgroundColor: footerColor }}>
+                           <div className="w-full flex items-center justify-center text-white py-4" style={{ backgroundColor: footerColor }}>
                                 <div className="text-center">
-                                    {design.showBrandsoftFooter && (
+                                     {design.showBrandsoftFooter && (
                                         <p className="text-[10px]">Created by <span className="font-bold">BrandSoft</span></p>
                                     )}
                                     {design.footerContent && (
@@ -434,5 +442,3 @@ export const downloadInvoiceAsPdf = async (props: InvoicePreviewProps) => {
     }
     pdf.save(`Invoice-${props.invoiceId}.pdf`);
 };
-
-    

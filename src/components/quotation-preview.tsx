@@ -40,6 +40,7 @@ const QuotationStatusWatermark = ({ status, design }: { status?: string, design:
 
     const hexToRgb = (hex: string) => {
         let r = 0, g = 0, b = 0;
+        if (!hex) return { r, g, b };
         if (hex.length === 4) {
             r = parseInt(hex[1] + hex[1], 16);
             g = parseInt(hex[2] + hex[2], 16);
@@ -115,7 +116,7 @@ export function QuotationPreview({
             showDates: brand.showDates ?? true,
             showPaymentDetails: brand.showPaymentDetails ?? true,
             showNotes: brand.showNotes ?? true,
-            showBrandsoftFooter: brand.showBrandsoftFooter ?? true,
+            showBrandsoftFooter: brand.brandsoftFooter ?? true,
         };
         
         const merge = (target: any, source: any) => {
@@ -197,13 +198,15 @@ export function QuotationPreview({
         );
     };
 
+    const displayLogo = design.logo || config.brand.logo;
+
     return (
         <Wrapper>
             <div 
                 id={`quotation-preview-${quotationId}`} 
                 className={cn(
                     "bg-white relative text-black overflow-hidden flex flex-col font-sans",
-                    "w-[8.5in] h-[11in]" 
+                    "w-[210mm] min-h-[297mm]" 
                 )}
                 style={{ backgroundColor: design.backgroundColor || '#FFFFFF', color: design.textColor || '#000000' }}
             >
@@ -214,7 +217,7 @@ export function QuotationPreview({
                 {quotationData.status && watermarkText && <QuotationStatusWatermark status={watermarkText} design={design} />}
                 
                  <div className='relative z-10 flex flex-col flex-grow'>
-                    <div className='p-[12mm] flex-grow flex flex-col'>
+                    <div className='p-[12mm] pb-0 flex-grow flex flex-col'>
                         {design.headerImage ? (
                              <img src={design.headerImage} className="w-full h-auto object-contain z-10 mb-5" style={{maxHeight: '60px', opacity: design.headerImageOpacity}} alt="header"/>
                         ) : (
@@ -224,8 +227,8 @@ export function QuotationPreview({
 
                         <header className="flex justify-between items-start relative z-10">
                             <div className="flex items-center gap-4">
-                                 {design.showLogo && (design.logo || config.brand.logo) && (
-                                    <img src={design.logo || config.brand.logo} alt="Logo" className="h-20 w-auto object-contain" />
+                                 {design.showLogo && displayLogo && (
+                                    <img src={displayLogo} alt="Logo" className="h-20 w-auto object-contain" />
                                 )}
                                 {design.showInvoiceTitle && <h1 className="text-4xl font-bold tracking-tight ml-2" style={{ color: accentColor }}>Quotation</h1>}
                             </div>
