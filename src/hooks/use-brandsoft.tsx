@@ -50,6 +50,8 @@ export interface DesignSettings {
     watermarkText?: string;
     watermarkColor?: string;
     watermarkOpacity?: number;
+    watermarkFontSize?: number;
+    watermarkAngle?: number;
     headerColor?: string;
     footerColor?: string;
 }

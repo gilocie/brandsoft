@@ -36,7 +36,7 @@ export interface InvoicePreviewProps {
     designOverride?: DesignSettings;
 }
 
-const InvoiceStatusWatermark = ({ status, color, opacity }: { status: string, color: string, opacity: number }) => {
+const InvoiceStatusWatermark = ({ status, color, opacity, fontSize, angle }: { status: string, color: string, opacity: number, fontSize: number, angle: number }) => {
     const hexToRgb = (hex: string) => {
         let r = 0, g = 0, b = 0;
         if (hex.length === 4) {
@@ -58,10 +58,14 @@ const InvoiceStatusWatermark = ({ status, color, opacity }: { status: string, co
     return (
         <div
             className={cn(
-                "absolute top-[45%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-0",
-                "text-[8rem] sm:text-[10rem] font-black tracking-[1rem] leading-none select-none pointer-events-none uppercase",
+                "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0",
+                "font-black tracking-widest leading-none select-none pointer-events-none uppercase",
             )}
-            style={{ color: finalColor }}
+            style={{ 
+                color: finalColor,
+                fontSize: `${fontSize}px`,
+                transform: `translate(-50%, -50%) rotate(${angle}deg)`
+            }}
         >
             {status}
         </div>
@@ -101,6 +105,8 @@ export function InvoicePreview({
             watermarkText: '',
             watermarkColor: '#dddddd',
             watermarkOpacity: 0.05,
+            watermarkFontSize: 96,
+            watermarkAngle: -45,
             headerColor: brand.primaryColor || '#F97316',
             footerColor: brand.secondaryColor || '#1E40AF',
         };
@@ -199,20 +205,20 @@ export function InvoicePreview({
                     <img src={design.backgroundImage} className="absolute inset-0 w-full h-full object-cover z-0" style={{opacity: design.backgroundImageOpacity ?? 1}} alt="background"/>
                 )}
                 
-                {watermarkText && <InvoiceStatusWatermark status={watermarkText} color={design.watermarkColor || '#dddddd'} opacity={design.watermarkOpacity ?? 0.05} />}
+                {watermarkText && <InvoiceStatusWatermark status={watermarkText} color={design.watermarkColor || '#dddddd'} opacity={design.watermarkOpacity ?? 0.05} fontSize={design.watermarkFontSize ?? 96} angle={design.watermarkAngle ?? -45} />}
                 
                 <div className="absolute top-0 left-0 w-full h-[60px] z-10" style={{ backgroundColor: design.headerColor }}></div>
 
                 {design.headerImage && (
                      <div className="absolute top-0 left-0 w-full h-[60px] z-10">
-                        <img src={design.headerImage} className="w-full h-full object-cover" style={{ opacity: design.headerImageOpacity ?? 1 }} alt="header" />
+                        <img src={design.headerImage} className="w-full h-full object-cover" style={{ opacity: design.headerImageOpacity ?? 1, maxHeight: '60px' }} alt="header" />
                     </div>
                 )}
                 
                 <footer className="absolute bottom-0 left-0 w-full z-20">
                      {design.footerImage && (
                         <div className="w-full h-[60px]">
-                           <img src={design.footerImage} className="w-full h-full object-cover" style={{ opacity: design.footerImageOpacity ?? 1 }} alt="footer" />
+                           <img src={design.footerImage} className="w-full h-full object-cover" style={{ opacity: design.footerImageOpacity ?? 1, maxHeight: '60px' }} alt="footer" />
                         </div>
                     )}
                    {design.brandsoftFooter && (

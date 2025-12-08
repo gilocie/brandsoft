@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm, useWatch } from 'react-hook-form';
@@ -36,6 +37,8 @@ const designSettingsSchema = z.object({
   watermarkText: z.string().optional(),
   watermarkColor: z.string().optional(),
   watermarkOpacity: z.number().min(0).max(1).optional(),
+  watermarkFontSize: z.number().min(12).max(200).optional(),
+  watermarkAngle: z.number().min(-90).max(90).optional(),
   headerColor: z.string().optional(),
   footerColor: z.string().optional(),
 });
@@ -138,14 +141,13 @@ const ImageUploader = ({
 
 const WATERMARK_PRESETS = ['PAID', 'DRAFT', 'PENDING', 'OVERDUE', 'CANCELED', 'CUSTOM'];
 
-function SettingsPanel({ form, documentType, documentId, isNew, onSubmit, returnUrl, onToggle }: {
+function SettingsPanel({ form, documentType, documentId, isNew, onSubmit, returnUrl }: {
   form: any,
   documentType: string | null,
   documentId: string | null,
   isNew: boolean,
   onSubmit: (data: any) => void,
-  returnUrl: string,
-  onToggle: () => void,
+  returnUrl: string
 }) {
   const [customWatermark, setCustomWatermark] = useState(form.getValues('watermarkText') && !WATERMARK_PRESETS.includes(form.getValues('watermarkText')));
   
@@ -164,16 +166,11 @@ function SettingsPanel({ form, documentType, documentId, isNew, onSubmit, return
         <Form {...form}>
             <div className="flex flex-col h-full">
                 <Card className="border-0 shadow-none rounded-none flex-1 flex flex-col">
-                    <CardHeader className="p-4 flex-row items-center justify-between">
-                       <div>
-                            <CardTitle className="capitalize">Customize {documentType || 'Design'}</CardTitle>
-                            <CardDescription>
-                                {isNew ? `Customizing default ${documentType} design.` : `Design for ${documentId}`}
-                            </CardDescription>
-                       </div>
-                       <Button size="icon" onClick={onToggle} className="lg:hidden shrink-0">
-                            <ArrowLeft className="h-5 w-5" />
-                       </Button>
+                    <CardHeader className="p-4">
+                        <CardTitle className="capitalize">Customize {documentType || 'Design'}</CardTitle>
+                        <CardDescription>
+                            {isNew ? `Customizing default ${documentType} design.` : `Design for ${documentId}`}
+                        </CardDescription>
                     </CardHeader>
                     <CardContent className="flex-grow p-4 space-y-6 overflow-y-auto">
                         <Card>
@@ -290,6 +287,42 @@ function SettingsPanel({ form, documentType, documentId, isNew, onSubmit, return
                                                 </FormItem>
                                             )}
                                         />
+                                        <FormField
+                                            control={form.control}
+                                            name="watermarkFontSize"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="text-xs">Font Size</FormLabel>
+                                                    <FormControl>
+                                                    <Slider
+                                                            value={[field.value ?? 96]}
+                                                            onValueChange={(value) => field.onChange(value[0])}
+                                                            min={12}
+                                                            max={200}
+                                                            step={1}
+                                                        />
+                                                    </FormControl>
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="watermarkAngle"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="text-xs">Angle</FormLabel>
+                                                    <FormControl>
+                                                    <Slider
+                                                            value={[field.value ?? 0]}
+                                                            onValueChange={(value) => field.onChange(value[0])}
+                                                            min={-90}
+                                                            max={90}
+                                                            step={5}
+                                                        />
+                                                    </FormControl>
+                                                </FormItem>
+                                            )}
+                                        />
                                     </TabsContent>
                                 </Tabs>
                             </CardContent>
@@ -338,6 +371,8 @@ function DocumentDesignPage() {
             watermarkText: '',
             watermarkColor: '#dddddd',
             watermarkOpacity: 0.05,
+            watermarkFontSize: 96,
+            watermarkAngle: 0,
             headerColor: '#F97316',
             footerColor: '#1E40AF'
         },
@@ -358,6 +393,8 @@ function DocumentDesignPage() {
         watermarkText: watchedValues.watermarkText,
         watermarkColor: watchedValues.watermarkColor,
         watermarkOpacity: watchedValues.watermarkOpacity,
+        watermarkFontSize: watchedValues.watermarkFontSize,
+        watermarkAngle: watchedValues.watermarkAngle,
         headerColor: watchedValues.headerColor,
         footerColor: watchedValues.footerColor,
     }), [watchedValues]);
@@ -408,9 +445,11 @@ function DocumentDesignPage() {
             footerImageOpacity: existingDesign.footerImageOpacity ?? defaultTemplate.footerImageOpacity ?? 1,
             backgroundImage: existingDesign.backgroundImage ?? defaultTemplate.backgroundImage ?? brand.backgroundImage ?? '',
             backgroundImageOpacity: existingDesign.backgroundImageOpacity ?? defaultTemplate.backgroundImageOpacity ?? 1,
-            watermarkText: existingDesign.watermarkText ?? defaultTemplate.watermarkText ?? '',
+            watermarkText: existingDesign.watermarkText ?? defaultTemplate.watermarkText ?? (doc as Invoice)?.status,
             watermarkColor: existingDesign.watermarkColor ?? defaultTemplate.watermarkColor ?? '#dddddd',
             watermarkOpacity: existingDesign.watermarkOpacity ?? defaultTemplate.watermarkOpacity ?? 0.05,
+            watermarkFontSize: existingDesign.watermarkFontSize ?? defaultTemplate.watermarkFontSize ?? 96,
+            watermarkAngle: existingDesign.watermarkAngle ?? defaultTemplate.watermarkAngle ?? -45,
             headerColor: existingDesign.headerColor ?? defaultTemplate.headerColor ?? brand.primaryColor ?? '#F97316',
             footerColor: existingDesign.footerColor ?? defaultTemplate.footerColor ?? brand.secondaryColor ?? '#1E40AF',
         };
@@ -435,6 +474,8 @@ function DocumentDesignPage() {
             watermarkText: data.watermarkText,
             watermarkColor: data.watermarkColor,
             watermarkOpacity: data.watermarkOpacity,
+            watermarkFontSize: data.watermarkFontSize,
+            watermarkAngle: data.watermarkAngle,
             headerColor: data.headerColor,
             footerColor: data.footerColor,
         };
@@ -494,22 +535,24 @@ function DocumentDesignPage() {
     const hasContentForPreview = finalDocumentData && previewCustomer;
 
     return (
-        <div className="flex h-screen overflow-hidden bg-gray-50">
+        <div className="flex h-screen overflow-hidden bg-gray-50 relative">
+            
+            <Button 
+                variant="default"
+                size="icon" 
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                className={cn(
+                    "absolute top-4 z-50 rounded-l-none transition-all duration-300",
+                    isSidebarOpen ? "left-80" : "left-0"
+                )}
+            >
+                <PanelLeft className="h-5 w-5"/>
+            </Button>
+            
             <aside className={cn(
-                "fixed md:relative top-0 left-0 z-40 w-80 h-screen transition-transform duration-300 bg-white border-r",
-                isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+                "absolute top-0 left-0 z-40 w-80 h-screen transition-transform duration-300 bg-white border-r shadow-lg",
+                isSidebarOpen ? "translate-x-0" : "-translate-x-full"
             )}>
-                 <Button 
-                    variant="default"
-                    size="icon" 
-                    onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                    className={cn(
-                        "absolute top-4 -right-10 z-50 rounded-r-md rounded-l-none transition-all duration-300",
-                        !isSidebarOpen && "md:hidden"
-                    )}
-                >
-                    <PanelLeft className="h-5 w-5"/>
-                </Button>
                 <SettingsPanel 
                     form={form} 
                     documentType={documentType} 
@@ -517,36 +560,20 @@ function DocumentDesignPage() {
                     isNew={isNew} 
                     onSubmit={onSubmit} 
                     returnUrl={returnUrl}
-                    onToggle={() => setIsSidebarOpen(false)}
                 />
             </aside>
-            
+
             {isSidebarOpen && (
                 <div 
-                    className="fixed inset-0 bg-black/50 z-30 md:hidden"
+                    className="fixed inset-0 bg-black/50 z-30 lg:hidden"
                     onClick={() => setIsSidebarOpen(false)}
                 />
             )}
             
-            <div className="flex-1 flex flex-col h-screen overflow-hidden">
-                <header className="h-16 flex-shrink-0 bg-white border-b flex items-center px-4 gap-3 shadow-sm">
-                    <Button 
-                        variant="outline"
-                        size="icon" 
-                        onClick={() => setIsSidebarOpen(true)}
-                        className={cn(
-                            "shrink-0",
-                            isSidebarOpen ? "md:hidden" : "md:inline-flex"
-                        )}
-                    >
-                        <PanelLeft className="h-5 w-5"/>
-                    </Button>
-                    <h1 className="flex-1 text-center md:text-left font-semibold text-lg capitalize">
-                        {documentType} Design
-                    </h1>
-                    <div className="w-10 md:hidden" />
-                </header>
-
+            <div className={cn(
+                "flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300",
+                 isSidebarOpen ? "lg:ml-80" : "ml-0"
+            )}>
                 <main className="flex-1 w-full bg-slate-100 overflow-y-auto flex justify-center items-start p-4 md:p-8">
                     <div className="flex-shrink-0 shadow-2xl transform origin-top scale-75 md:scale-90 lg:scale-95">
                         {hasContentForPreview ? (
