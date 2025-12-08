@@ -108,8 +108,6 @@ export default function DocumentDesignPage() {
     const [footerPreview, setFooterPreview] = useState<string | null>(null);
     const [backgroundPreview, setBackgroundPreview] = useState<string | null>(null);
     const [watermarkPreview, setWatermarkPreview] = useState<string | null>(null);
-    
-    const newDocumentFormData = useMemo(() => isNew ? getFormData() : null, [isNew, getFormData]);
 
     const form = useForm<DesignSettingsFormData>({
         resolver: zodResolver(designSettingsSchema),
@@ -117,54 +115,55 @@ export default function DocumentDesignPage() {
     });
 
     useEffect(() => {
-        if (config) {
-            let doc: Invoice | Quotation | undefined;
-            if (!isNew && documentId) {
-                if (documentType === 'invoice') {
-                    doc = config.invoices.find(inv => inv.invoiceId === documentId);
-                } else if (documentType === 'quotation') {
-                    doc = config.quotations.find(q => q.quotationId === documentId);
-                }
-            } else if (isNew && newDocumentFormData) {
-                // Create a temporary document object for preview
+        if (!config) return;
+
+        let doc: Invoice | Quotation | undefined | null = null;
+        let design: Partial<DesignSettings> = {};
+        const brand = config.brand || {};
+
+        if (isNew) {
+            const formData = getFormData();
+            if (formData) {
                 doc = {
-                    ...(newDocumentFormData as any),
+                    ...(formData as any),
                     [documentType === 'invoice' ? 'invoiceId' : 'quotationId']: 'PREVIEW',
                 };
+                // For new documents, start with global brand settings
+                design = config.profile.defaultInvoiceTemplate || {};
             }
-
+        } else if (documentId) {
+            if (documentType === 'invoice') {
+                doc = config.invoices.find(inv => inv.invoiceId === documentId);
+            } else if (documentType === 'quotation') {
+                doc = config.quotations.find(q => q.quotationId === documentId);
+            }
+            // For existing documents, use their specific design or fall back
             if (doc) {
-                setDocument(doc as Invoice | Quotation);
-                const design = doc.design || {};
-                const brand = config.brand || {};
-                form.reset({
-                    backgroundColor: design.backgroundColor || brand.backgroundColor || '#FFFFFF',
-                    headerImage: design.headerImage || brand.headerImage || '',
-                    footerImage: design.footerImage || brand.footerImage || '',
-                    backgroundImage: design.backgroundImage || brand.backgroundImage || '',
-                    watermarkImage: design.watermarkImage || brand.watermarkImage || '',
-                });
-                setHeaderPreview(design.headerImage || brand.headerImage || null);
-                setFooterPreview(design.footerImage || brand.footerImage || null);
-                setBackgroundPreview(design.backgroundImage || brand.backgroundImage || null);
-                setWatermarkPreview(design.watermarkImage || brand.watermarkImage || null);
-            } else {
-                 const brand = config.brand || {};
-                 form.reset({
-                    backgroundColor: brand.backgroundColor || '#FFFFFF',
-                    headerImage: brand.headerImage || '',
-                    footerImage: brand.footerImage || '',
-                    backgroundImage: brand.backgroundImage || '',
-                    watermarkImage: brand.watermarkImage || '',
-                });
-                setHeaderPreview(brand.headerImage || null);
-                setFooterPreview(brand.footerImage || null);
-                setBackgroundPreview(brand.backgroundImage || null);
-                setWatermarkPreview(brand.watermarkImage || null);
+                design = doc.design || {};
             }
-            setIsLoading(false);
         }
-    }, [config, documentType, documentId, isNew, newDocumentFormData, form]);
+        
+        if (doc) {
+            setDocument(doc as Invoice | Quotation);
+        }
+
+        const initialValues = {
+            backgroundColor: design.backgroundColor || brand.backgroundColor || '#FFFFFF',
+            headerImage: design.headerImage || brand.headerImage || '',
+            footerImage: design.footerImage || brand.footerImage || '',
+            backgroundImage: design.backgroundImage || brand.backgroundImage || '',
+            watermarkImage: design.watermarkImage || brand.watermarkImage || '',
+        };
+        
+        form.reset(initialValues);
+        setHeaderPreview(initialValues.headerImage);
+        setFooterPreview(initialValues.footerImage);
+        setBackgroundPreview(initialValues.backgroundImage);
+        setWatermarkPreview(initialValues.watermarkImage);
+
+        setIsLoading(false);
+
+    }, [config, documentType, documentId, isNew, getFormData, form]);
 
     const onSubmit = (data: DesignSettingsFormData) => {
         if (!config) return;
@@ -221,8 +220,8 @@ export default function DocumentDesignPage() {
     
     const previewCustomer = useMemo(() => {
         if(!config || !document) return null;
-        const customerId = isNew ? (document as any).customerId : (document as any).customer;
-        return config.customers.find(c => isNew ? c.id === customerId : c.name === customerId) || null;
+        const customerId = isNew ? (document as any).customerId : config.customers.find(c => c.name === (document as any).customer)?.id;
+        return config.customers.find(c => c.id === customerId) || null;
     }, [config, document, isNew]);
 
 
@@ -232,99 +231,112 @@ export default function DocumentDesignPage() {
     
     const returnUrl = isNew ? `/${documentType}s/new` : (documentId ? `/${documentType}s/${documentId}/edit` : `/${documentType}s`);
 
+    if (!document && !isNew) {
+        return (
+            <div className="flex flex-col items-center justify-center text-center h-full">
+                <h2 className="text-2xl font-bold mb-2">Document Not Found</h2>
+                <p className="text-muted-foreground mb-4">The requested document could not be found, or required data is missing.</p>
+                <Button asChild>
+                    <Link href="/dashboard">Return to Dashboard</Link>
+                </Button>
+            </div>
+        );
+    }
 
     return (
-        <div className="h-full">
-            <div className="grid grid-cols-1 lg:grid-cols-3 h-full">
-                <div className="lg:col-span-1 bg-background border-r h-full flex flex-col">
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
-                            <div className="p-4 border-b">
-                                 <h1 className="text-lg font-semibold font-headline capitalize">Customize {documentType || 'Design'}</h1>
-                                <p className="text-sm text-muted-foreground">
-                                   {isNew ? "Customizing default design." : `Design for ${documentId}`}
-                                </p>
-                            </div>
-                            
-                            <div className="flex-grow overflow-y-auto p-4 space-y-6">
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2 text-base"><Paintbrush className="h-4 w-4"/> Appearance</CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <FormField control={form.control} name="backgroundColor" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel className="text-xs">Page Background Color</FormLabel>
-                                                <FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}/>
-                                    </CardContent>
-                                </Card>
-                                <Card>
-                                     <CardHeader>
-                                        <CardTitle className="flex items-center gap-2 text-base"><Layers className="h-4 w-4"/> Layout Images</CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                          <Tabs defaultValue="header" className="w-full">
-                                            <TabsList className="grid w-full grid-cols-4">
-                                                <TabsTrigger value="header">Header</TabsTrigger>
-                                                <TabsTrigger value="footer">Footer</TabsTrigger>
-                                                <TabsTrigger value="background">BG</TabsTrigger>
-                                                <TabsTrigger value="watermark">Watermark</TabsTrigger>
-                                            </TabsList>
-                                            <TabsContent value="header" className="pt-6">
-                                                <ImageUploader form={form} fieldName="headerImage" previewState={headerPreview} setPreviewState={setHeaderPreview} label="Header" description="2480px wide recommended." aspect='wide' />
-                                            </TabsContent>
-                                            <TabsContent value="footer" className="pt-6">
-                                                <ImageUploader form={form} fieldName="footerImage" previewState={footerPreview} setPreviewState={setFooterPreview} label="Footer" description="2480px wide recommended." aspect='wide' />
-                                            </TabsContent>
-                                            <TabsContent value="background" className="pt-6">
-                                                <ImageUploader form={form} fieldName="backgroundImage" previewState={backgroundPreview} setPreviewState={setBackgroundPreview} label="Background" description="A4 aspect ratio recommended." aspect='normal' />
-                                            </TabsContent>
-                                            <TabsContent value="watermark" className="pt-6">
-                                                <ImageUploader form={form} fieldName="watermarkImage" previewState={watermarkPreview} setPreviewState={setWatermarkPreview} label="Watermark" description="Semi-transparent PNG works best." aspect='normal' />
-                                            </TabsContent>
-                                        </Tabs>
-                                    </CardContent>
-                                </Card>
-                            </div>
-
-                            <div className="p-4 border-t flex gap-2">
-                                <Button type="button" variant="outline" asChild className="flex-1">
-                                    <Link href={returnUrl}><ArrowLeft className="mr-2 h-4 w-4"/> Back</Link>
-                                </Button>
-                                <Button type="submit" className="flex-1">Save Design</Button>
-                            </div>
-                        </form>
-                    </Form>
-                </div>
-                <div className="lg:col-span-2 flex items-center justify-center h-full overflow-y-auto p-8 bg-muted/40">
-                     {document ? (
-                        <>
-                           {documentType === 'invoice' && (
-                                <InvoicePreview
-                                    config={livePreviewConfig}
-                                    customer={previewCustomer}
-                                    invoiceData={document as Invoice}
-                                    invoiceId={documentId}
-                                />
-                            )}
-                            {documentType === 'quotation' && (
-                                <QuotationPreview
-                                    config={livePreviewConfig}
-                                    customer={previewCustomer}
-                                    quotationData={document as Quotation}
-                                    quotationId={documentId}
-                                />
-                            )}
-                        </>
-                    ) : (
-                        <div className="w-full max-w-[8.5in] mx-auto bg-white shadow-lg aspect-[8.5/11] flex items-center justify-center border">
-                           <p className="text-muted-foreground">Select a document to preview its design.</p>
+        <div className="grid grid-cols-1 lg:grid-cols-3 h-full">
+            <div className="lg:col-span-1 bg-background border-r h-full flex flex-col">
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+                        <div className="p-4 border-b">
+                                <h1 className="text-lg font-semibold font-headline capitalize">Customize {documentType || 'Design'}</h1>
+                            <p className="text-sm text-muted-foreground">
+                                {isNew ? "Customizing default design." : `Design for ${documentId}`}
+                            </p>
                         </div>
-                    )}
-                </div>
+                        
+                        <div className="flex-grow overflow-y-auto p-4 space-y-6">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2 text-base"><Paintbrush className="h-4 w-4"/> Appearance</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <FormField control={form.control} name="backgroundColor" render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className="text-xs">Page Background Color</FormLabel>
+                                            <FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}/>
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                    <CardHeader>
+                                    <CardTitle className="flex items-center gap-2 text-base"><Layers className="h-4 w-4"/> Layout Images</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                        <Tabs defaultValue="header" className="w-full">
+                                        <TabsList className="grid w-full grid-cols-4">
+                                            <TabsTrigger value="header">Header</TabsTrigger>
+                                            <TabsTrigger value="footer">Footer</TabsTrigger>
+                                            <TabsTrigger value="background">BG</TabsTrigger>
+                                            <TabsTrigger value="watermark">Watermark</TabsTrigger>
+                                        </TabsList>
+                                        <TabsContent value="header" className="pt-6">
+                                            <ImageUploader form={form} fieldName="headerImage" previewState={headerPreview} setPreviewState={setHeaderPreview} label="Header" description="2480px wide recommended." aspect='wide' />
+                                        </TabsContent>
+                                        <TabsContent value="footer" className="pt-6">
+                                            <ImageUploader form={form} fieldName="footerImage" previewState={footerPreview} setPreviewState={setFooterPreview} label="Footer" description="2480px wide recommended." aspect='wide' />
+                                        </TabsContent>
+                                        <TabsContent value="background" className="pt-6">
+                                            <ImageUploader form={form} fieldName="backgroundImage" previewState={backgroundPreview} setPreviewState={setBackgroundPreview} label="Background" description="A4 aspect ratio recommended." aspect='normal' />
+                                        </TabsContent>
+                                        <TabsContent value="watermark" className="pt-6">
+                                            <ImageUploader form={form} fieldName="watermarkImage" previewState={watermarkPreview} setPreviewState={setWatermarkPreview} label="Watermark" description="Semi-transparent PNG works best." aspect='normal' />
+                                        </TabsContent>
+                                    </Tabs>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        <div className="p-4 border-t flex gap-2">
+                            <Button type="button" variant="outline" asChild className="flex-1">
+                                <Link href={returnUrl}><ArrowLeft className="mr-2 h-4 w-4"/> Back</Link>
+                            </Button>
+                            <Button type="submit" className="flex-1">Save Design</Button>
+                        </div>
+                    </form>
+                </Form>
+            </div>
+            <div className="lg:col-span-2 flex items-center justify-center h-full overflow-y-auto p-8 bg-muted/40">
+                    {document ? (
+                    <>
+                        {documentType === 'invoice' && (
+                            <InvoicePreview
+                                config={livePreviewConfig}
+                                customer={previewCustomer}
+                                invoiceData={document as Invoice}
+                                invoiceId={documentId}
+                            />
+                        )}
+                        {documentType === 'quotation' && (
+                            <QuotationPreview
+                                config={livePreviewConfig}
+                                customer={previewCustomer}
+                                quotationData={document as Quotation}
+                                quotationId={documentId}
+                            />
+                        )}
+                    </>
+                ) : (
+                    <div className="w-full max-w-[8.5in] mx-auto bg-white shadow-lg aspect-[8.5/11] flex items-center justify-center border">
+                        <div className="text-center p-8">
+                          <h3 className="text-xl font-semibold mb-2">Live Preview</h3>
+                          <p className="text-muted-foreground">Your document preview will appear here.</p>
+                          <p className="text-muted-foreground text-sm mt-2">Fill in customer & item details on the previous page to see them here.</p>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
