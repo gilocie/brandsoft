@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm, useWatch } from 'react-hook-form';
@@ -11,7 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { useToast } from '@/hooks/use-toast';
 import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
-import { UploadCloud, Paintbrush, Layers, Stamp, Trash2, ArrowLeft, Loader2, Image as ImageIcon, FileImage, PanelLeft, X } from 'lucide-react';
+import { UploadCloud, Paintbrush, Layers, Trash2, ArrowLeft, Loader2, PanelLeft } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Link from 'next/link';
@@ -21,15 +20,12 @@ import { InvoicePreview } from '@/components/invoice-preview';
 import { QuotationPreview } from '@/components/quotation-preview';
 import dynamic from 'next/dynamic';
 import { cn } from '@/lib/utils';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from '@/components/ui/drawer';
 
 const designSettingsSchema = z.object({
   backgroundColor: z.string().optional(),
   textColor: z.string().optional(),
   headerImage: z.string().optional(),
-  footerImage: z
-    .string()
-    .optional(),
+  footerImage: z.string().optional(),
   backgroundImage: z.string().optional(),
   watermarkImage: z.string().optional(),
 });
@@ -86,7 +82,7 @@ const ImageUploader = ({
                         </Button>
                     </>
                 ) : (
-                    <p className="text-sm text-muted-foreground">No ${label.toLowerCase()} uploaded</p>
+                    <p className="text-sm text-muted-foreground">No {label.toLowerCase()} uploaded</p>
                 )}
             </div>
             <FormField control={form.control} name={fieldName} render={() => (
@@ -107,32 +103,24 @@ const ImageUploader = ({
     );
 };
 
-function SettingsPanel({ form, documentType, documentId, isNew, onSubmit, returnUrl, onClose }: {
+function SettingsPanel({ form, documentType, documentId, isNew, onSubmit, returnUrl }: {
   form: any,
   documentType: string | null,
   documentId: string | null,
   isNew: boolean,
   onSubmit: (data: any) => void,
-  returnUrl: string,
-  onClose?: () => void
+  returnUrl: string
 }) {
   return (
     <div className="h-full overflow-y-auto">
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+            <div className="flex flex-col h-full">
                 <Card className="border-0 shadow-none rounded-none flex-1 flex flex-col">
-                    <CardHeader className="flex flex-row items-start justify-between p-4">
-                        <div>
-                            <CardTitle className="capitalize">Customize {documentType || 'Design'}</CardTitle>
-                            <CardDescription>
-                                {isNew ? `Customizing default ${documentType} design.` : `Design for ${documentId}`}
-                            </CardDescription>
-                        </div>
-                        {onClose && (
-                            <Button size="icon" onClick={onClose} className="shrink-0 lg:hidden">
-                                <X className="h-4 w-4" />
-                            </Button>
-                        )}
+                    <CardHeader className="p-4">
+                        <CardTitle className="capitalize">Customize {documentType || 'Design'}</CardTitle>
+                        <CardDescription>
+                            {isNew ? `Customizing default ${documentType} design.` : `Design for ${documentId}`}
+                        </CardDescription>
                     </CardHeader>
                     <CardContent className="flex-grow p-4 space-y-6 overflow-y-auto">
                         <Card>
@@ -195,15 +183,14 @@ function SettingsPanel({ form, documentType, documentId, isNew, onSubmit, return
                         <Button type="button" variant="outline" asChild className="flex-1">
                             <Link href={returnUrl}><ArrowLeft className="mr-2 h-4 w-4"/> Back</Link>
                         </Button>
-                        <Button type="submit" className="flex-1">Save Design</Button>
+                        <Button type="button" onClick={form.handleSubmit(onSubmit)} className="flex-1">Save Design</Button>
                     </CardFooter>
                 </Card>
-            </form>
+            </div>
         </Form>
     </div>
   );
 }
-
 
 function DocumentDesignPage() {
     const { config, updateInvoice, updateQuotation, saveConfig } = useBrandsoft();
@@ -318,7 +305,6 @@ function DocumentDesignPage() {
             saveConfig({ ...config, profile: { ...config.profile, [templateKey]: newDesignSettings } });
             toast({ title: "Default Design Saved", description: `The new design is now the default for all new ${documentType}s.` });
         }
-        setIsSidebarOpen(false);
     };
 
     const finalDocumentData = useMemo(() => {
@@ -358,24 +344,51 @@ function DocumentDesignPage() {
     const hasContentForPreview = finalDocumentData && previewCustomer;
 
     return (
-        <div className="flex h-screen overflow-hidden">
-             <aside className={cn(
-                "fixed top-0 left-0 z-40 w-80 h-screen transition-transform bg-background border-r lg:relative lg:translate-x-0",
-                isSidebarOpen ? "translate-x-0" : "-translate-x-full",
-             )}>
-                <SettingsPanel form={form} documentType={documentType} documentId={documentId} isNew={isNew} onSubmit={onSubmit} returnUrl={returnUrl} onClose={() => setIsSidebarOpen(false)} />
+        <div className="flex h-screen overflow-hidden bg-gray-50">
+            {/* Sidebar with slide animation */}
+            <aside className={cn(
+                "fixed md:relative top-0 left-0 z-40 w-80 h-screen transition-transform duration-300 bg-white border-r shadow-lg md:shadow-none",
+                isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+            )}>
+                <SettingsPanel 
+                    form={form} 
+                    documentType={documentType} 
+                    documentId={documentId} 
+                    isNew={isNew} 
+                    onSubmit={onSubmit} 
+                    returnUrl={returnUrl}
+                />
             </aside>
+
+            {/* Overlay for mobile when sidebar is open */}
+            {isSidebarOpen && (
+                <div 
+                    className="fixed inset-0 bg-black/50 z-30 md:hidden"
+                    onClick={() => setIsSidebarOpen(false)}
+                />
+            )}
             
-            <div className="flex-1 transition-all duration-300 h-screen flex flex-col">
-                <header className="h-16 flex-shrink-0 bg-background border-b flex items-center px-4 gap-2">
-                    <Button size="icon" onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="shrink-0 lg:hidden">
+            {/* Main content area */}
+            <div className="flex-1 flex flex-col h-screen overflow-hidden">
+                {/* Header */}
+                <header className="h-16 flex-shrink-0 bg-white border-b flex items-center px-4 gap-3 shadow-sm">
+                    <Button 
+                        variant="outline"
+                        size="icon" 
+                        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                        className="shrink-0 md:hidden"
+                    >
                         <PanelLeft className="h-5 w-5"/>
                     </Button>
-                    <div className="flex-1 text-center font-semibold capitalize">{documentType} Design</div>
-                    <div className="w-9 h-9" />
+                    <h1 className="flex-1 text-center md:text-left font-semibold text-lg capitalize">
+                        {documentType} Design
+                    </h1>
+                    <div className="w-10 md:hidden" />
                 </header>
-                <main className="flex-1 w-full bg-slate-100 overflow-y-auto flex justify-center items-start p-8">
-                     <div className="flex-shrink-0 shadow-2xl transform origin-top md:scale-[0.75] lg:scale-[0.95] xl:scale-[0.95]">
+
+                {/* Preview area */}
+                <main className="flex-1 w-full bg-slate-100 overflow-y-auto flex justify-center items-start p-4 md:p-8">
+                    <div className="flex-shrink-0 shadow-2xl transform origin-top scale-75 md:scale-90 lg:scale-95">
                         {hasContentForPreview ? (
                             <>
                                 {documentType === 'invoice' && (
