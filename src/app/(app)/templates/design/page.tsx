@@ -118,7 +118,7 @@ function DocumentDesignPage() {
         },
     });
 
-    useEffect(() => {
+     useEffect(() => {
         if (!config) return;
 
         let doc: Invoice | Quotation | null = null;
@@ -163,7 +163,7 @@ function DocumentDesignPage() {
             backgroundImage: design.backgroundImage || brand.backgroundImage || '',
             watermarkImage: design.watermarkImage || brand.watermarkImage || '',
         };
-
+        
         const currentFormValues = form.getValues();
         if (JSON.stringify(currentFormValues) !== JSON.stringify(initialValues)) {
             form.reset(initialValues);
@@ -174,7 +174,7 @@ function DocumentDesignPage() {
         }
     
         setIsLoading(false);
-    }, [config, documentId, documentType, isNew, form, document]);
+    }, [config, documentId, documentType, isNew, form, document, getFormData]);
 
     const onSubmit = (data: DesignSettingsFormData) => {
         if (!config) return;
@@ -231,21 +231,33 @@ function DocumentDesignPage() {
 
     const livePreviewConfig = useMemo(() => {
         if (!config) return null;
-        return JSON.parse(JSON.stringify(config));
-    }, [config]);
+        
+        const newConfig = JSON.parse(JSON.stringify(config));
+        const currentDesign: DesignSettings = watchedValues;
+        
+        // Merge live design changes into the brand settings for the preview
+        newConfig.brand = {
+            ...newConfig.brand,
+            ...currentDesign
+        };
+        
+        return newConfig;
+    }, [config, watchedValues]);
     
     const previewCustomer = useMemo(() => {
-        if(!config) return null;
+        if (!config) return null;
         
-        if (document) {
-            const customerId = (document as any).customerId;
+        const doc = document;
+        const formData = getFormData();
+
+        if (doc) {
+            const customerId = (doc as any).customerId;
             if (customerId) {
                 return config.customers.find(c => c.id === customerId) || null;
             }
-            return config.customers.find(c => c.name === (document as any).customer) || null;
+            return config.customers.find(c => c.name === (doc as any).customer) || null;
         }
         
-        const formData = getFormData();
         if (isNew && formData?.customerId) {
              return config.customers.find(c => c.id === formData.customerId) || null;
         }
@@ -277,10 +289,10 @@ function DocumentDesignPage() {
             [documentType === 'invoice' ? 'invoiceId' : 'quotationId']: 'PREVIEW',
             [documentType === 'invoice' ? 'dueDate' : 'validUntil']: new Date(new Date().setDate(new Date().getDate() + 30)),
             lineItems: [{description: 'Sample Item', quantity: 1, price: 100}],
-            design: currentDesign 
+            design: currentDesign
         } as Invoice | Quotation;
 
-    }, [document, isNew, documentType, watchedValues, getFormData]);
+    }, [document, isNew, getFormData, documentType, watchedValues]); 
 
 
     if (isLoading) {
@@ -304,7 +316,7 @@ function DocumentDesignPage() {
                         </div>
                         
                         <div className="flex-grow overflow-y-auto p-4 space-y-6">
-                            <Card>
+                             <Card>
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2 text-base"><Paintbrush className="h-4 w-4"/> Appearance</CardTitle>
                                 </CardHeader>
