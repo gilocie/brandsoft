@@ -193,16 +193,11 @@ export function QuotationPreview({
             <div 
                 id={`quotation-preview-${quotationId}`} 
                 className={cn(
-                    "w-full max-w-[8.5in] mx-auto bg-white shadow-lg relative font-sans",
-                    forPdf ? "min-h-[11in]" : "min-h-[11in]"
+                    "w-[8.5in] h-[11in] mx-auto bg-white shadow-lg relative font-sans flex flex-col",
                 )}
                 style={{
                     backgroundColor: design.backgroundColor || '#FFFFFF',
                     color: design.textColor || '#000000',
-                    paddingLeft: '48px',
-                    paddingRight: '48px',
-                    paddingBottom: '100px',
-                    paddingTop: '60px'
                 }}
             >
                 {design.backgroundImage && (
@@ -211,17 +206,9 @@ export function QuotationPreview({
 
                  {watermarkText && <QuotationStatusWatermark status={watermarkText} design={design} />}
 
-                <div className="absolute top-0 left-0 right-0 h-[60px] z-30" style={{backgroundColor: design.headerColor}}></div>
-
-                {design.headerImage && (
-                    <div className="absolute top-0 left-0 right-0 h-[60px] z-30">
-                        <img src={design.headerImage} className="w-full h-full object-cover" style={{opacity: design.headerImageOpacity}} alt="Letterhead"/>
-                    </div>
-                )}
-                
-                <div className="relative z-10">
+                <div className="relative z-10 flex-grow flex flex-col pt-12 px-12 pb-2">
                     <header className="flex justify-between items-start mb-5">
-                        <div className="flex items-center gap-4">
+                         <div className="flex items-center gap-4">
                             {(design.logo || config.brand?.logo) && (
                                 <img src={design.logo || config.brand.logo} alt={config.brand?.businessName || 'Logo'} className="h-16 w-16 sm:h-20 sm:w-20 object-contain" />
                             )}
@@ -229,7 +216,7 @@ export function QuotationPreview({
                                 <h1 className="text-3xl sm:text-4xl font-bold" style={{color: design.headerColor}}>Quotation</h1>
                             </div>
                         </div>
-                        <div className="text-right text-sm" style={{color: design.textColor}}>
+                        <div className="text-right text-sm ml-10" style={{color: design.textColor}}>
                             <p className="font-bold text-base">{config.brand?.businessName}</p>
                             <p>{config.profile?.address}</p>
                             <p>{config.profile?.email}</p>
@@ -298,7 +285,7 @@ export function QuotationPreview({
                         </Table>
                     </section>
 
-                    <section className="grid grid-cols-2 gap-8 items-start mb-12">
+                    <section className="grid grid-cols-2 gap-8 items-start mt-auto">
                         <div className="text-sm">
                             {quotationData.notes && (
                                 <div>
@@ -339,8 +326,16 @@ export function QuotationPreview({
                         </div>
                     </section>
                 </div>
+                
+                <div className="absolute top-0 left-0 right-0 h-[60px] z-20" style={{backgroundColor: design.headerColor}}></div>
+                
+                {design.headerImage && (
+                    <div className="absolute top-0 left-0 right-0 h-[60px] z-20">
+                        <img src={design.headerImage} className="w-full h-full object-cover" style={{opacity: design.headerImageOpacity}} alt="Letterhead"/>
+                    </div>
+                )}
 
-                <footer className="absolute bottom-0 left-0 right-0 z-30">
+                <footer className="absolute bottom-0 left-0 right-0 z-20">
                     {design.footerImage && (
                         <div className="w-full h-[60px]">
                             <img src={design.footerImage} className="w-full h-full object-cover" style={{opacity: design.footerImageOpacity}} alt="Footer"/>

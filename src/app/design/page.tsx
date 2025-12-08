@@ -537,21 +537,10 @@ function DocumentDesignPage() {
     return (
         <div className="flex h-screen overflow-hidden bg-gray-50 relative">
             
-            <Button 
-                variant="default"
-                size="icon" 
-                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                className={cn(
-                    "absolute top-4 z-50 rounded-l-none transition-all duration-300",
-                    isSidebarOpen ? "left-80" : "left-0"
-                )}
-            >
-                <PanelLeft className="h-5 w-5"/>
-            </Button>
-            
             <aside className={cn(
-                "absolute top-0 left-0 z-40 w-80 h-screen transition-transform duration-300 bg-white border-r shadow-lg",
-                isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+                "fixed lg:relative top-0 left-0 z-40 w-80 h-screen transition-transform duration-300 bg-white border-r shadow-lg",
+                isSidebarOpen ? "translate-x-0" : "-translate-x-full",
+                "lg:translate-x-0 lg:shadow-none"
             )}>
                 <SettingsPanel 
                     form={form} 
@@ -570,12 +559,19 @@ function DocumentDesignPage() {
                 />
             )}
             
-            <div className={cn(
-                "flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300",
-                 isSidebarOpen ? "lg:ml-80" : "ml-0"
-            )}>
+            <div className="flex-1 flex flex-col h-screen overflow-hidden">
+                 <header className="h-16 flex-shrink-0 bg-white border-b flex items-center px-4 gap-3 shadow-sm lg:hidden">
+                    <Button 
+                        variant="outline"
+                        size="icon" 
+                        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                        className="shrink-0"
+                    >
+                        <PanelLeft className="h-5 w-5"/>
+                    </Button>
+                </header>
                 <main className="flex-1 w-full bg-slate-100 overflow-y-auto flex justify-center items-start p-4 md:p-8">
-                    <div className="flex-shrink-0 shadow-2xl transform origin-top scale-75 md:scale-90 lg:scale-95">
+                    <div className="flex-shrink-0 shadow-2xl transform origin-top scale-[0.8] md:scale-[0.9] lg:scale-100">
                         {hasContentForPreview ? (
                             <>
                                 {documentType === 'invoice' && (
@@ -602,7 +598,7 @@ function DocumentDesignPage() {
                                 )}
                             </>
                         ) : (
-                            <div className="w-[210mm] h-[297mm] bg-white shadow-lg flex items-center justify-center border flex-shrink-0">
+                            <div className="w-[8.5in] h-[11in] bg-white shadow-lg flex items-center justify-center border flex-shrink-0">
                                 <div className="text-center p-8">
                                     <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
                                     <h3 className="text-xl font-semibold mb-2">Loading Preview...</h3>
