@@ -413,15 +413,14 @@ function DocumentDesignPage() {
     });
 
     const watchedValues = form.watch();
-    
+
     // Auto-save to session storage
     useEffect(() => {
-        if (!isLoading) {
-             const subscription = form.watch((value) => {
-                setFormData(value);
-            });
-            return () => subscription.unsubscribe();
-        }
+        if (isLoading) return;
+        const subscription = form.watch((value) => {
+            setFormData(value);
+        });
+        return () => subscription.unsubscribe();
     }, [isLoading, form, setFormData]);
 
 
@@ -578,8 +577,9 @@ function DocumentDesignPage() {
         const formData = getFormData('newDocumentData');
         
         const dynamicId = documentType === 'invoice' 
-            ? `${watchedValues.invoicePrefix}${config ? config.invoices.length + (watchedValues.invoiceStartNumber || 0) : watchedValues.invoiceStartNumber}`
-            : `${watchedValues.quotationPrefix}${config ? config.quotations.length + (watchedValues.quotationStartNumber || 0) : watchedValues.quotationStartNumber}`;
+            ? `${watchedValues.invoicePrefix || ''}${((config?.invoices?.length || 0) + (watchedValues.invoiceStartNumber || 0))}`
+            : `${watchedValues.quotationPrefix || ''}${((config?.quotations?.length || 0) + (watchedValues.quotationStartNumber || 0))}`;
+
 
         if (document) {
             return { ...document, design: currentDesignSettings, currency: watchedValues.defaultCurrency };
