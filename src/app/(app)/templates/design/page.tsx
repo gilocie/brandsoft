@@ -174,7 +174,7 @@ function DocumentDesignPage() {
         }
     
         setIsLoading(false);
-    }, [config, documentId, documentType, isNew, form, document, getFormData]);
+    }, [config, documentId, documentType, isNew, form, document]);
 
     const onSubmit = (data: DesignSettingsFormData) => {
         if (!config) return;
@@ -231,19 +231,8 @@ function DocumentDesignPage() {
 
     const livePreviewConfig = useMemo(() => {
         if (!config) return null;
-        const newConfig = JSON.parse(JSON.stringify(config));
-        
-        const currentDesign: DesignSettings = watchedValues;
-        
-        // This is key: we create a new brand object that is a merge
-        // of the original brand settings and the current form values.
-        newConfig.brand = {
-            ...config.brand,
-            ...currentDesign
-        };
-
-        return newConfig;
-    }, [config, watchedValues]);
+        return JSON.parse(JSON.stringify(config));
+    }, [config]);
     
     const previewCustomer = useMemo(() => {
         if(!config) return null;
@@ -266,12 +255,20 @@ function DocumentDesignPage() {
 
     const finalDocumentData = useMemo(() => {
         const formData = getFormData();
-        if (document) return document;
+        const currentDesign: DesignSettings = watchedValues; 
+        
+        if (document) {
+            return {
+                ...document,
+                design: currentDesign
+            };
+        }
         
         if (isNew && formData && Object.keys(formData).length > 0) {
             return {
                 ...(formData as any),
                 [documentType === 'invoice' ? 'invoiceId' : 'quotationId']: 'PREVIEW',
+                design: currentDesign 
             };
         }
         
@@ -280,9 +277,10 @@ function DocumentDesignPage() {
             [documentType === 'invoice' ? 'invoiceId' : 'quotationId']: 'PREVIEW',
             [documentType === 'invoice' ? 'dueDate' : 'validUntil']: new Date(new Date().setDate(new Date().getDate() + 30)),
             lineItems: [{description: 'Sample Item', quantity: 1, price: 100}],
+            design: currentDesign 
         } as Invoice | Quotation;
 
-    }, [document, isNew, getFormData, documentType]);
+    }, [document, isNew, documentType, watchedValues, getFormData]);
 
 
     if (isLoading) {
@@ -403,5 +401,3 @@ export default dynamic(() => Promise.resolve(DocumentDesignPage), {
   ssr: false,
   loading: () => <div className="flex items-center justify-center h-full"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>
 });
-
-    
