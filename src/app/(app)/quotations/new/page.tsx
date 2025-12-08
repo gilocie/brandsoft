@@ -47,8 +47,12 @@ const lineItemSchema = z.object({
 
 const formSchema = z.object({
   customerId: z.string().min(1, 'Customer is required.'),
-  quotationDate: z.date(),
-  validUntil: z.date(),
+  quotationDate: z.date({
+    required_error: "A quotation date is required.",
+  }),
+  validUntil: z.date({
+    required_error: "A validity date is required.",
+  }),
   status: z.enum(['Draft', 'Sent', 'Accepted', 'Declined']),
   currency: z.string().min(1, 'Currency is required'),
   lineItems: z.array(lineItemSchema).min(1, 'At least one line item is required.'),
@@ -86,8 +90,6 @@ export default function NewQuotationPage() {
   const form = useForm<QuotationFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      quotationDate: new Date(),
-      validUntil: new Date(new Date().setDate(new Date().getDate() + 30)),
       status: 'Draft',
       currency: config?.profile.defaultCurrency || 'USD',
       lineItems: [{ description: '', quantity: 1, price: 0 }],
@@ -110,6 +112,15 @@ export default function NewQuotationPage() {
   });
   
   const watchedValues = form.watch();
+
+  useEffect(() => {
+    // Set dates only on the client side to avoid hydration mismatch
+    form.reset({
+      ...form.getValues(),
+      quotationDate: new Date(),
+      validUntil: new Date(new Date().setDate(new Date().getDate() + 30)),
+    })
+  }, []); // Empty dependency array ensures this runs only once on the client
 
   useEffect(() => {
     setFormData(watchedValues);
@@ -738,3 +749,5 @@ export default function NewQuotationPage() {
     </div>
   );
 }
+
+    

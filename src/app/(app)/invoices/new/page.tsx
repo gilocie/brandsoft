@@ -46,8 +46,12 @@ const lineItemSchema = z.object({
 
 const formSchema = z.object({
   customerId: z.string().min(1, 'Customer is required.'),
-  invoiceDate: z.date(),
-  dueDate: z.date(),
+  invoiceDate: z.date({
+    required_error: "An invoice date is required.",
+  }),
+  dueDate: z.date({
+    required_error: "A due date is required.",
+  }),
   status: z.enum(['Draft', 'Pending', 'Paid', 'Overdue', 'Canceled']),
   currency: z.string().min(1, 'Currency is required'),
   lineItems: z.array(lineItemSchema).min(1, 'At least one line item is required.'),
@@ -85,8 +89,6 @@ export default function NewInvoicePage() {
   const form = useForm<InvoiceFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      invoiceDate: new Date(),
-      dueDate: new Date(new Date().setDate(new Date().getDate() + 30)),
       status: 'Draft',
       currency: config?.profile.defaultCurrency || 'USD',
       lineItems: [{ description: '', quantity: 1, price: 0 }],
@@ -112,15 +114,22 @@ export default function NewInvoicePage() {
 
   useEffect(() => {
     const storedData = getFormData();
+    let resetData: Partial<InvoiceFormData> = {};
+
     if (storedData && Object.keys(storedData).length > 0) {
-        const resetData = {
+        resetData = {
             ...storedData,
             invoiceDate: storedData.invoiceDate ? new Date(storedData.invoiceDate) : new Date(),
             dueDate: storedData.dueDate ? new Date(storedData.dueDate) : new Date(new Date().setDate(new Date().getDate() + 30)),
         };
-        form.reset(resetData);
+    } else {
+        // Set dates only on the client side for new forms to avoid hydration mismatch
+        resetData.invoiceDate = new Date();
+        resetData.dueDate = new Date(new Date().setDate(new Date().getDate() + 30));
     }
-  }, []);
+    
+    form.reset(resetData as InvoiceFormData);
+  }, []); // Empty dependency array ensures this runs only once on the client
 
   useEffect(() => {
     const subscription = form.watch((value) => {
@@ -751,4 +760,6 @@ export default function NewInvoicePage() {
     </div>
   );
 }
+    
+
     
