@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect, useState, useRef, useMemo } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { UploadCloud, Paintbrush, Layers, Stamp, Trash2, ArrowLeft, Loader2, Image as ImageIcon, FileImage } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
@@ -119,60 +119,61 @@ function DocumentDesignPage() {
     });
 
     useEffect(() => {
-        if (!config) return;
+    if (!config) return;
 
-        let doc: Invoice | Quotation | null = null;
-        let design: Partial<DesignSettings> = {};
-        const brand = config.brand || {};
+    let doc: Invoice | Quotation | null = null;
+    let design: Partial<DesignSettings> = {};
+    const brand = config.brand || {};
 
-        if (isNew) {
-            const newDocumentFormData = getFormData();
-            if (newDocumentFormData) {
-                const docTypeKey = documentType === 'invoice' ? 'invoiceId' : 'quotationId';
-                doc = {
-                    ...(newDocumentFormData as any),
-                    [docTypeKey]: 'PREVIEW',
-                };
-            }
-        } else if (documentId) {
-            if (documentType === 'invoice') {
-                doc = config.invoices.find(inv => inv.invoiceId === documentId) || null;
-            } else if (documentType === 'quotation') {
-                doc = config.quotations.find(q => q.quotationId === documentId) || null;
-            }
+    if (isNew) {
+        const newDocumentFormData = getFormData();
+        if (newDocumentFormData) {
+            const docTypeKey = documentType === 'invoice' ? 'invoiceId' : 'quotationId';
+            doc = {
+                ...(newDocumentFormData as any),
+                [docTypeKey]: 'PREVIEW',
+            };
         }
-
-        if (doc) {
-            if (JSON.stringify(document) !== JSON.stringify(doc)) {
-                setDocument(doc);
-            }
-            design = (doc as any).design || {};
-        } else {
-             const defaultTemplateKey = documentType === 'invoice' ? 'defaultInvoiceTemplate' : documentType === 'quotation' ? 'defaultQuotationTemplate' : null;
-            if (defaultTemplateKey && typeof config.profile[defaultTemplateKey] === 'object' && config.profile[defaultTemplateKey] !== null) {
-                design = config.profile[defaultTemplateKey] || {};
-            }
+    } else if (documentId) {
+        if (documentType === 'invoice') {
+            doc = config.invoices.find(inv => inv.invoiceId === documentId) || null;
+        } else if (documentType === 'quotation') {
+            doc = config.quotations.find(q => q.quotationId === documentId) || null;
         }
+    }
 
-        const initialValues = {
-            backgroundColor: design.backgroundColor || brand.backgroundColor || '#FFFFFF',
-            headerImage: design.headerImage || brand.headerImage || '',
-            footerImage: design.footerImage || brand.footerImage || '',
-            backgroundImage: design.backgroundImage || brand.backgroundImage || '',
-            watermarkImage: design.watermarkImage || brand.watermarkImage || '',
-        };
-        
-        const currentFormValues = form.getValues();
-        if (JSON.stringify(currentFormValues) !== JSON.stringify(initialValues)) {
-            form.reset(initialValues);
-            setHeaderPreview(initialValues.headerImage);
-            setFooterPreview(initialValues.footerImage);
-            setBackgroundPreview(initialValues.backgroundImage);
-            setWatermarkPreview(initialValues.watermarkImage);
+    if (doc) {
+        if (JSON.stringify(document) !== JSON.stringify(doc)) {
+            setDocument(doc);
         }
+        design = (doc as any).design || {};
+    } else {
+        const defaultTemplateKey = documentType === 'invoice' ? 'defaultInvoiceTemplate' : documentType === 'quotation' ? 'defaultQuotationTemplate' : null;
+        if (defaultTemplateKey && typeof config.profile[defaultTemplateKey] === 'object' && config.profile[defaultTemplateKey] !== null) {
+            design = config.profile[defaultTemplateKey] || {};
+        }
+    }
+
+    const initialValues = {
+        backgroundColor: design.backgroundColor || brand.backgroundColor || '#FFFFFF',
+        headerImage: design.headerImage || brand.headerImage || '',
+        footerImage: design.footerImage || brand.footerImage || '',
+        backgroundImage: design.backgroundImage || brand.backgroundImage || '',
+        watermarkImage: design.watermarkImage || brand.watermarkImage || '',
+    };
     
-        setIsLoading(false);
-    }, [config, documentId, documentType, isNew, form, document, getFormData]);
+    const currentFormValues = form.getValues();
+    // Only reset if the determined initial values are different from the current form values
+    if (JSON.stringify(currentFormValues) !== JSON.stringify(initialValues)) {
+        form.reset(initialValues);
+        setHeaderPreview(initialValues.headerImage);
+        setFooterPreview(initialValues.footerImage);
+        setBackgroundPreview(initialValues.backgroundImage);
+        setWatermarkPreview(initialValues.watermarkImage);
+    }
+
+    setIsLoading(false);
+}, [config, documentId, documentType, isNew, getFormData, document, form]);
 
     const onSubmit = (data: DesignSettingsFormData) => {
         if (!config) return;
@@ -208,7 +209,7 @@ function DocumentDesignPage() {
             const returnUrl = `/${documentType}s/${documentId}/edit`;
             router.push(returnUrl);
         } else {
-             const templateKey = documentType === 'invoice' ? 'defaultInvoiceTemplate' : 'defaultQuotationTemplate' : null;
+             const templateKey = documentType === 'invoice' ? 'defaultInvoiceTemplate' : (documentType === 'quotation' ? 'defaultQuotationTemplate' : null);
              if (templateKey) {
                  saveConfig({
                     ...config,
@@ -227,7 +228,45 @@ function DocumentDesignPage() {
     
     const watchedValues = form.watch();
 
-    const livePreviewConfig = useMemo(() => {
+    const finalDocumentData = useMemo(() => {
+    const formData = getFormData();
+    
+    // Create design object from current form values
+    const currentDesign: DesignSettings = {
+        backgroundColor: watchedValues.backgroundColor,
+        headerImage: watchedValues.headerImage,
+        footerImage: watchedValues.footerImage,
+        backgroundImage: watchedValues.backgroundImage,
+        watermarkImage: watchedValues.watermarkImage,
+    };
+    
+    if (document) {
+        // For existing documents, merge in the live design changes
+        return {
+            ...document,
+            design: currentDesign
+        };
+    }
+    
+    if (isNew && formData && Object.keys(formData).length > 0) {
+        return {
+            ...(formData as any),
+            [documentType === 'invoice' ? 'invoiceId' : 'quotationId']: 'PREVIEW',
+            design: currentDesign // Add the live design
+        };
+    }
+    
+    return {
+        date: new Date(),
+        [documentType === 'invoice' ? 'invoiceId' : 'quotationId']: 'PREVIEW',
+        [documentType === 'invoice' ? 'dueDate' : 'validUntil']: new Date(new Date().setDate(new Date().getDate() + 30)),
+        lineItems: [{description: 'Sample Item', quantity: 1, price: 100}],
+        design: currentDesign // Add the live design
+    } as Invoice | Quotation;
+
+}, [document, isNew, getFormData, documentType, watchedValues.backgroundColor, watchedValues.headerImage, watchedValues.footerImage, watchedValues.backgroundImage, watchedValues.watermarkImage]);
+
+     const livePreviewConfig = useMemo(() => {
         if (!config) return null;
         return config;
     }, [config]);
@@ -254,40 +293,6 @@ function DocumentDesignPage() {
         return config.customers[0] || null;
     }, [config, document, isNew, getFormData]);
 
-    const finalDocumentData = useMemo(() => {
-        const formData = getFormData();
-        const currentDesign: DesignSettings = {
-            backgroundColor: watchedValues.backgroundColor,
-            headerImage: watchedValues.headerImage,
-            footerImage: watchedValues.footerImage,
-            backgroundImage: watchedValues.backgroundImage,
-            watermarkImage: watchedValues.watermarkImage,
-        };
-        
-        if (document) {
-            return {
-                ...document,
-                design: currentDesign
-            };
-        }
-        
-        if (isNew && formData && Object.keys(formData).length > 0) {
-            return {
-                ...(formData as any),
-                [documentType === 'invoice' ? 'invoiceId' : 'quotationId']: 'PREVIEW',
-                design: currentDesign
-            };
-        }
-        
-        return {
-            date: new Date(),
-            [documentType === 'invoice' ? 'invoiceId' : 'quotationId']: 'PREVIEW',
-            [documentType === 'invoice' ? 'dueDate' : 'validUntil']: new Date(new Date().setDate(new Date().getDate() + 30)),
-            lineItems: [{description: 'Sample Item', quantity: 1, price: 100}],
-            design: currentDesign
-        } as Invoice | Quotation;
-
-    }, [document, isNew, getFormData, documentType, watchedValues.backgroundColor, watchedValues.headerImage, watchedValues.footerImage, watchedValues.backgroundImage, watchedValues.watermarkImage]);
 
     const designKey = useMemo(() => 
         `${watchedValues.backgroundColor}-${watchedValues.headerImage?.substring(0, 20)}-${watchedValues.footerImage?.substring(0, 20)}-${watchedValues.backgroundImage?.substring(0, 20)}-${watchedValues.watermarkImage?.substring(0, 20)}`,
@@ -414,3 +419,5 @@ export default dynamic(() => Promise.resolve(DocumentDesignPage), {
   ssr: false,
   loading: () => <div className="flex items-center justify-center h-full"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>
 });
+
+    
