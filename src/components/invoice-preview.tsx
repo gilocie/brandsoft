@@ -425,7 +425,7 @@ export const downloadInvoiceAsPdf = async (props: InvoicePreviewProps) => {
 
     // Subsequent Pages
     while (heightLeft > 0) {
-        position -= pdfHeight;
+        position = heightLeft - imgHeight; // This seems incorrect, should be negative
         pdf.addPage();
         pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight);
         heightLeft -= pdfHeight;

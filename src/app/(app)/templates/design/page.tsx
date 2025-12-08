@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm, useWatch } from 'react-hook-form';
@@ -396,8 +395,8 @@ function DocumentDesignPage() {
                     </form>
                 </Form>
             </div>
-            <div className="lg:col-span-1 flex items-center justify-center h-full overflow-y-auto p-8 bg-muted/40">
-                <div className="w-full max-w-md mx-auto aspect-[8.5/11]">
+             <div className="w-full h-full flex items-start justify-center overflow-auto bg-muted/40 p-4 sm:p-8">
+                <div className="scale-[0.5] sm:scale-[0.6] md:scale-[0.75] lg:scale-[0.85] xl:scale-100 origin-top shadow-2xl">
                     {hasContentForPreview ? (
                         <>
                             {documentType === 'invoice' && (
@@ -422,7 +421,7 @@ function DocumentDesignPage() {
                             )}
                         </>
                     ) : (
-                        <div className="w-full bg-white shadow-lg aspect-[8.5/11] flex items-center justify-center border">
+                        <div className="w-[210mm] min-h-[297mm] bg-white shadow-lg flex items-center justify-center border">
                             <div className="text-center p-8">
                                 <h3 className="text-xl font-semibold mb-2">Live Preview</h3>
                                 <p className="text-muted-foreground">
@@ -439,5 +438,4 @@ function DocumentDesignPage() {
 
 export default dynamic(() => Promise.resolve(DocumentDesignPage), {
     ssr: false,
-    loading: () => <div className="flex items-center justify-center h-full"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>
-});
+    loading: () => <div className="flex items-center justify-center h-full"><Loader2 className="h-12 w-1
