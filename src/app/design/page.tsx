@@ -169,7 +169,7 @@ function SettingsPanel({ form, documentType, onSubmit, returnUrl }: {
   returnUrl: string
 }) {
   const [customWatermark, setCustomWatermark] = useState(form.getValues('watermarkText') && !WATERMARK_PRESETS.includes(form.getValues('watermarkText')));
-  const { setFormData } = useFormState();
+  const { setFormData } = useFormState('designFormData');
   
   const handleWatermarkPresetChange = (value: string) => {
     if (value === 'CUSTOM') {
@@ -442,7 +442,7 @@ function DocumentDesignPage() {
         return templateOrId || {};
     }, [config]);
 
-    const stableGetFormData = useCallback(getFormData, []);
+    const stableGetFormData = useCallback(getFormData, [getFormData]);
 
     useEffect(() => {
         if (!config || !documentType || !isInitialLoad.current) return;
@@ -463,7 +463,8 @@ function DocumentDesignPage() {
         const defaultTemplate = getDefaultTemplate(documentType);
 
         if (isNew) {
-            doc = stableGetFormData();
+            const newDocData = getFormData('newDocumentData');
+            if (newDocData) doc = newDocData;
             existingDesign = (doc as any)?.design || {};
         } else if (documentId) {
             if (documentType === 'invoice') {
@@ -515,7 +516,7 @@ function DocumentDesignPage() {
         form.reset(initialValues);
         setIsLoading(false);
         isInitialLoad.current = false;
-    }, [config, documentType, documentId, isNew, stableGetFormData, getDefaultTemplate, form]);
+    }, [config, documentType, documentId, isNew, stableGetFormData, getDefaultTemplate, form, getFormData]);
     
     
      const onSubmit = (data: DesignSettingsFormData) => {
@@ -582,12 +583,21 @@ function DocumentDesignPage() {
 
     const previewCustomer = useMemo(() => {
         if (!config) return null;
-        let customerId: string | undefined = (finalDocumentData as any).customerId;
+        let customerId: string | undefined;
+        if(isNew) {
+            const newDocData = getFormData('newDocumentData');
+            customerId = newDocData?.customerId;
+        } else {
+             customerId = (finalDocumentData as any).customerId;
+        }
         return config.customers.find(c => c.id === customerId) || config.customers[0] || null;
-    }, [config, finalDocumentData]);
+    }, [config, finalDocumentData, isNew, getFormData]);
 
     const designKey = useMemo(() => JSON.stringify(currentDesignSettings), [currentDesignSettings]);
 
+    const returnUrl = isNew ? `/${documentType}s/new` : (documentId ? `/${documentType}s/${documentId}/edit` : `/${documentType}s`);
+    const hasContentForPreview = finalDocumentData && previewCustomer;
+    
     if (isLoading) {
         return (
           <div className="w-full h-screen flex items-center justify-center">
@@ -595,9 +605,6 @@ function DocumentDesignPage() {
           </div>
         );
     }
-    
-    const returnUrl = isNew ? `/${documentType}s/new` : (documentId ? `/${documentType}s/${documentId}/edit` : `/${documentType}s`);
-    const hasContentForPreview = finalDocumentData && previewCustomer;
     
     return (
         <div className="flex h-screen overflow-hidden bg-gray-50 relative">
