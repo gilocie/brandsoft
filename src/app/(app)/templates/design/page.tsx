@@ -122,40 +122,43 @@ export default function DocumentDesignPage() {
 
     useEffect(() => {
         if (!config) return;
-
+    
         let doc: Invoice | Quotation | null = null;
         let design: Partial<DesignSettings> = {};
         const brand = config.brand || {};
-        
+    
         if (isNew) {
             const newDocumentFormData = getFormData();
             if (newDocumentFormData) {
                 const docTypeKey = documentType === 'invoice' ? 'invoiceId' : 'quotationId';
-                 doc = {
+                doc = {
                     ...(newDocumentFormData as any),
                     [docTypeKey]: 'PREVIEW',
                 };
             }
-        }
-        
-        if (!doc && !isNew) {
-            if (documentType === 'invoice' && documentId) {
+        } else if (documentId) {
+            if (documentType === 'invoice') {
                 doc = config.invoices.find(inv => inv.invoiceId === documentId) || null;
-            } else if (documentType === 'quotation' && documentId) {
+            } else if (documentType === 'quotation') {
                 doc = config.quotations.find(q => q.quotationId === documentId) || null;
             }
         }
-        
+    
         if (doc) {
-            setDocument(doc);
+            setDocument(currentDoc => {
+                if (JSON.stringify(currentDoc) === JSON.stringify(doc)) {
+                    return currentDoc;
+                }
+                return doc;
+            });
             design = (doc as any).design || {};
         } else if (!isNew) {
-             const defaultTemplateKey = documentType === 'invoice' ? 'defaultInvoiceTemplate' : documentType === 'quotation' ? 'defaultQuotationTemplate' : null;
-             if (defaultTemplateKey && typeof config.profile[defaultTemplateKey] === 'object') {
+            const defaultTemplateKey = documentType === 'invoice' ? 'defaultInvoiceTemplate' : documentType === 'quotation' ? 'defaultQuotationTemplate' : null;
+            if (defaultTemplateKey && typeof config.profile[defaultTemplateKey] === 'object') {
                 design = config.profile[defaultTemplateKey] || {};
-             }
+            }
         }
-
+    
         const initialValues = {
             backgroundColor: design.backgroundColor || brand.backgroundColor || '#FFFFFF',
             headerImage: design.headerImage || brand.headerImage || '',
@@ -163,12 +166,17 @@ export default function DocumentDesignPage() {
             backgroundImage: design.backgroundImage || brand.backgroundImage || '',
             watermarkImage: design.watermarkImage || brand.watermarkImage || '',
         };
-        
-        form.reset(initialValues);
-        setHeaderPreview(initialValues.headerImage);
-        setFooterPreview(initialValues.footerImage);
-        setBackgroundPreview(initialValues.backgroundImage);
-        setWatermarkPreview(initialValues.watermarkImage);
+    
+        // Only reset form if values have changed
+        const currentFormValues = form.getValues();
+        if (JSON.stringify(currentFormValues) !== JSON.stringify(initialValues)) {
+            form.reset(initialValues);
+            setHeaderPreview(initialValues.headerImage);
+            setFooterPreview(initialValues.footerImage);
+            setBackgroundPreview(initialValues.backgroundImage);
+            setWatermarkPreview(initialValues.watermarkImage);
+        }
+    
         setIsLoading(false);
     }, [config, documentId, documentType, isNew, form, getFormData]);
 
@@ -241,7 +249,11 @@ export default function DocumentDesignPage() {
     const previewCustomer = useMemo(() => {
         if(!config || !document) return null;
         const customerId = (document as any).customerId;
-        return config.customers.find(c => c.id === customerId) || config.customers[0] || null;
+        if (customerId) {
+            return config.customers.find(c => c.id === customerId) || null;
+        }
+        // Fallback for older data structure without customerId
+        return config.customers.find(c => c.name === (document as any).customer) || config.customers[0] || null;
     }, [config, document]);
 
 
@@ -250,6 +262,8 @@ export default function DocumentDesignPage() {
     }
     
     const returnUrl = isNew ? `/${documentType}s/new` : (documentId ? `/${documentType}s/${documentId}/edit` : `/${documentType}s`);
+
+    const hasContentForPreview = document && previewCustomer;
 
 
     return (
@@ -318,7 +332,7 @@ export default function DocumentDesignPage() {
                 </Form>
             </div>
             <div className="lg:col-span-2 flex items-center justify-center h-full overflow-y-auto p-8 bg-muted/40">
-                    {document ? (
+                    {hasContentForPreview ? (
                     <>
                         {documentType === 'invoice' && (
                             <InvoicePreview
