@@ -180,13 +180,13 @@ export function InvoicePreview({
         if (forPdf) return <>{children}</>;
         return (
             <div className="w-full h-full flex items-start justify-center overflow-auto bg-gray-100/50 p-4 sm:p-8">
-                <div className="origin-top shadow-2xl scale-[0.85]">
+                <div className="scale-[0.5] sm:scale-[0.6] md:scale-[0.75] lg:scale-[0.85] xl:scale-100 origin-top shadow-2xl">
                     {children}
                 </div>
             </div>
         );
     };
-
+    
     const topPadding = design.headerImage ? 'pt-[35mm]' : 'pt-[10mm]';
     const bottomPadding = design.footerImage ? 'pb-[35mm]' : 'pb-[15mm]';
 
@@ -284,9 +284,10 @@ export function InvoicePreview({
                                     <TableRow className="border-b-2 border-gray-800 hover:bg-transparent">
                                         <TableHead className="w-[40%] text-black font-bold uppercase text-[11px] h-10 pl-0">Item</TableHead>
                                         <TableHead className="w-[20%] text-black font-bold uppercase text-[11px] h-10">Description</TableHead>
-                                        <TableHead className="w-[10%] text-right text-black font-bold uppercase text-[11px] h-10">Qty</TableHead>
-                                        <TableHead className="w-[15%] text-right text-black font-bold uppercase text-[11px] h-10">Price</TableHead>
-                                        <TableHead className="w-[15%] text-right text-black font-bold uppercase text-[11px] h-10 pr-0">Amount</TableHead>
+                                        <TableHead className="text-right text-black font-bold uppercase text-[11px] h-10">Qty</TableHead>
+                                        <TableHead className="text-right text-black font-bold uppercase text-[11px] h-10">Price</TableHead>
+                                        <TableHead className="text-right text-black font-bold uppercase text-[11px] h-10">Tax</TableHead>
+                                        <TableHead className="text-right text-black font-bold uppercase text-[11px] h-10 pr-0">Amount</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -302,6 +303,7 @@ export function InvoicePreview({
                                                 </TableCell>
                                                 <TableCell className="text-right py-4 align-top text-sm">{item.quantity}</TableCell>
                                                 <TableCell className="text-right py-4 align-top text-sm">{formatCurrency(item.price)}</TableCell>
+                                                <TableCell className="text-right py-4 align-top text-sm">{taxRateDisplay}</TableCell>
                                                 <TableCell className="text-right py-4 align-top font-semibold text-sm pr-0">{formatCurrency(item.quantity * item.price)}</TableCell>
                                             </TableRow>
                                         )
@@ -311,7 +313,7 @@ export function InvoicePreview({
                         </section>
                         
                         <div className="mt-auto">
-                            <section className="flex flex-row gap-12 items-start">
+                            <section className="flex flex-row gap-12 items-start mb-4">
                                 <div className="flex-1">
                                     <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Payment Details</h3>
                                     {config.profile.paymentDetails ? (
@@ -330,7 +332,7 @@ export function InvoicePreview({
                                     )}
                                 </div>
 
-                                <div className="w-[40%] min-w-[260px] space-y-3">
+                                <div className="w-[40%] min-w-[260px] space-y-2">
                                     <div className="flex justify-between items-center text-sm border-b border-gray-100 pb-2">
                                         <span className="text-gray-600">Subtotal</span>
                                         <span className="font-semibold">{formatCurrency(subtotal)}</span>
@@ -343,7 +345,7 @@ export function InvoicePreview({
                                     )}
                                     {taxAmount > 0 && (
                                         <div className="flex justify-between items-center text-sm border-b border-gray-100 pb-2">
-                                            <span className="text-gray-600">{taxName} ({taxRateDisplay})</span>
+                                            <span className="text-gray-600">{taxName}</span>
                                             <span className="font-semibold">{formatCurrency(taxAmount)}</span>
                                         </div>
                                     )}
