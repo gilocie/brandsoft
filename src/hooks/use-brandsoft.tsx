@@ -38,12 +38,8 @@ export type LineItem = {
     price: number;
 };
 
-export type DesignSettings = {
+export interface DesignSettings {
     backgroundColor?: string;
-    textColor?: string;
-    primaryColor?: string;
-    secondaryColor?: string;
-    font?: string;
     headerImage?: string;
     footerImage?: string;
     backgroundImage?: string;
@@ -133,7 +129,8 @@ export type BrandsoftConfig = {
     invoiceStartNumber?: number;
     quotationPrefix?: string;
     quotationStartNumber?: number;
-    defaultInvoiceTemplate?: string | null;
+    defaultInvoiceTemplate?: DesignSettings;
+    defaultQuotationTemplate?: DesignSettings;
   };
   modules: {
     invoice: boolean;

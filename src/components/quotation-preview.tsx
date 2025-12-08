@@ -1,17 +1,14 @@
 
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { BrandsoftConfig, Customer, Quotation, DesignSettings } from '@/hooks/use-brandsoft';
 import { format, parseISO } from "date-fns";
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { cn } from '@/lib/utils';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { createRoot } from 'react-dom/client';
-import { getBackgroundCSS } from '@/stores/canvas-store';
-
 
 type QuotationData = Partial<Quotation> & {
     lineItems?: {
@@ -32,6 +29,7 @@ type QuotationData = Partial<Quotation> & {
     discountValue?: number;
     applyShipping?: boolean;
     shippingValue?: number;
+    design?: DesignSettings;
 };
 
 
@@ -41,6 +39,7 @@ export interface QuotationPreviewProps {
     quotationData: QuotationData;
     quotationId?: string;
     forPdf?: boolean;
+    designOverride?: DesignSettings;
 }
 
 const QuotationStatusWatermark = ({ status }: { status: Quotation['status'] }) => {
@@ -77,7 +76,7 @@ const QuotationStatusWatermark = ({ status }: { status: Quotation['status'] }) =
 };
 
 
-export function QuotationPreview({ config, customer, quotationData, quotationId, forPdf = false }: QuotationPreviewProps) {
+export function QuotationPreview({ config, customer, quotationData, quotationId, forPdf = false, designOverride }: QuotationPreviewProps) {
 
     if (!config || !customer || !quotationData) {
         return (
@@ -87,27 +86,37 @@ export function QuotationPreview({ config, customer, quotationData, quotationId,
         );
     }
     
-    const design = React.useMemo(() => {
-        const customDesign = (quotationData as any)?.design;
+    const design = useMemo(() => {
+        const brand = config.brand || {};
+        const defaultTemplate = config.profile?.defaultQuotationTemplate || {};
+        const documentDesign = quotationData?.design || {};
+        const override = designOverride || {};
         
-        if (customDesign) {
-            // Merge custom design with brand defaults
-            return {
-                ...config.brand,
-                ...customDesign,
-                // Ensure we always have these required fields from brand
-                logo: config.brand.logo,
-                primaryColor: config.brand.primaryColor || '#000000',
-                secondaryColor: config.brand.secondaryColor || '#666666',
-                businessName: config.brand.businessName,
-                showCustomerAddress: config.brand.showCustomerAddress,
-                footerContent: config.brand.footerContent,
-                brandsoftFooter: config.brand.brandsoftFooter,
-            };
-        }
-        
-        return config.brand;
-    }, [config.brand, quotationData]);
+        const hasOverride = designOverride && Object.values(designOverride).some(v => v);
+
+        return {
+            backgroundColor: brand.backgroundColor || '#FFFFFF',
+            headerImage: brand.headerImage || '',
+            footerImage: brand.footerImage || '',
+            backgroundImage: brand.backgroundImage || '',
+            watermarkImage: brand.watermarkImage || '',
+            ...defaultTemplate,
+            ...documentDesign,
+            ...(hasOverride && override),
+            logo: brand.logo,
+            primaryColor: brand.primaryColor || '#000000',
+            secondaryColor: brand.secondaryColor || '#666666',
+            businessName: brand.businessName,
+            showCustomerAddress: brand.showCustomerAddress,
+            footerContent: brand.footerContent,
+            brandsoftFooter: brand.brandsoftFooter,
+        };
+    }, [
+        config.brand, 
+        config.profile?.defaultQuotationTemplate,
+        quotationData?.design,
+        designOverride
+    ]);
 
     const currencyCode = quotationData.currency || config.profile.defaultCurrency;
     const formatCurrency = (value: number) => `${currencyCode}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -163,7 +172,7 @@ export function QuotationPreview({ config, customer, quotationData, quotationId,
     const validUntil = typeof rawValidUntil === 'string' ? parseISO(rawValidUntil) : rawValidUntil;
     
     const taxName = quotationData.taxName || 'Tax';
-
+    
     const headerHeight = design.headerImage ? '80px' : '40px';
     const contentPaddingTop = design.headerImage ? 'pt-24' : 'pt-14';
 
@@ -176,7 +185,7 @@ export function QuotationPreview({ config, customer, quotationData, quotationId,
                     forPdf ? "min-h-[11in]" : "min-h-[11in]"
                 )}
                 style={{
-                    ...getBackgroundCSS({ pageDetails: { backgroundType: 'color', backgroundColor: design.backgroundColor, ...design } } as any),
+                    backgroundColor: design.backgroundColor || '#FFFFFF',
                     paddingLeft: '48px',
                     paddingRight: '48px',
                     paddingBottom: '100px',
@@ -187,7 +196,7 @@ export function QuotationPreview({ config, customer, quotationData, quotationId,
                 )}
 
                 {design.watermarkImage && (
-                    <img src={design.watermarkImage} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0 opacity-10 pointer-events-none" alt="watermark" />
+                    <img src={design.watermarkImage} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0 opacity-10 pointer-events-none max-w-[60%] max-h-[60%]" alt="watermark" />
                 )}
                 
                 {quotationData.status && !design.watermarkImage && <QuotationStatusWatermark status={quotationData.status} />}

@@ -1,20 +1,15 @@
 
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { BrandsoftConfig, Customer, Invoice, LineItem, DesignSettings } from '@/hooks/use-brandsoft';
 import { format, parseISO } from "date-fns";
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { cn } from '@/lib/utils';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { createRoot } from 'react-dom/client';
-import { getBackgroundCSS } from '@/stores/canvas-store';
 
-
-// This props definition is intentionally verbose to support both
-// the real-time form data from a new/edit page and the stored data from an existing invoice.
 type InvoiceData = Partial<Invoice> & {
     lineItems?: LineItem[],
     currency?: string;
@@ -29,15 +24,16 @@ type InvoiceData = Partial<Invoice> & {
     discountValue?: number;
     applyShipping?: boolean;
     shippingValue?: number;
+    design?: DesignSettings;
 };
-
 
 export interface InvoicePreviewProps {
     config: BrandsoftConfig | null;
     customer: Customer | null;
     invoiceData: InvoiceData;
     invoiceId?: string;
-    forPdf?: boolean; // New prop to indicate PDF rendering mode
+    forPdf?: boolean;
+    designOverride?: DesignSettings; // New prop for real-time design updates
 }
 
 const InvoiceStatusWatermark = ({ status }: { status: Invoice['status'] }) => {
@@ -73,8 +69,14 @@ const InvoiceStatusWatermark = ({ status }: { status: Invoice['status'] }) => {
     );
 };
 
-
-export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPdf = false }: InvoicePreviewProps) {
+export function InvoicePreview({ 
+    config, 
+    customer, 
+    invoiceData, 
+    invoiceId, 
+    forPdf = false,
+    designOverride 
+}: InvoicePreviewProps) {
 
     if (!config || !customer || !invoiceData) {
         return (
@@ -84,27 +86,63 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
         );
     }
     
-    const design = React.useMemo(() => {
-        const customDesign = (invoiceData as any)?.design;
+    // Priority: designOverride > invoiceData.design > defaultInvoiceTemplate > brand
+    const design = useMemo(() => {
+        const brand = config.brand || {};
+        const defaultTemplate = config.profile?.defaultInvoiceTemplate || {};
+        const documentDesign = invoiceData?.design || {};
+        const override = designOverride || {};
         
-        if (customDesign) {
-            // Merge custom design with brand defaults
-            return {
-                ...config.brand,
-                ...customDesign,
-                // Ensure we always have these required fields from brand
-                logo: config.brand.logo,
-                primaryColor: config.brand.primaryColor || '#000000',
-                secondaryColor: config.brand.secondaryColor || '#666666',
-                businessName: config.brand.businessName,
-                showCustomerAddress: config.brand.showCustomerAddress,
-                footerContent: config.brand.footerContent,
-                brandsoftFooter: config.brand.brandsoftFooter,
-            };
-        }
+        // Check if designOverride has any actual values
+        const hasOverride = designOverride && Object.values(designOverride).some(v => v);
         
-        return config.brand;
-    }, [config.brand, invoiceData]);
+        // Merge in priority order
+        const mergedDesign = {
+            // Base: brand settings
+            backgroundColor: brand.backgroundColor || '#FFFFFF',
+            headerImage: brand.headerImage || '',
+            footerImage: brand.footerImage || '',
+            backgroundImage: brand.backgroundImage || '',
+            watermarkImage: brand.watermarkImage || '',
+            // Override with default template
+            ...(defaultTemplate.backgroundColor && { backgroundColor: defaultTemplate.backgroundColor }),
+            ...(defaultTemplate.headerImage && { headerImage: defaultTemplate.headerImage }),
+            ...(defaultTemplate.footerImage && { footerImage: defaultTemplate.footerImage }),
+            ...(defaultTemplate.backgroundImage && { backgroundImage: defaultTemplate.backgroundImage }),
+            ...(defaultTemplate.watermarkImage && { watermarkImage: defaultTemplate.watermarkImage }),
+            // Override with document-specific design
+            ...(documentDesign.backgroundColor && { backgroundColor: documentDesign.backgroundColor }),
+            ...(documentDesign.headerImage && { headerImage: documentDesign.headerImage }),
+            ...(documentDesign.footerImage && { footerImage: documentDesign.footerImage }),
+            ...(documentDesign.backgroundImage && { backgroundImage: documentDesign.backgroundImage }),
+            ...(documentDesign.watermarkImage && { watermarkImage: documentDesign.watermarkImage }),
+            // Override with real-time design settings (for customization page)
+            ...(hasOverride && override),
+            // Always preserve these from brand
+            logo: brand.logo,
+            primaryColor: brand.primaryColor || '#000000',
+            secondaryColor: brand.secondaryColor || '#666666',
+            businessName: brand.businessName,
+            showCustomerAddress: brand.showCustomerAddress,
+            footerContent: brand.footerContent,
+            brandsoftFooter: brand.brandsoftFooter,
+        };
+        
+        return mergedDesign;
+    }, [
+        config.brand, 
+        config.profile?.defaultInvoiceTemplate,
+        invoiceData?.design?.backgroundColor,
+        invoiceData?.design?.headerImage,
+        invoiceData?.design?.footerImage,
+        invoiceData?.design?.backgroundImage,
+        invoiceData?.design?.watermarkImage,
+        designOverride?.backgroundColor,
+        designOverride?.headerImage,
+        designOverride?.footerImage,
+        designOverride?.backgroundImage,
+        designOverride?.watermarkImage,
+    ]);
 
     const currencyCode = invoiceData.currency || config.profile.defaultCurrency;
     const formatCurrency = (value: number) => `${currencyCode}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -119,7 +157,7 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
             discountAmount = invoiceData.discountValue;
         }
     } else if (invoiceData.discount) {
-      discountAmount = invoiceData.discount;
+        discountAmount = invoiceData.discount;
     }
 
     const subtotalAfterDiscount = subtotal - discountAmount;
@@ -135,20 +173,19 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
             taxRateDisplay = formatCurrency(invoiceData.taxValue);
         }
     } else if (invoiceData.tax && invoiceData.tax > 0 && subtotalAfterDiscount > 0) {
-      taxAmount = invoiceData.tax;
-      if (invoiceData.taxType === 'percentage' && invoiceData.taxValue) {
-        taxRateDisplay = `${invoiceData.taxValue}%`;
-      } else if (invoiceData.taxType === 'flat' && invoiceData.taxValue) {
-        taxRateDisplay = formatCurrency(invoiceData.taxValue);
-      } else {
-         const effectiveTaxRate = (taxAmount / subtotalAfterDiscount) * 100;
-         taxRateDisplay = `${effectiveTaxRate.toFixed(2)}%`;
-      }
+        taxAmount = invoiceData.tax;
+        if (invoiceData.taxType === 'percentage' && invoiceData.taxValue) {
+            taxRateDisplay = `${invoiceData.taxValue}%`;
+        } else if (invoiceData.taxType === 'flat' && invoiceData.taxValue) {
+            taxRateDisplay = formatCurrency(invoiceData.taxValue);
+        } else {
+            const effectiveTaxRate = (taxAmount / subtotalAfterDiscount) * 100;
+            taxRateDisplay = `${effectiveTaxRate.toFixed(2)}%`;
+        }
     } else if (invoiceData.tax) {
         taxAmount = invoiceData.tax;
         taxRateDisplay = formatCurrency(taxAmount);
     }
-
 
     const shippingAmount = Number(invoiceData.applyShipping && invoiceData.shippingValue ? invoiceData.shippingValue : (invoiceData.shipping || 0));
     
@@ -173,7 +210,7 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                     forPdf ? "min-h-[11in]" : "min-h-[11in]"
                 )}
                 style={{
-                    ...getBackgroundCSS({ pageDetails: { backgroundType: 'color', backgroundColor: design.backgroundColor, ...design } } as any),
+                    backgroundColor: design.backgroundColor || '#FFFFFF',
                     paddingLeft: '48px',
                     paddingRight: '48px',
                     paddingBottom: '100px',
@@ -184,7 +221,7 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                 )}
 
                 {design.watermarkImage && (
-                    <img src={design.watermarkImage} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0 opacity-10 pointer-events-none" alt="watermark" />
+                    <img src={design.watermarkImage} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0 opacity-10 pointer-events-none max-w-[60%] max-h-[60%]" alt="watermark" />
                 )}
                 
                 {invoiceData.status && !design.watermarkImage && <InvoiceStatusWatermark status={invoiceData.status} />}
@@ -201,7 +238,7 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                     <header className="flex justify-between items-start mb-8 pt-2">
                         <div className="flex items-center gap-4">
                             {design.logo && (
-                            <img src={design.logo} alt={config.brand.businessName} className="h-16 w-16 sm:h-20 sm:w-20 object-contain" />
+                                <img src={design.logo} alt={config.brand.businessName} className="h-16 w-16 sm:h-20 sm:w-20 object-contain" />
                             )}
                             <div>
                                 <h1 className="text-3xl sm:text-4xl font-bold" style={{color: design.primaryColor}}>Invoice</h1>
@@ -230,7 +267,7 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                         </div>
                         <div className="text-right">
                             <div className="space-y-2">
-                            <div className="grid grid-cols-2 gap-2">
+                                <div className="grid grid-cols-2 gap-2">
                                     <span className="text-sm font-semibold text-gray-500">INVOICE #</span>
                                     <span className="font-medium">{invoiceId || `${config.profile.invoicePrefix || 'INV-'}${String(config.profile.invoiceStartNumber || 1).padStart(3, '0')}`}</span>
                                 </div>
@@ -315,7 +352,7 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                                 </div>
                             )}
                             <div className="pt-2">
-                            <div className="flex items-center justify-between font-bold text-lg py-3 px-4 rounded" style={{backgroundColor: design.primaryColor, color: '#fff'}}>
+                                <div className="flex items-center justify-between font-bold text-lg py-3 px-4 rounded" style={{backgroundColor: design.primaryColor, color: '#fff'}}>
                                     <span className="mr-4">Total</span>
                                     <span>{formatCurrency(total)}</span>
                                 </div>
@@ -328,9 +365,9 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                     {design.footerImage && (
                         <img src={design.footerImage} className="w-full h-auto" alt="Footer"/>
                     )}
-                     <div className="text-center text-xs py-3 px-4" style={{backgroundColor: design.secondaryColor, color: 'white'}}>
-                         {design.footerContent && <p className="mb-1">{design.footerContent}</p>}
-                         {design.brandsoftFooter && <p><span className="font-bold">Created by BrandSoft</span></p>}
+                    <div className="text-center text-xs py-3 px-4" style={{backgroundColor: design.secondaryColor, color: 'white'}}>
+                        {design.footerContent && <p className="mb-1">{design.footerContent}</p>}
+                        {design.brandsoftFooter && <p><span className="font-bold">Created by BrandSoft</span></p>}
                     </div>
                 </footer>
             </div>
@@ -360,10 +397,8 @@ export const downloadInvoiceAsPdf = async (props: InvoicePreviewProps) => {
         return;
     }
     
-    // Temporarily get header and footer to render them on each page
     const headerClone = invoiceElement.querySelector('header')?.cloneNode(true) as HTMLElement | null;
     const footerClone = invoiceElement.querySelector('footer.absolute')?.cloneNode(true) as HTMLElement | null;
-
 
     const canvas = await html2canvas(invoiceElement, {
         scale: 2,
