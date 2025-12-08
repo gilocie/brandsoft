@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { BrandsoftConfig, Customer, Invoice, LineItem, DesignSettings } from '@/hooks/use-brandsoft';
@@ -83,7 +82,7 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
         );
     }
     
-    const design = config.brand;
+    const design = (invoiceData as any).design || config.brand;
 
     const currencyCode = invoiceData.currency || config.profile.defaultCurrency;
     const formatCurrency = (value: number) => `${currencyCode}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;

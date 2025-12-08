@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { BrandsoftConfig, Customer, Quotation, DesignSettings } from '@/hooks/use-brandsoft';
@@ -86,7 +85,7 @@ export function QuotationPreview({ config, customer, quotationData, quotationId,
         );
     }
     
-    const design = config.brand;
+    const design = (quotationData as any).design || config.brand;
 
     const currencyCode = quotationData.currency || config.profile.defaultCurrency;
     const formatCurrency = (value: number) => `${currencyCode}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
