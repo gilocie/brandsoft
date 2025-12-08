@@ -2,7 +2,7 @@
 
 'use client';
 
-import { BrandsoftConfig, Customer, Invoice, LineItem } from '@/hooks/use-brandsoft';
+import { BrandsoftConfig, Customer, Invoice, LineItem, DesignSettings } from '@/hooks/use-brandsoft';
 import { format, parseISO } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
@@ -83,6 +83,12 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
         );
     }
     
+    // Combine base brand config with document-specific design overrides
+    const design: DesignSettings = {
+        ...config.brand,
+        ...invoiceData.design,
+    };
+
     const currencyCode = invoiceData.currency || config.profile.defaultCurrency;
     const formatCurrency = (value: number) => `${currencyCode}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -146,41 +152,44 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                     "w-full max-w-[8.5in] mx-auto bg-white shadow-lg relative font-sans flex flex-col",
                     forPdf ? "min-h-[11in]" : "min-h-[11in] p-12"
                 )}
-                style={forPdf ? { 
-                    padding: '48px',
-                    paddingTop: config.brand.headerImage ? '100px' : '48px',
-                    paddingBottom: '100px',
-                    position: 'relative'
-                } : {}}
+                style={{
+                    backgroundColor: design.backgroundColor,
+                    ...(forPdf ? { 
+                        padding: '48px',
+                        paddingTop: design.headerImage ? '100px' : '48px',
+                        paddingBottom: '100px',
+                        position: 'relative'
+                    } : {})
+                }}
             >
                 <div className="flex-grow">
-                    {config.brand.backgroundImage && (
-                        <img src={config.brand.backgroundImage} className="absolute inset-0 w-full h-full object-cover z-0" alt="background"/>
+                    {design.backgroundImage && (
+                        <img src={design.backgroundImage} className="absolute inset-0 w-full h-full object-cover z-0" alt="background"/>
                     )}
 
-                    {config.brand.watermarkImage && (
-                        <img src={config.brand.watermarkImage} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0 opacity-10 pointer-events-none" alt="watermark" />
+                    {design.watermarkImage && (
+                        <img src={design.watermarkImage} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0 opacity-10 pointer-events-none" alt="watermark" />
                     )}
                     
-                    {invoiceData.status && !config.brand.watermarkImage && <InvoiceStatusWatermark status={invoiceData.status} />}
+                    {invoiceData.status && !design.watermarkImage && <InvoiceStatusWatermark status={invoiceData.status} />}
 
                     {/* Header - Fixed positioning for PDF */}
-                    {config.brand.headerImage ? (
+                    {design.headerImage ? (
                         <div className="absolute top-0 left-0 right-0 h-20 z-10">
-                            <img src={config.brand.headerImage} className="w-full h-full object-cover" alt="Letterhead"/>
+                            <img src={design.headerImage} className="w-full h-full object-cover" alt="Letterhead"/>
                         </div>
                     ) : (
-                        <div className="absolute top-0 left-0 right-0 h-10 z-10" style={{backgroundColor: config.brand.primaryColor}}></div>
+                        <div className="absolute top-0 left-0 right-0 h-10 z-10" style={{backgroundColor: design.primaryColor}}></div>
                     )}
                     
                     {/* Main Content */}
                     <header className="relative z-10 flex justify-between items-start mb-8 pt-2">
                         <div className="flex items-center gap-4">
-                            {config.brand.logo && (
-                            <img src={config.brand.logo} alt={config.brand.businessName} className="h-16 w-16 sm:h-20 sm:w-20 object-contain" />
+                            {design.logo && (
+                            <img src={design.logo} alt={config.brand.businessName} className="h-16 w-16 sm:h-20 sm:w-20 object-contain" />
                             )}
                             <div>
-                                <h1 className="text-3xl sm:text-4xl font-bold" style={{color: config.brand.primaryColor}}>Invoice</h1>
+                                <h1 className="text-3xl sm:text-4xl font-bold" style={{color: design.primaryColor}}>Invoice</h1>
                             </div>
                         </div>
                         <div className="text-right text-sm text-gray-600">
@@ -294,7 +303,7 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                                 </div>
                             )}
                             <div className="pt-2">
-                            <div className="flex items-center justify-between font-bold text-lg py-3 px-4 rounded" style={{backgroundColor: config.brand.primaryColor, color: '#fff'}}>
+                            <div className="flex items-center justify-between font-bold text-lg py-3 px-4 rounded" style={{backgroundColor: design.primaryColor, color: '#fff'}}>
                                     <span className="mr-4">Total</span>
                                     <span>{formatCurrency(total)}</span>
                                 </div>
@@ -305,12 +314,12 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
 
                 {/* Footer - Absolute positioning at bottom */}
                 <footer className={cn("mt-auto", forPdf ? "absolute bottom-0 left-0 right-0 z-10" : "")}>
-                    {config.brand.footerImage && (
-                        <img src={config.brand.footerImage} className="w-full h-auto" alt="Footer"/>
+                    {design.footerImage && (
+                        <img src={design.footerImage} className="w-full h-auto" alt="Footer"/>
                     )}
-                     <div className="text-center text-xs py-3 px-4" style={{backgroundColor: config.brand.secondaryColor, color: 'white'}}>
-                         {config.brand.footerContent && <p className="mb-1">{config.brand.footerContent}</p>}
-                         {config.brand.brandsoftFooter && <p><span className="font-bold">Created by BrandSoft</span></p>}
+                     <div className="text-center text-xs py-3 px-4" style={{backgroundColor: design.secondaryColor, color: 'white'}}>
+                         {design.footerContent && <p className="mb-1">{design.footerContent}</p>}
+                         {design.brandsoftFooter && <p><span className="font-bold">Created by BrandSoft</span></p>}
                     </div>
                 </footer>
             </div>
