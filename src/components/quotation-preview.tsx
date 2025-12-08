@@ -86,11 +86,7 @@ export function QuotationPreview({ config, customer, quotationData, quotationId,
         );
     }
     
-    // Combine base brand config with document-specific design overrides
-    const design: DesignSettings = {
-        ...config.brand,
-        ...quotationData.design,
-    };
+    const design = config.brand;
 
     const currencyCode = quotationData.currency || config.profile.defaultCurrency;
     const formatCurrency = (value: number) => `${currencyCode}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;

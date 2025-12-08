@@ -83,11 +83,7 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
         );
     }
     
-    // Combine base brand config with document-specific design overrides
-    const design: DesignSettings = {
-        ...config.brand,
-        ...invoiceData.design,
-    };
+    const design = config.brand;
 
     const currencyCode = invoiceData.currency || config.profile.defaultCurrency;
     const formatCurrency = (value: number) => `${currencyCode}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
