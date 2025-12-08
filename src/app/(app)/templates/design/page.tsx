@@ -83,7 +83,7 @@ const ImageUploader = ({
                         </Button>
                     </>
                 ) : (
-                    <p className="text-sm text-muted-foreground">No {label.toLowerCase()} uploaded</p>
+                    <p className="text-sm text-muted-foreground">No ${label.toLowerCase()} uploaded</p>
                 )}
             </div>
             <FormField control={form.control} name={fieldName} render={() => (
@@ -130,32 +130,20 @@ function DocumentDesignPage() {
         },
     });
 
-    // Use useWatch for reactive form values
-    const backgroundColor = useWatch({ control: form.control, name: 'backgroundColor' });
-    const headerImage = useWatch({ control: form.control, name: 'headerImage' });
-    const footerImage = useWatch({ control: form.control, name: 'footerImage' });
-    const backgroundImage = useWatch({ control: form.control, name: 'backgroundImage' });
-    const watermarkImage = useWatch({ control: form.control, name: 'watermarkImage' });
-
-    // Current design settings derived from watched form values
+    const watchedValues = form.watch();
+    
     const currentDesignSettings = useMemo((): DesignSettings => ({
-        backgroundColor: backgroundColor || '#FFFFFF',
-        headerImage: headerImage || '',
-        footerImage: footerImage || '',
-        backgroundImage: backgroundImage || '',
-        watermarkImage: watermarkImage || '',
-    }), [backgroundColor, headerImage, footerImage, backgroundImage, watermarkImage]);
-
-    // Get default template based on document type
+        backgroundColor: watchedValues.backgroundColor || '#FFFFFF',
+        headerImage: watchedValues.headerImage || '',
+        footerImage: watchedValues.footerImage || '',
+        backgroundImage: watchedValues.backgroundImage || '',
+        watermarkImage: watchedValues.watermarkImage || '',
+    }), [watchedValues]);
+    
     const getDefaultTemplate = useCallback((type: 'invoice' | 'quotation'): Partial<DesignSettings> => {
         if (!config?.profile) return {};
-        
-        if (type === 'invoice') {
-            return config.profile.defaultInvoiceTemplate || {};
-        } else {
-            return config.profile.defaultQuotationTemplate || {};
-        }
-    }, [config?.profile.defaultInvoiceTemplate, config?.profile.defaultQuotationTemplate]);
+        return type === 'invoice' ? config.profile.defaultInvoiceTemplate || {} : config.profile.defaultQuotationTemplate || {};
+    }, [config?.profile?.defaultInvoiceTemplate, config?.profile?.defaultQuotationTemplate]);
 
     const stableGetFormData = useCallback(getFormData, []);
 
@@ -181,18 +169,17 @@ function DocumentDesignPage() {
         
         if (doc) setDocument(doc);
         
-        // Priority: document design > default template > brand settings
         const initialValues: DesignSettingsFormData = {
-            backgroundColor: existingDesign.backgroundColor || defaultTemplate.backgroundColor || brand.backgroundColor || '#FFFFFF',
-            headerImage: existingDesign.headerImage || defaultTemplate.headerImage || brand.headerImage || '',
-            footerImage: existingDesign.footerImage || defaultTemplate.footerImage || brand.footerImage || '',
-            backgroundImage: existingDesign.backgroundImage || defaultTemplate.backgroundImage || brand.backgroundImage || '',
-            watermarkImage: existingDesign.watermarkImage || defaultTemplate.watermarkImage || brand.watermarkImage || '',
+            backgroundColor: existingDesign.backgroundColor ?? defaultTemplate.backgroundColor ?? brand.backgroundColor ?? '#FFFFFF',
+            headerImage: existingDesign.headerImage ?? defaultTemplate.headerImage ?? brand.headerImage ?? '',
+            footerImage: existingDesign.footerImage ?? defaultTemplate.footerImage ?? brand.footerImage ?? '',
+            backgroundImage: existingDesign.backgroundImage ?? defaultTemplate.backgroundImage ?? brand.backgroundImage ?? '',
+            watermarkImage: existingDesign.watermarkImage ?? defaultTemplate.watermarkImage ?? brand.watermarkImage ?? '',
         };
         
         form.reset(initialValues);
         setIsLoading(false);
-    }, [config, documentId, documentType, isNew, stableGetFormData, getDefaultTemplate]);
+    }, [config, documentId, documentType, isNew, stableGetFormData, getDefaultTemplate, form]);
 
     const onSubmit = (data: DesignSettingsFormData) => {
         if (!config || !documentType) return;
@@ -205,70 +192,31 @@ function DocumentDesignPage() {
             watermarkImage: data.watermarkImage || '',
         };
 
+        const templateKey = documentType === 'invoice' ? 'defaultInvoiceTemplate' : 'defaultQuotationTemplate';
+        
         if (isNew) {
-            // Save as default template for the specific document type
-            const templateKey = documentType === 'invoice' ? 'defaultInvoiceTemplate' : 'defaultQuotationTemplate';
-            saveConfig({
-                ...config,
-                profile: {
-                    ...config.profile,
-                    [templateKey]: newDesignSettings,
-                }
-            });
-            toast({
-                title: "Default Design Saved",
-                description: `The new design is now the default for all new ${documentType}s.`,
-            });
-            const returnUrl = `/${documentType}s/new`;
-            router.push(returnUrl);
-
+            saveConfig({ ...config, profile: { ...config.profile, [templateKey]: newDesignSettings } });
+            toast({ title: "Default Design Saved", description: `The new design is now the default for all new ${documentType}s.` });
+            router.push(`/${documentType}s/new`);
         } else if (document && documentId) {
-            // Save design to specific document
-            if (documentType === 'invoice') {
-                updateInvoice(documentId, { design: newDesignSettings });
-            } else if (documentType === 'quotation') {
-                updateQuotation(documentId, { design: newDesignSettings });
-            }
-            toast({
-                title: "Design Saved",
-                description: `The custom design for ${documentType} ${documentId} has been saved.`,
-            });
-            const returnUrl = `/${documentType}s/${documentId}/edit`;
-            router.push(returnUrl);
+            const updateFn = documentType === 'invoice' ? updateInvoice : updateQuotation;
+            updateFn(documentId, { design: newDesignSettings });
+            toast({ title: "Design Saved", description: `The custom design for ${documentType} ${documentId} has been saved.` });
+            router.push(`/${documentType}s/${documentId}/edit`);
         } else {
-            // Fallback: save as default template
-            const templateKey = documentType === 'invoice' ? 'defaultInvoiceTemplate' : 'defaultQuotationTemplate';
-            saveConfig({
-                ...config,
-                profile: {
-                    ...config.profile,
-                    [templateKey]: newDesignSettings,
-                }
-            });
-            toast({
-                title: "Default Design Saved",
-                description: `The new design is now the default for all new ${documentType}s.`,
-            });
+            saveConfig({ ...config, profile: { ...config.profile, [templateKey]: newDesignSettings } });
+            toast({ title: "Default Design Saved", description: `The new design is now the default for all new ${documentType}s.` });
         }
     };
 
-    // Build final document data for preview with current design settings
     const finalDocumentData = useMemo(() => {
         const formData = getFormData();
-
         if (document) {
             return { ...document, design: currentDesignSettings };
         }
-        
         if (isNew && formData && Object.keys(formData).length > 0) {
-            return {
-                ...(formData as any),
-                [documentType === 'invoice' ? 'invoiceId' : 'quotationId']: 'PREVIEW',
-                design: currentDesignSettings,
-            };
+            return { ...(formData as any), [documentType === 'invoice' ? 'invoiceId' : 'quotationId']: 'PREVIEW', design: currentDesignSettings };
         }
-        
-        // Fallback preview data
         return {
             date: new Date(),
             [documentType === 'invoice' ? 'invoiceId' : 'quotationId']: 'PREVIEW',
@@ -276,44 +224,29 @@ function DocumentDesignPage() {
             lineItems: [{ description: 'Sample Item', quantity: 1, price: 100 }],
             design: currentDesignSettings,
         } as Invoice | Quotation;
-
     }, [document, isNew, getFormData, documentType, currentDesignSettings]);
 
     const previewCustomer = useMemo(() => {
         if (!config) return null;
-        
-        let customerId: string | undefined;
-        if (finalDocumentData) {
-            customerId = (finalDocumentData as any).customerId;
-        }
-
-        if (customerId) {
-            return config.customers.find(c => c.id === customerId) || config.customers[0] || null;
-        }
-        
-        return config.customers[0] || null;
+        let customerId: string | undefined = (finalDocumentData as any).customerId;
+        return config.customers.find(c => c.id === customerId) || config.customers[0] || null;
     }, [config, finalDocumentData]);
 
-    // Generate a unique key for the preview to force re-render when design changes
-    const designKey = useMemo(() => 
-        JSON.stringify(currentDesignSettings),
-        [currentDesignSettings]
-    );
+    const designKey = useMemo(() => JSON.stringify(currentDesignSettings), [currentDesignSettings]);
 
     if (isLoading) {
         return <div className="flex items-center justify-center h-full"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
     }
     
     const returnUrl = isNew ? `/${documentType}s/new` : (documentId ? `/${documentType}s/${documentId}/edit` : `/${documentType}s`);
-
     const hasContentForPreview = finalDocumentData && previewCustomer;
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] h-screen">
-            <div className="lg:col-span-1 bg-background border-r h-full flex flex-col">
+        <div className="grid grid-cols-1 lg:grid-cols-[350px_1fr] h-[calc(100vh-65px)] overflow-hidden">
+            <div className="bg-background border-r h-full flex flex-col overflow-hidden">
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
-                        <div className="p-4 border-b">
+                        <div className="p-4 border-b flex-shrink-0">
                             <h1 className="text-lg font-semibold font-headline capitalize">Customize {documentType || 'Design'}</h1>
                             <p className="text-sm text-muted-foreground">
                                 {isNew ? `Customizing default ${documentType} design.` : `Design for ${documentId}`}
@@ -326,30 +259,26 @@ function DocumentDesignPage() {
                                     <CardTitle className="flex items-center gap-2 text-base"><Paintbrush className="h-4 w-4"/> Appearance</CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
-                                    <FormField control={form.control} name="backgroundColor" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel className="text-xs">Page Background Color</FormLabel>
-                                            <FormControl>
-                                                <Input 
-                                                    type="color" 
-                                                    {...field} 
-                                                    value={field.value || '#FFFFFF'} 
-                                                    className="h-10 p-1" 
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}/>
-                                    <Separator />
-                                    <ImageUploader 
-                                        form={form}
-                                        fieldName="backgroundImage"
-                                        label="Background Image"
-                                        description="A4 aspect ratio recommended. Use a subtle design."
-                                        aspect='normal'
+                                    <FormField 
+                                        control={form.control} 
+                                        name="backgroundColor" 
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="text-xs">Page Background Color</FormLabel>
+                                                <FormControl>
+                                                    <div className="flex gap-2">
+                                                        <Input type="color" {...field} value={field.value || '#FFFFFF'} className="h-10 w-16 p-1 cursor-pointer" />
+                                                        <Input {...field} value={field.value || '#FFFFFF'} className="flex-1" />
+                                                    </div>
+                                                </FormControl>
+                                            </FormItem>
+                                        )}
                                     />
+                                    <Separator />
+                                    <ImageUploader form={form} fieldName="backgroundImage" label="Background Image" description="A4 aspect ratio recommended." aspect='normal' />
                                 </CardContent>
                             </Card>
+
                             <Card>
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2 text-base"><Layers className="h-4 w-4"/> Layout Images</CardTitle>
@@ -357,43 +286,25 @@ function DocumentDesignPage() {
                                 <CardContent>
                                     <Tabs defaultValue="header" className="w-full">
                                         <TabsList className="grid w-full grid-cols-3">
-                                            <TabsTrigger value="header"><ImageIcon className="h-4 w-4 mr-1"/>Header</TabsTrigger>
-                                            <TabsTrigger value="footer"><FileImage className="h-4 w-4 mr-1"/>Footer</TabsTrigger>
-                                            <TabsTrigger value="watermark"><Stamp className="h-4 w-4 mr-1"/>Watermark</TabsTrigger>
+                                            <TabsTrigger value="header">Header</TabsTrigger>
+                                            <TabsTrigger value="footer">Footer</TabsTrigger>
+                                            <TabsTrigger value="watermark">Watermark</TabsTrigger>
                                         </TabsList>
-                                        <TabsContent value="header" className="pt-6">
-                                            <ImageUploader 
-                                                form={form} 
-                                                fieldName="headerImage" 
-                                                label="Header" 
-                                                description="2480px wide recommended." 
-                                                aspect='wide' 
-                                            />
+                                        <TabsContent value="header" className="pt-4">
+                                            <ImageUploader form={form} fieldName="headerImage" label="Header" description="Full width top banner." aspect='wide' />
                                         </TabsContent>
-                                        <TabsContent value="footer" className="pt-6">
-                                            <ImageUploader 
-                                                form={form} 
-                                                fieldName="footerImage" 
-                                                label="Footer" 
-                                                description="2480px wide recommended." 
-                                                aspect='wide' 
-                                            />
+                                        <TabsContent value="footer" className="pt-4">
+                                            <ImageUploader form={form} fieldName="footerImage" label="Footer" description="Full width bottom banner." aspect='wide' />
                                         </TabsContent>
-                                        <TabsContent value="watermark" className="pt-6">
-                                            <ImageUploader 
-                                                form={form} 
-                                                fieldName="watermarkImage" 
-                                                label="Watermark" 
-                                                description="Semi-transparent PNG works best." 
-                                                aspect='normal' 
-                                            />
+                                        <TabsContent value="watermark" className="pt-4">
+                                            <ImageUploader form={form} fieldName="watermarkImage" label="Watermark" description="Center page image." aspect='normal' />
                                         </TabsContent>
                                     </Tabs>
                                 </CardContent>
                             </Card>
                         </div>
 
-                        <div className="p-4 border-t flex gap-2">
+                        <div className="p-4 border-t bg-white flex gap-2 flex-shrink-0">
                             <Button type="button" variant="outline" asChild className="flex-1">
                                 <Link href={returnUrl}><ArrowLeft className="mr-2 h-4 w-4"/> Back</Link>
                             </Button>
@@ -402,10 +313,11 @@ function DocumentDesignPage() {
                     </form>
                 </Form>
             </div>
-             <div className="w-full h-full flex items-start justify-center overflow-auto bg-muted/40 p-4 sm:p-8">
-                <div className="scale-[0.6] sm:scale-[0.7] md:scale-[0.85] lg:scale-[0.9] origin-top shadow-2xl">
+            
+            <div className="relative w-full h-full bg-slate-100 overflow-auto flex justify-center py-10">
+                <div className="origin-top scale-[0.55] sm:scale-[0.65] md:scale-[0.75] xl:scale-[0.85] 2xl:scale-100 transition-transform duration-200">
                     {hasContentForPreview ? (
-                        <>
+                        <div className="shadow-2xl">
                             {documentType === 'invoice' && (
                                 <InvoicePreview
                                     key={designKey}
@@ -426,14 +338,12 @@ function DocumentDesignPage() {
                                     designOverride={currentDesignSettings}
                                 />
                             )}
-                        </>
+                        </div>
                     ) : (
-                        <div className="w-[210mm] min-h-[297mm] bg-white shadow-lg flex items-center justify-center border">
+                         <div className="w-[210mm] h-[297mm] bg-white shadow-lg flex items-center justify-center border">
                             <div className="text-center p-8">
-                                <h3 className="text-xl font-semibold mb-2">Live Preview</h3>
-                                <p className="text-muted-foreground">
-                                    {isNew ? "Select a customer and add items on the previous page to see a preview." : "Loading document data..."}
-                                </p>
+                                <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
+                                <h3 className="text-xl font-semibold mb-2">Loading Preview...</h3>
                             </div>
                         </div>
                     )}
@@ -447,3 +357,5 @@ export default dynamic(() => Promise.resolve(DocumentDesignPage), {
     ssr: false,
     loading: () => <div className="flex items-center justify-center h-full"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>
 });
+
+    
