@@ -326,7 +326,7 @@ function DocumentDesignPage() {
     const designKey = useMemo(() => JSON.stringify(currentDesignSettings), [currentDesignSettings]);
 
     if (isLoading) {
-        return <div className="flex items-center justify-center h-full"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
+        return <div className="w-full h-screen flex items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
     }
     
     const returnUrl = isNew ? `/${documentType}s/new` : (documentId ? `/${documentType}s/${documentId}/edit` : `/${documentType}s`);
@@ -339,8 +339,8 @@ function DocumentDesignPage() {
                 <SettingsPanel form={form} documentType={documentType} documentId={documentId} isNew={isNew} onSubmit={onSubmit} returnUrl={returnUrl} />
             </div>
             
-            <div className="relative w-full h-full bg-slate-100 overflow-hidden flex justify-center items-start p-8">
-                <div className="flex-shrink-0 shadow-2xl transform scale-[0.8] origin-top">
+            <div className="relative w-full h-full bg-slate-100 overflow-y-auto flex justify-center items-start p-8">
+                 <div className="flex-shrink-0 shadow-2xl transform origin-top">
                     {hasContentForPreview ? (
                         <>
                             {documentType === 'invoice' && (
@@ -398,5 +398,5 @@ function DocumentDesignPage() {
 
 export default dynamic(() => Promise.resolve(DocumentDesignPage), {
     ssr: false,
-    loading: () => <div className="flex items-center justify-center h-full"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>
+    loading: () => <div className="w-full h-screen flex items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>
 });
