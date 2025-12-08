@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { createRoot } from 'react-dom/client';
+import { getBackgroundCSS } from '@/stores/canvas-store';
 
 
 // This props definition is intentionally verbose to support both
@@ -151,7 +152,7 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                     forPdf ? "min-h-[11in]" : "min-h-[11in]"
                 )}
                 style={{
-                    backgroundColor: design.backgroundColor,
+                    ...getBackgroundCSS({ pageDetails: { backgroundType: 'color', backgroundColor: design.backgroundColor, ...design } } as any),
                     paddingLeft: '48px',
                     paddingRight: '48px',
                     paddingBottom: '100px',
