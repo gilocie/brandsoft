@@ -63,7 +63,7 @@ const InvoiceStatusWatermark = ({ status }: { status: Invoice['status'] }) => {
     return (
         <div className={cn(
             "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0",
-            "text-[8rem] font-black tracking-widest leading-none transform -rotate-15 select-none pointer-events-none",
+            "text-[8rem] font-black tracking-widest leading-none transform -rotate-12 select-none pointer-events-none",
             colorClass
         )}>
             {text}
@@ -138,47 +138,45 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
     const dueDate = typeof rawDueDate === 'string' ? parseISO(rawDueDate) : rawDueDate;
     
     const taxName = invoiceData.taxName || 'Tax';
+    
+    const headerHeight = design.headerImage ? '80px' : '40px';
+    const contentPaddingTop = design.headerImage ? 'pt-24' : 'pt-14';
 
     return (
         <div className={forPdf ? "" : "bg-gray-100 p-4 sm:p-8 rounded-lg"}>
             <div 
                 id={`invoice-preview-${invoiceId}`} 
                 className={cn(
-                    "w-full max-w-[8.5in] mx-auto bg-white shadow-lg relative font-sans flex flex-col",
-                    forPdf ? "min-h-[11in]" : "min-h-[11in] p-12"
+                    "w-full max-w-[8.5in] mx-auto bg-white shadow-lg relative font-sans",
+                    forPdf ? "min-h-[11in]" : "min-h-[11in]"
                 )}
                 style={{
                     backgroundColor: design.backgroundColor,
-                    ...(forPdf ? { 
-                        padding: '48px',
-                        paddingTop: design.headerImage ? '100px' : '48px',
-                        paddingBottom: '100px',
-                        position: 'relative'
-                    } : {})
+                    paddingLeft: '48px',
+                    paddingRight: '48px',
+                    paddingBottom: '100px',
                 }}
             >
-                <div className="flex-grow">
-                    {design.backgroundImage && (
-                        <img src={design.backgroundImage} className="absolute inset-0 w-full h-full object-cover z-0" alt="background"/>
-                    )}
+                {design.backgroundImage && (
+                    <img src={design.backgroundImage} className="absolute inset-0 w-full h-full object-cover z-0" alt="background"/>
+                )}
 
-                    {design.watermarkImage && (
-                        <img src={design.watermarkImage} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0 opacity-10 pointer-events-none" alt="watermark" />
-                    )}
-                    
-                    {invoiceData.status && !design.watermarkImage && <InvoiceStatusWatermark status={invoiceData.status} />}
+                {design.watermarkImage && (
+                    <img src={design.watermarkImage} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0 opacity-10 pointer-events-none" alt="watermark" />
+                )}
+                
+                {invoiceData.status && !design.watermarkImage && <InvoiceStatusWatermark status={invoiceData.status} />}
 
-                    {/* Header - Fixed positioning for PDF */}
-                    {design.headerImage ? (
-                        <div className="absolute top-0 left-0 right-0 h-20 z-20">
-                            <img src={design.headerImage} className="w-full h-full object-cover" alt="Letterhead"/>
-                        </div>
-                    ) : (
-                        <div className="absolute top-0 left-0 right-0 h-10 z-20" style={{backgroundColor: design.primaryColor}}></div>
-                    )}
-                    
-                    {/* Main Content */}
-                    <header className="relative z-10 flex justify-between items-start mb-8 pt-2">
+                {design.headerImage ? (
+                    <div className="absolute top-0 left-0 right-0 h-20 z-30">
+                        <img src={design.headerImage} className="w-full h-full object-cover" alt="Letterhead"/>
+                    </div>
+                ) : (
+                    <div className="absolute top-0 left-0 right-0 h-10 z-30" style={{backgroundColor: design.primaryColor}}></div>
+                )}
+                
+                <div className={cn("relative z-10", contentPaddingTop)} style={{ paddingTop: headerHeight }}>
+                    <header className="flex justify-between items-start mb-8 pt-2">
                         <div className="flex items-center gap-4">
                             {design.logo && (
                             <img src={design.logo} alt={config.brand.businessName} className="h-16 w-16 sm:h-20 sm:w-20 object-contain" />
@@ -196,8 +194,7 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                         </div>
                     </header>
 
-                    {/* Bill To & Dates */}
-                    <section className="relative z-10 grid grid-cols-2 gap-8 mb-4">
+                    <section className="grid grid-cols-2 gap-8 mb-4">
                         <div>
                             <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">Bill To</h3>
                             <p className="font-bold text-lg">{customer.companyName || customer.name}</p>
@@ -227,8 +224,7 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                         </div>
                     </section>
 
-                    {/* Line Items Table */}
-                    <section className="relative z-10 mb-8">
+                    <section className="mb-8">
                         <Table>
                             <TableHeader>
                                 <TableRow className="bg-transparent border-b-2 border-black">
@@ -258,8 +254,7 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                         </Table>
                     </section>
 
-                    {/* Totals & Notes */}
-                    <section className="relative z-10 grid grid-cols-2 gap-8 items-start mb-12 mt-auto">
+                    <section className="grid grid-cols-2 gap-8 items-start mb-12">
                         <div className="text-sm">
                             {invoiceData.notes && (
                                 <div>
@@ -307,8 +302,7 @@ export function InvoicePreview({ config, customer, invoiceData, invoiceId, forPd
                     </section>
                 </div>
 
-                {/* Footer - Absolute positioning at bottom */}
-                <footer className={cn("mt-auto", forPdf ? "absolute bottom-0 left-0 right-0 z-20" : "")}>
+                <footer className="absolute bottom-0 left-0 right-0 z-30">
                     {design.footerImage && (
                         <img src={design.footerImage} className="w-full h-auto" alt="Footer"/>
                     )}
