@@ -194,7 +194,7 @@ function SettingsPanel({ form, documentType, documentId, isNew, onSubmit, return
                     <div className="flex-grow p-2 space-y-2 overflow-y-auto">
                         <Accordion type="multiple" defaultValue={['appearance']} className="w-full">
                              <AccordionItem value="appearance" className="border-0">
-                                <AccordionTrigger className="text-sm p-2"><div className="flex items-center gap-2"><Paintbrush className="h-4 w-4"/> Appearance</div></AccordionTrigger>
+                                <AccordionTrigger className="text-sm p-2 data-[state=open]:bg-primary data-[state=open]:text-primary-foreground data-[state=open]:px-2 data-[state=open]:no-underline [&[data-state=open]>svg]:text-primary-foreground"><div className="flex items-center gap-2"><Paintbrush className="h-4 w-4"/> Appearance</div></AccordionTrigger>
                                 <AccordionContent className="p-2 space-y-3">
                                     <ImageUploader form={form} fieldName="logo" label="Custom Logo" aspect='normal' />
                                     <Separator />
@@ -212,7 +212,7 @@ function SettingsPanel({ form, documentType, documentId, isNew, onSubmit, return
                              </AccordionItem>
                              
                               <AccordionItem value="elements" className="border-0">
-                                <AccordionTrigger className="text-sm p-2"><div className="flex items-center gap-2"><Eye className="h-4 w-4"/> Visible Elements</div></AccordionTrigger>
+                                <AccordionTrigger className="text-sm p-2 data-[state=open]:bg-primary data-[state=open]:text-primary-foreground data-[state=open]:px-2 data-[state=open]:no-underline [&[data-state=open]>svg]:text-primary-foreground"><div className="flex items-center gap-2"><Eye className="h-4 w-4"/> Visible Elements</div></AccordionTrigger>
                                 <AccordionContent className="p-2 space-y-2">
                                     {[
                                         {name: 'showLogo', label: 'Company Logo'},
@@ -235,7 +235,7 @@ function SettingsPanel({ form, documentType, documentId, isNew, onSubmit, return
                               </AccordionItem>
 
                              <AccordionItem value="layout" className="border-0">
-                                <AccordionTrigger className="text-sm p-2"><div className="flex items-center gap-2"><Layers className="h-4 w-4"/> Layout & Watermark</div></AccordionTrigger>
+                                <AccordionTrigger className="text-sm p-2 data-[state=open]:bg-primary data-[state=open]:text-primary-foreground data-[state=open]:px-2 data-[state=open]:no-underline [&[data-state=open]>svg]:text-primary-foreground"><div className="flex items-center gap-2"><Layers className="h-4 w-4"/> Layout & Watermark</div></AccordionTrigger>
                                 <AccordionContent className="p-2">
                                     <Tabs defaultValue="header" className="w-full">
                                         <TabsList className="grid w-full grid-cols-3 h-8">
@@ -279,7 +279,7 @@ function SettingsPanel({ form, documentType, documentId, isNew, onSubmit, return
                              </AccordionItem>
                              
                               <AccordionItem value="payments" className="border-0">
-                                <AccordionTrigger className="text-sm p-2"><div className="flex items-center gap-2"><Wallet className="h-4 w-4"/> Payment Details</div></AccordionTrigger>
+                                <AccordionTrigger className="text-sm p-2 data-[state=open]:bg-primary data-[state=open]:text-primary-foreground data-[state=open]:px-2 data-[state=open]:no-underline [&[data-state=open]>svg]:text-primary-foreground"><div className="flex items-center gap-2"><Wallet className="h-4 w-4"/> Payment Details</div></AccordionTrigger>
                                 <AccordionContent className="p-2">
                                     <FormField control={form.control} name="paymentDetails" render={({ field }) => (
                                         <FormItem>
@@ -294,26 +294,29 @@ function SettingsPanel({ form, documentType, documentId, isNew, onSubmit, return
 
 
                              <AccordionItem value="numbering" className="border-0">
-                                <AccordionTrigger className="text-sm p-2"><div className="flex items-center gap-2"><Hash className="h-4 w-4"/> Document Numbering</div></AccordionTrigger>
+                                <AccordionTrigger className="text-sm p-2 data-[state=open]:bg-primary data-[state=open]:text-primary-foreground data-[state=open]:px-2 data-[state=open]:no-underline [&[data-state=open]>svg]:text-primary-foreground"><div className="flex items-center gap-2"><Hash className="h-4 w-4"/> Document Numbering</div></AccordionTrigger>
                                 <AccordionContent className="p-2 space-y-3">
-                                     <FormField control={form.control} name="invoicePrefix" render={({ field }) => (
-                                        <FormItem><FormLabel className="text-xs">Invoice Prefix</FormLabel><FormControl><Input placeholder="INV-" {...field} className="h-8 text-xs"/></FormControl><FormMessage /></FormItem>
-                                    )} />
-                                    <FormField control={form.control} name="invoiceStartNumber" render={({ field }) => (
-                                        <FormItem><FormLabel className="text-xs">Next Invoice Number</FormLabel><FormControl><Input type="number" placeholder="101" {...field} className="h-8 text-xs" /></FormControl><FormMessage /></FormItem>
-                                    )} />
-                                    <Separator />
-                                     <FormField control={form.control} name="quotationPrefix" render={({ field }) => (
-                                        <FormItem><FormLabel className="text-xs">Quotation Prefix</FormLabel><FormControl><Input placeholder="QUO-" {...field} className="h-8 text-xs"/></FormControl><FormMessage /></FormItem>
-                                    )} />
-                                    <FormField control={form.control} name="quotationStartNumber" render={({ field }) => (
-                                        <FormItem><FormLabel className="text-xs">Next Quotation Number</FormLabel><FormControl><Input type="number" placeholder="101" {...field} className="h-8 text-xs" /></FormControl><FormMessage /></FormItem>
-                                    )} />
+                                     {documentType === 'invoice' && (<>
+                                        <FormField control={form.control} name="invoicePrefix" render={({ field }) => (
+                                            <FormItem><FormLabel className="text-xs">Invoice Prefix</FormLabel><FormControl><Input placeholder="INV-" {...field} className="h-8 text-xs"/></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="invoiceStartNumber" render={({ field }) => (
+                                            <FormItem><FormLabel className="text-xs">Next Invoice Number</FormLabel><FormControl><Input type="number" placeholder="101" {...field} className="h-8 text-xs" /></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                     </>)}
+                                     {documentType === 'quotation' && (<>
+                                        <FormField control={form.control} name="quotationPrefix" render={({ field }) => (
+                                            <FormItem><FormLabel className="text-xs">Quotation Prefix</FormLabel><FormControl><Input placeholder="QUO-" {...field} className="h-8 text-xs"/></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="quotationStartNumber" render={({ field }) => (
+                                            <FormItem><FormLabel className="text-xs">Next Quotation Number</FormLabel><FormControl><Input type="number" placeholder="101" {...field} className="h-8 text-xs" /></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                     </>)}
                                 </AccordionContent>
                              </AccordionItem>
 
                              <AccordionItem value="regional" className="border-0">
-                                <AccordionTrigger className="text-sm p-2"><div className="flex items-center gap-2"><Coins className="h-4 w-4"/> Regional</div></AccordionTrigger>
+                                <AccordionTrigger className="text-sm p-2 data-[state=open]:bg-primary data-[state=open]:text-primary-foreground data-[state=open]:px-2 data-[state=open]:no-underline [&[data-state=open]>svg]:text-primary-foreground"><div className="flex items-center gap-2"><Coins className="h-4 w-4"/> Regional</div></AccordionTrigger>
                                 <AccordionContent className="p-2 space-y-3">
                                      <FormField control={form.control} name="defaultCurrency" render={({ field }) => (
                                         <FormItem><FormLabel className="text-xs">Default Currency</FormLabel><FormControl><Input placeholder="USD" {...field} className="h-8 text-xs"/></FormControl><FormMessage /></FormItem>
@@ -356,6 +359,7 @@ function DocumentDesignPage() {
         resolver: zodResolver(designSettingsSchema),
         defaultValues: {
             logo: '',
+            // ... (rest of defaults remain same)
             invoicePrefix: 'INV-',
             invoiceStartNumber: 101,
             quotationPrefix: 'QUO-',
@@ -368,6 +372,7 @@ function DocumentDesignPage() {
     const watchedValues = form.watch();
 
     const currentDesignSettings: DesignSettings = useMemo(() => ({
+        // ... (Pass through all watched values as you did before)
         logo: watchedValues.logo,
         backgroundColor: watchedValues.backgroundColor,
         textColor: watchedValues.textColor,
@@ -457,6 +462,7 @@ function DocumentDesignPage() {
             showNotes: existingDesign.showNotes ?? brand.showNotes ?? true,
             showBrandsoftFooter: existingDesign.showBrandsoftFooter ?? brand.brandsoftFooter ?? true,
             
+            // Profile settings fallbacks
             invoicePrefix: profile.invoicePrefix || 'INV-',
             invoiceStartNumber: profile.invoiceStartNumber || 101,
             quotationPrefix: profile.quotationPrefix || 'QUO-',
@@ -470,10 +476,13 @@ function DocumentDesignPage() {
         isInitialLoad.current = false;
     }, [config, documentType, documentId, isNew, stableGetFormData, getDefaultTemplate, form]);
     
+    // ... (handleSave and onSubmit remain the same) ...
     const handleSave = useCallback(() => {
+        // Your existing handleSave logic...
         if (isLoading || !config) return;
         const values = form.getValues();
-        const newDesignSettings = currentDesignSettings;
+        // ... Logic to save to useBrandsoft ...
+        const newDesignSettings = currentDesignSettings; // using memoized value
         const newProfileSettings = {
             ...config.profile,
             invoicePrefix: values.invoicePrefix,
@@ -515,7 +524,7 @@ function DocumentDesignPage() {
             : `${watchedValues.quotationPrefix}${watchedValues.quotationStartNumber}`;
 
         if (document) {
-            return { ...document, design: currentDesignSettings };
+            return { ...document, design: currentDesignSettings, invoiceId: documentType === 'invoice' ? dynamicId : (document as any).invoiceId, quotationId: documentType === 'quotation' ? dynamicId : (document as any).quotationId };
         }
         
         if (isNew && formData && Object.keys(formData).length > 0) {
