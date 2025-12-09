@@ -81,7 +81,7 @@ type NewCustomerFormData = z.infer<typeof NewCustomerFormSchema>;
 
 export default function NewQuotationPage() {
   const { config, addCustomer, addQuotation, saveConfig } = useBrandsoft();
-  const { setFormData } = useFormState('newDocumentData');
+  const { setFormData, getFormData } = useFormState('newDocumentData');
   const router = useRouter();
   const { toast } = useToast();
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
@@ -116,12 +116,20 @@ export default function NewQuotationPage() {
   const watchedValues = form.watch();
 
   useEffect(() => {
-    // Set dates only on the client side to avoid hydration mismatch
-    form.reset({
-      ...form.getValues(),
-      quotationDate: new Date(),
-      validUntil: new Date(new Date().setDate(new Date().getDate() + 30)),
-    })
+    const storedData = getFormData();
+    if (storedData && Object.keys(storedData).length > 0) {
+        // Convert date strings back to Date objects
+        if (storedData.quotationDate) storedData.quotationDate = new Date(storedData.quotationDate);
+        if (storedData.validUntil) storedData.validUntil = new Date(storedData.validUntil);
+        form.reset(storedData);
+    } else {
+        // Set dates only on the client side to avoid hydration mismatch
+        form.reset({
+        ...form.getValues(),
+        quotationDate: new Date(),
+        validUntil: new Date(new Date().setDate(new Date().getDate() + 30)),
+        })
+    }
   }, []); // Empty dependency array ensures this runs only once on the client
 
   useEffect(() => {
@@ -203,7 +211,7 @@ export default function NewQuotationPage() {
         title: "Quotation Saved!",
         description: `Quotation ${savedQuotation.quotationId} for ${customer.name} has been saved as a ${data.status.toLowerCase()}.`
     });
-
+    setFormData(null); // Clear form state on successful submission
     router.push('/quotations');
   }
   
@@ -404,7 +412,7 @@ export default function NewQuotationPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Status</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select status" />
@@ -783,10 +791,10 @@ export default function NewQuotationPage() {
     </div>
   );
 }
-
     
 
     
+
 
 
 

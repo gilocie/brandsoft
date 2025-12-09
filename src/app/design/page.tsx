@@ -175,11 +175,14 @@ function SettingsPanel({ form, documentType, onSubmit, returnUrl, documentData }
   const imagesPerPage = 9;
   
   const watermarkSelection = useWatch({ control: form.control, name: 'watermarkText' });
-  const isCustomWatermark = watermarkSelection === 'CUSTOM';
   const isAutoWatermark = watermarkSelection === 'AUTO';
 
   const handleWatermarkPresetChange = (value: string) => {
-    form.setValue('watermarkText', value, { shouldDirty: true });
+    if (value === "CUSTOM") {
+        form.setValue('watermarkText', '', { shouldDirty: true });
+    } else {
+        form.setValue('watermarkText', value, { shouldDirty: true });
+    }
   }
 
   const handleBack = () => {
@@ -340,12 +343,12 @@ function SettingsPanel({ form, documentType, onSubmit, returnUrl, documentData }
                                         </TabsContent>
                                         <TabsContent value="watermark" className="pt-3 space-y-3">
                                             <div className="space-y-1"><FormLabel className="text-xs">Watermark Text</FormLabel>
-                                                <Select onValueChange={handleWatermarkPresetChange} value={watermarkSelection}>
+                                                <Select onValueChange={handleWatermarkPresetChange} value={watermarkPresets.includes(watermarkSelection) ? watermarkSelection : 'CUSTOM'}>
                                                     <SelectTrigger className="w-full h-8 text-xs"><SelectValue placeholder="Select preset or custom" /></SelectTrigger>
                                                     <SelectContent>{watermarkPresets.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
                                                 </Select>
                                             </div>
-                                        {isCustomWatermark && (
+                                        {!isAutoWatermark && (
                                             <FormField control={form.control} name="watermarkText" render={({ field }) => (
                                                 <FormItem>
                                                     <FormLabel className="text-xs">Custom Text</FormLabel>
@@ -515,11 +518,13 @@ function DocumentDesignPage() {
         const isAuto = watermarkSelection === 'AUTO';
         const docStatus = document?.status?.toUpperCase() || getFormData('newDocumentData')?.status.toUpperCase() || '';
         
-        let watermarkText: string | undefined = watermarkSelection;
+        let watermarkText: string | undefined;
         if (isAuto) {
             watermarkText = docStatus;
         } else if (watermarkSelection === 'CUSTOM') {
-            watermarkText = ''; // Let the custom input handle it, but don't show the word 'CUSTOM'
+             watermarkText = watchedValues.watermarkText;
+        } else {
+             watermarkText = watermarkSelection;
         }
 
         const watermarkColor = isAuto 
