@@ -576,7 +576,7 @@ function DocumentDesignPage() {
             footerImageOpacity: existingDesign.footerImageOpacity ?? defaultTemplate.footerImageOpacity ?? 1,
             backgroundImage: existingDesign.backgroundImage ?? defaultTemplate.backgroundImage ?? brand.backgroundImage ?? '',
             backgroundImageOpacity: existingDesign.backgroundImageOpacity ?? defaultTemplate.backgroundImageOpacity ?? 1,
-            watermarkText: existingDesign.watermarkText ?? defaultTemplate.watermarkText ?? (doc as Invoice)?.status,
+            watermarkText: existingDesign.watermarkText ?? defaultTemplate.watermarkText ?? (doc as any)?.status,
             watermarkColor: existingDesign.watermarkColor ?? defaultTemplate.watermarkColor ?? '#dddddd',
             watermarkOpacity: existingDesign.watermarkOpacity ?? defaultTemplate.watermarkOpacity ?? 0.05,
             watermarkFontSize: existingDesign.watermarkFontSize ?? defaultTemplate.watermarkFontSize ?? 96,
