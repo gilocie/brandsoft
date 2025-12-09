@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { CalendarIcon, PlusCircle, Trash2, Save, Send, Eye, UserPlus, Palette } from 'lucide-react';
 import { format } from "date-fns";
 import Link from 'next/link';
-import { useBrandsoft, type Customer, type Quotation, type DesignSettings } from '@/hooks/use-brandsoft.tsx';
+import { useBrandsoft, type Customer, type Quotation, type DesignSettings } from '@/hooks/use-brandsoft';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useRouter } from 'next/navigation';
@@ -485,6 +485,7 @@ export default function NewQuotationPage() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
+                        <SelectItem value="Draft">Draft</SelectItem>
                         <SelectItem value="Sent">Sent</SelectItem>
                         <SelectItem value="Accepted">Accepted</SelectItem>
                         <SelectItem value="Declined">Declined</SelectItem>
@@ -888,7 +889,12 @@ export default function NewQuotationPage() {
             <QuotationPreview
                 config={config}
                 customer={config?.customers.find(c => c.id === watchedValues.customerId) || null}
-                quotationData={{...watchedValues, design: designFormState.getFormData() }}
+                quotationData={{
+                    ...watchedValues,
+                    date: watchedValues.quotationDate ? format(watchedValues.quotationDate, 'yyyy-MM-dd') : '',
+                    validUntil: watchedValues.validUntil ? format(watchedValues.validUntil, 'yyyy-MM-dd') : '',
+                    design: designFormState.getFormData()
+                }}
                 quotationId={nextQuotationId}
             />
           </div>
@@ -900,15 +906,3 @@ export default function NewQuotationPage() {
     </div>
   );
 }
-
-    
-
-
-
-
-
-
-
-
-
-

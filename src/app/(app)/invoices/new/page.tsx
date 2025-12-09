@@ -472,6 +472,7 @@ export default function NewInvoicePage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
+                          <SelectItem value="Draft">Draft</SelectItem>
                           <SelectItem value="Pending">Pending</SelectItem>
                           <SelectItem value="Paid">Paid</SelectItem>
                           <SelectItem value="Overdue">Overdue</SelectItem>
@@ -880,7 +881,12 @@ export default function NewInvoicePage() {
             <InvoicePreview
                 config={config}
                 customer={config?.customers.find(c => c.id === watchedValues.customerId) || null}
-                invoiceData={{...watchedValues, design: designFormState.getFormData() }}
+                invoiceData={{
+                    ...watchedValues,
+                    date: watchedValues.invoiceDate ? format(watchedValues.invoiceDate, 'yyyy-MM-dd') : '',
+                    dueDate: watchedValues.dueDate ? format(watchedValues.dueDate, 'yyyy-MM-dd') : '',
+                    design: designFormState.getFormData()
+                }}
                 invoiceId={nextInvoiceId}
             />
           </div>
@@ -893,17 +899,3 @@ export default function NewInvoicePage() {
   );
 }
     
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
