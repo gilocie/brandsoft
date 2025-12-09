@@ -28,15 +28,6 @@ import { Separator } from '@/components/ui/separator';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { QuotationPreview } from '@/components/quotation-preview';
 
-const currencySymbols: { [key: string]: string } = {
-  USD: '$',
-  EUR: '€',
-  GBP: '£',
-  JPY: '¥',
-  CAD: '$',
-  AUD: '$',
-};
-
 const lineItemSchema = z.object({
   productId: z.string().optional(),
   description: z.string().min(1, 'Description is required.'),
@@ -105,7 +96,7 @@ export default function EditQuotationPage() {
         quotationDate: parseISO(quotationToEdit.date),
         validUntil: parseISO(quotationToEdit.validUntil),
         status: quotationToEdit.status,
-        currency: config.profile.defaultCurrency,
+        currency: quotationToEdit.currency || config.profile.defaultCurrency,
         notes: quotationToEdit.notes || '',
 
         applyDiscount: !!quotationToEdit.discount,
@@ -221,6 +212,7 @@ export default function EditQuotationPage() {
         partialPayment: partialPaymentAmount,
         partialPaymentType: data.partialPaymentType,
         partialPaymentValue: data.partialPaymentValue,
+        currency: data.currency,
     };
     
     updateQuotation(quotationToEdit.quotationId, updatedQuotation);
@@ -251,7 +243,7 @@ export default function EditQuotationPage() {
   }
 
   const watchedValues = form.watch();
-  const currencySymbol = config ? (currencySymbols[watchedValues.currency] || watchedValues.currency) : '$';
+  const currencySymbol = watchedValues.currency;
   
   const formatCurrency = (value: number) => {
     return `${currencySymbol}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;

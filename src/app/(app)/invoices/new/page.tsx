@@ -28,15 +28,6 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { InvoicePreview } from '@/components/invoice-preview';
 import { useFormState } from '@/hooks/use-form-state';
 
-const currencySymbols: { [key: string]: string } = {
-  USD: '$',
-  EUR: '€',
-  GBP: '£',
-  JPY: '¥',
-  CAD: '$',
-  AUD: '$',
-};
-
 const lineItemSchema = z.object({
   productId: z.string().optional(),
   description: z.string().min(1, 'Description is required.'),
@@ -244,6 +235,7 @@ export default function NewInvoicePage() {
         partialPayment: partialPaymentAmount,
         partialPaymentType: data.partialPaymentType,
         partialPaymentValue: data.partialPaymentValue,
+        currency: data.currency,
     };
     
     const designData = designFormState.getFormData();
@@ -280,7 +272,7 @@ export default function NewInvoicePage() {
     }
   }
 
-  const currencySymbol = config ? (currencySymbols[watchedValues.currency] || watchedValues.currency) : '$';
+  const currencySymbol = watchedValues.currency;
   
   const formatCurrency = (value: number) => {
     return `${currencySymbol}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -900,5 +892,6 @@ export default function NewInvoicePage() {
     
 
     
+
 
 

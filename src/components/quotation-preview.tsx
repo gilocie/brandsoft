@@ -23,6 +23,9 @@ type QuotationData = Partial<Quotation> & {
     discountValue?: number;
     applyShipping?: boolean;
     shippingValue?: number;
+    applyPartialPayment?: boolean;
+    partialPaymentType?: 'percentage' | 'flat';
+    partialPaymentValue?: number;
     design?: DesignSettings;
 };
 
@@ -188,7 +191,7 @@ export function QuotationPreview({
         return mergedDesign;
     }, [config, quotationData?.design, designOverride]);
 
-    const currencyCode = quotationData.currency || config.profile.defaultCurrency || 'K';
+    const currencyCode = quotationData.currency || config.profile.defaultCurrency;
     const formatCurrency = (value: number) => `${currencyCode}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
     const subtotal = quotationData.lineItems?.reduce((acc, item) => acc + (item.quantity * item.price), 0) || quotationData.subtotal || 0;
@@ -221,6 +224,18 @@ export function QuotationPreview({
 
     const shippingAmount = Number(quotationData.applyShipping && quotationData.shippingValue ? quotationData.shippingValue : (quotationData.shipping || 0));
     const total = subtotalAfterDiscount + taxAmount + shippingAmount;
+
+    let partialPaymentAmount = 0;
+    if (quotationData.applyPartialPayment && quotationData.partialPaymentValue) {
+        if (quotationData.partialPaymentType === 'percentage') {
+            partialPaymentAmount = total * (quotationData.partialPaymentValue / 100);
+        } else {
+            partialPaymentAmount = quotationData.partialPaymentValue;
+        }
+    } else if (quotationData.partialPayment) {
+        partialPaymentAmount = quotationData.partialPayment;
+    }
+    const amountDue = total - partialPaymentAmount;
     
     const formatDateSafe = (dateVal: Date | string | undefined) => {
         if (!dateVal) return format(new Date(), 'MM/dd/yyyy');
@@ -232,8 +247,7 @@ export function QuotationPreview({
     const validUntilStr = formatDateSafe(quotationData.validUntil || quotationData.date);
     const taxName = quotationData.taxName || 'VAT';
     
-    const watermarkText = design.watermarkText || quotationData.status;
-
+    const watermarkText = (design.watermarkText === 'AUTO' ? quotationData.status : design.watermarkText) || quotationData.status;
     const paymentDetailsToDisplay = designOverride?.paymentDetails || design.paymentDetails || config.profile.paymentDetails;
 
 
@@ -249,6 +263,7 @@ export function QuotationPreview({
     };
 
     const displayLogo = design.logo || config.brand.logo;
+    const customerDisplayName = customer.companyName || customer.name;
 
     return (
         <Wrapper>
@@ -288,10 +303,11 @@ export function QuotationPreview({
                         <main className="flex-grow relative z-10 mt-10">
                             <section className="flex justify-between items-start mb-10">
                                 {design.showBillingAddress && (
-                                    <div className="w-1/2">
+                                     <div className="w-1/2">
                                         <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Quote For</h3>
-                                        <p className="font-bold text-xl">{customer.companyName || customer.name}</p>
-                                        <p className="text-sm mt-1 whitespace-pre-wrap">{customer.companyName ? customer.companyAddress : customer.address}</p>
+                                        <p className="font-bold text-xl">{customerDisplayName}</p>
+                                        {customer.companyName && <p className="text-sm">{customer.name}</p>}
+                                        <p className="text-sm mt-1 whitespace-pre-wrap">{customer.companyAddress || customer.address}</p>
                                         <p className="text-sm">{customer.email}</p>
                                     </div>
                                 )}
@@ -388,6 +404,22 @@ export function QuotationPreview({
                                         <span className="font-bold text-white text-lg">Total</span>
                                         <span className="font-bold text-white text-xl">{formatCurrency(total)}</span>
                                     </div>
+
+                                    {partialPaymentAmount > 0 && (
+                                        <>
+                                            <div className="flex justify-between mt-2 text-green-600">
+                                                <span>Payment Made</span>
+                                                <span className="font-bold">- {formatCurrency(partialPaymentAmount)}</span>
+                                            </div>
+                                             <div 
+                                                className="mt-4 flex items-center justify-between p-3 rounded-sm shadow-sm" 
+                                                style={{backgroundColor: design.headerColor}}
+                                            >
+                                                <span className="font-bold text-white text-lg">Amount Due</span>
+                                                <span className="font-bold text-white text-xl">{formatCurrency(amountDue)}</span>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             </section>
                         </main>

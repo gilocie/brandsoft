@@ -28,15 +28,6 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { QuotationPreview } from '@/components/quotation-preview';
 import { useFormState } from '@/hooks/use-form-state';
 
-const currencySymbols: { [key: string]: string } = {
-  USD: '$',
-  EUR: '€',
-  GBP: '£',
-  JPY: '¥',
-  CAD: '$',
-  AUD: '$',
-};
-
 const lineItemSchema = z.object({
   productId: z.string().optional(),
   description: z.string().min(1, 'Description is required.'),
@@ -253,6 +244,7 @@ export default function NewQuotationPage() {
         partialPayment: partialPaymentAmount,
         partialPaymentType: data.partialPaymentType,
         partialPaymentValue: data.partialPaymentValue,
+        currency: data.currency,
     };
     
     const designData = designFormState.getFormData();
@@ -305,7 +297,7 @@ export default function NewQuotationPage() {
   };
   
   const formatCurrency = (value: number) => {
-    return `${config?.profile.defaultCurrency || '$'}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `${watchedValues.currency || ''}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
   
   const subtotal = watchedValues.lineItems ? watchedValues.lineItems.reduce((acc, item) => {
@@ -920,5 +912,6 @@ export default function NewQuotationPage() {
 }
 
     
+
 
 

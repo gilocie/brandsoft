@@ -66,6 +66,7 @@ export interface DesignSettings {
     showBrandsoftFooter?: boolean;
     showHeader?: boolean;
     showFooter?: boolean;
+    paymentDetails?: string;
 }
 
 export type Invoice = {
@@ -87,7 +88,11 @@ export type Invoice = {
     shipping?: number;
     notes?: string;
     lineItems?: LineItem[];
+    partialPayment?: number;
+    partialPaymentType?: 'percentage' | 'flat';
+    partialPaymentValue?: number;
     design?: DesignSettings;
+    currency?: string;
 };
 
 export type Quotation = {
@@ -109,6 +114,9 @@ export type Quotation = {
     shipping?: number;
     notes?: string;
     lineItems?: LineItem[];
+    partialPayment?: number;
+    partialPaymentType?: 'percentage' | 'flat';
+    partialPaymentValue?: number;
     design?: DesignSettings;
     currency?: string;
 };
@@ -235,6 +243,7 @@ const initialInvoices: Invoice[] = [
     tax: 0,
     shipping: 0,
     lineItems: [{ description: 'Web Design Consultation', quantity: 2, price: 125 }],
+    currency: 'USD',
   },
   {
     invoiceId: 'INV002',
@@ -248,6 +257,7 @@ const initialInvoices: Invoice[] = [
     tax: 0,
     shipping: 0,
      lineItems: [{ description: 'Logo Design', quantity: 1, price: 150 }],
+     currency: 'USD',
   },
   {
     invoiceId: 'INV003',
@@ -261,6 +271,7 @@ const initialInvoices: Invoice[] = [
     tax: 0,
     shipping: 0,
      lineItems: [{ description: 'Social Media Campaign', quantity: 1, price: 350 }],
+     currency: 'USD',
   },
   {
     invoiceId: 'INV004',
@@ -274,6 +285,7 @@ const initialInvoices: Invoice[] = [
     tax: 0,
     shipping: 0,
      lineItems: [{ description: 'SEO Audit', quantity: 1, price: 450 }],
+     currency: 'USD',
   },
   {
     invoiceId: 'INV005',
@@ -287,6 +299,7 @@ const initialInvoices: Invoice[] = [
     tax: 0,
     shipping: 0,
      lineItems: [{ description: 'Complete Branding Package', quantity: 1, price: 550 }],
+     currency: 'USD',
   },
    {
     invoiceId: 'INV006',
@@ -300,6 +313,7 @@ const initialInvoices: Invoice[] = [
     tax: 0,
     shipping: 0,
      lineItems: [{ description: 'Business Card Design', quantity: 200, price: 1.5 }],
+     currency: 'USD',
   },
 ];
 
@@ -313,6 +327,7 @@ const initialQuotations: Quotation[] = [
         status: 'Sent',
         subtotal: 500,
         lineItems: [{ description: 'Website Redesign', quantity: 1, price: 500 }],
+        currency: 'USD',
     },
     {
         quotationId: 'QUO-002',
@@ -323,6 +338,7 @@ const initialQuotations: Quotation[] = [
         status: 'Accepted',
         subtotal: 1200,
         lineItems: [{ description: 'E-commerce Platform Development', quantity: 1, price: 1200 }],
+        currency: 'USD',
     },
     {
         quotationId: 'QUO-003',
@@ -333,6 +349,7 @@ const initialQuotations: Quotation[] = [
         status: 'Declined',
         subtotal: 300,
         lineItems: [{ description: 'Quarterly Social Media Management', quantity: 1, price: 300 }],
+        currency: 'USD',
     },
     {
         quotationId: 'QUO-004',
@@ -343,6 +360,7 @@ const initialQuotations: Quotation[] = [
         status: 'Draft',
         subtotal: 800,
         lineItems: [{ description: 'Mobile App UI/UX Design', quantity: 1, price: 800 }],
+        currency: 'USD',
     }
 ];
 

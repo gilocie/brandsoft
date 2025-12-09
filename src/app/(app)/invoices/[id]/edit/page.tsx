@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -27,15 +26,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { InvoicePreview } from '@/components/invoice-preview';
-
-const currencySymbols: { [key: string]: string } = {
-  USD: '$',
-  EUR: '€',
-  GBP: '£',
-  JPY: '¥',
-  CAD: '$',
-  AUD: '$',
-};
 
 const lineItemSchema = z.object({
   productId: z.string().optional(),
@@ -105,7 +95,7 @@ export default function EditInvoicePage() {
         invoiceDate: parseISO(invoiceToEdit.date),
         dueDate: parseISO(invoiceToEdit.dueDate),
         status: invoiceToEdit.status,
-        currency: config.profile.defaultCurrency,
+        currency: invoiceToEdit.currency || config.profile.defaultCurrency,
         notes: invoiceToEdit.notes || '',
 
         applyDiscount: !!invoiceToEdit.discount,
@@ -222,6 +212,7 @@ export default function EditInvoicePage() {
         partialPayment: partialPaymentAmount,
         partialPaymentType: data.partialPaymentType,
         partialPaymentValue: data.partialPaymentValue,
+        currency: data.currency,
     };
     
     updateInvoice(invoiceToEdit.invoiceId, updatedInvoice);
@@ -252,7 +243,7 @@ export default function EditInvoicePage() {
   }
 
   const watchedValues = form.watch();
-  const currencySymbol = config ? (currencySymbols[watchedValues.currency] || watchedValues.currency) : '$';
+  const currencySymbol = watchedValues.currency;
   
   const formatCurrency = (value: number) => {
     return `${currencySymbol}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
