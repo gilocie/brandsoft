@@ -76,7 +76,6 @@ export default function NewQuotationPage() {
   const { toast } = useToast();
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [previewDesign, setPreviewDesign] = useState<DesignSettings | undefined>(undefined);
 
   const [useManualEntry, setUseManualEntry] = useState<boolean[]>([false]);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -332,8 +331,6 @@ export default function NewQuotationPage() {
   const handlePreview = async () => {
     const isValid = await form.trigger();
     if (isValid) {
-      const designData = designFormState.getFormData();
-      setPreviewDesign(designData);
       setIsPreviewOpen(true);
     } else {
       toast({
@@ -403,7 +400,7 @@ export default function NewQuotationPage() {
             <CardHeader>
               <CardTitle>Quotation Details</CardTitle>
             </CardHeader>
-             <CardContent className="grid gap-4 md:grid-cols-3">
+             <CardContent className="grid gap-4 md:grid-cols-2">
               <FormField
                 control={form.control}
                 name="quotationDate"
@@ -472,30 +469,6 @@ export default function NewQuotationPage() {
                   </FormItem>
                 )}
               />
-               <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Status</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                            <SelectItem value="Draft">Draft</SelectItem>
-                            <SelectItem value="Sent">Sent</SelectItem>
-                            <SelectItem value="Accepted">Accepted</SelectItem>
-                            <SelectItem value="Declined">Declined</SelectItem>
-                            <SelectItem value="Canceled">Canceled</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
             </CardContent>
              <CardContent>
                  <FormField
@@ -890,8 +863,7 @@ export default function NewQuotationPage() {
             <QuotationPreview
                 config={config}
                 customer={config?.customers.find(c => c.id === watchedValues.customerId) || null}
-                quotationData={{...watchedValues, status: watchedValues.status || 'Draft' }}
-                designOverride={previewDesign}
+                quotationData={{...watchedValues, status: watchedValues.status || 'Draft', design: designFormState.getFormData() }}
             />
           </div>
           <DialogFooter>
@@ -904,6 +876,7 @@ export default function NewQuotationPage() {
 }
 
     
+
 
 
 

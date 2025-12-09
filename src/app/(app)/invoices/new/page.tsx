@@ -81,7 +81,6 @@ export default function NewInvoicePage() {
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
   const [useManualEntry, setUseManualEntry] = useState<boolean[]>([false]);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [previewDesign, setPreviewDesign] = useState<DesignSettings | undefined>(undefined);
   const [isInitialized, setIsInitialized] = useState(false);
 
   const form = useForm<InvoiceFormData>({
@@ -319,8 +318,6 @@ export default function NewInvoicePage() {
   const handlePreview = async () => {
     const isValid = await form.trigger();
     if (isValid) {
-      const designData = designFormState.getFormData();
-      setPreviewDesign(designData);
       setIsPreviewOpen(true);
     } else {
       toast({
@@ -880,8 +877,7 @@ export default function NewInvoicePage() {
             <InvoicePreview
                 config={config}
                 customer={config?.customers.find(c => c.id === watchedValues.customerId) || null}
-                invoiceData={{...watchedValues, status: watchedValues.status || 'Draft' }}
-                designOverride={previewDesign}
+                invoiceData={{...watchedValues, status: watchedValues.status || 'Draft', design: designFormState.getFormData() }}
             />
           </div>
           <DialogFooter>
@@ -895,6 +891,7 @@ export default function NewInvoicePage() {
     
 
     
+
 
 
 
