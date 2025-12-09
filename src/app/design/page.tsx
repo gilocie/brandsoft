@@ -247,9 +247,9 @@ function SettingsPanel({ form, documentType, onSubmit, returnUrl, documentData }
                                                     type="button"
                                                     className={cn(
                                                         "aspect-square rounded-md overflow-hidden border-2 transition-all",
-                                                        selectedBackgroundImage === image.src.src ? 'border-primary ring-2 ring-primary' : 'border-transparent hover:border-primary/50'
+                                                        selectedBackgroundImage === image.src ? 'border-primary ring-2 ring-primary' : 'border-transparent hover:border-primary/50'
                                                     )}
-                                                    onClick={() => form.setValue('backgroundImage', image.src.src)}
+                                                    onClick={() => form.setValue('backgroundImage', image.src)}
                                                 >
                                                     <NextImage src={image.src} alt={image.name} className="w-full h-full object-cover" width={100} height={100} unoptimized />
                                                 </button>
