@@ -112,7 +112,7 @@ export default function EditQuotationPage() {
         applyTax: !!quotationToEdit.tax,
         taxType: quotationToEdit.taxType || 'percentage',
         taxValue: quotationToEdit.taxValue || 0,
-        taxName: quotationToEdit.taxName || 'Tax',
+        taxName: quotationToEdit.taxName || 'VAT',
 
         applyShipping: !!quotationToEdit.shipping,
         shippingValue: quotationToEdit.shipping || 0,
