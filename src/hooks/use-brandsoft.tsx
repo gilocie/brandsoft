@@ -505,7 +505,8 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     const startNumber = numbering?.startNumber ?? config.profile.invoiceStartNumber;
     const prefix = numbering?.prefix ?? config.profile.invoicePrefix;
     const nextNumber = (Number(startNumber) || 100) + (config.invoices?.length || 0);
-    const newInvoice: Invoice = { ...invoice, invoiceId: `${prefix}${nextNumber}` };
+    const generatedId = `${prefix}${nextNumber}`.replace(/\s+/g, '');
+    const newInvoice: Invoice = { ...invoice, invoiceId: generatedId };
     const newConfig = { ...config, invoices: [...(config.invoices || []), newInvoice] };
     saveConfig(newConfig, { redirect: false });
     return newInvoice;
@@ -532,7 +533,8 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     const startNumber = numbering?.startNumber ?? config.profile.quotationStartNumber;
     const prefix = numbering?.prefix ?? config.profile.quotationPrefix;
     const nextNumber = (Number(startNumber) || 100) + (config.quotations?.length || 0);
-    const newQuotation: Quotation = { ...quotation, quotationId: `${prefix}${nextNumber}` };
+    const generatedId = `${prefix}${nextNumber}`.replace(/\s+/g, '');
+    const newQuotation: Quotation = { ...quotation, quotationId: generatedId };
     const newConfig = { ...config, quotations: [...(config.quotations || []), newQuotation] };
     saveConfig(newConfig, { redirect: false });
     return newQuotation;
