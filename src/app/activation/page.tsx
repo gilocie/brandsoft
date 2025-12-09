@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Logo } from '@/components/logo';
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from 'lucide-react';
-import brandsoftBackground1 from '@/app/(app)/templates/backgrounds/brandsoft-background1.jpg';
+import brandsoftBackground1 from '@/app/(app)/templates/backgrounds/background.jpg';
 
 const formSchema = z.object({
   serialKey: z.string().min(1, { message: "Serial key is required." }),

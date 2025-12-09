@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useBrandsoft } from '@/hooks/use-brandsoft.tsx';
 import { Loader2 } from 'lucide-react';
 import { Logo } from '@/components/logo';
-import brandsoftBackground1 from '@/app/(app)/templates/backgrounds/brandsoft-background1.jpg';
+import brandsoftBackground1 from '@/app/(app)/templates/backgrounds/background.jpg';
 
 export default function HomePage() {
   const router = useRouter();
