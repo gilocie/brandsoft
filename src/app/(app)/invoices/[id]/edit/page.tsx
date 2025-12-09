@@ -77,7 +77,7 @@ export default function EditInvoicePage() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const invoiceId = params.id as string;
-  const invoiceToEdit = config?.invoices.find(inv => inv.invoiceId.toLowerCase() === invoiceId.toLowerCase());
+  const invoiceToEdit = config?.invoices.find(inv => inv.invoiceId?.toLowerCase() === invoiceId?.toLowerCase());
 
   const form = useForm<InvoiceFormData>({
     resolver: zodResolver(formSchema),
@@ -284,7 +284,7 @@ export default function EditInvoicePage() {
           partialPaymentAmount = watchedValues.partialPaymentValue;
       }
   }
-  const amountDue = total - partialPaymentAmount;
+  const balance = total - partialPaymentAmount;
 
   const handlePreview = async () => {
     const isValid = await form.trigger();
@@ -757,7 +757,7 @@ export default function EditInvoicePage() {
                             <Separator />
                             <div className="flex justify-between font-bold text-lg pt-2 text-primary">
                                 <span>Balance</span>
-                                <span>{formatCurrency(amountDue)}</span>
+                                <span>{formatCurrency(balance)}</span>
                             </div>
                         </>
                     )}

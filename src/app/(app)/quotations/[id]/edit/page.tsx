@@ -77,7 +77,7 @@ export default function EditQuotationPage() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const quotationId = params.id as string;
-  const quotationToEdit = config?.quotations.find(q => q.quotationId.toLowerCase() === quotationId.toLowerCase());
+  const quotationToEdit = config?.quotations.find(q => q.quotationId?.toLowerCase() === quotationId?.toLowerCase());
 
   const form = useForm<QuotationFormData>({
     resolver: zodResolver(formSchema),
@@ -283,7 +283,7 @@ export default function EditQuotationPage() {
           partialPaymentAmount = watchedValues.partialPaymentValue;
       }
   }
-  const amountDue = total - partialPaymentAmount;
+  const balance = total - partialPaymentAmount;
 
   const handlePreview = async () => {
     const isValid = await form.trigger();
@@ -755,7 +755,7 @@ export default function EditQuotationPage() {
                             <Separator />
                             <div className="flex justify-between font-bold text-lg pt-2 text-primary">
                                 <span>Balance</span>
-                                <span>{formatCurrency(amountDue)}</span>
+                                <span>{formatCurrency(balance)}</span>
                             </div>
                         </>
                     )}
