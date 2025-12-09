@@ -37,7 +37,7 @@ const designSettingsSchema = z.object({
   headerImageOpacity: z.number().min(0).max(1).optional(),
   footerImage: z.string().optional(),
   footerImageOpacity: z.number().min(0).max(1).optional(),
-  backgroundImage: z.union([z.string(), z.object({src: z.string()})]).optional(),
+  backgroundImage: z.union([z.string(), z.object({src: z.string(), name: z.string()})]).optional(),
   backgroundImageOpacity: z.number().min(0).max(1).optional(),
   watermarkText: z.string().optional(),
   watermarkColor: z.string().optional(),
@@ -244,7 +244,7 @@ function SettingsPanel({ form, documentType, onSubmit, returnUrl, documentData }
                                                     type="button"
                                                     className={cn(
                                                         "aspect-square rounded-md overflow-hidden border-2 transition-all",
-                                                        (selectedBackgroundImage as StaticImageData)?.src === image.src.src ? 'border-primary ring-2 ring-primary' : 'border-transparent hover:border-primary/50'
+                                                        (selectedBackgroundImage as StaticImageData)?.src === image.src ? 'border-primary ring-2 ring-primary' : 'border-transparent hover:border-primary/50'
                                                     )}
                                                     onClick={() => form.setValue('backgroundImage', image)}
                                                 >
@@ -514,8 +514,17 @@ function DocumentDesignPage() {
         const watermarkSelection = watchedValues.watermarkText;
         const isAuto = watermarkSelection === 'AUTO';
         const docStatus = document?.status?.toUpperCase() || '';
-        const watermarkText = isAuto ? docStatus : (watermarkSelection === 'CUSTOM' ? '' : watermarkSelection);
-        const watermarkColor = isAuto ? (statusColors[docStatus] || statusColors.DEFAULT) : watchedValues.watermarkColor;
+        
+        let watermarkText: string | undefined = watermarkSelection;
+        if (isAuto) {
+            watermarkText = docStatus;
+        } else if (watermarkSelection === 'CUSTOM') {
+            watermarkText = ''; // Let the custom input handle it, but don't show the word 'CUSTOM'
+        }
+
+        const watermarkColor = isAuto 
+            ? (statusColors[docStatus] || statusColors.DEFAULT) 
+            : watchedValues.watermarkColor;
 
         return {
             logo: watchedValues.logo,
@@ -545,7 +554,7 @@ function DocumentDesignPage() {
             showHeader: watchedValues.showHeader,
             showFooter: watchedValues.showFooter,
         }
-    }, [watchedValues, document]);
+    }, [watchedValues, document, statusColors]);
 
     const getDefaultTemplate = useCallback((type: 'invoice' | 'quotation'): Partial<DesignSettings> => {
         if (!config?.profile) return {};
