@@ -79,7 +79,7 @@ type NewCustomerFormData = z.infer<typeof NewCustomerFormSchema>;
 
 export default function NewInvoicePage() {
   const { config, addCustomer, addInvoice } = useBrandsoft();
-  const { setFormData, getFormData } = useFormState();
+  const { setFormData, getFormData } = useFormState('newInvoice');
   const router = useRouter();
   const { toast } = useToast();
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
@@ -760,6 +760,8 @@ export default function NewInvoicePage() {
     </div>
   );
 }
+    
+
     
 
     

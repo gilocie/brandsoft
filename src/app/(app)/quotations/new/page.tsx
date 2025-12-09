@@ -80,7 +80,7 @@ type NewCustomerFormData = z.infer<typeof NewCustomerFormSchema>;
 
 export default function NewQuotationPage() {
   const { config, addCustomer, addQuotation } = useBrandsoft();
-  const { setFormData } = useFormState();
+  const { setFormData } = useFormState('newQuotation');
   const router = useRouter();
   const { toast } = useToast();
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
@@ -123,8 +123,11 @@ export default function NewQuotationPage() {
   }, []); // Empty dependency array ensures this runs only once on the client
 
   useEffect(() => {
-    setFormData(watchedValues);
-  }, [watchedValues, setFormData]);
+    const subscription = form.watch((value) => {
+      setFormData(value);
+    });
+    return () => subscription.unsubscribe();
+  }, [form, setFormData]);
 
   const newCustomerForm = useForm<NewCustomerFormData>({
     resolver: zodResolver(NewCustomerFormSchema),
@@ -749,5 +752,7 @@ export default function NewQuotationPage() {
     </div>
   );
 }
+
+    
 
     

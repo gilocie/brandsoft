@@ -23,8 +23,10 @@ export function useFormState(formKey: string = 'default') {
 
   const handleFormChange = useCallback((data: any) => {
     try {
-      const sessionData = JSON.stringify(data);
-      sessionStorage.setItem(formKey, sessionData);
+      if (typeof window !== 'undefined') {
+        const sessionData = JSON.stringify(data);
+        sessionStorage.setItem(formKey, sessionData);
+      }
       setStoreData(formKey, data);
     } catch (e) {
       console.error("Could not stringify or set form data in session storage", e);
@@ -47,3 +49,5 @@ export function useFormState(formKey: string = 'default') {
 
   return { setFormData: handleFormChange, getFormData: getStoredFormData };
 }
+
+    
