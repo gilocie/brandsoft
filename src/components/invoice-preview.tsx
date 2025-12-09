@@ -401,7 +401,7 @@ export function InvoicePreview({
                                         </div>
                                     )}
                                     
-                                    <div className="mt-4 flex items-center justify-between p-3 rounded-sm">
+                                     <div className="mt-4 flex items-center justify-between p-3 rounded-md bg-primary text-primary-foreground">
                                         <span className="font-bold text-lg">Total</span>
                                         <span className="font-bold text-xl">{formatCurrency(total)}</span>
                                     </div>
@@ -412,12 +412,9 @@ export function InvoicePreview({
                                                 <span>Payment Made</span>
                                                 <span className="font-bold">- {formatCurrency(partialPaymentAmount)}</span>
                                             </div>
-                                             <div 
-                                                className="mt-4 flex items-center justify-between p-3 rounded-sm shadow-sm" 
-                                                style={{backgroundColor: design.headerColor}}
-                                            >
-                                                <span className="font-bold text-white text-lg">Balance</span>
-                                                <span className="font-bold text-white text-xl">{formatCurrency(amountDue)}</span>
+                                             <div className="mt-4 flex items-center justify-between p-3 rounded-md bg-primary text-primary-foreground">
+                                                <span className="font-bold text-lg">Balance</span>
+                                                <span className="font-bold text-xl">{formatCurrency(amountDue)}</span>
                                             </div>
                                         </>
                                     )}
