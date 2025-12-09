@@ -161,15 +161,17 @@ const ImageUploader = ({
     );
 };
 
-const WATERMARK_PRESETS = ['PAID', 'DRAFT', 'PENDING', 'OVERDUE', 'CANCELED', 'CUSTOM'];
-
-function SettingsPanel({ form, documentType, onSubmit, returnUrl }: {
+function SettingsPanel({ form, documentType, onSubmit, returnUrl, documentData }: {
   form: any,
   documentType: string | null,
   onSubmit: (data: any) => void,
-  returnUrl: string
+  returnUrl: string,
+  documentData: Invoice | Quotation | null,
 }) {
-  const [customWatermark, setCustomWatermark] = useState(form.getValues('watermarkText') && !WATERMARK_PRESETS.includes(form.getValues('watermarkText')));
+  const initialWatermark = documentData?.status || form.getValues('watermarkText');
+  const allWatermarkPresets = ['PAID', 'DRAFT', 'PENDING', 'OVERDUE', 'CANCELED', 'SENT', 'ACCEPTED', 'DECLINED'];
+  const [customWatermark, setCustomWatermark] = useState(initialWatermark && !allWatermarkPresets.includes(initialWatermark));
+
   const { setFormData } = useFormState('designFormData');
   const [imagePage, setImagePage] = useState(0);
   const imagesPerPage = 9;
@@ -198,6 +200,15 @@ function SettingsPanel({ form, documentType, onSubmit, returnUrl }: {
     imagePage * imagesPerPage,
     (imagePage + 1) * imagesPerPage
   );
+  
+  const watermarkPresets = useMemo(() => {
+    const presets = new Set<string>();
+    if (documentData?.status) {
+        presets.add(documentData.status);
+    }
+    presets.add('CUSTOM');
+    return Array.from(presets);
+  }, [documentData]);
 
 
   return (
@@ -334,7 +345,7 @@ function SettingsPanel({ form, documentType, onSubmit, returnUrl }: {
                                             <div className="space-y-1"><FormLabel className="text-xs">Watermark Text</FormLabel>
                                                 <Select onValueChange={handleWatermarkPresetChange} defaultValue={customWatermark ? 'CUSTOM' : form.getValues('watermarkText') || ''}>
                                                     <SelectTrigger className="w-full h-8 text-xs"><SelectValue placeholder="Select preset or custom" /></SelectTrigger>
-                                                    <SelectContent>{WATERMARK_PRESETS.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+                                                    <SelectContent>{watermarkPresets.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
                                                 </Select>
                                             </div>
                                         {customWatermark && (
@@ -706,6 +717,7 @@ function DocumentDesignPage() {
                     documentType={documentType} 
                     onSubmit={onSubmit} 
                     returnUrl={returnUrl}
+                    documentData={finalDocumentData}
                 />
             </aside>
 

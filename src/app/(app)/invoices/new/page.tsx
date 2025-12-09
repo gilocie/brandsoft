@@ -80,7 +80,7 @@ type NewCustomerFormData = z.infer<typeof NewCustomerFormSchema>;
 
 export default function NewInvoicePage() {
   const { config, addCustomer, addInvoice, saveConfig } = useBrandsoft();
-  const { setFormData, getFormData } = useFormState('newInvoice');
+  const { setFormData } = useFormState('newDocumentData');
   const router = useRouter();
   const { toast } = useToast();
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
@@ -115,32 +115,21 @@ export default function NewInvoicePage() {
   const watchedValues = form.watch();
 
   useEffect(() => {
+    // Set dates only on the client side to avoid hydration mismatch
+    form.reset({
+      ...form.getValues(),
+      invoiceDate: new Date(),
+      dueDate: new Date(new Date().setDate(new Date().getDate() + 30)),
+      notes: config?.profile?.paymentDetails,
+    })
+  }, []); // Empty dependency array ensures this runs only once on the client
+
+  useEffect(() => {
     const subscription = form.watch((value) => {
         setFormData(value);
     });
     return () => subscription.unsubscribe();
   }, [form, setFormData]);
-
-  useEffect(() => {
-    const storedData = getFormData();
-    let resetData: Partial<InvoiceFormData> = {
-        notes: config?.profile?.paymentDetails,
-    };
-
-    if (storedData && Object.keys(storedData).length > 0) {
-        resetData = {
-            ...resetData,
-            ...storedData,
-            invoiceDate: storedData.invoiceDate ? new Date(storedData.invoiceDate) : new Date(),
-            dueDate: storedData.dueDate ? new Date(storedData.dueDate) : new Date(new Date().setDate(new Date().getDate() + 30)),
-        };
-    } else {
-        resetData.invoiceDate = new Date();
-        resetData.dueDate = new Date(new Date().setDate(new Date().getDate() + 30));
-    }
-    
-    form.reset(resetData as InvoiceFormData);
-  }, []);
 
   const newCustomerForm = useForm<NewCustomerFormData>({
     resolver: zodResolver(NewCustomerFormSchema),
@@ -781,7 +770,7 @@ export default function NewInvoicePage() {
             <InvoicePreview
                 config={config}
                 customer={config?.customers.find(c => c.id === watchedValues.customerId) || null}
-                invoiceData={watchedValues}
+                invoiceData={{...watchedValues, status: watchedValues.status || 'Draft' }}
             />
           </div>
           <DialogFooter>

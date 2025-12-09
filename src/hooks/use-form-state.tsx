@@ -24,8 +24,12 @@ export function useFormState(formKey: string = 'default') {
   const handleFormChange = useCallback((data: any) => {
     try {
       if (typeof window !== 'undefined') {
-        const sessionData = JSON.stringify(data);
-        sessionStorage.setItem(formKey, sessionData);
+        if(data === null) {
+          sessionStorage.removeItem(formKey);
+        } else {
+          const sessionData = JSON.stringify(data);
+          sessionStorage.setItem(formKey, sessionData);
+        }
       }
       setStoreData(formKey, data);
     } catch (e) {
@@ -49,5 +53,3 @@ export function useFormState(formKey: string = 'default') {
 
   return { setFormData: handleFormChange, getFormData: getStoredFormData };
 }
-
-    

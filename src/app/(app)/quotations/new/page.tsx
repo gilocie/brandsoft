@@ -81,7 +81,7 @@ type NewCustomerFormData = z.infer<typeof NewCustomerFormSchema>;
 
 export default function NewQuotationPage() {
   const { config, addCustomer, addQuotation, saveConfig } = useBrandsoft();
-  const { setFormData } = useFormState('newQuotation');
+  const { setFormData } = useFormState('newDocumentData');
   const router = useRouter();
   const { toast } = useToast();
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
@@ -414,8 +414,6 @@ export default function NewQuotationPage() {
                         <SelectContent>
                           <SelectItem value="Draft">Draft</SelectItem>
                           <SelectItem value="Sent">Sent</SelectItem>
-                          <SelectItem value="Accepted">Accepted</SelectItem>
-                          <SelectItem value="Declined">Declined</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -772,7 +770,7 @@ export default function NewQuotationPage() {
             <QuotationPreview
                 config={config}
                 customer={config?.customers.find(c => c.id === watchedValues.customerId) || null}
-                quotationData={watchedValues}
+                quotationData={{...watchedValues, status: watchedValues.status || 'Draft' }}
             />
           </div>
           <DialogFooter>
