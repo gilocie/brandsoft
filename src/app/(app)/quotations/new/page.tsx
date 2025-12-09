@@ -53,7 +53,7 @@ const formSchema = z.object({
   validUntil: z.date({
     required_error: "A validity date is required.",
   }),
-  status: z.enum(['Draft', 'Sent', 'Accepted', 'Declined']),
+  status: z.enum(['Draft', 'Sent', 'Accepted', 'Declined', 'Canceled']),
   currency: z.string().min(1, 'Currency is required'),
   lineItems: z.array(lineItemSchema).min(1, 'At least one line item is required.'),
   notes: z.string().optional(),
@@ -412,8 +412,11 @@ export default function NewQuotationPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="Draft">Draft</SelectItem>
-                          <SelectItem value="Sent">Sent</SelectItem>
+                            <SelectItem value="Draft">Draft</SelectItem>
+                            <SelectItem value="Sent">Sent</SelectItem>
+                            <SelectItem value="Accepted">Accepted</SelectItem>
+                            <SelectItem value="Declined">Declined</SelectItem>
+                            <SelectItem value="Canceled">Canceled</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -785,4 +788,5 @@ export default function NewQuotationPage() {
     
 
     
+
 
