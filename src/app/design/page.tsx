@@ -131,7 +131,7 @@ const ImageUploader = ({
                         <div>
                             <Input type="file" accept="image/*" className="hidden" ref={inputRef} onChange={handleImageChange} />
                             <Button type="button" variant="outline" size="sm" onClick={() => inputRef.current?.click()} className="w-full h-8 text-xs">
-                                <UploadCloud className="mr-2 h-3 w-3" /> {field.value ? 'Change' : 'Upload'}
+                                <UploadCloud className="mr-2 h-3 w-3" /> {fieldValue ? 'Change' : 'Upload'}
                             </Button>
                         </div>
                     </FormControl>
@@ -236,9 +236,9 @@ function SettingsPanel({ form, documentType, onSubmit, returnUrl }: {
                                                     type="button"
                                                     className={cn(
                                                         "aspect-square rounded-md overflow-hidden border-2 transition-all",
-                                                        selectedBackgroundImage === image.src ? 'border-primary ring-2 ring-primary' : 'border-transparent hover:border-primary/50'
+                                                        selectedBackgroundImage === image.src.src ? 'border-primary ring-2 ring-primary' : 'border-transparent hover:border-primary/50'
                                                     )}
-                                                    onClick={() => form.setValue('backgroundImage', image.src)}
+                                                    onClick={() => form.setValue('backgroundImage', image.src.src)}
                                                 >
                                                     <NextImage src={image.src} alt={image.name} className="w-full h-full object-cover" width={100} height={100} unoptimized />
                                                 </button>
