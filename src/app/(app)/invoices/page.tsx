@@ -200,7 +200,7 @@ export default function InvoicesPage() {
             setIsViewOpen(true);
             break;
         case 'edit':
-            router.push(`/invoices/${invoice.invoiceId}/edit`);
+            router.push(`/invoices/${invoice.invoiceId.toLowerCase()}/edit`);
             break;
         case 'delete':
             setIsDeleteOpen(true);
@@ -239,7 +239,9 @@ export default function InvoicesPage() {
     }
   };
 
-  const selectedCustomer = config?.customers.find(c => c.name === selectedInvoice?.customer) || null;
+  const currentPreviewInvoice = config?.invoices.find(inv => inv.invoiceId === selectedInvoice?.invoiceId);
+  const selectedCustomer = config?.customers.find(c => c.name === currentPreviewInvoice?.customer) || null;
+
 
   return (
     <div className="container mx-auto space-y-6">
@@ -304,12 +306,12 @@ export default function InvoicesPage() {
             <DialogTitle>Invoice Preview</DialogTitle>
           </DialogHeader>
           <div className="h-full overflow-y-auto">
-            {selectedInvoice && (
+            {currentPreviewInvoice && (
               <InvoicePreview
                 config={config}
                 customer={selectedCustomer}
-                invoiceData={selectedInvoice}
-                invoiceId={selectedInvoice.invoiceId}
+                invoiceData={currentPreviewInvoice}
+                invoiceId={currentPreviewInvoice.invoiceId}
               />
             )}
           </div>

@@ -207,7 +207,7 @@ export default function QuotationsPage() {
             setIsViewOpen(true);
             break;
         case 'edit':
-            router.push(`/quotations/${quotation.quotationId}/edit`);
+            router.push(`/quotations/${quotation.quotationId.toLowerCase()}/edit`);
             break;
         case 'delete':
             setIsDeleteOpen(true);
@@ -256,7 +256,8 @@ export default function QuotationsPage() {
     }
   };
 
-  const selectedCustomer = config?.customers.find(c => c.name === selectedQuotation?.customer) || null;
+  const currentPreviewQuotation = config?.quotations.find(q => q.quotationId === selectedQuotation?.quotationId);
+  const selectedCustomer = config?.customers.find(c => c.name === currentPreviewQuotation?.customer) || null;
 
   return (
     <div className="container mx-auto space-y-6">
@@ -317,12 +318,12 @@ export default function QuotationsPage() {
             <DialogTitle>Quotation Preview</DialogTitle>
           </DialogHeader>
           <div className="h-full overflow-y-auto">
-            {selectedQuotation && (
+            {currentPreviewQuotation && (
               <QuotationPreview
                 config={config}
                 customer={selectedCustomer}
-                quotationData={selectedQuotation}
-                quotationId={selectedQuotation.quotationId}
+                quotationData={currentPreviewQuotation}
+                quotationId={currentPreviewQuotation.quotationId}
               />
             )}
           </div>
@@ -386,9 +387,3 @@ export default function QuotationsPage() {
     </div>
   );
 }
-
-    
-
-    
-
-
