@@ -4,7 +4,6 @@
 import React, { useMemo } from 'react';
 import { BrandsoftConfig, Customer, Invoice, LineItem, DesignSettings } from '@/hooks/use-brandsoft';
 import { format, parseISO, isValid } from "date-fns";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { cn } from '@/lib/utils';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -34,12 +33,13 @@ export interface InvoicePreviewProps {
     invoiceId?: string;
     forPdf?: boolean;
     designOverride?: DesignSettings;
+    pageNumber?: number; // for multi-page PDF rendering
 }
 
-const InvoiceStatusWatermark = ({ status, design }: { status?: string, design: DesignSettings }) => {
+const Watermark = ({ status, design }: { status?: string, design: DesignSettings }) => {
     if (!status) return null;
 
-    const hexToRgb = (hex: string) => {
+     const hexToRgb = (hex: string) => {
         let r = 0, g = 0, b = 0;
         if (!hex) return { r, g, b };
         if (hex.length === 4) {
@@ -71,6 +71,47 @@ const InvoiceStatusWatermark = ({ status, design }: { status?: string, design: D
     );
 };
 
+const Background = ({ design }: { design: DesignSettings }) => {
+    if (!design.backgroundImage) return null;
+    return <img src={design.backgroundImage} className="absolute inset-0 w-full h-full object-cover z-0" style={{opacity: design.backgroundImageOpacity}} alt="background"/>
+};
+
+const Header = ({ design, config }: { design: DesignSettings, config: BrandsoftConfig }) => {
+    if (!design.showHeader) return null;
+    if (design.headerImage) {
+        return (
+            <div className="w-full h-auto flex-shrink-0">
+                 <img src={design.headerImage} className="w-full h-full object-cover z-10" style={{maxHeight: '60px', opacity: design.headerImageOpacity}} alt="header"/>
+            </div>
+        );
+    }
+    return <div className="w-full flex-shrink-0 relative z-10" style={{ backgroundColor: design.headerColor, height: '35px' }}></div>
+};
+
+const Footer = ({ design, pageNumber, totalPages }: { design: DesignSettings, pageNumber?: number, totalPages?: number }) => {
+    if (!design.showFooter) return null;
+    return (
+        <footer className="w-full relative z-10 mt-auto flex-shrink-0">
+            {design.footerImage ? (
+                <img src={design.footerImage} className="w-full h-auto object-cover z-10" style={{maxHeight: '60px', opacity: design.footerImageOpacity}} alt="footer"/>
+            ) : (
+               <div className="w-full flex items-center justify-center text-white py-4" style={{ backgroundColor: design.footerColor }}>
+                    <div className="text-center">
+                         {design.showBrandsoftFooter && (
+                            <p className="text-[10px]">Created by <span className="font-bold">BrandSoft</span></p>
+                        )}
+                        {design.footerContent && (
+                            <p className="text-xs mt-1">{design.footerContent}</p>
+                        )}
+                        {totalPages && totalPages > 1 && (
+                            <p className="text-[10px] mt-1">Page {pageNumber} of {totalPages}</p>
+                        )}
+                    </div>
+                </div>
+            )}
+        </footer>
+    );
+};
 
 export function InvoicePreview({ 
     config, 
@@ -78,7 +119,8 @@ export function InvoicePreview({
     invoiceData, 
     invoiceId, 
     forPdf = false, 
-    designOverride 
+    designOverride,
+    pageNumber = 1
 }: InvoicePreviewProps) {
     if (!config || !customer || !invoiceData) {
         return (
@@ -176,8 +218,7 @@ export function InvoicePreview({
         }
     } else if (invoiceData.tax) {
         taxAmount = invoiceData.tax;
-        // Estimate rate if not provided, otherwise show flat amount
-        if (invoiceData.subtotal && invoiceData.tax) {
+        if (invoiceData.subtotal && invoiceData.tax && invoiceData.subtotal > 0) {
              taxRateDisplay = `${((invoiceData.tax / invoiceData.subtotal) * 100).toFixed(2)}%`;
         } else {
              taxRateDisplay = formatCurrency(invoiceData.tax);
@@ -197,12 +238,9 @@ export function InvoicePreview({
     const invoiceDateStr = formatDateSafe(invoiceData.invoiceDate || invoiceData.date);
     const dueDateStr = formatDateSafe(invoiceData.dueDate || invoiceData.date);
     
-    const taxName = invoiceData.taxName || 'Tax';
+    const taxName = invoiceData.taxName || 'VAT';
     
     const watermarkText = design.watermarkText || invoiceData.status;
-
-    const accentColor = design.headerColor;
-    const footerColor = design.footerColor;
 
     const Wrapper = ({ children }: { children: React.ReactNode }) => {
         if (forPdf) return <>{children}</>;
@@ -227,23 +265,13 @@ export function InvoicePreview({
                 )}
                 style={{ backgroundColor: design.backgroundColor || '#FFFFFF', color: design.textColor || '#000000' }}
             >
-                {/* Backgrounds */}
-                {design.backgroundImage && (
-                    <img src={design.backgroundImage} className="absolute inset-0 w-full h-full object-cover z-0" style={{opacity: design.backgroundImageOpacity}} alt="background"/>
-                )}
-                
-                {invoiceData.status && watermarkText && <InvoiceStatusWatermark status={watermarkText} design={design} />}
+                <Background design={design} />
+                {invoiceData.status && watermarkText && <Watermark status={watermarkText} design={design} />}
                 
                 <div className='relative z-10 flex flex-col flex-grow'>
                     
-                    {design.showHeader && design.headerImage && (
-                        <div className="w-full h-auto flex-shrink-0">
-                             <img src={design.headerImage} className="w-full h-full object-cover z-10" style={{maxHeight: '60px', opacity: design.headerImageOpacity}} alt="header"/>
-                        </div>
-                    )}
-                    {design.showHeader && !design.headerImage && (
-                        <div className="w-full flex-shrink-0 relative z-10" style={{ backgroundColor: accentColor, height: '35px' }}></div>
-                    )}
+                    <Header design={design} config={config} />
+                    
                     <div className='p-[12mm] flex-grow flex flex-col'>
 
                         <header className="flex justify-between items-start relative z-10">
@@ -251,7 +279,7 @@ export function InvoicePreview({
                                 {design.showLogo && displayLogo && (
                                     <img src={displayLogo} alt="Logo" className="h-20 w-auto object-contain" />
                                 )}
-                                {design.showInvoiceTitle && <h1 className="text-4xl font-bold tracking-tight ml-2" style={{ color: accentColor }}>Invoice</h1>}
+                                {design.showInvoiceTitle && <h1 className="text-4xl font-bold tracking-tight ml-2" style={{ color: design.headerColor }}>Invoice</h1>}
                             </div>
                             {design.showBusinessAddress && (
                                 <div className="text-right text-sm leading-relaxed ml-10" style={{color: design.textColor ? design.textColor : 'inherit'}}>
@@ -362,7 +390,7 @@ export function InvoicePreview({
                                     
                                     <div 
                                         className="mt-4 flex items-center justify-between p-3 rounded-sm shadow-sm" 
-                                        style={{backgroundColor: accentColor}}
+                                        style={{backgroundColor: design.headerColor}}
                                     >
                                         <span className="font-bold text-white text-lg">Total</span>
                                         <span className="font-bold text-white text-xl">{formatCurrency(total)}</span>
@@ -371,23 +399,7 @@ export function InvoicePreview({
                             </section>
                         </main>
                     </div>
-
-                    <footer className="w-full relative z-10 mt-auto flex-shrink-0">
-                        {design.showFooter && design.footerImage ? (
-                            <img src={design.footerImage} className="w-full h-auto object-cover z-10" style={{maxHeight: '60px', opacity: design.footerImageOpacity}} alt="footer"/>
-                        ) : (
-                           design.showFooter && <div className="w-full flex items-center justify-center text-white py-4" style={{ backgroundColor: footerColor }}>
-                                <div className="text-center">
-                                     {design.showBrandsoftFooter && (
-                                        <p className="text-[10px]">Created by <span className="font-bold">BrandSoft</span></p>
-                                    )}
-                                    {design.footerContent && (
-                                        <p className="text-xs mt-1">{design.footerContent}</p>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                    </footer>
+                    <Footer design={design} pageNumber={pageNumber} totalPages={1} />
                 </div>
             </div>
         </Wrapper>
@@ -395,62 +407,74 @@ export function InvoicePreview({
 }
 
 export const downloadInvoiceAsPdf = async (props: InvoicePreviewProps) => {
-    const container = document.createElement('div');
-    container.id = `pdf-container-${props.invoiceId}`;
-    container.style.position = 'fixed';
-    container.style.left = '-9999px';
-    container.style.top = '0';
-    container.style.width = '210mm';
-    document.body.appendChild(container);
+    const tempContainer = document.createElement('div');
+    tempContainer.id = `pdf-container-${props.invoiceId}`;
+    tempContainer.style.position = 'fixed';
+    tempContainer.style.left = '-9999px';
+    tempContainer.style.top = '0';
+    document.body.appendChild(tempContainer);
 
-    const root = createRoot(container);
+    const root = createRoot(tempContainer);
+
+    // Initial render to measure content height
     root.render(<InvoicePreview {...props} forPdf={true} />);
+    await new Promise(resolve => setTimeout(resolve, 500)); 
 
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    const invoiceElement = container.querySelector(`#invoice-preview-${props.invoiceId}`) as HTMLElement;
-    if (!invoiceElement) {
+    const contentElement = tempContainer.querySelector(`#invoice-preview-${props.invoiceId} > div > div > main`) as HTMLElement;
+    if (!contentElement) {
+        console.error("Could not find main content for measurement.");
         root.unmount();
-        document.body.removeChild(container);
+        document.body.removeChild(tempContainer);
         return;
     }
+
+    const A4_HEIGHT_MM = 297;
+    const PADDING_MM = 24; // 12mm top, 12mm bottom
+    const HEADER_FOOTER_HEIGHT_MM = 30; // Approx height for header/footer elements outside main content area
+    const contentHeightMm = contentElement.offsetHeight * (210 / 794); // Convert px to mm
+    const availablePageHeightMm = A4_HEIGHT_MM - PADDING_MM - HEADER_FOOTER_HEIGHT_MM;
+    const totalPages = Math.ceil(contentHeightMm / availablePageHeightMm);
     
-    const canvas = await html2canvas(invoiceElement, {
-        scale: 2, 
-        useCORS: true,
-        allowTaint: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        windowWidth: 794,
-    });
+    const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+
+    for (let i = 1; i <= totalPages; i++) {
+        const pageContainer = document.createElement('div');
+        tempContainer.appendChild(pageContainer);
+        const pageRoot = createRoot(pageContainer);
+
+        pageRoot.render(<InvoicePreview {...props} forPdf={true} pageNumber={i} />);
+        
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        const invoiceElement = pageContainer.querySelector(`#invoice-preview-${props.invoiceId}`) as HTMLElement;
+        const mainContentEl = invoiceElement.querySelector('main') as HTMLElement;
+        if (mainContentEl) {
+            const pageOffset = -(i - 1) * availablePageHeightMm;
+            mainContentEl.style.transform = `translateY(${pageOffset}px)`;
+        }
+
+        const canvas = await html2canvas(invoiceElement, {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            logging: false,
+            backgroundColor: '#ffffff',
+            windowWidth: 794,
+        });
+
+        if (i > 1) {
+            pdf.addPage();
+        }
+        
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pdfWidth, pdfHeight);
+
+        pageRoot.unmount();
+        tempContainer.removeChild(pageContainer);
+    }
 
     root.unmount();
-    document.body.removeChild(container);
-
-    const pdf = new jsPDF({
-        orientation: 'p',
-        unit: 'mm',
-        format: 'a4'
-    });
-
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-    const imgWidth = pdfWidth;
-    const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-
-    let heightLeft = imgHeight;
-    let position = 0;
-
-    pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight);
-    heightLeft -= pdfHeight;
-
-    while (heightLeft > 0) {
-        position -= pdfHeight;
-        pdf.addPage();
-        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pdfHeight;
-    }
+    document.body.removeChild(tempContainer);
     pdf.save(`Invoice-${props.invoiceId}.pdf`);
 };
-
-    
