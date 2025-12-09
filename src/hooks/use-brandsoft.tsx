@@ -183,6 +183,11 @@ export type BrandsoftConfig = {
   currencies: string[];
 };
 
+interface NumberingOptions {
+  prefix?: string;
+  startNumber?: number;
+}
+
 interface BrandsoftContextType {
   isActivated: boolean | null;
   isConfigured: boolean | null;
@@ -196,10 +201,10 @@ interface BrandsoftContextType {
   addProduct: (product: Omit<Product, 'id'>) => Product;
   updateProduct: (productId: string, data: Partial<Omit<Product, 'id'>>) => void;
   deleteProduct: (productId: string) => void;
-  addInvoice: (invoice: Omit<Invoice, 'invoiceId'>) => Invoice;
+  addInvoice: (invoice: Omit<Invoice, 'invoiceId'>, numbering?: NumberingOptions) => Invoice;
   updateInvoice: (invoiceId: string, data: Partial<Omit<Invoice, 'invoiceId'>>) => void;
   deleteInvoice: (invoiceId: string) => void;
-  addQuotation: (quotation: Omit<Quotation, 'quotationId'>) => Quotation;
+  addQuotation: (quotation: Omit<Quotation, 'quotationId'>, numbering?: NumberingOptions) => Quotation;
   updateQuotation: (quotationId: string, data: Partial<Omit<Quotation, 'quotationId'>>) => void;
   deleteQuotation: (quotationId: string) => void;
   addCurrency: (currency: string) => void;
@@ -477,10 +482,11 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       }
   };
   
-  const addInvoice = (invoice: Omit<Invoice, 'invoiceId'>): Invoice => {
+  const addInvoice = (invoice: Omit<Invoice, 'invoiceId'>, numbering?: NumberingOptions): Invoice => {
     if (!config) throw new Error("Config not loaded");
-    const nextNumber = (Number(config.profile.invoiceStartNumber) || 100) + (config.invoices?.length || 0);
-    const prefix = config.profile.invoicePrefix || 'INV-';
+    const startNumber = numbering?.startNumber ?? config.profile.invoiceStartNumber;
+    const prefix = numbering?.prefix ?? config.profile.invoicePrefix;
+    const nextNumber = (Number(startNumber) || 100) + (config.invoices?.length || 0);
     const newInvoice: Invoice = { ...invoice, invoiceId: `${prefix}${nextNumber}` };
     const newConfig = { ...config, invoices: [...(config.invoices || []), newInvoice] };
     saveConfig(newConfig, { redirect: false });
@@ -503,10 +509,11 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       }
   };
   
-   const addQuotation = (quotation: Omit<Quotation, 'quotationId'>): Quotation => {
+   const addQuotation = (quotation: Omit<Quotation, 'quotationId'>, numbering?: NumberingOptions): Quotation => {
     if (!config) throw new Error("Config not loaded");
-    const nextNumber = (Number(config.profile.quotationStartNumber) || 100) + (config.quotations?.length || 0);
-    const prefix = config.profile.quotationPrefix || 'QUO-';
+    const startNumber = numbering?.startNumber ?? config.profile.quotationStartNumber;
+    const prefix = numbering?.prefix ?? config.profile.quotationPrefix;
+    const nextNumber = (Number(startNumber) || 100) + (config.quotations?.length || 0);
     const newQuotation: Quotation = { ...quotation, quotationId: `${prefix}${nextNumber}` };
     const newConfig = { ...config, quotations: [...(config.quotations || []), newQuotation] };
     saveConfig(newConfig, { redirect: false });

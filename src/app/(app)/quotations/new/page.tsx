@@ -142,7 +142,7 @@ export default function NewQuotationPage() {
             status: 'Draft',
             currency: config.profile.defaultCurrency || 'USD',
             lineItems: [{ description: '', quantity: 1, price: 0 }],
-            notes: '',
+            notes: '', // Always start with empty notes
             saveNotesAsDefault: false,
             applyTax: true,
             taxName: 'VAT',
@@ -238,7 +238,13 @@ export default function NewQuotationPage() {
         lineItems: data.lineItems,
     };
     
-    const savedQuotation = addQuotation(newQuotation);
+    const designData = designFormState.getFormData();
+    const numbering = designData ? {
+      prefix: designData.quotationPrefix,
+      startNumber: designData.quotationStartNumber,
+    } : undefined;
+
+    const savedQuotation = addQuotation(newQuotation, numbering);
     
     toast({
         title: "Quotation Saved!",
@@ -840,3 +846,4 @@ export default function NewQuotationPage() {
 }
 
     
+
