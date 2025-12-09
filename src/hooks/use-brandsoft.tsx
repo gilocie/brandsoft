@@ -187,7 +187,7 @@ interface BrandsoftContextType {
   isConfigured: boolean | null;
   config: BrandsoftConfig | null;
   activate: (serial: string) => boolean;
-  saveConfig: (newConfig: BrandsoftConfig, options?: { redirect?: boolean }) => void;
+  saveConfig: (newConfig: BrandsoftConfig, options?: { redirect: boolean }) => void;
   logout: () => void;
   addCustomer: (customer: Omit<Customer, 'id'>) => Customer;
   updateCustomer: (customerId: string, data: Partial<Omit<Customer, 'id'>>) => void;
@@ -478,7 +478,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
   
   const addInvoice = (invoice: Omit<Invoice, 'invoiceId'>): Invoice => {
     if (!config) throw new Error("Config not loaded");
-    const nextNumber = (config.profile.invoiceStartNumber || 100) + (config.invoices?.length || 0);
+    const nextNumber = (Number(config.profile.invoiceStartNumber) || 100) + (config.invoices?.length || 0);
     const prefix = config.profile.invoicePrefix || 'INV-';
     const newInvoice: Invoice = { ...invoice, invoiceId: `${prefix}${nextNumber}` };
     const newConfig = { ...config, invoices: [...(config.invoices || []), newInvoice] };
@@ -504,7 +504,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
   
    const addQuotation = (quotation: Omit<Quotation, 'quotationId'>): Quotation => {
     if (!config) throw new Error("Config not loaded");
-    const nextNumber = (config.profile.quotationStartNumber || 100) + (config.quotations?.length || 0);
+    const nextNumber = (Number(config.profile.quotationStartNumber) || 100) + (config.quotations?.length || 0);
     const prefix = config.profile.quotationPrefix || 'QUO-';
     const newQuotation: Quotation = { ...quotation, quotationId: `${prefix}${nextNumber}` };
     const newConfig = { ...config, quotations: [...(config.quotations || []), newQuotation] };
@@ -535,7 +535,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       }
   };
 
-  const value = {
+  const value: BrandsoftContextType = {
     isActivated,
     isConfigured,
     config,
