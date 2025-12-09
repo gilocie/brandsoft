@@ -207,9 +207,8 @@ export function QuotationPreview({
     const subtotalAfterDiscount = subtotal - discountAmount;
     
     let taxAmount = 0;
-    let taxRateDisplay = '0%';
+    let taxRateDisplay = quotationData.taxValue !== undefined ? `${quotationData.taxValue}%` : '0%';
     if (quotationData.applyTax && quotationData.taxValue) {
-        taxRateDisplay = `${quotationData.taxValue}%`;
         if (quotationData.taxType === 'percentage') {
             taxAmount = subtotalAfterDiscount * (quotationData.taxValue / 100);
         } else {
@@ -218,11 +217,6 @@ export function QuotationPreview({
         }
     } else if (quotationData.tax) {
         taxAmount = quotationData.tax;
-        if (quotationData.subtotal && quotationData.tax && quotationData.subtotal > 0 && quotationData.taxType !== 'flat') {
-             taxRateDisplay = `${quotationData.taxValue}%`;
-        } else {
-             taxRateDisplay = formatCurrency(quotationData.tax);
-        }
     }
 
     const shippingAmount = Number(quotationData.applyShipping && quotationData.shippingValue ? quotationData.shippingValue : (quotationData.shipping || 0));
@@ -297,8 +291,7 @@ export function QuotationPreview({
                                     <div className="w-1/2">
                                         <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Quote For</h3>
                                         <p className="font-bold text-xl">{customer.companyName || customer.name}</p>
-                                        {customer.companyName && <p className="text-sm font-medium">{customer.name}</p>}
-                                        <p className="text-sm mt-1 whitespace-pre-wrap">{customer.address}</p>
+                                        <p className="text-sm mt-1 whitespace-pre-wrap">{customer.companyName ? customer.companyAddress : customer.address}</p>
                                         <p className="text-sm">{customer.email}</p>
                                     </div>
                                 )}
@@ -340,7 +333,7 @@ export function QuotationPreview({
                                                 <div className="w-[20%] pr-2 text-xs text-gray-500">{itemDesc}</div>
                                                 <div className="w-[10%] text-center">{item.quantity}</div>
                                                 <div className="w-[15%] text-right">{formatCurrency(item.price)}</div>
-                                                <div className="w-[10%] text-right">{quotationData.taxValue?.toFixed(1) || 0}%</div>
+                                                <div className="w-[10%] text-right">{taxRateDisplay}</div>
                                                 <div className="w-[15%] text-right font-bold">{formatCurrency(item.quantity * item.price)}</div>
                                             </div>
                                         )
