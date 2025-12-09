@@ -170,26 +170,20 @@ function SettingsPanel({ form, documentType, onSubmit, returnUrl, documentData }
   returnUrl: string,
   documentData: Invoice | Quotation | null,
 }) {
-  const allWatermarkPresets = ['PAID', 'DRAFT', 'PENDING', 'OVERDUE', 'CANCELED', 'SENT', 'ACCEPTED', 'DECLINED'];
-  const initialWatermark = documentData?.status || form.getValues('watermarkText');
-  const [customWatermark, setCustomWatermark] = useState(initialWatermark && !allWatermarkPresets.includes(initialWatermark));
-
   const { setFormData } = useFormState('designFormData');
   const [imagePage, setImagePage] = useState(0);
   const imagesPerPage = 9;
   
+  const watermarkSelection = useWatch({ control: form.control, name: 'watermarkText' });
+  const isCustomWatermark = watermarkSelection === 'CUSTOM';
+  const isAutoWatermark = watermarkSelection === 'AUTO';
+
   const handleWatermarkPresetChange = (value: string) => {
-    if (value === 'CUSTOM') {
-        setCustomWatermark(true);
-        form.setValue('watermarkText', '');
-    } else {
-        setCustomWatermark(false);
-        form.setValue('watermarkText', value);
-    }
+    form.setValue('watermarkText', value);
   }
 
   const handleBack = () => {
-    setFormData(null); // Clear session storage on explicit back navigation
+    setFormData(null);
     router.push(returnUrl);
   };
   
@@ -205,6 +199,7 @@ function SettingsPanel({ form, documentType, onSubmit, returnUrl, documentData }
   
   const watermarkPresets = useMemo(() => {
     const presets = new Set<string>();
+    presets.add('AUTO');
     if (documentData?.status) {
         presets.add(documentData.status);
     }
@@ -251,7 +246,7 @@ function SettingsPanel({ form, documentType, onSubmit, returnUrl, documentData }
                                                         "aspect-square rounded-md overflow-hidden border-2 transition-all",
                                                         (selectedBackgroundImage as StaticImageData)?.src === image.src.src ? 'border-primary ring-2 ring-primary' : 'border-transparent hover:border-primary/50'
                                                     )}
-                                                    onClick={() => form.setValue('backgroundImage', image.src)}
+                                                    onClick={() => form.setValue('backgroundImage', image)}
                                                 >
                                                     <NextImage src={image.src} alt={image.name} className="w-full h-full object-cover" width={100} height={100} unoptimized />
                                                 </button>
@@ -345,19 +340,24 @@ function SettingsPanel({ form, documentType, onSubmit, returnUrl, documentData }
                                         </TabsContent>
                                         <TabsContent value="watermark" className="pt-3 space-y-3">
                                             <div className="space-y-1"><FormLabel className="text-xs">Watermark Text</FormLabel>
-                                                <Select onValueChange={handleWatermarkPresetChange} defaultValue={customWatermark ? 'CUSTOM' : form.getValues('watermarkText') || ''}>
+                                                <Select onValueChange={handleWatermarkPresetChange} value={watermarkSelection}>
                                                     <SelectTrigger className="w-full h-8 text-xs"><SelectValue placeholder="Select preset or custom" /></SelectTrigger>
                                                     <SelectContent>{watermarkPresets.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
                                                 </Select>
                                             </div>
-                                        {customWatermark && (
-                                                <FormField control={form.control} name="watermarkText" render={({ field }) => (
-                                                <FormItem><FormLabel className="text-xs">Custom Text</FormLabel><FormControl><Input placeholder="CONFIDENTIAL" {...field} className="h-8 text-xs" /></FormControl></FormItem>
+                                        {isCustomWatermark && (
+                                            <FormField control={form.control} name="watermarkText" render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="text-xs">Custom Text</FormLabel>
+                                                    <FormControl><Input placeholder="CONFIDENTIAL" {...field} className="h-8 text-xs" /></FormControl>
+                                                </FormItem>
                                             )} />
                                         )}
-                                        <FormField control={form.control} name="watermarkColor" render={({ field }) => (
-                                            <FormItem><FormLabel className="text-xs">Color</FormLabel><FormControl><Input type="color" {...field} value={field.value || '#dddddd'} className="h-8 w-full p-1" /></FormControl></FormItem>
-                                        )} />
+                                        {!isAutoWatermark && (
+                                          <FormField control={form.control} name="watermarkColor" render={({ field }) => (
+                                              <FormItem><FormLabel className="text-xs">Color</FormLabel><FormControl><Input type="color" {...field} value={field.value || '#dddddd'} className="h-8 w-full p-1" /></FormControl></FormItem>
+                                          )} />
+                                        )}
                                             <FormField control={form.control} name="watermarkOpacity" render={({ field }) => (<FormItem><FormLabel className="text-xs">Opacity</FormLabel><FormControl><Slider value={[ (field.value ?? 1) * 100]} onValueChange={(v) => field.onChange(v[0] / 100)} max={100} step={1} /></FormControl></FormItem>)} />
                                             <FormField control={form.control} name="watermarkFontSize" render={({ field }) => (<FormItem><FormLabel className="text-xs">Font Size</FormLabel><FormControl><Slider value={[field.value ?? 96]} onValueChange={(v) => field.onChange(v[0])} min={12} max={200} step={1} /></FormControl></FormItem>)} />
                                             <FormField control={form.control} name="watermarkAngle" render={({ field }) => (<FormItem><FormLabel className="text-xs">Angle</FormLabel><FormControl><Slider value={[field.value ?? 0]} onValueChange={(v) => field.onChange(v[0])} min={-90} max={90} step={5} /></FormControl></FormItem>)} />
@@ -455,7 +455,7 @@ function DocumentDesignPage() {
             footerImageOpacity: 1,
             backgroundImage: '',
             backgroundImageOpacity: 1,
-            watermarkText: '',
+            watermarkText: 'AUTO',
             watermarkColor: '#dddddd',
             watermarkOpacity: 0.05,
             watermarkFontSize: 96,
@@ -497,35 +497,55 @@ function DocumentDesignPage() {
         if (typeof bgValue === 'object' && bgValue.src) return bgValue.src;
         return undefined;
     };
+    
+    const statusColors: Record<string, string> = {
+      PAID: '#22c55e', // green-500
+      PENDING: '#f97316', // orange-500
+      OVERDUE: '#ef4444', // red-500
+      DRAFT: '#a1a1aa', // zinc-400
+      CANCELED: '#64748b', // slate-500
+      SENT: '#3b82f6', // blue-500
+      ACCEPTED: '#22c55e', // green-500
+      DECLINED: '#ef4444', // red-500
+      DEFAULT: '#dddddd',
+    };
 
-    const currentDesignSettings: DesignSettings = useMemo(() => ({
-        logo: watchedValues.logo,
-        backgroundColor: watchedValues.backgroundColor,
-        textColor: watchedValues.textColor,
-        headerImage: watchedValues.headerImage,
-        headerImageOpacity: watchedValues.headerImageOpacity,
-        footerImage: watchedValues.footerImage,
-        footerImageOpacity: watchedValues.footerImageOpacity,
-        backgroundImage: getBackgroundImageSrc(watchedValues.backgroundImage),
-        backgroundImageOpacity: watchedValues.backgroundImageOpacity,
-        watermarkText: watchedValues.watermarkText,
-        watermarkColor: watchedValues.watermarkColor,
-        watermarkOpacity: watchedValues.watermarkOpacity,
-        watermarkFontSize: watchedValues.watermarkFontSize,
-        watermarkAngle: watchedValues.watermarkAngle,
-        headerColor: watchedValues.headerColor,
-        footerColor: watchedValues.footerColor,
-        showLogo: watchedValues.showLogo,
-        showBusinessAddress: watchedValues.showBusinessAddress,
-        showInvoiceTitle: watchedValues.showInvoiceTitle,
-        showBillingAddress: watchedValues.showBillingAddress,
-        showDates: watchedValues.showDates,
-        showPaymentDetails: watchedValues.showPaymentDetails,
-        showNotes: watchedValues.showNotes,
-        showBrandsoftFooter: watchedValues.showBrandsoftFooter,
-        showHeader: watchedValues.showHeader,
-        showFooter: watchedValues.showFooter,
-    }), [watchedValues]);
+    const currentDesignSettings: DesignSettings = useMemo(() => {
+        const watermarkSelection = watchedValues.watermarkText;
+        const isAuto = watermarkSelection === 'AUTO';
+        const docStatus = document?.status?.toUpperCase() || '';
+        const watermarkText = isAuto ? docStatus : (watermarkSelection === 'CUSTOM' ? '' : watermarkSelection);
+        const watermarkColor = isAuto ? (statusColors[docStatus] || statusColors.DEFAULT) : watchedValues.watermarkColor;
+
+        return {
+            logo: watchedValues.logo,
+            backgroundColor: watchedValues.backgroundColor,
+            textColor: watchedValues.textColor,
+            headerImage: watchedValues.headerImage,
+            headerImageOpacity: watchedValues.headerImageOpacity,
+            footerImage: watchedValues.footerImage,
+            footerImageOpacity: watchedValues.footerImageOpacity,
+            backgroundImage: getBackgroundImageSrc(watchedValues.backgroundImage),
+            backgroundImageOpacity: watchedValues.backgroundImageOpacity,
+            watermarkText: watermarkText,
+            watermarkColor: watermarkColor,
+            watermarkOpacity: watchedValues.watermarkOpacity,
+            watermarkFontSize: watchedValues.watermarkFontSize,
+            watermarkAngle: watchedValues.watermarkAngle,
+            headerColor: watchedValues.headerColor,
+            footerColor: watchedValues.footerColor,
+            showLogo: watchedValues.showLogo,
+            showBusinessAddress: watchedValues.showBusinessAddress,
+            showInvoiceTitle: watchedValues.showInvoiceTitle,
+            showBillingAddress: watchedValues.showBillingAddress,
+            showDates: watchedValues.showDates,
+            showPaymentDetails: watchedValues.showPaymentDetails,
+            showNotes: watchedValues.showNotes,
+            showBrandsoftFooter: watchedValues.showBrandsoftFooter,
+            showHeader: watchedValues.showHeader,
+            showFooter: watchedValues.showFooter,
+        }
+    }, [watchedValues, document]);
 
     const getDefaultTemplate = useCallback((type: 'invoice' | 'quotation'): Partial<DesignSettings> => {
         if (!config?.profile) return {};
@@ -584,7 +604,7 @@ function DocumentDesignPage() {
             footerImageOpacity: existingDesign.footerImageOpacity ?? defaultTemplate.footerImageOpacity ?? 1,
             backgroundImage: existingDesign.backgroundImage ?? defaultTemplate.backgroundImage ?? brand.backgroundImage ?? '',
             backgroundImageOpacity: existingDesign.backgroundImageOpacity ?? defaultTemplate.backgroundImageOpacity ?? 1,
-            watermarkText: existingDesign.watermarkText ?? defaultTemplate.watermarkText ?? (doc as any)?.status,
+            watermarkText: existingDesign.watermarkText ?? defaultTemplate.watermarkText ?? 'AUTO',
             watermarkColor: existingDesign.watermarkColor ?? defaultTemplate.watermarkColor ?? '#dddddd',
             watermarkOpacity: existingDesign.watermarkOpacity ?? defaultTemplate.watermarkOpacity ?? 0.05,
             watermarkFontSize: existingDesign.watermarkFontSize ?? defaultTemplate.watermarkFontSize ?? 96,
@@ -783,3 +803,4 @@ export default dynamic(() => Promise.resolve(DocumentDesignPage), {
     ssr: false,
     loading: () => <div className="w-full h-screen flex items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>
 });
+
