@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useForm, useWatch } from 'react-hook-form';
@@ -25,6 +26,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import NextImage from 'next/image';
+import backgroundImages from '@/lib/background-images';
 
 const designSettingsSchema = z.object({
   logo: z.string().optional(),
@@ -185,6 +188,8 @@ function SettingsPanel({ form, documentType, onSubmit, returnUrl }: {
   };
   
   const router = useRouter();
+  
+  const selectedBackgroundImage = useWatch({ control: form.control, name: 'backgroundImage' });
 
 
   return (
@@ -214,7 +219,25 @@ function SettingsPanel({ form, documentType, onSubmit, returnUrl }: {
                                         )} />
                                     </div>
                                     <Separator />
-                                    <ImageUploader form={form} fieldName="backgroundImage" opacityFieldName="backgroundImageOpacity" label="Background Image" aspect='normal' />
+                                     <div className="space-y-2">
+                                        <FormLabel className="text-xs">Background Image</FormLabel>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            {backgroundImages.map(image => (
+                                                <button
+                                                    key={image.src.src}
+                                                    type="button"
+                                                    className={cn(
+                                                        "aspect-square rounded-md overflow-hidden border-2 transition-all",
+                                                        selectedBackgroundImage === image.src.src ? 'border-primary ring-2 ring-primary' : 'border-transparent hover:border-primary/50'
+                                                    )}
+                                                    onClick={() => form.setValue('backgroundImage', image.src.src)}
+                                                >
+                                                    <NextImage src={image.src} alt={image.name} className="w-full h-full object-cover" />
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <ImageUploader form={form} fieldName="backgroundImage" opacityFieldName="backgroundImageOpacity" label="Custom Background" aspect='normal' />
                                 </AccordionContent>
                              </AccordionItem>
                              
@@ -707,4 +730,5 @@ export default dynamic(() => Promise.resolve(DocumentDesignPage), {
     ssr: false,
     loading: () => <div className="w-full h-screen flex items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>
 });
+
 
