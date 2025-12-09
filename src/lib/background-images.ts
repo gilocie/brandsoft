@@ -10,7 +10,6 @@ import invAndQuots0 from '@/app/(app)/templates/images/inv-and-quots0.jpg';
 
 
 const backgroundImages: { name: string; src: any }[] = [
-  { name: 'background', src: brandsoftBackground1 },
   { name: 'inv-and-quots0', src: invAndQuots0 },
 ];
 
