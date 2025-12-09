@@ -120,7 +120,10 @@ export default function NewQuotationPage() {
         // Convert date strings back to Date objects
         if (storedData.quotationDate) storedData.quotationDate = new Date(storedData.quotationDate);
         if (storedData.validUntil) storedData.validUntil = new Date(storedData.validUntil);
-        form.reset(storedData);
+        form.reset({
+            ...storedData,
+            currency: config?.profile.defaultCurrency || 'USD'
+        });
     } else {
         // Set dates only on the client side to avoid hydration mismatch
         form.reset({
@@ -128,6 +131,7 @@ export default function NewQuotationPage() {
         currency: config?.profile.defaultCurrency || 'USD',
         quotationDate: new Date(),
         validUntil: new Date(new Date().setDate(new Date().getDate() + 30)),
+        notes: '',
         })
     }
   }, [config?.profile.defaultCurrency]); // Rerun if default currency changes
@@ -439,7 +443,7 @@ export default function NewQuotationPage() {
                     <FormItem>
                       <FormLabel>Currency</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="e.g. USD" onBlur={() => addCurrency(field.value.toUpperCase())} />
+                          <Input {...field} disabled />
                         </FormControl>
                       <FormMessage />
                     </FormItem>
