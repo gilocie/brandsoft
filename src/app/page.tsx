@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect } from 'react';
@@ -28,7 +29,7 @@ export default function HomePage() {
   return (
     <div 
       className="flex h-screen w-full items-center justify-center bg-cover bg-center"
-      style={{ backgroundImage: "url('https://picsum.photos/seed/splash/1920/1080')" }}
+      style={{ backgroundImage: "url('/backgrounds/template-background.jpg')" }}
       data-ai-hint="office building"
     >
       <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
