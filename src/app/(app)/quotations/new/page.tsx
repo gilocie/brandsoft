@@ -154,7 +154,7 @@ export default function NewQuotationPage() {
             status: 'Draft',
             currency: config.profile.defaultCurrency || 'USD',
             lineItems: [{ description: '', quantity: 1, price: 0 }],
-            notes: config.profile.paymentDetails || '', // Load default notes if available
+            notes: '', // THIS IS THE FIX: Ensure notes are empty by default
             saveNotesAsDefault: false,
             applyTax: true,
             taxName: 'VAT',
@@ -300,7 +300,7 @@ export default function NewQuotationPage() {
   };
   
   const formatCurrency = (value: number) => {
-    return `${currencySymbols[watchedValues.currency] || watchedValues.currency}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `${watchedValues.currency || config?.profile.defaultCurrency || '$'}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
   
   const subtotal = watchedValues.lineItems ? watchedValues.lineItems.reduce((acc, item) => {
