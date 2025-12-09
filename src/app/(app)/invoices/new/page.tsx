@@ -143,9 +143,13 @@ export default function NewInvoicePage() {
             ...form.getValues(),
             invoiceDate: today,
             dueDate: dueDate,
-            currency: designData?.defaultCurrency || config.profile.defaultCurrency,
             notes: '',
+            currency: designData?.defaultCurrency || config.profile.defaultCurrency,
         });
+    }
+
+    if (designData?.defaultCurrency) {
+        form.setValue('currency', designData.defaultCurrency);
     }
 
     setIsInitialized(true);
@@ -896,4 +900,5 @@ export default function NewInvoicePage() {
     
 
     
+
 

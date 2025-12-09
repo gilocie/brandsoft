@@ -149,9 +149,13 @@ export default function NewQuotationPage() {
             ...form.getValues(),
             quotationDate: today,
             validUntil: validUntil,
-            currency: designData?.defaultCurrency || config.profile.defaultCurrency,
             notes: '',
+            currency: designData?.defaultCurrency || config.profile.defaultCurrency,
         });
+    }
+
+    if (designData?.defaultCurrency) {
+        form.setValue('currency', designData.defaultCurrency);
     }
 
     setIsInitialized(true);
@@ -916,4 +920,5 @@ export default function NewQuotationPage() {
 }
 
     
+
 
