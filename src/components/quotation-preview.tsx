@@ -170,7 +170,12 @@ export function QuotationPreview({
         }
     } else if (quotationData.tax) {
         taxAmount = quotationData.tax;
-        taxRateDisplay = formatCurrency(taxAmount);
+        // Estimate rate if not provided, otherwise show flat amount
+        if (quotationData.subtotal && quotationData.tax) {
+             taxRateDisplay = `${((quotationData.tax / quotationData.subtotal) * 100).toFixed(2)}%`;
+        } else {
+             taxRateDisplay = formatCurrency(quotationData.tax);
+        }
     }
 
     const shippingAmount = Number(quotationData.applyShipping && quotationData.shippingValue ? quotationData.shippingValue : (quotationData.shipping || 0));
@@ -190,7 +195,7 @@ export function QuotationPreview({
     const accentColor = design.headerColor;
     const footerColor = design.footerColor;
 
-    const paymentDetailsToDisplay = design.paymentDetails || config.profile.paymentDetails;
+    const paymentDetailsToDisplay = designOverride?.paymentDetails || design.paymentDetails || config.profile.paymentDetails;
 
 
     const Wrapper = ({ children }: { children: React.ReactNode }) => {

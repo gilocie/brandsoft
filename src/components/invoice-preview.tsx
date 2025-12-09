@@ -176,7 +176,12 @@ export function InvoicePreview({
         }
     } else if (invoiceData.tax) {
         taxAmount = invoiceData.tax;
-        taxRateDisplay = formatCurrency(taxAmount);
+        // Estimate rate if not provided, otherwise show flat amount
+        if (invoiceData.subtotal && invoiceData.tax) {
+             taxRateDisplay = `${((invoiceData.tax / invoiceData.subtotal) * 100).toFixed(2)}%`;
+        } else {
+             taxRateDisplay = formatCurrency(invoiceData.tax);
+        }
     }
 
     const shippingAmount = Number(invoiceData.applyShipping && invoiceData.shippingValue ? invoiceData.shippingValue : (invoiceData.shipping || 0));
