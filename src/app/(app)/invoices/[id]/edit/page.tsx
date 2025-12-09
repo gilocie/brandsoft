@@ -104,8 +104,8 @@ export default function EditInvoicePage() {
         
         applyTax: !!invoiceToEdit.tax,
         taxType: invoiceToEdit.taxType || 'percentage',
-        taxValue: invoiceToEdit.taxValue || 17.5,
-        taxName: invoiceToEdit.taxName || 'VAT',
+        taxValue: invoiceToEdit.taxValue ?? 17.5,
+        taxName: invoiceToEdit.taxName ?? 'VAT',
 
         applyShipping: !!invoiceToEdit.shipping,
         shippingValue: invoiceToEdit.shipping || 0,
@@ -243,7 +243,7 @@ export default function EditInvoicePage() {
   }
 
   const watchedValues = form.watch();
-  const currencySymbol = watchedValues.currency;
+  const currencySymbol = watchedValues.currency || '';
   
   const formatCurrency = (value: number) => {
     return `${currencySymbol}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;

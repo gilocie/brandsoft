@@ -135,7 +135,7 @@ export default function NewInvoicePage() {
             invoiceDate: today,
             dueDate: dueDate,
             notes: '',
-            currency: designData?.defaultCurrency || config.profile.defaultCurrency,
+            currency: config.profile.defaultCurrency,
         });
     }
 
@@ -145,6 +145,7 @@ export default function NewInvoicePage() {
 
     setIsInitialized(true);
   }, [isInitialized, config, getFormData, designFormState, form]);
+
 
   useEffect(() => {
     if (!isInitialized) return;
@@ -272,7 +273,7 @@ export default function NewInvoicePage() {
     }
   }
 
-  const currencySymbol = watchedValues.currency;
+  const currencySymbol = watchedValues.currency || '';
   
   const formatCurrency = (value: number) => {
     return `${currencySymbol}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -892,6 +893,7 @@ export default function NewInvoicePage() {
     
 
     
+
 
 
 

@@ -113,42 +113,34 @@ export default function NewQuotationPage() {
 
   useEffect(() => {
     if (isInitialized || !config) return;
-
+  
     const storedData = getFormData();
     const designData = designFormState.getFormData();
-    
+  
     if (storedData && Object.keys(storedData).length > 0) {
-        const restoredData: any = { ...storedData };
-        
-        if (restoredData.quotationDate) restoredData.quotationDate = new Date(restoredData.quotationDate);
-        if (restoredData.validUntil) restoredData.validUntil = new Date(restoredData.validUntil);
-
-        if (restoredData.lineItems && restoredData.lineItems.length > 0) {
-            const manualEntryState = restoredData.lineItems.map((item: any) => {
-                return !item.productId || item.productId === '';
-            });
-            setUseManualEntry(manualEntryState);
-        }
-
-        form.reset(restoredData);
+      const restoredData: any = { ...storedData };
+      if (restoredData.quotationDate) restoredData.quotationDate = new Date(restoredData.quotationDate);
+      if (restoredData.validUntil) restoredData.validUntil = new Date(restoredData.validUntil);
+      
+      form.reset(restoredData);
     } else {
-        const today = new Date();
-        const validUntil = new Date();
-        validUntil.setDate(today.getDate() + 30);
-        
-        form.reset({
-            ...form.getValues(),
-            quotationDate: today,
-            validUntil: validUntil,
-            notes: '',
-            currency: designData?.defaultCurrency || config.profile.defaultCurrency,
-        });
+      const today = new Date();
+      const validUntil = new Date();
+      validUntil.setDate(today.getDate() + 30);
+      
+      form.reset({
+        ...form.getValues(),
+        quotationDate: today,
+        validUntil: validUntil,
+        notes: '',
+        currency: config.profile.defaultCurrency,
+      });
     }
-
+  
     if (designData?.defaultCurrency) {
-        form.setValue('currency', designData.defaultCurrency);
+      form.setValue('currency', designData.defaultCurrency);
     }
-
+  
     setIsInitialized(true);
   }, [isInitialized, config, getFormData, designFormState, form]);
 
@@ -912,6 +904,7 @@ export default function NewQuotationPage() {
 }
 
     
+
 
 
 

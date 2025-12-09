@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -150,7 +151,7 @@ const QuotationList = ({quotations, layout, onSelectAction, currencyCode}: {quot
                     </CardHeader>
                     <CardContent className={cn("flex-grow space-y-2", layout === 'list' ? "p-4 pt-0 md:flex md:items-center md:justify-between md:space-y-0" : "p-6 pt-0")}>
                       <div className={cn("text-2xl font-bold", layout === 'list' && "text-base font-bold w-1/4")}>
-                        {currencyCode}{quotation.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {quotation.currency || currencyCode}{quotation.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
                       <div className={cn("text-sm text-muted-foreground", layout === 'list' && "text-xs w-1/4")}>
                         <p>Date: {quotation.date}</p>
@@ -389,3 +390,4 @@ export default function QuotationsPage() {
     
 
     
+

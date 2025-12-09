@@ -105,8 +105,8 @@ export default function EditQuotationPage() {
         
         applyTax: !!quotationToEdit.tax,
         taxType: quotationToEdit.taxType || 'percentage',
-        taxValue: quotationToEdit.taxValue || 17.5,
-        taxName: quotationToEdit.taxName || 'VAT',
+        taxValue: quotationToEdit.taxValue ?? 17.5,
+        taxName: quotationToEdit.taxName ?? 'VAT',
 
         applyShipping: !!quotationToEdit.shipping,
         shippingValue: quotationToEdit.shipping || 0,
@@ -243,7 +243,7 @@ export default function EditQuotationPage() {
   }
 
   const watchedValues = form.watch();
-  const currencySymbol = watchedValues.currency;
+  const currencySymbol = watchedValues.currency || '';
   
   const formatCurrency = (value: number) => {
     return `${currencySymbol}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;

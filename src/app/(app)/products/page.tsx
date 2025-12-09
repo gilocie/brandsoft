@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -187,7 +188,7 @@ export default function ProductsPage() {
                         {product.type}
                       </Badge>
                     </TableCell>
-                    <TableCell>{currencyCode} {product.price.toLocaleString()}</TableCell>
+                    <TableCell>{currencyCode}{product.price.toLocaleString()}</TableCell>
                     <TableCell className="text-right">
                         <ProductActions product={product} onSelectAction={handleSelectAction} />
                     </TableCell>
@@ -261,7 +262,7 @@ export default function ProductsPage() {
           <div className="space-y-4 py-4">
             <div className="grid grid-cols-3 items-center gap-4">
                 <Label>Price</Label>
-                <div className="col-span-2 font-medium">{currencyCode} {selectedProduct?.price.toLocaleString()}</div>
+                <div className="col-span-2 font-medium">{currencyCode}{selectedProduct?.price.toLocaleString()}</div>
             </div>
             <div className="grid grid-cols-3 items-start gap-4">
                 <Label className="pt-1">Description</Label>
