@@ -114,38 +114,65 @@ export default function NewQuotationPage() {
   
   const watchedValues = form.watch();
 
+  // 1. INITIALIZE FORM DATA ONCE ON MOUNT
   useEffect(() => {
     const storedData = getFormData();
     
     // Prioritize restoring from session storage
     if (storedData && Object.keys(storedData).length > 0) {
       const restoredData = { ...storedData };
+      
       // Ensure dates are Date objects
-      if (restoredData.quotationDate) restoredData.quotationDate = new Date(restoredData.quotationDate);
-      if (restoredData.validUntil) restoredData.validUntil = new Date(restoredData.validUntil);
+      if (restoredData.quotationDate) {
+        restoredData.quotationDate = new Date(restoredData.quotationDate);
+      }
+      if (restoredData.validUntil) {
+        restoredData.validUntil = new Date(restoredData.validUntil);
+      }
       
       // Sync currency with global config if not set in stored data
-      if (!restoredData.currency) {
-          restoredData.currency = config?.profile.defaultCurrency || 'USD';
+      if (!restoredData.currency && config?.profile.defaultCurrency) {
+        restoredData.currency = config.profile.defaultCurrency;
       }
-
+      
       form.reset(restoredData);
-    } else {
+    } else if (config?.profile.defaultCurrency) {
       // Otherwise, set defaults for a new form
+      const today = new Date();
+      const validUntil = new Date();
+      validUntil.setDate(today.getDate() + 30);
+      
       form.reset({
-        ...form.getValues(), // Keep any existing defaults
-        currency: config?.profile.defaultCurrency || 'USD',
-        quotationDate: new Date(),
-        validUntil: new Date(new Date().setDate(new Date().getDate() + 30)),
+        status: 'Draft',
+        currency: config.profile.defaultCurrency,
+        lineItems: [{ description: '', quantity: 1, price: 0 }],
         notes: '',
+        saveNotesAsDefault: false,
+        applyTax: true,
+        taxName: 'VAT',
+        taxType: 'percentage',
+        taxValue: 17.5,
+        applyShipping: false,
+        shippingValue: 0,
+        applyDiscount: false,
+        discountType: 'percentage',
+        discountValue: 0,
+        quotationDate: today,
+        validUntil: validUntil,
       });
     }
-  }, [config?.profile.defaultCurrency, form]); // Rerun if default currency changes, or on initial mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run ONLY once on mount
 
+  // 2. WATCH FOR CHANGES AND SAVE TO SESSION STORAGE
   useEffect(() => {
     const subscription = form.watch((value) => {
-      setFormData(value);
+      // Only save if there's actual data (not just initial empty state)
+      if (value.customerId || value.lineItems?.[0]?.description) {
+        setFormData(value);
+      }
     });
+    
     return () => subscription.unsubscribe();
   }, [form, setFormData]);
 
