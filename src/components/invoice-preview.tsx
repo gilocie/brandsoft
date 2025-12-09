@@ -12,8 +12,8 @@ import { createRoot } from 'react-dom/client';
 type InvoiceData = Partial<Invoice> & {
     lineItems?: LineItem[],
     currency?: string;
-    invoiceDate?: Date;
-    dueDate?: Date;
+    invoiceDate?: string;
+    dueDate?: string;
     taxName?: string;
     applyTax?: boolean;
     taxType?: 'percentage' | 'flat';

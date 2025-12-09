@@ -891,7 +891,7 @@ export default function NewQuotationPage() {
                 customer={config?.customers.find(c => c.id === watchedValues.customerId) || null}
                 quotationData={{
                     ...watchedValues,
-                    date: watchedValues.quotationDate ? format(watchedValues.quotationDate, 'yyyy-MM-dd') : '',
+                    quotationDate: watchedValues.quotationDate ? format(watchedValues.quotationDate, 'yyyy-MM-dd') : '',
                     validUntil: watchedValues.validUntil ? format(watchedValues.validUntil, 'yyyy-MM-dd') : '',
                     design: designFormState.getFormData()
                 }}

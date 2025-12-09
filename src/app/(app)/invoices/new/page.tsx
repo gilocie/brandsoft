@@ -883,7 +883,7 @@ export default function NewInvoicePage() {
                 customer={config?.customers.find(c => c.id === watchedValues.customerId) || null}
                 invoiceData={{
                     ...watchedValues,
-                    date: watchedValues.invoiceDate ? format(watchedValues.invoiceDate, 'yyyy-MM-dd') : '',
+                    invoiceDate: watchedValues.invoiceDate ? format(watchedValues.invoiceDate, 'yyyy-MM-dd') : '',
                     dueDate: watchedValues.dueDate ? format(watchedValues.dueDate, 'yyyy-MM-dd') : '',
                     design: designFormState.getFormData()
                 }}
@@ -898,4 +898,3 @@ export default function NewInvoicePage() {
     </div>
   );
 }
-    

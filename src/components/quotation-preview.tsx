@@ -12,8 +12,8 @@ import { createRoot } from 'react-dom/client';
 type QuotationData = Partial<Quotation> & {
     lineItems?: LineItem[],
     currency?: string;
-    quotationDate?: Date;
-    validUntil?: Date;
+    quotationDate?: string;
+    validUntil?: string;
     taxName?: string;
     applyTax?: boolean;
     taxType?: 'percentage' | 'flat';
