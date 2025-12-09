@@ -166,7 +166,7 @@ export default function NewQuotationPage() {
     newCustomerForm.reset();
   }
 
-  const handleFormSubmit = (status: 'Draft' | 'Sent') => {
+  const handleFormSubmit = (status: Quotation['status']) => {
     form.setValue('status', status);
     form.handleSubmit(onSubmit)();
   }
@@ -326,7 +326,7 @@ export default function NewQuotationPage() {
           partialPaymentAmount = watchedValues.partialPaymentValue;
       }
   }
-  const amountDue = total - partialPaymentAmount;
+  const balance = total - partialPaymentAmount;
 
   const handlePreview = async () => {
     const isValid = await form.trigger();
@@ -403,7 +403,7 @@ export default function NewQuotationPage() {
             <CardHeader>
               <CardTitle>Quotation Details</CardTitle>
             </CardHeader>
-             <CardContent className="grid gap-4 md:grid-cols-2">
+             <CardContent className="grid gap-4 md:grid-cols-3">
               <FormField
                 control={form.control}
                 name="quotationDate"
@@ -468,6 +468,28 @@ export default function NewQuotationPage() {
                         />
                       </PopoverContent>
                     </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Sent">Sent</SelectItem>
+                        <SelectItem value="Accepted">Accepted</SelectItem>
+                        <SelectItem value="Declined">Declined</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -774,7 +796,7 @@ export default function NewQuotationPage() {
                             <Separator />
                             <div className="flex justify-between font-bold text-lg pt-2 text-primary">
                                 <span>Balance</span>
-                                <span>{formatCurrency(amountDue)}</span>
+                                <span>{formatCurrency(balance)}</span>
                             </div>
                         </>
                     )}
@@ -880,6 +902,7 @@ export default function NewQuotationPage() {
 }
 
     
+
 
 
 

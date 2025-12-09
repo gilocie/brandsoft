@@ -313,7 +313,7 @@ export default function NewInvoicePage() {
           partialPaymentAmount = watchedValues.partialPaymentValue;
       }
   }
-  const amountDue = total - partialPaymentAmount;
+  const balance = total - partialPaymentAmount;
 
   const handlePreview = async () => {
     const isValid = await form.trigger();
@@ -390,7 +390,7 @@ export default function NewInvoicePage() {
             <CardHeader>
               <CardTitle>Invoice Details</CardTitle>
             </CardHeader>
-             <CardContent className="grid gap-4 md:grid-cols-2">
+             <CardContent className="grid gap-4 md:grid-cols-3">
               <FormField
                 control={form.control}
                 name="invoiceDate"
@@ -459,6 +459,29 @@ export default function NewInvoicePage() {
                   </FormItem>
                 )}
               />
+              <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Status</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Pending">Pending</SelectItem>
+                          <SelectItem value="Paid">Paid</SelectItem>
+                          <SelectItem value="Overdue">Overdue</SelectItem>
+                          <SelectItem value="Canceled">Canceled</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
             </CardContent>
              <CardContent>
                 <FormField
@@ -765,7 +788,7 @@ export default function NewInvoicePage() {
                             <Separator />
                             <div className="flex justify-between font-bold text-lg pt-2 text-primary">
                                 <span>Balance</span>
-                                <span>{formatCurrency(amountDue)}</span>
+                                <span>{formatCurrency(balance)}</span>
                             </div>
                         </>
                     )}
@@ -857,7 +880,7 @@ export default function NewInvoicePage() {
             <InvoicePreview
                 config={config}
                 customer={config?.customers.find(c => c.id === watchedValues.customerId) || null}
-                invoiceData={{...watchedValues, design: designFormState.getFormData(), status: watchedValues.status || 'Pending' }}
+                invoiceData={{...watchedValues, design: designFormState.getFormData() }}
                 invoiceId={nextInvoiceId}
             />
           </div>
@@ -872,6 +895,7 @@ export default function NewInvoicePage() {
     
 
     
+
 
 
 
