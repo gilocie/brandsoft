@@ -119,6 +119,7 @@ export function QuotationPreview({
             showBrandsoftFooter: brand.brandsoftFooter ?? true,
             showHeader: brand.showHeader ?? true,
             showFooter: brand.showFooter ?? true,
+            paymentDetails: config.profile.paymentDetails,
         };
         
         const merge = (target: any, source: any) => {
@@ -188,6 +189,9 @@ export function QuotationPreview({
     const watermarkText = design.watermarkText || quotationData.status;
     const accentColor = design.headerColor;
     const footerColor = design.footerColor;
+
+    const paymentDetailsToDisplay = design.paymentDetails || config.profile.paymentDetails;
+
 
     const Wrapper = ({ children }: { children: React.ReactNode }) => {
         if (forPdf) return <>{children}</>;
@@ -305,8 +309,14 @@ export function QuotationPreview({
 
                             <section className="flex flex-row gap-12 items-start mt-auto mb-8">
                                 <div className="flex-1 text-xs">
+                                     {design.showPaymentDetails && paymentDetailsToDisplay && (
+                                        <div>
+                                            <h3 className="font-bold text-gray-400 uppercase tracking-wider mb-2">Payment Details</h3>
+                                            <p className="whitespace-pre-wrap leading-relaxed">{paymentDetailsToDisplay}</p>
+                                        </div>
+                                    )}
                                      {design.showNotes && quotationData.notes && (
-                                        <div className="mt-4">
+                                        <div className="mt-4 pt-4 border-t" style={{borderColor: 'rgba(0,0,0,0.05)'}}>
                                             <h3 className="font-bold text-gray-400 uppercase tracking-wider mb-1">Notes</h3>
                                             <p>{quotationData.notes}</p>
                                         </div>
