@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -80,7 +79,7 @@ const NewCustomerFormSchema = z.object({
 type NewCustomerFormData = z.infer<typeof NewCustomerFormSchema>;
 
 export default function NewQuotationPage() {
-  const { config, addCustomer, addQuotation, saveConfig } = useBrandsoft();
+  const { config, addCustomer, addQuotation, saveConfig, addCurrency } = useBrandsoft();
   const { setFormData, getFormData } = useFormState('newDocumentData');
   const router = useRouter();
   const { toast } = useToast();
@@ -126,11 +125,12 @@ export default function NewQuotationPage() {
         // Set dates only on the client side to avoid hydration mismatch
         form.reset({
         ...form.getValues(),
+        currency: config?.profile.defaultCurrency || 'USD',
         quotationDate: new Date(),
         validUntil: new Date(new Date().setDate(new Date().getDate() + 30)),
         })
     }
-  }, []); // Empty dependency array ensures this runs only once on the client
+  }, [config?.profile.defaultCurrency]); // Rerun if default currency changes
 
   useEffect(() => {
     const subscription = form.watch((value) => {
@@ -438,9 +438,16 @@ export default function NewQuotationPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Currency</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <Input {...field} disabled />
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select currency"/>
+                          </SelectTrigger>
                         </FormControl>
+                        <SelectContent>
+                          {config?.currencies?.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -798,3 +805,6 @@ export default function NewQuotationPage() {
 
 
 
+
+
+    
