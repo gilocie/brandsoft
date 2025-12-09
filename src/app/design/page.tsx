@@ -88,7 +88,7 @@ const ImageUploader = ({
     const fieldValue = useWatch({ control: form.control, name: fieldName });
     const opacityValue = opacityFieldName ? useWatch({ control: form.control, name: opacityFieldName }) : 1;
     
-    const imageSrc = typeof fieldValue === 'object' && fieldValue !== null && 'src' in fieldValue ? fieldValue.src : fieldValue;
+    const imageSrc = typeof fieldValue === 'object' && fieldValue !== null && fieldValue.src ? fieldValue.src : fieldValue;
 
     const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -179,7 +179,7 @@ function SettingsPanel({ form, documentType, onSubmit, returnUrl, documentData }
   const isAutoWatermark = watermarkSelection === 'AUTO';
 
   const handleWatermarkPresetChange = (value: string) => {
-    form.setValue('watermarkText', value);
+    form.setValue('watermarkText', value, { shouldDirty: true });
   }
 
   const handleBack = () => {
@@ -513,7 +513,7 @@ function DocumentDesignPage() {
     const currentDesignSettings: DesignSettings = useMemo(() => {
         const watermarkSelection = watchedValues.watermarkText;
         const isAuto = watermarkSelection === 'AUTO';
-        const docStatus = document?.status?.toUpperCase() || '';
+        const docStatus = document?.status?.toUpperCase() || getFormData('newDocumentData')?.status.toUpperCase() || '';
         
         let watermarkText: string | undefined = watermarkSelection;
         if (isAuto) {
@@ -554,7 +554,7 @@ function DocumentDesignPage() {
             showHeader: watchedValues.showHeader,
             showFooter: watchedValues.showFooter,
         }
-    }, [watchedValues, document, statusColors]);
+    }, [watchedValues, document, statusColors, getFormData]);
 
     const getDefaultTemplate = useCallback((type: 'invoice' | 'quotation'): Partial<DesignSettings> => {
         if (!config?.profile) return {};
@@ -573,7 +573,7 @@ function DocumentDesignPage() {
     useEffect(() => {
         if (!config || !documentType || !isInitialLoad.current) return;
         
-        const sessionData = stableGetFormData();
+        const sessionData = stableGetFormData('designFormData');
 
         if (sessionData && Object.keys(sessionData).length > 0) {
             form.reset(sessionData);
@@ -699,7 +699,7 @@ function DocumentDesignPage() {
 
         return {
             date: new Date().toISOString(),
-            status: 'Pending',
+            status: 'Draft',
             [documentType === 'invoice' ? 'invoiceId' : 'quotationId']: dynamicId,
             [documentType === 'invoice' ? 'dueDate' : 'validUntil']: new Date(new Date().setDate(new Date().getDate() + 30)).toISOString(),
             lineItems: [{ description: 'Sample Item', quantity: 1, price: 100 }],

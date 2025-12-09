@@ -94,7 +94,7 @@ export default function NewQuotationPage() {
       status: 'Draft',
       currency: config?.profile.defaultCurrency || 'USD',
       lineItems: [{ description: '', quantity: 1, price: 0 }],
-      notes: config?.profile?.paymentDetails || '',
+      notes: '',
       saveNotesAsDefault: false,
       applyTax: true,
       taxName: 'VAT',
@@ -121,7 +121,6 @@ export default function NewQuotationPage() {
       ...form.getValues(),
       quotationDate: new Date(),
       validUntil: new Date(new Date().setDate(new Date().getDate() + 30)),
-      notes: config?.profile?.paymentDetails,
     })
   }, []); // Empty dependency array ensures this runs only once on the client
 
@@ -788,5 +787,6 @@ export default function NewQuotationPage() {
     
 
     
+
 
 
