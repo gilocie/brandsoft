@@ -516,17 +516,10 @@ function DocumentDesignPage() {
 
     const currentDesignSettings: DesignSettings = useMemo(() => {
         const watermarkSelection = watchedValues.watermarkText;
-        const isAuto = watermarkSelection === 'AUTO';
         const docStatus = (document?.status || getFormData('newDocumentData')?.status)?.toUpperCase() || '';
+        const isAuto = watermarkSelection === 'AUTO';
         
-        let watermarkText: string | undefined;
-        if (isAuto) {
-            watermarkText = docStatus;
-        } else if (watermarkSelection === 'CUSTOM') {
-             watermarkText = watchedValues.watermarkText;
-        } else {
-             watermarkText = watermarkSelection;
-        }
+        const watermarkText = isAuto ? docStatus : watermarkSelection;
 
         const watermarkColor = isAuto 
             ? (statusColors[docStatus] || statusColors.DEFAULT) 
