@@ -118,31 +118,22 @@ export default function NewQuotationPage() {
   useEffect(() => {
     const storedData = getFormData();
     
-    // Prioritize restoring from session storage
     if (storedData && Object.keys(storedData).length > 0) {
-      const restoredData = { ...storedData };
-      
-      // Ensure dates are Date objects
+      const restoredData: any = { ...storedData };
       if (restoredData.quotationDate) {
         restoredData.quotationDate = new Date(restoredData.quotationDate);
       }
       if (restoredData.validUntil) {
         restoredData.validUntil = new Date(restoredData.validUntil);
       }
-      
-      // Sync currency with global config if not set in stored data
-      if (!restoredData.currency && config?.profile.defaultCurrency) {
-        restoredData.currency = config.profile.defaultCurrency;
-      }
-      
       form.reset(restoredData);
     } else if (config?.profile.defaultCurrency) {
-      // Otherwise, set defaults for a new form
       const today = new Date();
       const validUntil = new Date();
       validUntil.setDate(today.getDate() + 30);
       
       form.reset({
+        ...form.getValues(),
         status: 'Draft',
         currency: config.profile.defaultCurrency,
         lineItems: [{ description: '', quantity: 1, price: 0 }],
@@ -162,13 +153,13 @@ export default function NewQuotationPage() {
       });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run ONLY once on mount
+  }, [config?.profile.defaultCurrency]); // Rerun only if global config loads
 
   // 2. WATCH FOR CHANGES AND SAVE TO SESSION STORAGE
   useEffect(() => {
     const subscription = form.watch((value) => {
-      // Only save if there's actual data (not just initial empty state)
-      if (value.customerId || value.lineItems?.[0]?.description) {
+      // Only save if there's actual data to prevent overwriting with initial state
+      if (value.customerId || (value.lineItems && value.lineItems[0]?.description)) {
         setFormData(value);
       }
     });
@@ -469,14 +460,14 @@ export default function NewQuotationPage() {
                 />
             </CardContent>
              <CardContent>
-                <FormField
+                 <FormField
                   control={form.control}
                   name="currency"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Currency</FormLabel>
                         <FormControl>
-                          <Input {...field} disabled />
+                          <Input placeholder="e.g. USD" {...field} disabled />
                         </FormControl>
                       <FormMessage />
                     </FormItem>
