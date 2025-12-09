@@ -11,7 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useToast } from '@/hooks/use-toast';
 import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
-import { UploadCloud, Paintbrush, Layers, Trash2, ArrowLeft, Loader2, PanelLeft, Eye, Hash, Wallet, Coins } from 'lucide-react';
+import { UploadCloud, Paintbrush, Layers, Trash2, ArrowLeft, Loader2, PanelLeft, Eye, Hash, Wallet, Coins, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Link from 'next/link';
@@ -171,6 +171,8 @@ function SettingsPanel({ form, documentType, onSubmit, returnUrl }: {
 }) {
   const [customWatermark, setCustomWatermark] = useState(form.getValues('watermarkText') && !WATERMARK_PRESETS.includes(form.getValues('watermarkText')));
   const { setFormData } = useFormState('designFormData');
+  const [imagePage, setImagePage] = useState(0);
+  const imagesPerPage = 9;
   
   const handleWatermarkPresetChange = (value: string) => {
     if (value === 'CUSTOM') {
@@ -190,6 +192,12 @@ function SettingsPanel({ form, documentType, onSubmit, returnUrl }: {
   const router = useRouter();
   
   const selectedBackgroundImage = useWatch({ control: form.control, name: 'backgroundImage' });
+
+  const totalImagePages = Math.ceil(backgroundImages.length / imagesPerPage);
+  const displayedImages = backgroundImages.slice(
+    imagePage * imagesPerPage,
+    (imagePage + 1) * imagesPerPage
+  );
 
 
   return (
@@ -222,7 +230,7 @@ function SettingsPanel({ form, documentType, onSubmit, returnUrl }: {
                                      <div className="space-y-2">
                                         <FormLabel className="text-xs">Background Image</FormLabel>
                                         <div className="grid grid-cols-3 gap-2">
-                                            {backgroundImages.map(image => (
+                                            {displayedImages.map(image => (
                                                 <button
                                                     key={image.name}
                                                     type="button"
@@ -236,6 +244,31 @@ function SettingsPanel({ form, documentType, onSubmit, returnUrl }: {
                                                 </button>
                                             ))}
                                         </div>
+                                         {totalImagePages > 1 && (
+                                            <div className="flex items-center justify-between mt-2">
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => setImagePage(p => p - 1)}
+                                                    disabled={imagePage === 0}
+                                                >
+                                                    <ChevronLeft className="h-4 w-4 mr-1" /> Prev
+                                                </Button>
+                                                <span className="text-xs text-muted-foreground">
+                                                    {imagePage + 1} / {totalImagePages}
+                                                </span>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => setImagePage(p => p + 1)}
+                                                    disabled={imagePage >= totalImagePages - 1}
+                                                >
+                                                    Next <ChevronRight className="h-4 w-4 ml-1" />
+                                                </Button>
+                                            </div>
+                                        )}
                                     </div>
                                     <ImageUploader form={form} fieldName="backgroundImage" opacityFieldName="backgroundImageOpacity" label="Custom Background" aspect='normal' />
                                 </AccordionContent>
