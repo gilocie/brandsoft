@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { CalendarIcon, PlusCircle, Trash2, Save, Send, Eye, UserPlus, Palette } from 'lucide-react';
 import { format } from "date-fns";
 import Link from 'next/link';
-import { useBrandsoft, type Customer, type Invoice, type Product } from '@/hooks/use-brandsoft.tsx';
+import { useBrandsoft, type Customer, type Invoice, type Product, type DesignSettings } from '@/hooks/use-brandsoft.tsx';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useRouter } from 'next/navigation';
@@ -80,12 +80,14 @@ type NewCustomerFormData = z.infer<typeof NewCustomerFormSchema>;
 
 export default function NewInvoicePage() {
   const { config, addCustomer, addInvoice, saveConfig } = useBrandsoft();
-  const { setFormData } = useFormState('newDocumentData');
+  const { setFormData, getFormData } = useFormState('newDocumentData');
+  const designFormState = useFormState('designFormData');
   const router = useRouter();
   const { toast } = useToast();
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
   const [useManualEntry, setUseManualEntry] = useState<boolean[]>([false]);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [previewDesign, setPreviewDesign] = useState<DesignSettings | undefined>(undefined);
 
   const form = useForm<InvoiceFormData>({
     resolver: zodResolver(formSchema),
@@ -260,6 +262,8 @@ export default function NewInvoicePage() {
   const handlePreview = async () => {
     const isValid = await form.trigger();
     if (isValid) {
+      const designData = designFormState.getFormData();
+      setPreviewDesign(designData);
       setIsPreviewOpen(true);
     } else {
       toast({
@@ -770,6 +774,7 @@ export default function NewInvoicePage() {
                 config={config}
                 customer={config?.customers.find(c => c.id === watchedValues.customerId) || null}
                 invoiceData={{...watchedValues, status: watchedValues.status || 'Draft' }}
+                designOverride={previewDesign}
             />
           </div>
           <DialogFooter>
@@ -783,3 +788,4 @@ export default function NewInvoicePage() {
     
 
     
+

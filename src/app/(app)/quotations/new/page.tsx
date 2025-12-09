@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { CalendarIcon, PlusCircle, Trash2, Save, Send, Eye, UserPlus, Palette } from 'lucide-react';
 import { format } from "date-fns";
 import Link from 'next/link';
-import { useBrandsoft, type Customer, type Quotation } from '@/hooks/use-brandsoft.tsx';
+import { useBrandsoft, type Customer, type Quotation, type DesignSettings } from '@/hooks/use-brandsoft.tsx';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useRouter } from 'next/navigation';
@@ -77,10 +77,12 @@ type NewCustomerFormData = z.infer<typeof NewCustomerFormSchema>;
 export default function NewQuotationPage() {
   const { config, addCustomer, addQuotation, saveConfig } = useBrandsoft();
   const { setFormData, getFormData } = useFormState('newQuotationData'); 
+  const designFormState = useFormState('designFormData');
   const router = useRouter();
   const { toast } = useToast();
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [previewDesign, setPreviewDesign] = useState<DesignSettings | undefined>(undefined);
 
   const [useManualEntry, setUseManualEntry] = useState<boolean[]>([false]);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -313,6 +315,8 @@ export default function NewQuotationPage() {
   const handlePreview = async () => {
     const isValid = await form.trigger();
     if (isValid) {
+      const designData = designFormState.getFormData();
+      setPreviewDesign(designData);
       setIsPreviewOpen(true);
     } else {
       toast({
@@ -823,6 +827,7 @@ export default function NewQuotationPage() {
                 config={config}
                 customer={config?.customers.find(c => c.id === watchedValues.customerId) || null}
                 quotationData={{...watchedValues, status: watchedValues.status || 'Draft' }}
+                designOverride={previewDesign}
             />
           </div>
           <DialogFooter>
