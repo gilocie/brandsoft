@@ -217,6 +217,7 @@ export default function NewQuotationPage() {
 
     const newQuotation: Omit<Quotation, 'quotationId'> = {
         customer: customer.name,
+        customerId: customer.id,
         date: format(data.quotationDate, 'yyyy-MM-dd'),
         validUntil: format(data.validUntil, 'yyyy-MM-dd'),
         amount: total,
@@ -747,7 +748,7 @@ export default function NewQuotationPage() {
 
                     <Separator />
 
-                    <div className="flex justify-between font-bold text-lg pt-2">
+                    <div className="flex justify-between font-bold text-lg p-3 rounded-md bg-primary text-primary-foreground">
                         <span>Total</span>
                         <span>{formatCurrency(total)}</span>
                     </div>
@@ -795,7 +796,7 @@ export default function NewQuotationPage() {
                      {watchedValues.applyPartialPayment && (
                         <>
                             <Separator />
-                            <div className="flex justify-between font-bold text-lg pt-2 text-primary">
+                            <div className="flex justify-between font-bold text-lg pt-2 p-3 rounded-md bg-primary text-primary-foreground">
                                 <span>Balance</span>
                                 <span>{formatCurrency(balance)}</span>
                             </div>

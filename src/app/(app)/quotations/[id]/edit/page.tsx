@@ -93,7 +93,7 @@ export default function EditQuotationPage() {
         const customer = config.customers.find(c => c.id === quotationToEdit.customerId) || config.customers.find(c => c.name === quotationToEdit.customer);
         if (customer) {
             form.reset({
-              customerId: customer.id || '',
+              customerId: customer.id,
               quotationDate: parseISO(quotationToEdit.date),
               validUntil: parseISO(quotationToEdit.validUntil),
               status: quotationToEdit.status,
@@ -118,7 +118,7 @@ export default function EditQuotationPage() {
                 productId: ''
               }] : [])
             });
-            setUseManualEntry(quotationToEdit.lineItems?.map(() => true) ?? (quotationToEdit.subtotal ? [true] : []));
+            setUseManualEntry(quotationToEdit.lineItems?.map(item => !item.productId) ?? (quotationToEdit.subtotal ? [true] : []));
         } else {
              toast({ title: "Error", description: "Customer for this quotation not found.", variant: 'destructive'});
              router.push('/quotations');
@@ -252,9 +252,9 @@ export default function EditQuotationPage() {
     return `${currencyCode}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
-  const subtotal = watchedValues.lineItems ? watchedValues.lineItems.reduce((acc, item) => {
+  const subtotal = watchedValues.lineItems?.reduce((acc, item) => {
     return acc + (Number(item.quantity) || 0) * (Number(item.price) || 0);
-  }, 0) : 0;
+  }, 0) || 0;
   
   let discountAmount = 0;
   if (watchedValues.applyDiscount && watchedValues.discountValue) {
@@ -709,7 +709,7 @@ export default function EditQuotationPage() {
 
                     <Separator />
 
-                    <div className="flex justify-between font-bold text-lg pt-2">
+                    <div className="flex justify-between font-bold text-lg p-3 rounded-md bg-primary text-primary-foreground">
                         <span>Total</span>
                         <span>{formatCurrency(total)}</span>
                     </div>
@@ -757,7 +757,7 @@ export default function EditQuotationPage() {
                      {watchedValues.applyPartialPayment && (
                         <>
                             <Separator />
-                            <div className="flex justify-between font-bold text-lg pt-2 text-primary">
+                            <div className="flex justify-between font-bold text-lg pt-2 p-3 rounded-md bg-primary text-primary-foreground">
                                 <span>Balance</span>
                                 <span>{formatCurrency(balance)}</span>
                             </div>

@@ -217,6 +217,7 @@ export default function NewInvoicePage() {
 
     const newInvoice: Omit<Invoice, 'invoiceId'> = {
         customer: customer.name,
+        customerId: customer.id,
         date: format(data.invoiceDate, 'yyyy-MM-dd'),
         dueDate: format(data.dueDate, 'yyyy-MM-dd'),
         amount: total,
@@ -738,7 +739,7 @@ export default function NewInvoicePage() {
 
                     <Separator />
 
-                    <div className="flex justify-between font-bold text-lg pt-2">
+                    <div className="flex justify-between font-bold text-lg p-3 rounded-md bg-primary text-primary-foreground">
                         <span>Total</span>
                         <span>{formatCurrency(total)}</span>
                     </div>
@@ -787,7 +788,7 @@ export default function NewInvoicePage() {
                     {watchedValues.applyPartialPayment && (
                         <>
                             <Separator />
-                            <div className="flex justify-between font-bold text-lg pt-2 text-primary">
+                            <div className="flex justify-between font-bold text-lg pt-2 p-3 rounded-md bg-primary text-primary-foreground">
                                 <span>Balance</span>
                                 <span>{formatCurrency(balance)}</span>
                             </div>

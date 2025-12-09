@@ -234,6 +234,7 @@ const initialInvoices: Invoice[] = [
   {
     invoiceId: 'INV001',
     customer: 'Liam Johnson',
+    customerId: 'CUST-1625243511000',
     date: '2023-06-23',
     dueDate: '2023-07-23',
     amount: 250.0,
@@ -248,6 +249,7 @@ const initialInvoices: Invoice[] = [
   {
     invoiceId: 'INV002',
     customer: 'Olivia Smith',
+    customerId: 'CUST-1625243512000',
     date: '2023-07-15',
     dueDate: '2023-08-15',
     amount: 150.0,
@@ -262,6 +264,7 @@ const initialInvoices: Invoice[] = [
   {
     invoiceId: 'INV003',
     customer: 'Noah Williams',
+    customerId: 'CUST-1625243513000',
     date: '2023-08-01',
     dueDate: '2023-09-01',
     amount: 350.0,
@@ -276,6 +279,7 @@ const initialInvoices: Invoice[] = [
   {
     invoiceId: 'INV004',
     customer: 'Emma Brown',
+    customerId: 'CUST-1625243514000',
     date: '2023-09-10',
     dueDate: '2023-10-10',
     amount: 450.0,
@@ -290,6 +294,7 @@ const initialInvoices: Invoice[] = [
   {
     invoiceId: 'INV005',
     customer: 'James Jones',
+    customerId: 'CUST-1625243515000',
     date: '2023-10-20',
     dueDate: '2023-11-20',
     amount: 550.0,
@@ -304,6 +309,7 @@ const initialInvoices: Invoice[] = [
    {
     invoiceId: 'INV006',
     customer: 'Sophia Garcia',
+    customerId: 'CUST-1625243516000',
     date: '2023-10-22',
     dueDate: '2023-11-22',
     amount: 300.0,
@@ -321,6 +327,7 @@ const initialQuotations: Quotation[] = [
     {
         quotationId: 'QUO-001',
         customer: 'Liam Johnson',
+        customerId: 'CUST-1625243511000',
         date: '2023-11-01',
         validUntil: '2023-11-30',
         amount: 500.0,
@@ -332,6 +339,7 @@ const initialQuotations: Quotation[] = [
     {
         quotationId: 'QUO-002',
         customer: 'Olivia Smith',
+        customerId: 'CUST-1625243512000',
         date: '2023-11-05',
         validUntil: '2023-12-05',
         amount: 1200.0,
@@ -343,6 +351,7 @@ const initialQuotations: Quotation[] = [
     {
         quotationId: 'QUO-003',
         customer: 'Emma Brown',
+        customerId: 'CUST-1625243514000',
         date: '2023-11-10',
         validUntil: '2023-12-10',
         amount: 300.0,
@@ -354,6 +363,7 @@ const initialQuotations: Quotation[] = [
     {
         quotationId: 'QUO-004',
         customer: 'Noah Williams',
+        customerId: 'CUST-1625243513000',
         date: '2023-11-12',
         validUntil: '2023-12-12',
         amount: 800.0,
