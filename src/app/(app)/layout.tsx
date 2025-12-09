@@ -150,7 +150,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </Link>
           </Button>
         </header>
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col overflow-x-hidden">
             <main className="flex-1 p-4 md:p-6">{children}</main>
             <footer className="p-4 pb-4 text-center text-sm text-muted-foreground sticky bottom-0 bg-background">
               © 2025 BrandSoft. All rights reserved.
