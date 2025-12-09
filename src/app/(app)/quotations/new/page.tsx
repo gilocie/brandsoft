@@ -5,10 +5,9 @@ import { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-// ... (keep your existing imports)
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
@@ -29,7 +28,6 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { QuotationPreview } from '@/components/quotation-preview';
 import { useFormState } from '@/hooks/use-form-state';
 
-// ... (keep currencySymbols, lineItemSchema, formSchema, NewCustomerFormSchema definitions)
 const currencySymbols: { [key: string]: string } = {
   USD: '$',
   EUR: '€',
@@ -78,7 +76,6 @@ type NewCustomerFormData = z.infer<typeof NewCustomerFormSchema>;
 
 export default function NewQuotationPage() {
   const { config, addCustomer, addQuotation, saveConfig } = useBrandsoft();
-  // Using a specific key for this page allows persistence
   const { setFormData, getFormData } = useFormState('newQuotationData'); 
   const router = useRouter();
   const { toast } = useToast();
@@ -92,7 +89,6 @@ export default function NewQuotationPage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       status: 'Draft',
-      // We set a temporary default, but the useEffect will overwrite this with the real config value
       currency: 'USD', 
       lineItems: [{ description: '', quantity: 1, price: 0 }],
       notes: '',
@@ -116,13 +112,7 @@ export default function NewQuotationPage() {
   
   const watchedValues = form.watch();
 
-  // ---------------------------------------------------------
-  // 1. INITIALIZE FORM DATA (THE FIX)
-  // ---------------------------------------------------------
   useEffect(() => {
-    // CRITICAL FIX: Do not attempt to restore data until `config` is fully loaded.
-    // If we run this before config is loaded, the Customer Dropdown will be empty, 
-    // and setting 'customerId' won't show anything visually.
     if (isInitialized || !config) return;
 
     const storedData = getFormData();
@@ -130,11 +120,9 @@ export default function NewQuotationPage() {
     if (storedData && Object.keys(storedData).length > 0) {
         const restoredData: any = { ...storedData };
         
-        // Restore Dates from strings
         if (restoredData.quotationDate) restoredData.quotationDate = new Date(restoredData.quotationDate);
         if (restoredData.validUntil) restoredData.validUntil = new Date(restoredData.validUntil);
 
-        // Restore Manual Entry states for products
         if (restoredData.lineItems && restoredData.lineItems.length > 0) {
             const manualEntryState = restoredData.lineItems.map((item: any) => {
                 return !item.productId || item.productId === '';
@@ -142,10 +130,8 @@ export default function NewQuotationPage() {
             setUseManualEntry(manualEntryState);
         }
 
-        // Apply the restored data
         form.reset(restoredData);
     } else {
-        // Fallback: If no saved data, load defaults from Config
         const today = new Date();
         const validUntil = new Date();
         validUntil.setDate(today.getDate() + 30);
@@ -154,7 +140,7 @@ export default function NewQuotationPage() {
             status: 'Draft',
             currency: config.profile.defaultCurrency || 'USD',
             lineItems: [{ description: '', quantity: 1, price: 0 }],
-            notes: '', // THIS IS THE FIX: Ensure notes are empty by default
+            notes: '',
             saveNotesAsDefault: false,
             applyTax: true,
             taxName: 'VAT',
@@ -171,11 +157,8 @@ export default function NewQuotationPage() {
     }
 
     setIsInitialized(true);
-  }, [isInitialized, config, getFormData, form]); // Added 'config' to dependencies
+  }, [isInitialized, config, getFormData, form]);
 
-  // ---------------------------------------------------------
-  // 2. SAVE CHANGES TO STORAGE
-  // ---------------------------------------------------------
   useEffect(() => {
     if (!isInitialized) return; 
 
@@ -215,7 +198,6 @@ export default function NewQuotationPage() {
     const customer = config.customers.find(c => c.id === data.customerId);
     if (!customer) return;
     
-    // ... Calculation logic remains the same ...
     const subtotal = data.lineItems.reduce((acc, item) => acc + (item.quantity * item.price), 0);
 
     let discountAmount = 0;
@@ -261,13 +243,11 @@ export default function NewQuotationPage() {
         description: `Quotation ${savedQuotation.quotationId} for ${customer.name} has been saved.`
     });
 
-    // CRITICAL: Clear the saved form data so the next visit starts fresh
     setFormData(null); 
     
     router.push('/quotations');
   }
   
-  // ... (keep helper functions: handleProductSelect, handleAddItem, handleRemoveItem, formatCurrency, etc.)
   const handleProductSelect = (productId: string, index: number) => {
     const product = config?.products.find(p => p.id === productId);
     if (product) {
@@ -347,7 +327,6 @@ export default function NewQuotationPage() {
 
   return (
     <div className="container mx-auto max-w-4xl space-y-6">
-        {/* ... (Your existing JSX is fine) ... */}
        <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold font-headline">New Quotation</h1>
@@ -383,7 +362,6 @@ export default function NewQuotationPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {/* Ensure config.customers exists before mapping */}
                           {config?.customers?.map((c: Customer) => (
                             <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                           ))}
@@ -400,9 +378,6 @@ export default function NewQuotationPage() {
             </CardContent>
           </Card>
           
-          {/* ... Rest of your JSX (Quotation Details, Line Items, etc) remains exactly the same ... */}
-          
-           {/* Example of truncated JSX for brevity, paste your original Card structure here */}
            <Card>
             <CardHeader>
               <CardTitle>Quotation Details</CardTitle>
@@ -442,7 +417,6 @@ export default function NewQuotationPage() {
                   </FormItem>
                 )}
               />
-               {/* ... Keep the rest of your form fields ... */}
                 <FormField
                 control={form.control}
                 name="validUntil"
@@ -631,7 +605,6 @@ export default function NewQuotationPage() {
                   </Button>
                 </div>
             </CardContent>
-            {/* ... Keep CardFooter same as original ... */}
              <CardFooter className="flex flex-col items-end gap-2">
                 <div className="w-full max-w-sm space-y-2 self-end">
                     <div className="flex justify-between">
@@ -641,7 +614,6 @@ export default function NewQuotationPage() {
 
                     <Separator />
                     
-                    {/* Discount Section */}
                     <FormField
                         control={form.control}
                         name="applyDiscount"
@@ -682,7 +654,6 @@ export default function NewQuotationPage() {
                     
                     <Separator />
 
-                    {/* Tax Section */}
                     <FormField
                         control={form.control}
                         name="applyTax"
@@ -726,7 +697,6 @@ export default function NewQuotationPage() {
                     
                     <Separator />
 
-                    {/* Shipping Section */}
                     <FormField
                         control={form.control}
                         name="applyShipping"
@@ -814,7 +784,6 @@ export default function NewQuotationPage() {
         </form>
       </Form>
       
-      {/* ... (Customer Dialog and Preview Dialog remain exactly the same) ... */}
        <Dialog open={isAddCustomerOpen} onOpenChange={setIsAddCustomerOpen}>
         <DialogContent>
           <DialogHeader>
