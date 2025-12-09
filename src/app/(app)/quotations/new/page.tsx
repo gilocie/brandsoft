@@ -84,8 +84,10 @@ export default function NewQuotationPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
-  const [useManualEntry, setUseManualEntry] = useState<boolean[]>([false]);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
+  const [useManualEntry, setUseManualEntry] = useState<boolean[]>([false]);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const form = useForm<QuotationFormData>({
     resolver: zodResolver(formSchema),
@@ -116,56 +118,67 @@ export default function NewQuotationPage() {
 
   // 1. INITIALIZE FORM DATA ONCE ON MOUNT
   useEffect(() => {
+    if (isInitialized) return; // Prevent re-initialization
+
     const storedData = getFormData();
     
     if (storedData && Object.keys(storedData).length > 0) {
-      const restoredData: any = { ...storedData };
-      if (restoredData.quotationDate) {
-        restoredData.quotationDate = new Date(restoredData.quotationDate);
-      }
-      if (restoredData.validUntil) {
-        restoredData.validUntil = new Date(restoredData.validUntil);
-      }
-      form.reset(restoredData);
+        const restoredData: any = { ...storedData };
+        if (restoredData.quotationDate) {
+            restoredData.quotationDate = new Date(restoredData.quotationDate);
+        }
+        if (restoredData.validUntil) {
+            restoredData.validUntil = new Date(restoredData.validUntil);
+        }
+
+        if (restoredData.lineItems && restoredData.lineItems.length > 0) {
+            const manualEntryState = restoredData.lineItems.map((item: any) => {
+                return !item.productId || item.productId === '';
+            });
+            setUseManualEntry(manualEntryState);
+        }
+
+        form.reset(restoredData);
     } else if (config?.profile.defaultCurrency) {
-      const today = new Date();
-      const validUntil = new Date();
-      validUntil.setDate(today.getDate() + 30);
-      
-      form.reset({
-        ...form.getValues(),
-        status: 'Draft',
-        currency: config.profile.defaultCurrency,
-        lineItems: [{ description: '', quantity: 1, price: 0 }],
-        notes: '',
-        saveNotesAsDefault: false,
-        applyTax: true,
-        taxName: 'VAT',
-        taxType: 'percentage',
-        taxValue: 17.5,
-        applyShipping: false,
-        shippingValue: 0,
-        applyDiscount: false,
-        discountType: 'percentage',
-        discountValue: 0,
-        quotationDate: today,
-        validUntil: validUntil,
-      });
+        const today = new Date();
+        const validUntil = new Date();
+        validUntil.setDate(today.getDate() + 30);
+        
+        form.reset({
+            status: 'Draft',
+            currency: config.profile.defaultCurrency,
+            lineItems: [{ description: '', quantity: 1, price: 0 }],
+            notes: '',
+            saveNotesAsDefault: false,
+            applyTax: true,
+            taxName: 'VAT',
+            taxType: 'percentage',
+            taxValue: 17.5,
+            applyShipping: false,
+            shippingValue: 0,
+            applyDiscount: false,
+            discountType: 'percentage',
+            discountValue: 0,
+            quotationDate: today,
+            validUntil: validUntil,
+        });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [config?.profile.defaultCurrency]); // Rerun only if global config loads
+
+    setIsInitialized(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isInitialized, config?.profile.defaultCurrency]);
 
   // 2. WATCH FOR CHANGES AND SAVE TO SESSION STORAGE
   useEffect(() => {
+    if (!isInitialized) return; // Don't save until after initialization
+
     const subscription = form.watch((value) => {
-      // Only save if there's actual data to prevent overwriting with initial state
-      if (value.customerId || (value.lineItems && value.lineItems[0]?.description)) {
-        setFormData(value);
-      }
+      setFormData(value);
     });
     
     return () => subscription.unsubscribe();
-  }, [form, setFormData]);
+  }, [form, setFormData, isInitialized]);
+
 
   const newCustomerForm = useForm<NewCustomerFormData>({
     resolver: zodResolver(NewCustomerFormSchema),
@@ -258,7 +271,21 @@ export default function NewQuotationPage() {
         return next;
       });
     }
-  }
+  };
+
+  const handleAddItem = () => {
+    append({ productId: '', description: '', quantity: 1, price: 0 });
+    setUseManualEntry(prev => [...prev, true]); // New items default to manual entry
+  };
+  
+  const handleRemoveItem = (index: number) => {
+    remove(index);
+    setUseManualEntry(prev => {
+        const next = [...prev];
+        next.splice(index, 1);
+        return next;
+    });
+  };
 
   const currencySymbol = config ? (currencySymbols[watchedValues.currency] || watchedValues.currency) : '$';
   
@@ -535,7 +562,7 @@ export default function NewQuotationPage() {
                           type="button"
                           variant="destructive"
                           size="icon"
-                          onClick={() => remove(index)}
+                          onClick={() => handleRemoveItem(index)}
                           className="mt-6"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -582,7 +609,7 @@ export default function NewQuotationPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => { append({ productId: '', description: '', quantity: 1, price: 0 }); setUseManualEntry(prev => [...prev, true]); }}
+                    onClick={handleAddItem}
                   >
                     <PlusCircle className="mr-2 h-4 w-4" /> Add Item
                   </Button>
