@@ -77,7 +77,7 @@ export default function EditInvoicePage() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const invoiceId = params.id as string;
-  const invoiceToEdit = config?.invoices.find(inv => inv.invoiceId === invoiceId);
+  const invoiceToEdit = config?.invoices.find(inv => inv.invoiceId.toLowerCase() === invoiceId.toLowerCase());
 
   const form = useForm<InvoiceFormData>({
     resolver: zodResolver(formSchema),

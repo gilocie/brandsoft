@@ -78,7 +78,7 @@ export default function EditQuotationPage() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const quotationId = params.id as string;
-  const quotationToEdit = config?.quotations.find(q => q.quotationId === quotationId);
+  const quotationToEdit = config?.quotations.find(q => q.quotationId.toLowerCase() === quotationId.toLowerCase());
 
   const form = useForm<QuotationFormData>({
     resolver: zodResolver(formSchema),
