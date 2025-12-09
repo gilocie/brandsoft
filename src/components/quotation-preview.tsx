@@ -141,7 +141,6 @@ export function QuotationPreview({
 
         const documentDesign = quotationData?.design || {};
         const override = designOverride || {};
-        const hasOverride = designOverride !== undefined && designOverride !== null;
         
         let mergedDesign: DesignSettings = {
             logo: brand.logo || '',
@@ -184,9 +183,7 @@ export function QuotationPreview({
 
         merge(mergedDesign, defaultTemplate);
         merge(mergedDesign, documentDesign);
-        if (hasOverride) {
-           merge(mergedDesign, override);
-        }
+        merge(mergedDesign, override);
         
         return mergedDesign;
     }, [config, quotationData?.design, designOverride]);
@@ -306,7 +303,6 @@ export function QuotationPreview({
                                      <div className="w-1/2">
                                         <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Quote For</h3>
                                         <p className="font-bold text-xl">{customerDisplayName}</p>
-                                        {customer.companyName && <p className="text-sm">{customer.name}</p>}
                                         <p className="text-sm mt-1 whitespace-pre-wrap">{customer.companyAddress || customer.address}</p>
                                         <p className="text-sm">{customer.email}</p>
                                     </div>
