@@ -218,8 +218,8 @@ export function InvoicePreview({
         }
     } else if (invoiceData.tax) {
         taxAmount = invoiceData.tax;
-        if (invoiceData.subtotal && invoiceData.tax && invoiceData.subtotal > 0) {
-             taxRateDisplay = `${((invoiceData.tax / invoiceData.subtotal) * 100).toFixed(2)}%`;
+        if (invoiceData.subtotal && invoiceData.tax && invoiceData.subtotal > 0 && invoiceData.taxType !== 'flat') {
+             taxRateDisplay = `${invoiceData.taxValue}%`;
         } else {
              taxRateDisplay = formatCurrency(invoiceData.tax);
         }

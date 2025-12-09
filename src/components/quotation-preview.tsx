@@ -215,8 +215,8 @@ export function QuotationPreview({
         }
     } else if (quotationData.tax) {
         taxAmount = quotationData.tax;
-        if (quotationData.subtotal && quotationData.tax && quotationData.subtotal > 0) {
-             taxRateDisplay = `${((quotationData.tax / quotationData.subtotal) * 100).toFixed(2)}%`;
+        if (quotationData.subtotal && quotationData.tax && quotationData.subtotal > 0 && quotationData.taxType !== 'flat') {
+             taxRateDisplay = `${quotationData.taxValue}%`;
         } else {
              taxRateDisplay = formatCurrency(quotationData.tax);
         }
