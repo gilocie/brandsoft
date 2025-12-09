@@ -34,6 +34,7 @@ export interface InvoicePreviewProps {
     forPdf?: boolean;
     designOverride?: DesignSettings;
     pageNumber?: number; // for multi-page PDF rendering
+    totalPages?: number;
 }
 
 const Watermark = ({ status, design }: { status?: string, design: DesignSettings }) => {
@@ -113,6 +114,7 @@ const Footer = ({ design, pageNumber, totalPages }: { design: DesignSettings, pa
     );
 };
 
+
 export function InvoicePreview({ 
     config, 
     customer, 
@@ -120,7 +122,8 @@ export function InvoicePreview({
     invoiceId, 
     forPdf = false, 
     designOverride,
-    pageNumber = 1
+    pageNumber = 1,
+    totalPages = 1,
 }: InvoicePreviewProps) {
     if (!config || !customer || !invoiceData) {
         return (
@@ -209,9 +212,9 @@ export function InvoicePreview({
     let taxAmount = 0;
     let taxRateDisplay = '0%';
     if (invoiceData.applyTax && invoiceData.taxValue) {
+        taxRateDisplay = `${invoiceData.taxValue}%`;
         if (invoiceData.taxType === 'percentage') {
             taxAmount = subtotalAfterDiscount * (invoiceData.taxValue / 100);
-            taxRateDisplay = `${invoiceData.taxValue}%`;
         } else {
             taxAmount = invoiceData.taxValue;
             taxRateDisplay = formatCurrency(invoiceData.taxValue);
@@ -322,24 +325,25 @@ export function InvoicePreview({
                             <section className="mb-10">
                                 <div className="w-full">
                                     <div className="flex border-b-2 pb-2 mb-2" style={{borderColor: design.textColor ? design.textColor : 'inherit'}}>
-                                        <div className="w-[45%] font-bold uppercase text-[11px]">Item / Description</div>
+                                        <div className="w-[30%] font-bold uppercase text-[11px]">Item</div>
+                                        <div className="w-[20%] font-bold uppercase text-[11px]">Description</div>
                                         <div className="w-[10%] font-bold uppercase text-[11px] text-center">Qty</div>
-                                        <div className="w-[20%] font-bold uppercase text-[11px] text-right">Price</div>
+                                        <div className="w-[15%] font-bold uppercase text-[11px] text-right">Price</div>
                                         <div className="w-[10%] font-bold uppercase text-[11px] text-right">Tax</div>
                                         <div className="w-[15%] font-bold uppercase text-[11px] text-right">Amount</div>
                                     </div>
                                     
                                     {invoiceData.lineItems?.map((item, index) => {
                                         const product = config?.products?.find(p => p.name === item.description);
+                                        const itemName = product ? product.name : item.description;
+                                        const itemDesc = product ? product.description : '';
                                         return (
                                             <div key={index} className="flex border-b py-3 text-sm" style={{borderColor: 'rgba(0,0,0,0.05)'}}>
-                                                <div className="w-[45%] pr-2">
-                                                    <p className="font-bold">{item.description}</p>
-                                                    <p className="text-xs text-gray-500">{product?.description}</p>
-                                                </div>
+                                                <div className="w-[30%] pr-2 font-bold">{itemName}</div>
+                                                <div className="w-[20%] pr-2 text-xs text-gray-500">{itemDesc}</div>
                                                 <div className="w-[10%] text-center">{item.quantity}</div>
-                                                <div className="w-[20%] text-right">{formatCurrency(item.price)}</div>
-                                                <div className="w-[10%] text-right">{taxRateDisplay}</div>
+                                                <div className="w-[15%] text-right">{formatCurrency(item.price)}</div>
+                                                <div className="w-[10%] text-right">{invoiceData.taxValue?.toFixed(1) || 0}%</div>
                                                 <div className="w-[15%] text-right font-bold">{formatCurrency(item.quantity * item.price)}</div>
                                             </div>
                                         )
@@ -399,7 +403,7 @@ export function InvoicePreview({
                             </section>
                         </main>
                     </div>
-                    <Footer design={design} pageNumber={pageNumber} totalPages={1} />
+                    <Footer design={design} pageNumber={pageNumber} totalPages={totalPages} />
                 </div>
             </div>
         </Wrapper>
@@ -442,7 +446,7 @@ export const downloadInvoiceAsPdf = async (props: InvoicePreviewProps) => {
         tempContainer.appendChild(pageContainer);
         const pageRoot = createRoot(pageContainer);
 
-        pageRoot.render(<InvoicePreview {...props} forPdf={true} pageNumber={i} />);
+        pageRoot.render(<InvoicePreview {...props} forPdf={true} pageNumber={i} totalPages={totalPages} />);
         
         await new Promise(resolve => setTimeout(resolve, 1000));
         
