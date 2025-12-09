@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { CalendarIcon, PlusCircle, Trash2, Save, Send, Eye, UserPlus, Loader2, Palette } from 'lucide-react';
 import { format, parseISO } from "date-fns";
 import Link from 'next/link';
-import { useBrandsoft, type Customer, type Quotation, type Product } from '@/hooks/use-brandsoft.tsx';
+import { useBrandsoft, type Customer, type Quotation, type Product } from '@/hooks/use-brandsoft';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useRouter, useParams } from 'next/navigation';
@@ -86,11 +86,11 @@ export default function EditQuotationPage() {
   });
 
   useEffect(() => {
-    if (config) {
+    if (config && isLoading) {
       const quotationToEdit = config.quotations.find(q => q.quotationId?.toLowerCase() === quotationId?.toLowerCase());
       
       if (quotationToEdit) {
-        const customer = config.customers.find(c => c.name === quotationToEdit.customer);
+        const customer = config.customers.find(c => c.id === quotationToEdit.customerId) || config.customers.find(c => c.name === quotationToEdit.customer);
         if (customer) {
             form.reset({
               customerId: customer.id || '',
@@ -124,12 +124,12 @@ export default function EditQuotationPage() {
              router.push('/quotations');
         }
         setIsLoading(false);
-      } else {
+      } else if (config.quotations.length > 0) {
         toast({ title: "Error", description: "Quotation not found.", variant: 'destructive'});
         router.push('/quotations');
       }
     }
-  }, [config, quotationId, form, router, toast]);
+  }, [config, quotationId, form, router, toast, isLoading]);
 
   const { fields, append, remove, update } = useFieldArray({
     control: form.control,
@@ -196,6 +196,7 @@ export default function EditQuotationPage() {
 
     const updatedQuotation: Omit<Quotation, 'quotationId'> = {
         customer: customer.name,
+        customerId: customer.id,
         date: format(data.quotationDate, 'yyyy-MM-dd'),
         validUntil: format(data.validUntil, 'yyyy-MM-dd'),
         amount: total,

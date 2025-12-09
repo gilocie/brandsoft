@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { CalendarIcon, PlusCircle, Trash2, Save, Send, Eye, UserPlus, Palette } from 'lucide-react';
 import { format } from "date-fns";
 import Link from 'next/link';
-import { useBrandsoft, type Customer, type Invoice, type Product, type DesignSettings } from '@/hooks/use-brandsoft.tsx';
+import { useBrandsoft, type Customer, type Invoice, type Product, type DesignSettings } from '@/hooks/use-brandsoft';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useRouter } from 'next/navigation';
@@ -895,6 +895,7 @@ export default function NewInvoicePage() {
     
 
     
+
 
 
 

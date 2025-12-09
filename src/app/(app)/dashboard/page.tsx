@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useBrandsoft, type Invoice } from "@/hooks/use-brandsoft.tsx";
+import { useBrandsoft, type Invoice } from "@/hooks/use-brandsoft";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileText, Award, CreditCard, FileBarChart2, Brush, ArrowRight, Library, Users, Package, CheckCircle, XCircle, Clock, AlertTriangle, DollarSign, FileClock, FileX, Receipt } from "lucide-react";

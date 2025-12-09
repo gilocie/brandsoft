@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { CalendarIcon, PlusCircle, Trash2, Save, Send, Eye, UserPlus, Loader2, Palette } from 'lucide-react';
 import { format, parseISO } from "date-fns";
 import Link from 'next/link';
-import { useBrandsoft, type Customer, type Invoice, type Product } from '@/hooks/use-brandsoft.tsx';
+import { useBrandsoft, type Customer, type Invoice, type Product } from '@/hooks/use-brandsoft';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useRouter, useParams } from 'next/navigation';
@@ -94,7 +94,7 @@ export default function EditInvoicePage() {
     if (invoiceToEdit) {
       const customer = config.customers.find(c => c.name === invoiceToEdit.customer);
       
-      if (invoiceToEdit && customer) {
+      if (customer) {
           form.reset({
             customerId: customer.id || '',
             invoiceDate: parseISO(invoiceToEdit.date),
