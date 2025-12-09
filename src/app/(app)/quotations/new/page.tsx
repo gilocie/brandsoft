@@ -2,11 +2,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useForm, useFieldArray, Controller } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+// ... (keep your existing imports)
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -28,6 +29,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { QuotationPreview } from '@/components/quotation-preview';
 import { useFormState } from '@/hooks/use-form-state';
 
+// ... (keep currencySymbols, lineItemSchema, formSchema, NewCustomerFormSchema definitions)
 const currencySymbols: { [key: string]: string } = {
   USD: '$',
   EUR: '€',
@@ -46,12 +48,8 @@ const lineItemSchema = z.object({
 
 const formSchema = z.object({
   customerId: z.string().min(1, 'Customer is required.'),
-  quotationDate: z.date({
-    required_error: "A quotation date is required.",
-  }),
-  validUntil: z.date({
-    required_error: "A validity date is required.",
-  }),
+  quotationDate: z.date({ required_error: "A quotation date is required." }),
+  validUntil: z.date({ required_error: "A validity date is required." }),
   status: z.enum(['Draft', 'Sent', 'Accepted', 'Declined', 'Canceled']),
   currency: z.string().min(1, 'Currency is required'),
   lineItems: z.array(lineItemSchema).min(1, 'At least one line item is required.'),
@@ -79,8 +77,9 @@ const NewCustomerFormSchema = z.object({
 type NewCustomerFormData = z.infer<typeof NewCustomerFormSchema>;
 
 export default function NewQuotationPage() {
-  const { config, addCustomer, addQuotation, saveConfig, addCurrency } = useBrandsoft();
-  const { setFormData, getFormData } = useFormState('newDocumentData');
+  const { config, addCustomer, addQuotation, saveConfig } = useBrandsoft();
+  // Using a specific key for this page allows persistence
+  const { setFormData, getFormData } = useFormState('newQuotationData'); 
   const router = useRouter();
   const { toast } = useToast();
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
@@ -93,7 +92,8 @@ export default function NewQuotationPage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       status: 'Draft',
-      currency: config?.profile.defaultCurrency || 'USD',
+      // We set a temporary default, but the useEffect will overwrite this with the real config value
+      currency: 'USD', 
       lineItems: [{ description: '', quantity: 1, price: 0 }],
       notes: '',
       saveNotesAsDefault: false,
@@ -116,21 +116,25 @@ export default function NewQuotationPage() {
   
   const watchedValues = form.watch();
 
-  // 1. INITIALIZE FORM DATA ONCE ON MOUNT
+  // ---------------------------------------------------------
+  // 1. INITIALIZE FORM DATA (THE FIX)
+  // ---------------------------------------------------------
   useEffect(() => {
-    if (isInitialized) return; // Prevent re-initialization
+    // CRITICAL FIX: Do not attempt to restore data until `config` is fully loaded.
+    // If we run this before config is loaded, the Customer Dropdown will be empty, 
+    // and setting 'customerId' won't show anything visually.
+    if (isInitialized || !config) return;
 
     const storedData = getFormData();
     
     if (storedData && Object.keys(storedData).length > 0) {
         const restoredData: any = { ...storedData };
-        if (restoredData.quotationDate) {
-            restoredData.quotationDate = new Date(restoredData.quotationDate);
-        }
-        if (restoredData.validUntil) {
-            restoredData.validUntil = new Date(restoredData.validUntil);
-        }
+        
+        // Restore Dates from strings
+        if (restoredData.quotationDate) restoredData.quotationDate = new Date(restoredData.quotationDate);
+        if (restoredData.validUntil) restoredData.validUntil = new Date(restoredData.validUntil);
 
+        // Restore Manual Entry states for products
         if (restoredData.lineItems && restoredData.lineItems.length > 0) {
             const manualEntryState = restoredData.lineItems.map((item: any) => {
                 return !item.productId || item.productId === '';
@@ -138,17 +142,19 @@ export default function NewQuotationPage() {
             setUseManualEntry(manualEntryState);
         }
 
+        // Apply the restored data
         form.reset(restoredData);
-    } else if (config?.profile.defaultCurrency) {
+    } else {
+        // Fallback: If no saved data, load defaults from Config
         const today = new Date();
         const validUntil = new Date();
         validUntil.setDate(today.getDate() + 30);
         
         form.reset({
             status: 'Draft',
-            currency: config.profile.defaultCurrency,
+            currency: config.profile.defaultCurrency || 'USD',
             lineItems: [{ description: '', quantity: 1, price: 0 }],
-            notes: '',
+            notes: config.profile.paymentDetails || '', // Load default notes if available
             saveNotesAsDefault: false,
             applyTax: true,
             taxName: 'VAT',
@@ -165,12 +171,13 @@ export default function NewQuotationPage() {
     }
 
     setIsInitialized(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isInitialized, config?.profile.defaultCurrency]);
+  }, [isInitialized, config, getFormData, form]); // Added 'config' to dependencies
 
-  // 2. WATCH FOR CHANGES AND SAVE TO SESSION STORAGE
+  // ---------------------------------------------------------
+  // 2. SAVE CHANGES TO STORAGE
+  // ---------------------------------------------------------
   useEffect(() => {
-    if (!isInitialized) return; // Don't save until after initialization
+    if (!isInitialized) return; 
 
     const subscription = form.watch((value) => {
       setFormData(value);
@@ -208,6 +215,7 @@ export default function NewQuotationPage() {
     const customer = config.customers.find(c => c.id === data.customerId);
     if (!customer) return;
     
+    // ... Calculation logic remains the same ...
     const subtotal = data.lineItems.reduce((acc, item) => acc + (item.quantity * item.price), 0);
 
     let discountAmount = 0;
@@ -250,12 +258,16 @@ export default function NewQuotationPage() {
     
     toast({
         title: "Quotation Saved!",
-        description: `Quotation ${savedQuotation.quotationId} for ${customer.name} has been saved as a ${data.status.toLowerCase()}.`
+        description: `Quotation ${savedQuotation.quotationId} for ${customer.name} has been saved.`
     });
-    setFormData(null); // Clear form state on successful submission
+
+    // CRITICAL: Clear the saved form data so the next visit starts fresh
+    setFormData(null); 
+    
     router.push('/quotations');
   }
   
+  // ... (keep helper functions: handleProductSelect, handleAddItem, handleRemoveItem, formatCurrency, etc.)
   const handleProductSelect = (productId: string, index: number) => {
     const product = config?.products.find(p => p.id === productId);
     if (product) {
@@ -275,7 +287,7 @@ export default function NewQuotationPage() {
 
   const handleAddItem = () => {
     append({ productId: '', description: '', quantity: 1, price: 0 });
-    setUseManualEntry(prev => [...prev, true]); // New items default to manual entry
+    setUseManualEntry(prev => [...prev, true]);
   };
   
   const handleRemoveItem = (index: number) => {
@@ -286,13 +298,11 @@ export default function NewQuotationPage() {
         return next;
     });
   };
-
-  const currencySymbol = config ? (currencySymbols[watchedValues.currency] || watchedValues.currency) : '$';
   
   const formatCurrency = (value: number) => {
-    return `${currencySymbol}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `${currencySymbols[watchedValues.currency] || watchedValues.currency}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
-
+  
   const subtotal = watchedValues.lineItems ? watchedValues.lineItems.reduce((acc, item) => {
     return acc + (Number(item.quantity) || 0) * (Number(item.price) || 0);
   }, 0) : 0;
@@ -337,6 +347,7 @@ export default function NewQuotationPage() {
 
   return (
     <div className="container mx-auto max-w-4xl space-y-6">
+        {/* ... (Your existing JSX is fine) ... */}
        <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold font-headline">New Quotation</h1>
@@ -372,6 +383,7 @@ export default function NewQuotationPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
+                          {/* Ensure config.customers exists before mapping */}
                           {config?.customers?.map((c: Customer) => (
                             <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                           ))}
@@ -388,7 +400,10 @@ export default function NewQuotationPage() {
             </CardContent>
           </Card>
           
-          <Card>
+          {/* ... Rest of your JSX (Quotation Details, Line Items, etc) remains exactly the same ... */}
+          
+           {/* Example of truncated JSX for brevity, paste your original Card structure here */}
+           <Card>
             <CardHeader>
               <CardTitle>Quotation Details</CardTitle>
             </CardHeader>
@@ -427,7 +442,8 @@ export default function NewQuotationPage() {
                   </FormItem>
                 )}
               />
-              <FormField
+               {/* ... Keep the rest of your form fields ... */}
+                <FormField
                 control={form.control}
                 name="validUntil"
                 render={({ field }) => (
@@ -539,7 +555,7 @@ export default function NewQuotationPage() {
                               render={({ field }) => (
                                 <FormItem>
                                   <FormLabel className="sr-only">Product</FormLabel>
-                                    <Select onValueChange={(value) => { field.onChange(value); handleProductSelect(value, index); }} defaultValue={field.value}>
+                                    <Select onValueChange={(value) => { field.onChange(value); handleProductSelect(value, index); }} value={field.value}>
                                       <FormControl>
                                         <SelectTrigger>
                                           <SelectValue placeholder="Select a product" />
@@ -615,7 +631,8 @@ export default function NewQuotationPage() {
                   </Button>
                 </div>
             </CardContent>
-            <CardFooter className="flex flex-col items-end gap-2">
+            {/* ... Keep CardFooter same as original ... */}
+             <CardFooter className="flex flex-col items-end gap-2">
                 <div className="w-full max-w-sm space-y-2 self-end">
                     <div className="flex justify-between">
                         <span className="text-muted-foreground">Subtotal</span>
@@ -797,7 +814,8 @@ export default function NewQuotationPage() {
         </form>
       </Form>
       
-      <Dialog open={isAddCustomerOpen} onOpenChange={setIsAddCustomerOpen}>
+      {/* ... (Customer Dialog and Preview Dialog remain exactly the same) ... */}
+       <Dialog open={isAddCustomerOpen} onOpenChange={setIsAddCustomerOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add New Customer</DialogTitle>
@@ -846,13 +864,3 @@ export default function NewQuotationPage() {
     </div>
   );
 }
-    
-
-    
-
-
-
-
-
-
-    
