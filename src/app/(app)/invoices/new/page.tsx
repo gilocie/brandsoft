@@ -329,6 +329,9 @@ export default function NewInvoicePage() {
   }
   
   const isCustomizeDisabled = !watchedValues.customerId || watchedValues.lineItems.length === 0 || !watchedValues.lineItems[0]?.description;
+  
+  const designData = designFormState.getFormData();
+  const nextInvoiceId = `${designData?.invoicePrefix || config?.profile.invoicePrefix || 'INV-'}${(Number(designData?.invoiceStartNumber) || Number(config?.profile.invoiceStartNumber) || 100) + (config?.invoices?.length || 0)}`;
 
   return (
     <div className="container mx-auto max-w-4xl space-y-6">
@@ -854,7 +857,8 @@ export default function NewInvoicePage() {
             <InvoicePreview
                 config={config}
                 customer={config?.customers.find(c => c.id === watchedValues.customerId) || null}
-                invoiceData={{...watchedValues, design: designFormState.getFormData() }}
+                invoiceData={{...watchedValues, design: designFormState.getFormData(), status: watchedValues.status || 'Pending' }}
+                invoiceId={nextInvoiceId}
             />
           </div>
           <DialogFooter>
@@ -868,6 +872,7 @@ export default function NewInvoicePage() {
     
 
     
+
 
 
 

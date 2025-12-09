@@ -343,6 +343,9 @@ export default function NewQuotationPage() {
 
   const isCustomizeDisabled = !watchedValues.customerId || watchedValues.lineItems.length === 0 || !watchedValues.lineItems[0]?.description;
 
+  const designData = designFormState.getFormData();
+  const nextQuotationId = `${designData?.quotationPrefix || config?.profile.quotationPrefix || 'QUO-'}${(Number(designData?.quotationStartNumber) || Number(config?.profile.quotationStartNumber) || 100) + (config?.quotations?.length || 0)}`;
+
   return (
     <div className="container mx-auto max-w-4xl space-y-6">
        <div className="flex items-center justify-between">
@@ -864,6 +867,7 @@ export default function NewQuotationPage() {
                 config={config}
                 customer={config?.customers.find(c => c.id === watchedValues.customerId) || null}
                 quotationData={{...watchedValues, design: designFormState.getFormData() }}
+                quotationId={nextQuotationId}
             />
           </div>
           <DialogFooter>
@@ -876,6 +880,7 @@ export default function NewQuotationPage() {
 }
 
     
+
 
 
 
