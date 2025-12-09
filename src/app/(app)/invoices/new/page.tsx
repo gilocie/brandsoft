@@ -87,7 +87,7 @@ export default function NewInvoicePage() {
   const form = useForm<InvoiceFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      status: 'Draft',
+      status: 'Pending',
       currency: 'USD',
       lineItems: [{ description: '', quantity: 1, price: 0 }],
       notes: '',
@@ -167,7 +167,7 @@ export default function NewInvoicePage() {
     newCustomerForm.reset();
   }
 
-  const handleFormSubmit = (status: 'Draft' | 'Pending') => {
+  const handleFormSubmit = (status: Invoice['status']) => {
     form.setValue('status', status);
     form.handleSubmit(onSubmit)();
   }
@@ -472,8 +472,10 @@ export default function NewInvoicePage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="Draft">Draft</SelectItem>
                           <SelectItem value="Pending">Pending</SelectItem>
+                          <SelectItem value="Paid">Paid</SelectItem>
+                          <SelectItem value="Overdue">Overdue</SelectItem>
+                          <SelectItem value="Canceled">Canceled</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -835,7 +837,7 @@ export default function NewInvoicePage() {
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={handlePreview}><Eye className="mr-2 h-4 w-4"/> Preview</Button>
             <Button type="button" variant="secondary" onClick={() => handleFormSubmit('Draft')}><Save className="mr-2 h-4 w-4"/> Save Draft</Button>
-            <Button type="button" onClick={() => handleFormSubmit('Pending')}><Send className="mr-2 h-4 w-4"/> Save and Send</Button>
+            <Button type="button" onClick={() => handleFormSubmit(form.getValues('status'))}><Send className="mr-2 h-4 w-4"/> Save and Send</Button>
           </div>
         </form>
       </Form>
@@ -893,6 +895,7 @@ export default function NewInvoicePage() {
     
 
     
+
 
 
 
