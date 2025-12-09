@@ -43,6 +43,7 @@ const settingsSchema = z.object({
   secondaryColor: z.string().optional(),
   font: z.string().optional(),
   defaultCurrency: z.string().min(1, "Default currency is required"),
+  paymentDetails: z.string().optional(),
 });
 
 type SettingsFormData = z.infer<typeof settingsSchema>;
@@ -64,6 +65,7 @@ export default function SettingsPage() {
       secondaryColor: '#D87093',
       font: 'Poppins',
       defaultCurrency: 'USD',
+      paymentDetails: '',
     },
   });
   
@@ -76,6 +78,7 @@ export default function SettingsPage() {
             secondaryColor: config.brand.secondaryColor,
             font: config.brand.font,
             defaultCurrency: config.profile.defaultCurrency,
+            paymentDetails: config.profile.paymentDetails,
         });
         setLogoPreview(config.brand.logo);
     }
@@ -110,6 +113,7 @@ export default function SettingsPage() {
         profile: {
           ...config.profile,
           defaultCurrency: data.defaultCurrency,
+          paymentDetails: data.paymentDetails,
         },
       };
       saveConfig(newConfig);
@@ -210,14 +214,23 @@ export default function SettingsPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle>Regional & Currency</CardTitle>
-                            <CardDescription>Manage currency and regional formats.</CardDescription>
+                            <CardDescription>Manage currency and default payment details for documents.</CardDescription>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="space-y-6">
                             <div className="max-w-md space-y-4">
                                 <FormField control={form.control} name="defaultCurrency" render={({ field }) => (
                                     <FormItem><FormLabel>Default Currency Code</FormLabel>
                                     <FormControl><Input placeholder="e.g. USD, MWK" {...field} /></FormControl>
                                     <FormDescription>Enter the 3-letter currency code for your documents.</FormDescription>
+                                    <FormMessage /></FormItem>
+                                )} />
+                            </div>
+                            <Separator />
+                             <div className="space-y-4">
+                               <FormField control={form.control} name="paymentDetails" render={({ field }) => (
+                                    <FormItem><FormLabel>Default Payment Details</FormLabel>
+                                    <FormControl><Textarea placeholder="Your bank details, mobile payment info, etc." {...field} className="min-h-[120px]" /></FormControl>
+                                    <FormDescription>This will appear by default on new invoices.</FormDescription>
                                     <FormMessage /></FormItem>
                                 )} />
                             </div>
