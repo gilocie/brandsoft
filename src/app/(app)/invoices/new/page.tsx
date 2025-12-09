@@ -56,6 +56,7 @@ const formSchema = z.object({
   currency: z.string().min(1, 'Currency is required'),
   lineItems: z.array(lineItemSchema).min(1, 'At least one line item is required.'),
   notes: z.string().optional(),
+  saveNotesAsDefault: z.boolean().default(false),
   applyTax: z.boolean().default(true),
   taxName: z.string().optional(),
   taxType: z.enum(['percentage', 'flat']).default('percentage'),
@@ -93,6 +94,7 @@ export default function NewInvoicePage() {
       currency: config?.profile.defaultCurrency || 'USD',
       lineItems: [{ description: '', quantity: 1, price: 0 }],
       notes: '',
+      saveNotesAsDefault: false,
       applyTax: true,
       taxName: 'VAT',
       taxType: 'percentage',
@@ -147,6 +149,11 @@ export default function NewInvoicePage() {
 
   function onSubmit(data: InvoiceFormData) {
     if (!config) return;
+
+    if (data.saveNotesAsDefault) {
+      const newConfig = { ...config, profile: { ...config.profile, paymentDetails: data.notes }};
+      saveConfig(newConfig, { redirect: false });
+    }
 
     const customer = config.customers.find(c => c.id === data.customerId);
     if (!customer) return;
@@ -690,6 +697,26 @@ export default function NewInvoicePage() {
                       </FormItem>
                     )}
                   />
+                  <FormField
+                    control={form.control}
+                    name="saveNotesAsDefault"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm mt-4">
+                            <div className="space-y-0.5">
+                                <FormLabel>Save as default notes</FormLabel>
+                                <FormDescription>
+                                   Use these notes for all future invoices.
+                                </FormDescription>
+                            </div>
+                            <FormControl>
+                                <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                />
+                            </FormControl>
+                        </FormItem>
+                    )}
+                />
               </CardContent>
           </Card>
 
@@ -753,8 +780,6 @@ export default function NewInvoicePage() {
     </div>
   );
 }
-    
-
     
 
     

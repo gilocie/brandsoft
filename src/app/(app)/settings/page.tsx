@@ -230,7 +230,7 @@ export default function SettingsPage() {
                                <FormField control={form.control} name="paymentDetails" render={({ field }) => (
                                     <FormItem><FormLabel>Default Payment Details</FormLabel>
                                     <FormControl><Textarea placeholder="Your bank details, mobile payment info, etc." {...field} className="min-h-[120px]" /></FormControl>
-                                    <FormDescription>This will appear by default on new invoices.</FormDescription>
+                                    <FormDescription>These are your default notes for new invoices and quotations. You can override them on each document.</FormDescription>
                                     <FormMessage /></FormItem>
                                 )} />
                             </div>
@@ -261,3 +261,5 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+    
