@@ -516,7 +516,7 @@ function DocumentDesignPage() {
     const currentDesignSettings: DesignSettings = useMemo(() => {
         const watermarkSelection = watchedValues.watermarkText;
         const isAuto = watermarkSelection === 'AUTO';
-        const docStatus = document?.status?.toUpperCase() || getFormData('newDocumentData')?.status.toUpperCase() || '';
+        const docStatus = document?.status?.toUpperCase() || getFormData('newDocumentData')?.status?.toUpperCase() || '';
         
         let watermarkText: string | undefined;
         if (isAuto) {
