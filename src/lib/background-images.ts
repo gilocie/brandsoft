@@ -4,12 +4,10 @@
 // This file acts as a manifest for background images.
 // To add a new image:
 // 1. Place the image file in the 'public/backgrounds' folder.
-// 2. Add a new import line here and add the imported variable to the array below.
+// 2. Add a new entry to the array below with its public URL path.
 
-import cert0 from '../../public/backgrounds/brandsoft-background1.jpg';
-
-const backgroundImages: { name: string; src: any }[] = [
-  { name: 'brandsoft-background1', src: cert0 },
+const backgroundImages: { name: string; src: string }[] = [
+  { name: 'brandsoft-background1', src: '/backgrounds/brandsoft-background1.jpg' },
 ];
 
 export default backgroundImages;

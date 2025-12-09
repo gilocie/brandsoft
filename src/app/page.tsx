@@ -29,8 +29,7 @@ export default function HomePage() {
   return (
     <div 
       className="flex h-screen w-full items-center justify-center bg-cover bg-center"
-      style={{ backgroundImage: "url('/backgrounds/brandsoft-background1.jpg')" }}
-      data-ai-hint="office building"
+      style={{ backgroundImage: `url(/backgrounds/brandsoft-background1.jpg)` }}
     >
       <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
       <div className="relative flex flex-col items-center gap-4">

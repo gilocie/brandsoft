@@ -49,8 +49,7 @@ export default function ActivationPage() {
   return (
     <div 
       className="flex min-h-screen items-center justify-center bg-cover bg-center p-4 font-body"
-      style={{ backgroundImage: "url('/backgrounds/brandsoft-background1.jpg')" }}
-      data-ai-hint="office building"
+      style={{ backgroundImage: `url(/backgrounds/brandsoft-background1.jpg)` }}
     >
       <div className="absolute inset-0 bg-background/50 backdrop-blur-sm" />
       <Card className="w-full max-w-md shadow-2xl z-10">
