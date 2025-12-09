@@ -111,7 +111,7 @@ export default function EditInvoicePage() {
         
         applyTax: !!invoiceToEdit.tax,
         taxType: invoiceToEdit.taxType || 'percentage',
-        taxValue: invoiceToEdit.taxValue || 0,
+        taxValue: invoiceToEdit.taxValue || 17.5,
         taxName: invoiceToEdit.taxName || 'VAT',
 
         applyShipping: !!invoiceToEdit.shipping,
