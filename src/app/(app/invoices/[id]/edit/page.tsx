@@ -1,13 +1,12 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useForm, useFieldArray, Controller } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
@@ -15,10 +14,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from "@/lib/utils";
-import { CalendarIcon, PlusCircle, Trash2, Save, Send, Eye, UserPlus, Loader2, Palette } from 'lucide-react';
+import { CalendarIcon, PlusCircle, Trash2, Save, Send, Eye, UserPlus, Loader2 } from 'lucide-react';
 import { format, parseISO } from "date-fns";
 import Link from 'next/link';
-import { useBrandsoft, type Customer, type Invoice, type Product } from '@/hooks/use-brandsoft.tsx';
+import { useBrandsoft, type Customer, type Invoice } from '@/hooks/use-brandsoft.tsx';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useRouter, useParams } from 'next/navigation';
@@ -86,50 +85,55 @@ export default function EditInvoicePage() {
   });
 
   useEffect(() => {
-    if (config) {
+    // Only run if config is loaded and we are still in loading state
+    if (config && isLoading) {
       const invoiceToEdit = config.invoices.find(inv => inv.invoiceId?.toLowerCase() === invoiceId?.toLowerCase());
+      
       if (invoiceToEdit) {
-        const customer = config.customers.find(c => c.name === invoiceToEdit.customer);
+        // FIX: Try to find by ID first, then fallback to Name matching
+        const customer = config.customers.find(c => c.id === invoiceToEdit.customerId) || 
+                         config.customers.find(c => c.name === invoiceToEdit.customer);
         
-        if (customer) {
-          form.reset({
-            customerId: customer.id,
-            invoiceDate: parseISO(invoiceToEdit.date),
-            dueDate: parseISO(invoiceToEdit.dueDate),
-            status: invoiceToEdit.status,
-            currency: invoiceToEdit.currency || config.profile.defaultCurrency,
-            notes: invoiceToEdit.notes || '',
-            applyDiscount: !!invoiceToEdit.discount,
-            discountType: invoiceToEdit.discountType || 'flat',
-            discountValue: invoiceToEdit.discountValue || 0,
-            applyTax: !!invoiceToEdit.tax,
-            taxType: invoiceToEdit.taxType || 'percentage',
-            taxValue: invoiceToEdit.taxValue ?? 17.5,
-            taxName: invoiceToEdit.taxName ?? 'VAT',
-            applyShipping: !!invoiceToEdit.shipping,
-            shippingValue: invoiceToEdit.shipping || 0,
-            applyPartialPayment: !!invoiceToEdit.partialPayment,
-            partialPaymentType: invoiceToEdit.partialPaymentType || 'percentage',
-            partialPaymentValue: invoiceToEdit.partialPaymentValue || 0,
-            lineItems: invoiceToEdit.lineItems || (invoiceToEdit.subtotal ? [{
-              description: 'Original Items',
-              quantity: 1,
-              price: invoiceToEdit.subtotal,
-              productId: ''
-            }] : [])
-          });
-          setUseManualEntry(invoiceToEdit.lineItems?.map(() => true) ?? (invoiceToEdit.subtotal ? [true] : []));
-        } else {
-           toast({ title: "Error", description: "Customer for this invoice not found.", variant: 'destructive'});
-           router.push('/invoices');
-        }
+        form.reset({
+          customerId: customer?.id || '', // If this is empty, validation will fail
+          invoiceDate: parseISO(invoiceToEdit.date),
+          dueDate: parseISO(invoiceToEdit.dueDate),
+          status: invoiceToEdit.status,
+          currency: invoiceToEdit.currency || config.profile.defaultCurrency,
+          notes: invoiceToEdit.notes || '',
+          applyDiscount: !!invoiceToEdit.discount,
+          discountType: invoiceToEdit.discountType || 'percentage', // Ensure default matches enum
+          discountValue: invoiceToEdit.discountValue || 0,
+          applyTax: !!invoiceToEdit.tax,
+          taxType: invoiceToEdit.taxType || 'percentage',
+          taxValue: invoiceToEdit.taxValue ?? 17.5,
+          taxName: invoiceToEdit.taxName ?? 'VAT',
+          applyShipping: !!invoiceToEdit.shipping,
+          shippingValue: invoiceToEdit.shipping || 0,
+          applyPartialPayment: !!invoiceToEdit.partialPayment,
+          partialPaymentType: invoiceToEdit.partialPaymentType || 'percentage',
+          partialPaymentValue: invoiceToEdit.partialPaymentValue || 0,
+          lineItems: invoiceToEdit.lineItems || (invoiceToEdit.subtotal ? [{
+            description: 'Original Items',
+            quantity: 1,
+            price: invoiceToEdit.subtotal || 0, // Ensure no undefined
+            productId: ''
+          }] : [])
+        });
+
+        // Set manual entry flags
+        setUseManualEntry(invoiceToEdit.lineItems?.map(item => !item.productId) ?? (invoiceToEdit.subtotal ? [true] : []));
+        
         setIsLoading(false);
       } else {
-        toast({ title: "Error", description: "Invoice not found.", variant: 'destructive'});
-        router.push('/invoices');
+        // Only redirect if explicitly not found after config is definitely loaded
+        if(config.invoices.length > 0) {
+            toast({ title: "Error", description: "Invoice not found.", variant: 'destructive'});
+            router.push('/invoices');
+        }
       }
     }
-  }, [config, invoiceId, form, router, toast]);
+  }, [config, invoiceId, form, router, toast, isLoading]);
 
   const { fields, append, remove, update } = useFieldArray({
     control: form.control,
@@ -150,7 +154,16 @@ export default function EditInvoicePage() {
 
   const handleFormSubmit = (status: Invoice['status']) => {
     form.setValue('status', status);
-    form.handleSubmit(onSubmit)();
+    
+    // Debug: Log validation errors if submission fails
+    form.handleSubmit(onSubmit, (errors) => {
+        console.error("Validation Errors:", errors);
+        toast({
+            title: "Validation Error",
+            description: "Please check the form fields, specifically the Customer selection.",
+            variant: "destructive"
+        });
+    })();
   }
 
   function onSubmit(data: InvoiceFormData) {
@@ -196,6 +209,7 @@ export default function EditInvoicePage() {
 
     const updatedInvoice: Omit<Invoice, 'invoiceId'> = {
         customer: customer.name,
+        customerId: customer.id, // Explicitly save ID for future matching
         date: format(data.invoiceDate, 'yyyy-MM-dd'),
         dueDate: format(data.dueDate, 'yyyy-MM-dd'),
         amount: total,
@@ -251,9 +265,10 @@ export default function EditInvoicePage() {
     return `${currencyCode}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
-  const subtotal = watchedValues.lineItems ? watchedValues.lineItems.reduce((acc, item) => {
+  // Safe Calculation: Handle undefined/NaN during render
+  const subtotal = watchedValues.lineItems?.reduce((acc, item) => {
     return acc + (Number(item.quantity) || 0) * (Number(item.price) || 0);
-  }, 0) : 0;
+  }, 0) || 0;
   
   let discountAmount = 0;
   if (watchedValues.applyDiscount && watchedValues.discountValue) {
@@ -301,7 +316,9 @@ export default function EditInvoicePage() {
     }
   }
   
-  if (isLoading || !config) {
+  const invoiceToEdit = config?.invoices.find(inv => inv.invoiceId?.toLowerCase() === invoiceId?.toLowerCase());
+
+  if (isLoading || !config || !invoiceToEdit) {
     return (
         <div className="flex h-[80vh] items-center justify-center">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -511,7 +528,7 @@ export default function EditInvoicePage() {
                               render={({ field }) => (
                                 <FormItem>
                                   <FormLabel className="sr-only">Product</FormLabel>
-                                    <Select onValueChange={(value) => { field.onChange(value); handleProductSelect(value, index); }} defaultValue={field.value}>
+                                    <Select onValueChange={(value) => { field.onChange(value); handleProductSelect(value, index); }} value={field.value}>
                                       <FormControl>
                                         <SelectTrigger>
                                           <SelectValue placeholder="Select a product" />
@@ -587,6 +604,7 @@ export default function EditInvoicePage() {
                   </Button>
                 </div>
             </CardContent>
+            {/* ... Rest of footer logic is fine ... */}
             <CardFooter className="flex flex-col items-end gap-2">
                 <div className="w-full max-w-sm space-y-2 self-end">
                     <div className="flex justify-between">
@@ -793,7 +811,8 @@ export default function EditInvoicePage() {
         </form>
       </Form>
       
-      <Dialog open={isAddCustomerOpen} onOpenChange={setIsAddCustomerOpen}>
+      {/* ... Dialogs same as before ... */}
+       <Dialog open={isAddCustomerOpen} onOpenChange={setIsAddCustomerOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add New Customer</DialogTitle>
