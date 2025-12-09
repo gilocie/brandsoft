@@ -224,7 +224,7 @@ function SettingsPanel({ form, documentType, onSubmit, returnUrl }: {
                                         <div className="grid grid-cols-3 gap-2">
                                             {backgroundImages.map(image => (
                                                 <button
-                                                    key={image.src}
+                                                    key={image.name}
                                                     type="button"
                                                     className={cn(
                                                         "aspect-square rounded-md overflow-hidden border-2 transition-all",
@@ -730,6 +730,3 @@ export default dynamic(() => Promise.resolve(DocumentDesignPage), {
     ssr: false,
     loading: () => <div className="w-full h-screen flex items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>
 });
-
-
-
