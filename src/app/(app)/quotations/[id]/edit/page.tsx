@@ -77,7 +77,6 @@ export default function EditQuotationPage() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const quotationId = params.id as string;
-  const quotationToEdit = config?.quotations.find(q => q.quotationId?.toLowerCase() === quotationId?.toLowerCase());
 
   const form = useForm<QuotationFormData>({
     resolver: zodResolver(formSchema),
@@ -87,48 +86,46 @@ export default function EditQuotationPage() {
   });
 
   useEffect(() => {
-    if (quotationToEdit && config) {
-      const customer = config.customers.find(c => c.name === quotationToEdit.customer);
+    if (config) {
+      const quotationToEdit = config.quotations.find(q => q.quotationId?.toLowerCase() === quotationId?.toLowerCase());
       
-      form.reset({
-        customerId: customer?.id || '',
-        quotationDate: parseISO(quotationToEdit.date),
-        validUntil: parseISO(quotationToEdit.validUntil),
-        status: quotationToEdit.status,
-        currency: quotationToEdit.currency || config.profile.defaultCurrency,
-        notes: quotationToEdit.notes || '',
-
-        applyDiscount: !!quotationToEdit.discount,
-        discountType: quotationToEdit.discountType || 'flat',
-        discountValue: quotationToEdit.discountValue || 0,
+      if (quotationToEdit) {
+        const customer = config.customers.find(c => c.name === quotationToEdit.customer);
         
-        applyTax: !!quotationToEdit.tax,
-        taxType: quotationToEdit.taxType || 'percentage',
-        taxValue: quotationToEdit.taxValue ?? 17.5,
-        taxName: quotationToEdit.taxName ?? 'VAT',
-
-        applyShipping: !!quotationToEdit.shipping,
-        shippingValue: quotationToEdit.shipping || 0,
-        
-        applyPartialPayment: !!quotationToEdit.partialPayment,
-        partialPaymentType: quotationToEdit.partialPaymentType || 'percentage',
-        partialPaymentValue: quotationToEdit.partialPaymentValue || 0,
-
-        lineItems: quotationToEdit.lineItems || (quotationToEdit.subtotal ? [{
-          description: 'Original Items',
-          quantity: 1,
-          price: quotationToEdit.subtotal,
-          productId: ''
-        }] : [])
-      });
-
-      setUseManualEntry(quotationToEdit.lineItems?.map(() => true) ?? (quotationToEdit.subtotal ? [true] : []));
-      setIsLoading(false);
-    } else if (config && !quotationToEdit) {
+        form.reset({
+          customerId: customer?.id || '',
+          quotationDate: parseISO(quotationToEdit.date),
+          validUntil: parseISO(quotationToEdit.validUntil),
+          status: quotationToEdit.status,
+          currency: quotationToEdit.currency || config.profile.defaultCurrency,
+          notes: quotationToEdit.notes || '',
+          applyDiscount: !!quotationToEdit.discount,
+          discountType: quotationToEdit.discountType || 'flat',
+          discountValue: quotationToEdit.discountValue || 0,
+          applyTax: !!quotationToEdit.tax,
+          taxType: quotationToEdit.taxType || 'percentage',
+          taxValue: quotationToEdit.taxValue ?? 17.5,
+          taxName: quotationToEdit.taxName ?? 'VAT',
+          applyShipping: !!quotationToEdit.shipping,
+          shippingValue: quotationToEdit.shipping || 0,
+          applyPartialPayment: !!quotationToEdit.partialPayment,
+          partialPaymentType: quotationToEdit.partialPaymentType || 'percentage',
+          partialPaymentValue: quotationToEdit.partialPaymentValue || 0,
+          lineItems: quotationToEdit.lineItems || (quotationToEdit.subtotal ? [{
+            description: 'Original Items',
+            quantity: 1,
+            price: quotationToEdit.subtotal,
+            productId: ''
+          }] : [])
+        });
+        setUseManualEntry(quotationToEdit.lineItems?.map(() => true) ?? (quotationToEdit.subtotal ? [true] : []));
+        setIsLoading(false);
+      } else {
         toast({ title: "Error", description: "Quotation not found.", variant: 'destructive'});
         router.push('/quotations');
+      }
     }
-  }, [quotationToEdit, config, form, router, toast]);
+  }, [config, quotationId, form, router, toast]);
 
   const { fields, append, remove, update } = useFieldArray({
     control: form.control,
@@ -153,7 +150,9 @@ export default function EditQuotationPage() {
   }
 
   function onSubmit(data: QuotationFormData) {
-    if (!config || !quotationToEdit) return;
+    if (!config) return;
+    const quotationToEdit = config.quotations.find(q => q.quotationId?.toLowerCase() === quotationId?.toLowerCase());
+    if (!quotationToEdit) return;
 
     const customer = config.customers.find(c => c.id === data.customerId);
     if (!customer) return;
