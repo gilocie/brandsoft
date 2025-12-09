@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useBrandsoft } from '@/hooks/use-brandsoft.tsx';
 import { Loader2 } from 'lucide-react';
 import { Logo } from '@/components/logo';
+import brandsoftBackground1 from '@/app/(app)/templates/backgrounds/brandsoft-background1.jpg';
 
 export default function HomePage() {
   const router = useRouter();
@@ -29,7 +30,7 @@ export default function HomePage() {
   return (
     <div 
       className="flex h-screen w-full items-center justify-center bg-cover bg-center"
-      style={{ backgroundImage: `url(/backgrounds/brandsoft-background1.jpg)` }}
+      style={{ backgroundImage: `url(${brandsoftBackground1.src})` }}
     >
       <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
       <div className="relative flex flex-col items-center gap-4">
