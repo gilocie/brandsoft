@@ -49,7 +49,7 @@ export default function ActivationPage() {
   return (
     <div 
       className="flex min-h-screen items-center justify-center bg-cover bg-center p-4 font-body"
-      style={{ backgroundImage: "url('https://picsum.photos/seed/setupbg/1920/1080')" }}
+      style={{ backgroundImage: "url('/backgrounds/brandsoft-background1.jpg')" }}
       data-ai-hint="office building"
     >
       <div className="absolute inset-0 bg-background/50 backdrop-blur-sm" />

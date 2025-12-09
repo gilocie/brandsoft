@@ -29,7 +29,7 @@ export default function HomePage() {
   return (
     <div 
       className="flex h-screen w-full items-center justify-center bg-cover bg-center"
-      style={{ backgroundImage: "url('https://picsum.photos/seed/setupbg/1920/1080')" }}
+      style={{ backgroundImage: "url('/backgrounds/brandsoft-background1.jpg')" }}
       data-ai-hint="office building"
     >
       <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
