@@ -61,6 +61,9 @@ const formSchema = z.object({
   applyDiscount: z.boolean().default(false),
   discountType: z.enum(['percentage', 'flat']).default('percentage'),
   discountValue: z.coerce.number().optional(),
+  applyPartialPayment: z.boolean().default(false),
+  partialPaymentType: z.enum(['percentage', 'flat']).default('percentage'),
+  partialPaymentValue: z.coerce.number().optional(),
 });
 
 type InvoiceFormData = z.infer<typeof formSchema>;
@@ -116,6 +119,10 @@ export default function EditInvoicePage() {
 
         applyShipping: !!invoiceToEdit.shipping,
         shippingValue: invoiceToEdit.shipping || 0,
+        
+        applyPartialPayment: !!invoiceToEdit.partialPayment,
+        partialPaymentType: invoiceToEdit.partialPaymentType || 'percentage',
+        partialPaymentValue: invoiceToEdit.partialPaymentValue || 0,
 
         lineItems: invoiceToEdit.lineItems || (invoiceToEdit.subtotal ? [{
           description: 'Original Items',
@@ -186,6 +193,15 @@ export default function EditInvoicePage() {
     const shipping = data.applyShipping && data.shippingValue ? data.shippingValue : 0;
     const total = subtotalAfterDiscount + taxAmount + shipping;
 
+    let partialPaymentAmount = 0;
+    if (data.applyPartialPayment && data.partialPaymentValue) {
+        if (data.partialPaymentType === 'percentage') {
+            partialPaymentAmount = total * (data.partialPaymentValue / 100);
+        } else {
+            partialPaymentAmount = data.partialPaymentValue;
+        }
+    }
+
     const updatedInvoice: Omit<Invoice, 'invoiceId'> = {
         customer: customer.name,
         date: format(data.invoiceDate, 'yyyy-MM-dd'),
@@ -203,6 +219,9 @@ export default function EditInvoicePage() {
         shipping,
         notes: data.notes,
         lineItems: data.lineItems,
+        partialPayment: partialPaymentAmount,
+        partialPaymentType: data.partialPaymentType,
+        partialPaymentValue: data.partialPaymentValue,
     };
     
     updateInvoice(invoiceToEdit.invoiceId, updatedInvoice);
@@ -265,6 +284,16 @@ export default function EditInvoicePage() {
 
   const shippingAmount = watchedValues.applyShipping && watchedValues.shippingValue ? Number(watchedValues.shippingValue) : 0;
   const total = subtotalAfterDiscount + taxAmount + shippingAmount;
+
+  let partialPaymentAmount = 0;
+  if (watchedValues.applyPartialPayment && watchedValues.partialPaymentValue) {
+      if (watchedValues.partialPaymentType === 'percentage') {
+          partialPaymentAmount = total * (watchedValues.partialPaymentValue / 100);
+      } else {
+          partialPaymentAmount = watchedValues.partialPaymentValue;
+      }
+  }
+  const amountDue = total - partialPaymentAmount;
 
   const handlePreview = async () => {
     const isValid = await form.trigger();
@@ -691,6 +720,56 @@ export default function EditInvoicePage() {
                         <span>Total</span>
                         <span>{formatCurrency(total)}</span>
                     </div>
+
+                    <Separator />
+
+                     <FormField
+                        control={form.control}
+                        name="applyPartialPayment"
+                        render={({ field }) => (
+                            <FormItem className="flex justify-between items-center">
+                                <FormLabel htmlFor="apply-partial-switch">Request Partial Payment</FormLabel>
+                                <FormControl>
+                                  <Switch
+                                    id="apply-partial-switch"
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                  />
+                                </FormControl>
+                            </FormItem>
+                        )}
+                        />
+                    {watchedValues.applyPartialPayment && (
+                        <div className="pl-4 space-y-4 pt-2 pb-2">
+                           <div className="grid grid-cols-2 gap-4">
+                                <FormField control={form.control} name="partialPaymentType" render={({ field }) => (
+                                    <FormItem><FormLabel>Payment Type</FormLabel><FormControl>
+                                        <ToggleGroup type="single" value={field.value} onValueChange={field.onChange} className="grid grid-cols-2 border rounded-md h-10">
+                                            <ToggleGroupItem value="percentage" className="h-full rounded-l-md rounded-r-none text-xs">Percentage</ToggleGroupItem>
+                                            <ToggleGroupItem value="flat" className="h-full rounded-r-md rounded-l-none text-xs">Flat</ToggleGroupItem>
+                                        </ToggleGroup>
+                                    </FormControl></FormItem>
+                                )} />
+                               <FormField control={form.control} name="partialPaymentValue" render={({ field }) => (
+                                    <FormItem><FormLabel>Value</FormLabel><FormControl><Input type="number" placeholder={watchedValues.partialPaymentType === 'percentage' ? '50' : '200'} {...field} /></FormControl></FormItem>
+                                )} />
+                           </div>
+                           <div className="flex justify-between text-muted-foreground">
+                             <span>Payment Made</span>
+                             <span>- {formatCurrency(partialPaymentAmount)}</span>
+                           </div>
+                        </div>
+                    )}
+
+                     {watchedValues.applyPartialPayment && (
+                        <>
+                            <Separator />
+                            <div className="flex justify-between font-bold text-lg pt-2 text-primary">
+                                <span>Amount Due</span>
+                                <span>{formatCurrency(amountDue)}</span>
+                            </div>
+                        </>
+                    )}
                 </div>
             </CardFooter>
           </Card>
