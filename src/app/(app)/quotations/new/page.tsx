@@ -39,7 +39,7 @@ const formSchema = z.object({
   customerId: z.string().min(1, 'Customer is required.'),
   quotationDate: z.date({ required_error: "A quotation date is required." }),
   validUntil: z.date({ required_error: "A validity date is required." }),
-  status: z.enum(['Draft', 'Sent', 'Accepted', 'Declined', 'Canceled']),
+  status: z.enum(['Draft', 'Sent', 'Accepted', 'Declined']),
   currency: z.string().min(1, 'Currency is required'),
   lineItems: z.array(lineItemSchema).min(1, 'At least one line item is required.'),
   notes: z.string().optional(),
@@ -83,7 +83,7 @@ export default function NewQuotationPage() {
   const form = useForm<QuotationFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      status: 'Draft',
+      status: 'Sent',
       currency: 'USD', 
       lineItems: [{ description: '', quantity: 1, price: 0 }],
       notes: '',
@@ -876,6 +876,7 @@ export default function NewQuotationPage() {
 }
 
     
+
 
 
 

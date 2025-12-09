@@ -43,7 +43,7 @@ const formSchema = z.object({
   dueDate: z.date({
     required_error: "A due date is required.",
   }),
-  status: z.enum(['Pending', 'Paid', 'Overdue', 'Canceled']),
+  status: z.enum(['Draft', 'Pending', 'Paid', 'Overdue', 'Canceled']),
   currency: z.string().min(1, 'Currency is required'),
   lineItems: z.array(lineItemSchema).min(1, 'At least one line item is required.'),
   notes: z.string().optional(),
@@ -272,10 +272,10 @@ export default function NewInvoicePage() {
     }
   }
 
-  const currencySymbol = watchedValues.currency || '';
+  const currencyCode = watchedValues.currency || config?.profile.defaultCurrency || '';
   
   const formatCurrency = (value: number) => {
-    return `${currencySymbol}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `${currencyCode}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   const subtotal = watchedValues.lineItems ? watchedValues.lineItems.reduce((acc, item) => {
@@ -891,6 +891,7 @@ export default function NewInvoicePage() {
     
 
     
+
 
 
 

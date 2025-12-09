@@ -243,10 +243,10 @@ export default function EditInvoicePage() {
   }
 
   const watchedValues = form.watch();
-  const currencySymbol = watchedValues.currency || '';
+  const currencyCode = watchedValues.currency || config?.profile.defaultCurrency || '';
   
   const formatCurrency = (value: number) => {
-    return `${currencySymbol}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `${currencyCode}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   const subtotal = watchedValues.lineItems ? watchedValues.lineItems.reduce((acc, item) => {
