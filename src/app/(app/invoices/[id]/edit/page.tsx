@@ -93,7 +93,7 @@ export default function EditInvoicePage() {
         
         if (customer) {
           form.reset({
-            customerId: customer.id || '',
+            customerId: customer.id,
             invoiceDate: parseISO(invoiceToEdit.date),
             dueDate: parseISO(invoiceToEdit.dueDate),
             status: invoiceToEdit.status,
