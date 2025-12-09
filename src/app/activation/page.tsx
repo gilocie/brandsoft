@@ -49,7 +49,8 @@ export default function ActivationPage() {
   return (
     <div 
       className="flex min-h-screen items-center justify-center bg-cover bg-center p-4 font-body"
-      style={{ backgroundImage: "url('/backgrounds/template-background.jpg')" }}
+      style={{ backgroundImage: "url('https://picsum.photos/seed/setupbg/1920/1080')" }}
+      data-ai-hint="office building"
     >
       <div className="absolute inset-0 bg-background/50 backdrop-blur-sm" />
       <Card className="w-full max-w-md shadow-2xl z-10">
