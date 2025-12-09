@@ -697,9 +697,11 @@ function DocumentDesignPage() {
             };
         }
 
+        // Return a minimal object if no data is available
+        const status = getFormData('newDocumentData')?.status || '';
         return {
             date: new Date().toISOString(),
-            status: 'Draft',
+            status: status,
             [documentType === 'invoice' ? 'invoiceId' : 'quotationId']: dynamicId,
             [documentType === 'invoice' ? 'dueDate' : 'validUntil']: new Date(new Date().setDate(new Date().getDate() + 30)).toISOString(),
             lineItems: [{ description: 'Sample Item', quantity: 1, price: 100 }],
