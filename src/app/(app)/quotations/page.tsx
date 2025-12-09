@@ -60,10 +60,10 @@ import { useBrandsoft, type Quotation } from '@/hooks/use-brandsoft';
 import { QuotationPreview, downloadQuotationAsPdf } from '@/components/quotation-preview';
 
 const statusVariantMap: {
-  [key: string]: 'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'accent';
+  [key: string]: 'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'accent' | 'primary';
 } = {
   Draft: 'secondary',
-  Sent: 'accent',
+  Sent: 'primary',
   Accepted: 'success',
   Declined: 'destructive',
 };
@@ -385,5 +385,7 @@ export default function QuotationsPage() {
     </div>
   );
 }
+
+    
 
     
