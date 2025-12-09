@@ -438,16 +438,9 @@ export default function NewQuotationPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Currency</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select currency"/>
-                          </SelectTrigger>
+                          <Input {...field} placeholder="e.g. USD" onBlur={() => addCurrency(field.value.toUpperCase())} />
                         </FormControl>
-                        <SelectContent>
-                          {config?.currencies?.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
