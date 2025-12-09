@@ -110,6 +110,7 @@ export type Quotation = {
     notes?: string;
     lineItems?: LineItem[];
     design?: DesignSettings;
+    currency?: string;
 };
 
 

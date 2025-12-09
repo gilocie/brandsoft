@@ -172,6 +172,7 @@ function SettingsPanel({ form, documentType, onSubmit, returnUrl, documentData }
 }) {
   const { setFormData } = useFormState('designFormData');
   const [imagePage, setImagePage] = useState(0);
+  const { addCurrency } = useBrandsoft();
   const imagesPerPage = 9;
   
   const watermarkSelection = useWatch({ control: form.control, name: 'watermarkText' });
@@ -410,7 +411,7 @@ function SettingsPanel({ form, documentType, onSubmit, returnUrl, documentData }
                                 <AccordionTrigger className="text-sm p-2"><div className="flex items-center gap-2"><Coins className="h-4 w-4"/> Regional</div></AccordionTrigger>
                                 <AccordionContent className="p-2 space-y-3">
                                      <FormField control={form.control} name="defaultCurrency" render={({ field }) => (
-                                        <FormItem><FormLabel className="text-xs">Default Currency</FormLabel><FormControl><Input placeholder="USD" {...field} className="h-8 text-xs"/></FormControl><FormMessage /></FormItem>
+                                        <FormItem><FormLabel className="text-xs">Default Currency</FormLabel><FormControl><Input placeholder="USD" {...field} onBlur={() => { field.onBlur(); if (field.value) addCurrency(field.value.toUpperCase()); }} /></FormControl><FormMessage /></FormItem>
                                     )} />
                                 </AccordionContent>
                              </AccordionItem>
@@ -516,7 +517,7 @@ function DocumentDesignPage() {
     const currentDesignSettings: DesignSettings = useMemo(() => {
         const watermarkSelection = watchedValues.watermarkText;
         const isAuto = watermarkSelection === 'AUTO';
-        const docStatus = document?.status?.toUpperCase() || getFormData('newDocumentData')?.status?.toUpperCase() || '';
+        const docStatus = (document?.status || getFormData('newDocumentData')?.status)?.toUpperCase() || '';
         
         let watermarkText: string | undefined;
         if (isAuto) {
@@ -641,7 +642,7 @@ function DocumentDesignPage() {
             quotationPrefix: profile.quotationPrefix || 'QUO-',
             quotationStartNumber: profile.quotationStartNumber || 101,
             paymentDetails: profile.paymentDetails || '',
-            defaultCurrency: profile.defaultCurrency || 'USD',
+            defaultCurrency: getFormData('newDocumentData')?.currency || profile.defaultCurrency || 'USD',
         };
         
         form.reset(initialValues);
