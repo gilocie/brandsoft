@@ -863,7 +863,7 @@ export default function NewQuotationPage() {
             <QuotationPreview
                 config={config}
                 customer={config?.customers.find(c => c.id === watchedValues.customerId) || null}
-                quotationData={{...watchedValues, status: watchedValues.status || 'Draft', design: designFormState.getFormData() }}
+                quotationData={{...watchedValues, design: designFormState.getFormData() }}
             />
           </div>
           <DialogFooter>
@@ -876,6 +876,7 @@ export default function NewQuotationPage() {
 }
 
     
+
 
 
 

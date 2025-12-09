@@ -43,7 +43,7 @@ const formSchema = z.object({
   dueDate: z.date({
     required_error: "A due date is required.",
   }),
-  status: z.enum(['Draft', 'Pending', 'Paid', 'Overdue', 'Canceled']),
+  status: z.enum(['Pending', 'Paid', 'Overdue', 'Canceled']),
   currency: z.string().min(1, 'Currency is required'),
   lineItems: z.array(lineItemSchema).min(1, 'At least one line item is required.'),
   notes: z.string().optional(),
@@ -877,7 +877,7 @@ export default function NewInvoicePage() {
             <InvoicePreview
                 config={config}
                 customer={config?.customers.find(c => c.id === watchedValues.customerId) || null}
-                invoiceData={{...watchedValues, status: watchedValues.status || 'Draft', design: designFormState.getFormData() }}
+                invoiceData={{...watchedValues, design: designFormState.getFormData() }}
             />
           </div>
           <DialogFooter>
@@ -891,6 +891,7 @@ export default function NewInvoicePage() {
     
 
     
+
 
 
 
