@@ -91,12 +91,13 @@ export default function NewInvoicePage() {
   const [useManualEntry, setUseManualEntry] = useState<boolean[]>([false]);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewDesign, setPreviewDesign] = useState<DesignSettings | undefined>(undefined);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const form = useForm<InvoiceFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       status: 'Draft',
-      currency: config?.profile.defaultCurrency || 'USD',
+      currency: 'USD',
       lineItems: [{ description: '', quantity: 1, price: 0 }],
       notes: '',
       saveNotesAsDefault: false,
@@ -123,20 +124,40 @@ export default function NewInvoicePage() {
   const watchedValues = form.watch();
 
   useEffect(() => {
-    // Set dates only on the client side to avoid hydration mismatch
-    form.reset({
-      ...form.getValues(),
-      invoiceDate: new Date(),
-      dueDate: new Date(new Date().setDate(new Date().getDate() + 30)),
-    })
-  }, []); // Empty dependency array ensures this runs only once on the client
+    if (isInitialized || !config) return;
+
+    const storedData = getFormData();
+    const designData = designFormState.getFormData();
+    
+    if (storedData && Object.keys(storedData).length > 0) {
+        const restoredData: any = { ...storedData };
+        if (restoredData.invoiceDate) restoredData.invoiceDate = new Date(restoredData.invoiceDate);
+        if (restoredData.dueDate) restoredData.dueDate = new Date(restoredData.dueDate);
+        form.reset(restoredData);
+    } else {
+        const today = new Date();
+        const dueDate = new Date();
+        dueDate.setDate(today.getDate() + 30);
+        
+        form.reset({
+            ...form.getValues(),
+            invoiceDate: today,
+            dueDate: dueDate,
+            currency: designData?.defaultCurrency || config.profile.defaultCurrency,
+            notes: '',
+        });
+    }
+
+    setIsInitialized(true);
+  }, [isInitialized, config, getFormData, designFormState, form]);
 
   useEffect(() => {
+    if (!isInitialized) return;
     const subscription = form.watch((value) => {
         setFormData(value);
     });
     return () => subscription.unsubscribe();
-  }, [form, setFormData]);
+  }, [form, setFormData, isInitialized]);
 
   const newCustomerForm = useForm<NewCustomerFormData>({
     resolver: zodResolver(NewCustomerFormSchema),
@@ -207,7 +228,12 @@ export default function NewInvoicePage() {
         status: data.status,
         subtotal,
         discount: discountAmount,
+        discountType: data.discountType,
+        discountValue: data.discountValue,
         tax: taxAmount,
+        taxType: data.taxType,
+        taxValue: data.taxValue,
+        taxName: data.taxName,
         shipping,
         notes: data.notes,
         lineItems: data.lineItems,
@@ -811,9 +837,6 @@ export default function NewInvoicePage() {
 
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={handlePreview}><Eye className="mr-2 h-4 w-4"/> Preview</Button>
-            <Button asChild disabled={isCustomizeDisabled}>
-                <Link href={`/design?documentType=invoice&isNew=true`}><Palette className="mr-2 h-4 w-4"/> Customize</Link>
-            </Button>
             <Button type="button" variant="secondary" onClick={() => handleFormSubmit('Draft')}><Save className="mr-2 h-4 w-4"/> Save Draft</Button>
             <Button type="button" onClick={() => handleFormSubmit('Pending')}><Send className="mr-2 h-4 w-4"/> Save and Send</Button>
           </div>
@@ -873,3 +896,4 @@ export default function NewInvoicePage() {
     
 
     
+

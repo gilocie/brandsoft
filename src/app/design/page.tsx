@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useBrandsoft, type BrandsoftConfig, type DesignSettings, type Quotation, type Invoice } from '@/hooks/use-brandsoft.tsx';
 import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
@@ -559,6 +559,7 @@ function DocumentDesignPage() {
             showBrandsoftFooter: watchedValues.showBrandsoftFooter,
             showHeader: watchedValues.showHeader,
             showFooter: watchedValues.showFooter,
+            paymentDetails: watchedValues.paymentDetails,
         }
     }, [watchedValues, document, statusColors, getFormData]);
 

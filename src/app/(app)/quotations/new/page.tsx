@@ -124,6 +124,7 @@ export default function NewQuotationPage() {
     if (isInitialized || !config) return;
 
     const storedData = getFormData();
+    const designData = designFormState.getFormData();
     
     if (storedData && Object.keys(storedData).length > 0) {
         const restoredData: any = { ...storedData };
@@ -145,30 +146,16 @@ export default function NewQuotationPage() {
         validUntil.setDate(today.getDate() + 30);
         
         form.reset({
-            status: 'Draft',
-            currency: config.profile.defaultCurrency || 'USD',
-            lineItems: [{ description: '', quantity: 1, price: 0 }],
-            notes: '', // Always start with empty notes
-            saveNotesAsDefault: false,
-            applyTax: true,
-            taxName: 'VAT',
-            taxType: 'percentage',
-            taxValue: 17.5,
-            applyShipping: false,
-            shippingValue: 0,
-            applyDiscount: false,
-            discountType: 'percentage',
-            discountValue: 0,
-            applyPartialPayment: false,
-            partialPaymentType: 'percentage',
-            partialPaymentValue: 0,
+            ...form.getValues(),
             quotationDate: today,
             validUntil: validUntil,
+            currency: designData?.defaultCurrency || config.profile.defaultCurrency,
+            notes: '',
         });
     }
 
     setIsInitialized(true);
-  }, [isInitialized, config, getFormData, form]);
+  }, [isInitialized, config, getFormData, designFormState, form]);
 
   useEffect(() => {
     if (!isInitialized) return; 
@@ -250,7 +237,12 @@ export default function NewQuotationPage() {
         status: data.status,
         subtotal,
         discount: discountAmount,
+        discountType: data.discountType,
+        discountValue: data.discountValue,
         tax: taxAmount,
+        taxName: data.taxName,
+        taxType: data.taxType,
+        taxValue: data.taxValue,
         shipping,
         notes: data.notes,
         lineItems: data.lineItems,
@@ -866,9 +858,6 @@ export default function NewQuotationPage() {
 
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={handlePreview}><Eye className="mr-2 h-4 w-4"/> Preview</Button>
-             <Button asChild disabled={isCustomizeDisabled}>
-                <Link href={`/design?documentType=quotation&isNew=true`}><Palette className="mr-2 h-4 w-4"/> Customize</Link>
-            </Button>
             <Button type="button" variant="secondary" onClick={() => handleFormSubmit('Draft')}><Save className="mr-2 h-4 w-4"/> Save Draft</Button>
             <Button type="button" onClick={() => handleFormSubmit('Sent')}><Send className="mr-2 h-4 w-4"/> Save and Send</Button>
           </div>
@@ -927,3 +916,4 @@ export default function NewQuotationPage() {
 }
 
     
+

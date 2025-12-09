@@ -27,8 +27,13 @@ export function useFormState(formKey: string = 'default') {
         if(data === null) {
           sessionStorage.removeItem(formKey);
         } else {
-          const sessionData = JSON.stringify(data);
-          sessionStorage.setItem(formKey, sessionData);
+          const serializedData = JSON.stringify(data, (key, value) => {
+            if (value instanceof Date) {
+              return value.toISOString();
+            }
+            return value;
+          });
+          sessionStorage.setItem(formKey, serializedData);
         }
       }
       setStoreData(formKey, data);
