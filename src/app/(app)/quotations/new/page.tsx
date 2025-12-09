@@ -770,7 +770,7 @@ export default function NewQuotationPage() {
                         <>
                             <Separator />
                             <div className="flex justify-between font-bold text-lg pt-2 text-primary">
-                                <span>Amount Due</span>
+                                <span>Balance</span>
                                 <span>{formatCurrency(amountDue)}</span>
                             </div>
                         </>
@@ -876,6 +876,7 @@ export default function NewQuotationPage() {
 }
 
     
+
 
 
 

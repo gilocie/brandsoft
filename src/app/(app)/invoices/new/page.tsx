@@ -387,7 +387,7 @@ export default function NewInvoicePage() {
             <CardHeader>
               <CardTitle>Invoice Details</CardTitle>
             </CardHeader>
-             <CardContent className="grid gap-4 md:grid-cols-3">
+             <CardContent className="grid gap-4 md:grid-cols-2">
               <FormField
                 control={form.control}
                 name="invoiceDate"
@@ -456,29 +456,6 @@ export default function NewInvoicePage() {
                   </FormItem>
                 )}
               />
-               <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Status</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Pending">Pending</SelectItem>
-                          <SelectItem value="Paid">Paid</SelectItem>
-                          <SelectItem value="Overdue">Overdue</SelectItem>
-                          <SelectItem value="Canceled">Canceled</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
             </CardContent>
              <CardContent>
                 <FormField
@@ -784,7 +761,7 @@ export default function NewInvoicePage() {
                         <>
                             <Separator />
                             <div className="flex justify-between font-bold text-lg pt-2 text-primary">
-                                <span>Amount Due</span>
+                                <span>Balance</span>
                                 <span>{formatCurrency(amountDue)}</span>
                             </div>
                         </>
@@ -834,7 +811,7 @@ export default function NewInvoicePage() {
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={handlePreview}><Eye className="mr-2 h-4 w-4"/> Preview</Button>
             <Button type="button" variant="secondary" onClick={() => handleFormSubmit('Draft')}><Save className="mr-2 h-4 w-4"/> Save Draft</Button>
-            <Button type="button" onClick={() => handleFormSubmit(form.getValues('status'))}><Send className="mr-2 h-4 w-4"/> Save and Send</Button>
+            <Button type="button" onClick={() => handleFormSubmit('Pending')}><Send className="mr-2 h-4 w-4"/> Save and Send</Button>
           </div>
         </form>
       </Form>
@@ -891,6 +868,7 @@ export default function NewInvoicePage() {
     
 
     
+
 
 
 

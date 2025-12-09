@@ -416,7 +416,7 @@ export function InvoicePreview({
                                                 className="mt-4 flex items-center justify-between p-3 rounded-sm shadow-sm" 
                                                 style={{backgroundColor: design.headerColor}}
                                             >
-                                                <span className="font-bold text-white text-lg">Amount Due</span>
+                                                <span className="font-bold text-white text-lg">Balance</span>
                                                 <span className="font-bold text-white text-xl">{formatCurrency(amountDue)}</span>
                                             </div>
                                         </>
