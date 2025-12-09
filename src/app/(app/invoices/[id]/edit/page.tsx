@@ -91,33 +91,38 @@ export default function EditInvoicePage() {
       if (invoiceToEdit) {
         const customer = config.customers.find(c => c.name === invoiceToEdit.customer);
         
-        form.reset({
-          customerId: customer?.id || '',
-          invoiceDate: parseISO(invoiceToEdit.date),
-          dueDate: parseISO(invoiceToEdit.dueDate),
-          status: invoiceToEdit.status,
-          currency: invoiceToEdit.currency || config.profile.defaultCurrency,
-          notes: invoiceToEdit.notes || '',
-          applyDiscount: !!invoiceToEdit.discount,
-          discountType: invoiceToEdit.discountType || 'flat',
-          discountValue: invoiceToEdit.discountValue || 0,
-          applyTax: !!invoiceToEdit.tax,
-          taxType: invoiceToEdit.taxType || 'percentage',
-          taxValue: invoiceToEdit.taxValue ?? 17.5,
-          taxName: invoiceToEdit.taxName ?? 'VAT',
-          applyShipping: !!invoiceToEdit.shipping,
-          shippingValue: invoiceToEdit.shipping || 0,
-          applyPartialPayment: !!invoiceToEdit.partialPayment,
-          partialPaymentType: invoiceToEdit.partialPaymentType || 'percentage',
-          partialPaymentValue: invoiceToEdit.partialPaymentValue || 0,
-          lineItems: invoiceToEdit.lineItems || (invoiceToEdit.subtotal ? [{
-            description: 'Original Items',
-            quantity: 1,
-            price: invoiceToEdit.subtotal,
-            productId: ''
-          }] : [])
-        });
-        setUseManualEntry(invoiceToEdit.lineItems?.map(() => true) ?? (invoiceToEdit.subtotal ? [true] : []));
+        if (customer) {
+          form.reset({
+            customerId: customer.id || '',
+            invoiceDate: parseISO(invoiceToEdit.date),
+            dueDate: parseISO(invoiceToEdit.dueDate),
+            status: invoiceToEdit.status,
+            currency: invoiceToEdit.currency || config.profile.defaultCurrency,
+            notes: invoiceToEdit.notes || '',
+            applyDiscount: !!invoiceToEdit.discount,
+            discountType: invoiceToEdit.discountType || 'flat',
+            discountValue: invoiceToEdit.discountValue || 0,
+            applyTax: !!invoiceToEdit.tax,
+            taxType: invoiceToEdit.taxType || 'percentage',
+            taxValue: invoiceToEdit.taxValue ?? 17.5,
+            taxName: invoiceToEdit.taxName ?? 'VAT',
+            applyShipping: !!invoiceToEdit.shipping,
+            shippingValue: invoiceToEdit.shipping || 0,
+            applyPartialPayment: !!invoiceToEdit.partialPayment,
+            partialPaymentType: invoiceToEdit.partialPaymentType || 'percentage',
+            partialPaymentValue: invoiceToEdit.partialPaymentValue || 0,
+            lineItems: invoiceToEdit.lineItems || (invoiceToEdit.subtotal ? [{
+              description: 'Original Items',
+              quantity: 1,
+              price: invoiceToEdit.subtotal,
+              productId: ''
+            }] : [])
+          });
+          setUseManualEntry(invoiceToEdit.lineItems?.map(() => true) ?? (invoiceToEdit.subtotal ? [true] : []));
+        } else {
+           toast({ title: "Error", description: "Customer for this invoice not found.", variant: 'destructive'});
+           router.push('/invoices');
+        }
         setIsLoading(false);
       } else {
         toast({ title: "Error", description: "Invoice not found.", variant: 'destructive'});
@@ -296,9 +301,7 @@ export default function EditInvoicePage() {
     }
   }
   
-  const invoiceToEdit = config?.invoices.find(inv => inv.invoiceId?.toLowerCase() === invoiceId?.toLowerCase());
-
-  if (isLoading || !config || !invoiceToEdit) {
+  if (isLoading || !config) {
     return (
         <div className="flex h-[80vh] items-center justify-center">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -785,7 +788,7 @@ export default function EditInvoicePage() {
           <div className="flex justify-end gap-2">
              <Button type="button" variant="outline" onClick={handlePreview}><Eye className="mr-2 h-4 w-4"/> Preview</Button>
             <Button type="button" variant="secondary" onClick={() => handleFormSubmit('Draft')}><Save className="mr-2 h-4 w-4"/> Save Draft</Button>
-            <Button type="button" onClick={() => handleFormSubmit(form.getValues('status'))}><Send className="mr-2 h-4 w-4"/> Save and Send</Button>
+            <Button type="button" onClick={() => handleFormSubmit('Pending')}><Send className="mr-2 h-4 w-4"/> Save and Send</Button>
           </div>
         </form>
       </Form>
