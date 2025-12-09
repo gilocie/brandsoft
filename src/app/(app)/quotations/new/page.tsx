@@ -134,7 +134,7 @@ export default function NewQuotationPage() {
         notes: '',
         })
     }
-  }, [config?.profile.defaultCurrency]); // Rerun if default currency changes
+  }, [config?.profile.defaultCurrency, form]); // Rerun if default currency changes or on initial load with config
 
   useEffect(() => {
     const subscription = form.watch((value) => {
