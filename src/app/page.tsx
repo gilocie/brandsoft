@@ -26,8 +26,13 @@ export default function HomePage() {
   }, [isActivated, isConfigured, router]);
 
   return (
-    <div className="flex h-screen w-full items-center justify-center bg-background">
-      <div className="flex flex-col items-center gap-4">
+    <div 
+      className="flex h-screen w-full items-center justify-center bg-cover bg-center"
+      style={{ backgroundImage: "url('https://picsum.photos/seed/splash/1920/1080')" }}
+      data-ai-hint="office building"
+    >
+      <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
+      <div className="relative flex flex-col items-center gap-4">
         <Logo />
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <p className="text-muted-foreground">Initializing BrandSoft...</p>
