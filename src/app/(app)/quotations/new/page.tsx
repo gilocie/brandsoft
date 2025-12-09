@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 import { CalendarIcon, PlusCircle, Trash2, Save, Send, Eye, UserPlus, Palette } from 'lucide-react';
 import { format } from "date-fns";
 import Link from 'next/link';
-import { useBrandsoft, type Customer, type Quotation, type Product } from '@/hooks/use-brandsoft.tsx';
+import { useBrandsoft, type Customer, type Quotation } from '@/hooks/use-brandsoft.tsx';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useRouter } from 'next/navigation';
@@ -300,7 +300,7 @@ export default function NewQuotationPage() {
   };
   
   const formatCurrency = (value: number) => {
-    return `${watchedValues.currency || config?.profile.defaultCurrency || '$'}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `${config?.profile.defaultCurrency || '$'}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
   
   const subtotal = watchedValues.lineItems ? watchedValues.lineItems.reduce((acc, item) => {
