@@ -116,25 +116,31 @@ export default function NewQuotationPage() {
 
   useEffect(() => {
     const storedData = getFormData();
+    
+    // Prioritize restoring from session storage
     if (storedData && Object.keys(storedData).length > 0) {
-        // Convert date strings back to Date objects
-        if (storedData.quotationDate) storedData.quotationDate = new Date(storedData.quotationDate);
-        if (storedData.validUntil) storedData.validUntil = new Date(storedData.validUntil);
-        form.reset({
-            ...storedData,
-            currency: config?.profile.defaultCurrency || 'USD'
-        });
+      const restoredData = { ...storedData };
+      // Ensure dates are Date objects
+      if (restoredData.quotationDate) restoredData.quotationDate = new Date(restoredData.quotationDate);
+      if (restoredData.validUntil) restoredData.validUntil = new Date(restoredData.validUntil);
+      
+      // Sync currency with global config if not set in stored data
+      if (!restoredData.currency) {
+          restoredData.currency = config?.profile.defaultCurrency || 'USD';
+      }
+
+      form.reset(restoredData);
     } else {
-        // Set dates only on the client side to avoid hydration mismatch
-        form.reset({
-        ...form.getValues(),
+      // Otherwise, set defaults for a new form
+      form.reset({
+        ...form.getValues(), // Keep any existing defaults
         currency: config?.profile.defaultCurrency || 'USD',
         quotationDate: new Date(),
         validUntil: new Date(new Date().setDate(new Date().getDate() + 30)),
         notes: '',
-        })
+      });
     }
-  }, [config?.profile.defaultCurrency, form]); // Rerun if default currency changes or on initial load with config
+  }, [config?.profile.defaultCurrency, form]); // Rerun if default currency changes, or on initial mount
 
   useEffect(() => {
     const subscription = form.watch((value) => {
