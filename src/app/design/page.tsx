@@ -26,7 +26,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import NextImage from 'next/image';
+import NextImage, { StaticImageData } from 'next/image';
 import backgroundImages from '@/lib/background-images';
 
 const designSettingsSchema = z.object({
@@ -37,7 +37,7 @@ const designSettingsSchema = z.object({
   headerImageOpacity: z.number().min(0).max(1).optional(),
   footerImage: z.string().optional(),
   footerImageOpacity: z.number().min(0).max(1).optional(),
-  backgroundImage: z.string().optional(),
+  backgroundImage: z.union([z.string(), z.object({src: z.string()})]).optional(),
   backgroundImageOpacity: z.number().min(0).max(1).optional(),
   watermarkText: z.string().optional(),
   watermarkColor: z.string().optional(),
@@ -87,6 +87,8 @@ const ImageUploader = ({
 
     const fieldValue = useWatch({ control: form.control, name: fieldName });
     const opacityValue = opacityFieldName ? useWatch({ control: form.control, name: opacityFieldName }) : 1;
+    
+    const imageSrc = typeof fieldValue === 'object' && fieldValue !== null && 'src' in fieldValue ? fieldValue.src : fieldValue;
 
     const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -114,9 +116,9 @@ const ImageUploader = ({
         <div className="space-y-2">
             <FormLabel className="text-xs">{label}</FormLabel>
             <div className={`relative flex flex-col items-center justify-center space-y-2 rounded-md border border-dashed p-2 w-full ${aspect === 'wide' ? 'h-16' : 'h-32'}`}>
-                {fieldValue ? (
+                {imageSrc ? (
                     <>
-                        <img src={fieldValue} alt={`${label} preview`} className="max-h-full max-w-full object-contain" style={{ opacity: opacityValue ?? 1 }} />
+                        <img src={imageSrc} alt={`${label} preview`} className="max-h-full max-w-full object-contain" style={{ opacity: opacityValue ?? 1 }} />
                         <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={handleDeleteImage}>
                            <Trash2 className="h-3 w-3" />
                         </Button>
@@ -131,14 +133,14 @@ const ImageUploader = ({
                         <div>
                             <Input type="file" accept="image/*" className="hidden" ref={inputRef} onChange={handleImageChange} />
                             <Button type="button" variant="outline" size="sm" onClick={() => inputRef.current?.click()} className="w-full h-8 text-xs">
-                                <UploadCloud className="mr-2 h-3 w-3" /> {fieldValue ? 'Change' : 'Upload'}
+                                <UploadCloud className="mr-2 h-3 w-3" /> {imageSrc ? 'Change' : 'Upload'}
                             </Button>
                         </div>
                     </FormControl>
                     <FormMessage />
                 </FormItem>
             )} />
-            {opacityFieldName && fieldValue && (
+            {opacityFieldName && imageSrc && (
                  <FormField
                     control={form.control}
                     name={opacityFieldName}
@@ -168,8 +170,8 @@ function SettingsPanel({ form, documentType, onSubmit, returnUrl, documentData }
   returnUrl: string,
   documentData: Invoice | Quotation | null,
 }) {
-  const initialWatermark = documentData?.status || form.getValues('watermarkText');
   const allWatermarkPresets = ['PAID', 'DRAFT', 'PENDING', 'OVERDUE', 'CANCELED', 'SENT', 'ACCEPTED', 'DECLINED'];
+  const initialWatermark = documentData?.status || form.getValues('watermarkText');
   const [customWatermark, setCustomWatermark] = useState(initialWatermark && !allWatermarkPresets.includes(initialWatermark));
 
   const { setFormData } = useFormState('designFormData');
@@ -247,7 +249,7 @@ function SettingsPanel({ form, documentType, onSubmit, returnUrl, documentData }
                                                     type="button"
                                                     className={cn(
                                                         "aspect-square rounded-md overflow-hidden border-2 transition-all",
-                                                        selectedBackgroundImage === image.src ? 'border-primary ring-2 ring-primary' : 'border-transparent hover:border-primary/50'
+                                                        (selectedBackgroundImage as StaticImageData)?.src === image.src.src ? 'border-primary ring-2 ring-primary' : 'border-transparent hover:border-primary/50'
                                                     )}
                                                     onClick={() => form.setValue('backgroundImage', image.src)}
                                                 >
@@ -489,6 +491,12 @@ function DocumentDesignPage() {
         return () => subscription.unsubscribe();
     }, [isLoading, form, setFormData]);
 
+    const getBackgroundImageSrc = (bgValue: any): string | undefined => {
+        if (!bgValue) return undefined;
+        if (typeof bgValue === 'string') return bgValue;
+        if (typeof bgValue === 'object' && bgValue.src) return bgValue.src;
+        return undefined;
+    };
 
     const currentDesignSettings: DesignSettings = useMemo(() => ({
         logo: watchedValues.logo,
@@ -498,7 +506,7 @@ function DocumentDesignPage() {
         headerImageOpacity: watchedValues.headerImageOpacity,
         footerImage: watchedValues.footerImage,
         footerImageOpacity: watchedValues.footerImageOpacity,
-        backgroundImage: watchedValues.backgroundImage,
+        backgroundImage: getBackgroundImageSrc(watchedValues.backgroundImage),
         backgroundImageOpacity: watchedValues.backgroundImageOpacity,
         watermarkText: watchedValues.watermarkText,
         watermarkColor: watchedValues.watermarkColor,
