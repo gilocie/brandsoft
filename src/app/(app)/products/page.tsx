@@ -13,6 +13,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -23,7 +24,6 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
     AlertDialog,
@@ -65,7 +65,6 @@ import { PlusCircle, MoreHorizontal, Eye, FilePenLine, Trash2, FileText, FileBar
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const formSchema = z.object({
@@ -106,6 +105,8 @@ const ProductActions = ({ product, onSelectAction }: { product: Product; onSelec
     );
 };
 
+const ITEMS_PER_PAGE = 20;
+
 export default function ProductsPage() {
   const { config, addProduct, updateProduct, deleteProduct, saveConfig } = useBrandsoft();
   const { toast } = useToast();
@@ -113,10 +114,12 @@ export default function ProductsPage() {
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
+  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('all');
+  const [currentPage, setCurrentPage] = useState(0);
   
   const form = useForm<ProductFormData>({
     resolver: zodResolver(formSchema),
@@ -133,6 +136,13 @@ export default function ProductsPage() {
     }
     return products;
   }, [config?.products, activeTab, searchTerm]);
+
+  const paginatedProducts = useMemo(() => {
+    const startIndex = currentPage * ITEMS_PER_PAGE;
+    return filteredProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredProducts, currentPage]);
+
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
 
   const handleOpenForm = (product: Product | null = null) => {
     setSelectedProduct(product);
@@ -169,6 +179,17 @@ export default function ProductsPage() {
     }
   };
 
+  const handleBulkDelete = () => {
+    if (!config || selectedProductIds.length === 0) return;
+    const newProducts = config.products.filter(p => !selectedProductIds.includes(p.id));
+    saveConfig({ ...config, products: newProducts }, { redirect: false });
+    toast({
+        title: `${selectedProductIds.length} item(s) deleted.`,
+    });
+    setSelectedProductIds([]);
+    setIsBulkDeleteOpen(false);
+  }
+
   const handleBulkUpload = (file: File) => {
     if (!config) return;
 
@@ -192,7 +213,7 @@ export default function ProductsPage() {
         let errorCount = 0;
         const newProducts: Product[] = [];
 
-        rows.forEach(row => {
+        rows.forEach((row, rowIndex) => {
             try {
                 const values = row.split(',');
                 const productData: Partial<ProductFormData> = {};
@@ -204,7 +225,7 @@ export default function ProductsPage() {
                 const parsed = formSchema.pick({ name: true, price: true, type: true, description: true }).safeParse(productData);
 
                 if (parsed.success) {
-                    newProducts.push({ ...parsed.data, id: `PROD-${Date.now()}-${importedCount}` });
+                    newProducts.push({ ...parsed.data, id: `PROD-${Date.now()}-${rowIndex}` });
                     importedCount++;
                 } else {
                     errorCount++;
@@ -253,14 +274,14 @@ export default function ProductsPage() {
 
   const handleSelectAll = (checked: boolean | 'indeterminate') => {
     if (checked) {
-        setSelectedProductIds(filteredProducts.map(p => p.id));
+        setSelectedProductIds(paginatedProducts.map(p => p.id));
     } else {
         setSelectedProductIds([]);
     }
   };
 
-  const allProductsSelected = filteredProducts.length > 0 && filteredProducts.length === selectedProductIds.length;
-  const someProductsSelected = selectedProductIds.length > 0 && selectedProductIds.length < filteredProducts.length;
+  const allOnPageSelected = paginatedProducts.length > 0 && paginatedProducts.every(p => selectedProductIds.includes(p.id));
+  const someOnPageSelected = paginatedProducts.some(p => selectedProductIds.includes(p.id)) && !allOnPageSelected;
 
   const productQueryString = selectedProductIds.join(',');
   
@@ -278,6 +299,9 @@ export default function ProductsPage() {
         <div className="flex items-center gap-2">
             {selectedProductIds.length > 0 ? (
                 <>
+                    <Button variant="destructive" onClick={() => setIsBulkDeleteOpen(true)}>
+                        <Trash2 className="mr-2 h-4 w-4" /> Delete ({selectedProductIds.length})
+                    </Button>
                     <Button asChild>
                         <Link href={`/invoices/new?products=${productQueryString}`}>
                             <FileText className="mr-2 h-4 w-4" /> Create Invoice
@@ -300,7 +324,7 @@ export default function ProductsPage() {
        <Card>
         <CardHeader>
            <div className="flex items-center justify-between gap-4">
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setCurrentPage(0); }}>
               <TabsList>
                 <TabsTrigger value="all">All</TabsTrigger>
                 <TabsTrigger value="product">Products</TabsTrigger>
@@ -313,7 +337,7 @@ export default function ProductsPage() {
                     placeholder="Search by name..." 
                     className="pl-10"
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(0); }}
                 />
             </div>
            </div>
@@ -324,7 +348,7 @@ export default function ProductsPage() {
               <TableRow>
                 <TableHead className="w-[50px] px-4">
                     <Checkbox
-                        checked={allProductsSelected || (someProductsSelected ? 'indeterminate' : false)}
+                        checked={allOnPageSelected || (someOnPageSelected ? 'indeterminate' : false)}
                         onCheckedChange={handleSelectAll}
                     />
                 </TableHead>
@@ -336,8 +360,8 @@ export default function ProductsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredProducts.length > 0 ? (
-                filteredProducts.map((product: Product) => (
+              {paginatedProducts.length > 0 ? (
+                paginatedProducts.map((product: Product) => (
                   <TableRow key={product.id}>
                     <TableCell className="px-4">
                         <Checkbox
@@ -368,6 +392,31 @@ export default function ProductsPage() {
             </TableBody>
           </Table>
         </CardContent>
+        {totalPages > 1 && (
+            <CardFooter className="flex items-center justify-between pt-4">
+                 <span className="text-sm text-muted-foreground">
+                    Page {currentPage + 1} of {totalPages}
+                </span>
+                <div className="flex gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(p => p - 1)}
+                        disabled={currentPage === 0}
+                    >
+                        Previous
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(p => p + 1)}
+                        disabled={currentPage >= totalPages - 1}
+                    >
+                        Next
+                    </Button>
+                </div>
+            </CardFooter>
+        )}
       </Card>
       
       {/* Add/Edit Dialog */}
@@ -508,6 +557,24 @@ export default function ProductsPage() {
                 <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                        Delete
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Bulk Delete Confirmation Dialog */}
+       <AlertDialog open={isBulkDeleteOpen} onOpenChange={setIsBulkDeleteOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Delete {selectedProductIds.length} items?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete the selected items from your product list.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive hover:bg-destructive/90">
                         Delete
                     </AlertDialogAction>
                 </AlertDialogFooter>
