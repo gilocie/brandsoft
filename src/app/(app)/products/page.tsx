@@ -282,14 +282,16 @@ export default function ProductsPage() {
                   </FormItem>
                 )}
               />
-              <FormField control={form.control} name="name" render={({ field }) => (
-                <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField control={form.control} name="name" render={({ field }) => (
+                  <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="price" render={({ field }) => (
+                  <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+              </div>
               <FormField control={form.control} name="description" render={({ field }) => (
                 <FormItem><FormLabel>Description (Optional)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
-              <FormField control={form.control} name="price" render={({ field }) => (
-                <FormItem><FormLabel>Price</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>
               )} />
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>Cancel</Button>
