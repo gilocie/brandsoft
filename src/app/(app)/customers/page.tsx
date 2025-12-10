@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -212,6 +211,7 @@ export default function CustomersPage() {
         }
 
         const rows = text.split('\n').filter(row => row.trim() !== '');
+        // Headers are converted to lowercase here (e.g., "companyName" becomes "companyname")
         const header = rows.shift()?.trim().toLowerCase().split(',') || [];
         
         const requiredHeaders = ['name', 'email'];
@@ -226,23 +226,51 @@ export default function CustomersPage() {
 
         rows.forEach((row) => {
             try {
-                const values = row.split(',');
-                const customerData: { [key: string]: string } = {};
-                header.forEach((h, i) => { customerData[h] = values[i]?.trim() || ''; });
+                // Regex to split by comma ONLY if not inside quotes (handles "Smith, John")
+                const values = row.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
+                // Fallback for simple split if regex fails or for simple CSVs
+                const simpleValues = row.split(',');
+                
+                const finalValues = values.length > simpleValues.length ? values : simpleValues;
 
-                const parsed = formSchema.pick({ name: true, email: true, phone: true, companyName: true, address: true }).safeParse(customerData);
+                const customerData: { [key: string]: string } = {};
+                
+                header.forEach((h, i) => { 
+                    // Remove quotes if the CSV value has them (e.g. "My Company")
+                    let val = finalValues[i]?.trim() || '';
+                    if (val.startsWith('"') && val.endsWith('"')) {
+                        val = val.slice(1, -1);
+                    }
+                    customerData[h] = val; 
+                });
+
+                // --- THE FIX IS HERE ---
+                // We construct an object explicitly mapping the lowercase CSV keys 
+                // to the CamelCase keys your Schema expects.
+                const dataToValidate = {
+                    name: customerData.name,
+                    email: customerData.email,
+                    phone: customerData.phone,
+                    address: customerData.address,
+                    companyName: customerData.companyname // Map 'companyname' to 'companyName'
+                };
+
+                const parsed = formSchema.pick({ name: true, email: true, phone: true, companyName: true, address: true }).safeParse(dataToValidate);
 
                 if (parsed.success) {
                     const finalData = {
                       ...parsed.data,
-                      customerType: customerData.companyname ? 'company' : 'personal' as 'company' | 'personal'
+                      // Ensure customerType is set correctly based on the mapped data
+                      customerType: (parsed.data.companyName && parsed.data.companyName.length > 0) ? 'company' : 'personal' as 'company' | 'personal'
                     };
                     newCustomers.push(finalData);
                     importedCount++;
                 } else {
+                    console.error("Validation failed for row:", row, parsed.error);
                     errorCount++;
                 }
-            } catch {
+            } catch (err) {
+                console.error("Error parsing row:", row, err);
                 errorCount++;
             }
         });
@@ -494,9 +522,3 @@ export default function CustomersPage() {
     </div>
   );
 }
-
-
-
-
-
-    
