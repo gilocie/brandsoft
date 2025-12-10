@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
@@ -15,17 +15,17 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from "@/lib/utils";
-import { CalendarIcon, PlusCircle, Trash2, Save, Send, Eye, UserPlus, Loader2, Palette } from 'lucide-react';
-import { format, parseISO } from "date-fns";
+import { CalendarIcon, PlusCircle, Trash2, Save, Send, Eye, UserPlus, Palette } from 'lucide-react';
+import { format } from "date-fns";
 import Link from 'next/link';
-import { useBrandsoft, type Customer, type Quotation, type Product } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Customer, type Invoice, type Product, type DesignSettings } from '@/hooks/use-brandsoft';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { QuotationPreview } from '@/components/quotation-preview';
+import { InvoicePreview } from '@/components/invoice-preview';
 import { useFormState } from '@/hooks/use-form-state';
 
 const lineItemSchema = z.object({
@@ -37,13 +37,18 @@ const lineItemSchema = z.object({
 
 const formSchema = z.object({
   customerId: z.string().min(1, 'Customer is required.'),
-  quotationDate: z.date(),
-  validUntil: z.date(),
-  status: z.enum(['Draft', 'Sent', 'Accepted', 'Declined']),
+  invoiceDate: z.date({
+    required_error: "An invoice date is required.",
+  }),
+  dueDate: z.date({
+    required_error: "A due date is required.",
+  }),
+  status: z.enum(['Draft', 'Pending', 'Paid', 'Overdue', 'Canceled']),
   currency: z.string().min(1, 'Currency is required'),
   lineItems: z.array(lineItemSchema).min(1, 'At least one line item is required.'),
   notes: z.string().optional(),
-  applyTax: z.boolean().default(false),
+  saveNotesAsDefault: z.boolean().default(false),
+  applyTax: z.boolean().default(true),
   taxName: z.string().optional(),
   taxType: z.enum(['percentage', 'flat']).default('percentage'),
   taxValue: z.coerce.number().optional(),
@@ -57,7 +62,7 @@ const formSchema = z.object({
   partialPaymentValue: z.coerce.number().optional(),
 });
 
-type QuotationFormData = z.infer<typeof formSchema>;
+type InvoiceFormData = z.infer<typeof formSchema>;
 
 const NewCustomerFormSchema = z.object({
   name: z.string().min(2, "Name is required"),
@@ -66,26 +71,38 @@ const NewCustomerFormSchema = z.object({
 });
 type NewCustomerFormData = z.infer<typeof NewCustomerFormSchema>;
 
-export default function EditQuotationPage() {
-  const { config, addCustomer, updateQuotation } = useBrandsoft();
+export default function NewInvoicePage() {
+  const { config, addCustomer, addInvoice, saveConfig } = useBrandsoft();
+  const { setFormData, getFormData } = useFormState('newDocumentData');
+  const designFormState = useFormState('designFormData');
   const router = useRouter();
-  const params = useParams();
-  const quotationId = params.id as string;
-  const formStateKey = `edit-quotation-${quotationId}`;
-  const { setFormData, getFormData } = useFormState(formStateKey);
-
   const { toast } = useToast();
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
-  const [useManualEntry, setUseManualEntry] = useState<boolean[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [useManualEntry, setUseManualEntry] = useState<boolean[]>([false]);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  const form = useForm<QuotationFormData>({
+  const form = useForm<InvoiceFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      status: 'Draft',
-      lineItems: [],
-    }
+      status: 'Pending',
+      currency: 'USD',
+      lineItems: [{ description: '', quantity: 1, price: 0 }],
+      notes: '',
+      saveNotesAsDefault: false,
+      applyTax: true,
+      taxName: 'VAT',
+      taxType: 'percentage',
+      taxValue: 17.5,
+      applyShipping: false,
+      shippingValue: 0,
+      applyDiscount: false,
+      discountType: 'percentage',
+      discountValue: 0,
+      applyPartialPayment: false,
+      partialPaymentType: 'percentage',
+      partialPaymentValue: 0,
+    },
   });
 
   const { fields, append, remove, update } = useFieldArray({
@@ -96,70 +113,45 @@ export default function EditQuotationPage() {
   const watchedValues = form.watch();
 
   useEffect(() => {
-    if (!config || !isLoading) return;
+    if (isInitialized || !config) return;
 
     const storedData = getFormData();
-
+    const designData = designFormState.getFormData();
+    
     if (storedData && Object.keys(storedData).length > 0) {
         const restoredData: any = { ...storedData };
-        if (restoredData.quotationDate) restoredData.quotationDate = new Date(restoredData.quotationDate);
-        if (restoredData.validUntil) restoredData.validUntil = new Date(restoredData.validUntil);
+        if (restoredData.invoiceDate) restoredData.invoiceDate = new Date(restoredData.invoiceDate);
+        if (restoredData.dueDate) restoredData.dueDate = new Date(restoredData.dueDate);
         form.reset(restoredData);
-        setUseManualEntry(restoredData.lineItems?.map((item: any) => !item.productId) || []);
-        setIsLoading(false);
     } else {
-      const quotationToEdit = config.quotations.find(q => q.quotationId?.toLowerCase() === quotationId?.toLowerCase());
-      if (quotationToEdit) {
-        const customer = config.customers.find(c => c.id === quotationToEdit.customerId) || config.customers.find(c => c.name === quotationToEdit.customer);
-        if (customer) {
-            const lineItems = quotationToEdit.lineItems || (quotationToEdit.subtotal ? [{
-                description: 'Original Items',
-                quantity: 1,
-                price: quotationToEdit.subtotal,
-                productId: ''
-            }] : []);
-
-            form.reset({
-              customerId: customer.id,
-              quotationDate: parseISO(quotationToEdit.date),
-              validUntil: parseISO(quotationToEdit.validUntil),
-              status: quotationToEdit.status,
-              currency: quotationToEdit.currency || config.profile.defaultCurrency,
-              notes: quotationToEdit.notes || '',
-              applyDiscount: !!quotationToEdit.discount,
-              discountType: quotationToEdit.discountType || 'flat',
-              discountValue: quotationToEdit.discountValue || 0,
-              applyTax: !!quotationToEdit.tax,
-              taxType: quotationToEdit.taxType || 'percentage',
-              taxValue: quotationToEdit.taxValue ?? 17.5,
-              taxName: quotationToEdit.taxName ?? 'VAT',
-              applyShipping: !!quotationToEdit.shipping,
-              shippingValue: quotationToEdit.shipping || 0,
-              applyPartialPayment: !!quotationToEdit.partialPayment,
-              partialPaymentType: quotationToEdit.partialPaymentType || 'percentage',
-              partialPaymentValue: quotationToEdit.partialPaymentValue || 0,
-              lineItems: lineItems
-            });
-            setUseManualEntry(lineItems.map(item => !item.productId));
-        } else {
-             toast({ title: "Error", description: "Customer for this quotation not found.", variant: 'destructive'});
-             router.push('/quotations');
-        }
-        setIsLoading(false);
-      } else if (config.quotations.length > 0) {
-        toast({ title: "Error", description: "Quotation not found.", variant: 'destructive'});
-        router.push('/quotations');
-      }
+        const today = new Date();
+        const dueDate = new Date();
+        dueDate.setDate(today.getDate() + 30);
+        
+        form.reset({
+            ...form.getValues(),
+            invoiceDate: today,
+            dueDate: dueDate,
+            notes: '',
+            currency: config.profile.defaultCurrency,
+        });
     }
-  }, [config, quotationId, form, router, toast, isLoading, getFormData]);
+
+    if (designData?.defaultCurrency) {
+        form.setValue('currency', designData.defaultCurrency);
+    }
+
+    setIsInitialized(true);
+  }, [isInitialized, config, getFormData, designFormState, form]);
+
 
   useEffect(() => {
-    if (isLoading) return;
+    if (!isInitialized) return;
     const subscription = form.watch((value) => {
         setFormData(value);
     });
     return () => subscription.unsubscribe();
-  }, [isLoading, form, setFormData]);
+  }, [form, setFormData, isInitialized]);
 
   const newCustomerForm = useForm<NewCustomerFormData>({
     resolver: zodResolver(NewCustomerFormSchema),
@@ -173,15 +165,18 @@ export default function EditQuotationPage() {
     newCustomerForm.reset();
   }
 
-  const handleFormSubmit = (status: Quotation['status']) => {
+  const handleFormSubmit = (status: Invoice['status']) => {
     form.setValue('status', status);
     form.handleSubmit(onSubmit)();
   }
 
-  function onSubmit(data: QuotationFormData) {
+  function onSubmit(data: InvoiceFormData) {
     if (!config) return;
-    const quotationToEdit = config.quotations.find(q => q.quotationId?.toLowerCase() === quotationId?.toLowerCase());
-    if (!quotationToEdit) return;
+
+    if (data.saveNotesAsDefault) {
+      const newConfig = { ...config, profile: { ...config.profile, paymentDetails: data.notes }};
+      saveConfig(newConfig, { redirect: false });
+    }
 
     const customer = config.customers.find(c => c.id === data.customerId);
     if (!customer) return;
@@ -219,11 +214,11 @@ export default function EditQuotationPage() {
         }
     }
 
-    const updatedQuotation: Omit<Quotation, 'quotationId'> = {
+    const newInvoice: Omit<Invoice, 'invoiceId'> = {
         customer: customer.name,
         customerId: customer.id,
-        date: format(data.quotationDate, 'yyyy-MM-dd'),
-        validUntil: format(data.validUntil, 'yyyy-MM-dd'),
+        date: format(data.invoiceDate, 'yyyy-MM-dd'),
+        dueDate: format(data.dueDate, 'yyyy-MM-dd'),
         amount: total,
         status: data.status,
         subtotal,
@@ -231,9 +226,9 @@ export default function EditQuotationPage() {
         discountType: data.discountType,
         discountValue: data.discountValue,
         tax: taxAmount,
-        taxName: data.taxName,
         taxType: data.taxType,
         taxValue: data.taxValue,
+        taxName: data.taxName,
         shipping,
         notes: data.notes,
         lineItems: data.lineItems,
@@ -241,18 +236,23 @@ export default function EditQuotationPage() {
         partialPaymentType: data.partialPaymentType,
         partialPaymentValue: data.partialPaymentValue,
         currency: data.currency,
-        design: quotationToEdit.design,
     };
     
-    updateQuotation(quotationToEdit.quotationId, updatedQuotation);
-    setFormData(null);
+    const designData = designFormState.getFormData();
+    const numbering = designData ? {
+      prefix: designData.invoicePrefix,
+      startNumber: designData.invoiceStartNumber,
+    } : undefined;
+
+    const savedInvoice = addInvoice(newInvoice, numbering);
     
     toast({
-        title: "Quotation Updated!",
-        description: `Quotation ${quotationToEdit.quotationId} has been updated.`
+        title: "Invoice Saved!",
+        description: `Invoice ${savedInvoice.invoiceId} for ${customer.name} has been saved as a ${data.status.toLowerCase()}.`
     });
 
-    router.push('/quotations');
+    setFormData(null); // Clear stored form data
+    router.push('/invoices');
   }
   
   const handleProductSelect = (productId: string, index: number) => {
@@ -327,27 +327,27 @@ export default function EditQuotationPage() {
       })
     }
   }
-
-  if (isLoading || !config) {
-    return (
-        <div className="flex h-[80vh] items-center justify-center">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        </div>
-    )
-  }
+  
+  const isCustomizeDisabled = !watchedValues.customerId || watchedValues.lineItems.length === 0 || !watchedValues.lineItems[0]?.description;
+  
+  const designData = designFormState.getFormData();
+  const nextInvoiceId = `${designData?.invoicePrefix || config?.profile.invoicePrefix || 'INV-'}${(Number(designData?.invoiceStartNumber) || Number(config?.profile.invoiceStartNumber) || 100) + (config?.invoices?.length || 0)}`;
 
   return (
     <div className="container mx-auto max-w-4xl space-y-6">
        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold font-headline">Edit Quotation {quotationId}</h1>
-            <p className="text-muted-foreground">Update the details for this quotation.</p>
+            <h1 className="text-3xl font-bold font-headline">New Invoice</h1>
+            <p className="text-muted-foreground">Fill in the details below to create a new invoice.</p>
           </div>
-           <div className="flex items-center gap-2">
-            <Button variant="outline" asChild>
-                <Link href="/quotations">Cancel</Link>
-            </Button>
-          </div>
+          <div className="flex items-center gap-2">
+                 <Button asChild disabled={isCustomizeDisabled}>
+                    <Link href={`/design?documentType=invoice&isNew=true`}><Palette className="mr-2 h-4 w-4"/> Customize</Link>
+                </Button>
+                <Button variant="outline" asChild>
+                    <Link href="/invoices">Cancel</Link>
+                </Button>
+            </div>
        </div>
       <Form {...form}>
         <form onSubmit={e => e.preventDefault()} className="space-y-8">
@@ -363,7 +363,7 @@ export default function EditQuotationPage() {
                   <FormItem>
                     <FormLabel>Customer</FormLabel>
                     <div className="flex gap-2">
-                      <Select onValueChange={field.onChange} value={field.value || ''}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a customer" />
@@ -388,15 +388,15 @@ export default function EditQuotationPage() {
           
           <Card>
             <CardHeader>
-              <CardTitle>Quotation Details</CardTitle>
+              <CardTitle>Invoice Details</CardTitle>
             </CardHeader>
              <CardContent className="grid gap-4 md:grid-cols-3">
               <FormField
                 control={form.control}
-                name="quotationDate"
+                name="invoiceDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Quotation Date</FormLabel>
+                    <FormLabel>Invoice Date</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -427,10 +427,10 @@ export default function EditQuotationPage() {
               />
               <FormField
                 control={form.control}
-                name="validUntil"
+                name="dueDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Valid Until</FormLabel>
+                    <FormLabel>Due Date</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -459,7 +459,7 @@ export default function EditQuotationPage() {
                   </FormItem>
                 )}
               />
-               <FormField
+              <FormField
                   control={form.control}
                   name="status"
                   render={({ field }) => (
@@ -473,9 +473,10 @@ export default function EditQuotationPage() {
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="Draft">Draft</SelectItem>
-                          <SelectItem value="Sent">Sent</SelectItem>
-                          <SelectItem value="Accepted">Accepted</SelectItem>
-                          <SelectItem value="Declined">Declined</SelectItem>
+                          <SelectItem value="Pending">Pending</SelectItem>
+                          <SelectItem value="Paid">Paid</SelectItem>
+                          <SelectItem value="Overdue">Overdue</SelectItem>
+                          <SelectItem value="Canceled">Canceled</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -503,7 +504,6 @@ export default function EditQuotationPage() {
           <Card>
             <CardHeader>
               <CardTitle>Line Items</CardTitle>
-              <CardDescription>Note: Editing quotations with complex pre-existing items may require manual adjustment.</CardDescription>
             </CardHeader>
             <CardContent>
                 <div className="space-y-4">
@@ -622,6 +622,7 @@ export default function EditQuotationPage() {
 
                     <Separator />
                     
+                    {/* Discount Section */}
                     <FormField
                         control={form.control}
                         name="applyDiscount"
@@ -662,6 +663,7 @@ export default function EditQuotationPage() {
                     
                     <Separator />
 
+                    {/* Tax Section */}
                     <FormField
                         control={form.control}
                         name="applyTax"
@@ -705,6 +707,7 @@ export default function EditQuotationPage() {
                     
                     <Separator />
 
+                    {/* Shipping Section */}
                     <FormField
                         control={form.control}
                         name="applyShipping"
@@ -742,6 +745,7 @@ export default function EditQuotationPage() {
 
                     <Separator />
 
+                     {/* Partial Payment Section */}
                     <FormField
                         control={form.control}
                         name="applyPartialPayment"
@@ -780,7 +784,7 @@ export default function EditQuotationPage() {
                         </div>
                     )}
 
-                     {watchedValues.applyPartialPayment && (
+                    {watchedValues.applyPartialPayment && (
                         <>
                             <Separator />
                             <div className="flex justify-between font-bold text-lg pt-2 p-3 rounded-md bg-primary text-primary-foreground">
@@ -808,13 +812,33 @@ export default function EditQuotationPage() {
                       </FormItem>
                     )}
                   />
+                  <FormField
+                    control={form.control}
+                    name="saveNotesAsDefault"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm mt-4">
+                            <div className="space-y-0.5">
+                                <FormLabel>Save as default notes</FormLabel>
+                                <FormDescription>
+                                   Use these notes for all future invoices.
+                                </FormDescription>
+                            </div>
+                            <FormControl>
+                                <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                />
+                            </FormControl>
+                        </FormItem>
+                    )}
+                />
               </CardContent>
           </Card>
 
           <div className="flex justify-end gap-2">
-             <Button type="button" variant="outline" onClick={handlePreview}><Eye className="mr-2 h-4 w-4"/> Preview</Button>
+            <Button type="button" variant="outline" onClick={handlePreview}><Eye className="mr-2 h-4 w-4"/> Preview</Button>
             <Button type="button" variant="secondary" onClick={() => handleFormSubmit('Draft')}><Save className="mr-2 h-4 w-4"/> Save Draft</Button>
-            <Button type="button" onClick={() => handleFormSubmit('Sent')}><Send className="mr-2 h-4 w-4"/> Save Changes</Button>
+            <Button type="button" onClick={() => handleFormSubmit('Pending')}><Send className="mr-2 h-4 w-4"/> Save and Send</Button>
           </div>
         </form>
       </Form>
@@ -845,17 +869,22 @@ export default function EditQuotationPage() {
         </DialogContent>
       </Dialog>
 
-       <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
         <DialogContent className="max-w-4xl h-[90vh]">
           <DialogHeader>
-            <DialogTitle>Quotation Preview</DialogTitle>
+            <DialogTitle>Invoice Preview</DialogTitle>
           </DialogHeader>
           <div className="h-full overflow-y-auto">
-            <QuotationPreview
+            <InvoicePreview
                 config={config}
                 customer={config?.customers.find(c => c.id === watchedValues.customerId) || null}
-                quotationData={watchedValues}
-                quotationId={quotationId}
+                invoiceData={{
+                    ...watchedValues,
+                    invoiceDate: watchedValues.invoiceDate ? format(watchedValues.invoiceDate, 'yyyy-MM-dd') : '',
+                    dueDate: watchedValues.dueDate ? format(watchedValues.dueDate, 'yyyy-MM-dd') : '',
+                    design: designFormState.getFormData()
+                }}
+                invoiceId={nextInvoiceId}
             />
           </div>
           <DialogFooter>

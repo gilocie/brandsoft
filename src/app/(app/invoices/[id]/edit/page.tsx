@@ -62,7 +62,6 @@ const NewCustomerFormSchema = z.object({
   name: z.string().min(2, "Name is required"),
   email: z.string().email("Invalid email"),
   phone: z.string().optional(),
-  address: z.string().optional(),
 });
 type NewCustomerFormData = z.infer<typeof NewCustomerFormSchema>;
 
@@ -82,7 +81,14 @@ export default function EditInvoicePage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       status: 'Draft',
+      lineItems: [], 
+      currency: 'USD',
     }
+  });
+
+  const { fields, append, remove, update } = useFieldArray({
+    control: form.control,
+    name: "lineItems",
   });
 
   useEffect(() => {
@@ -125,7 +131,8 @@ export default function EditInvoicePage() {
         });
 
         setUseManualEntry(lineItems.map(item => !item.productId));
-        setIsLoading(false);
+        
+        setTimeout(() => setIsLoading(false), 0);
       } else {
         if(config.invoices.length > 0) {
             toast({ title: "Error", description: "Invoice not found.", variant: 'destructive'});
@@ -135,14 +142,9 @@ export default function EditInvoicePage() {
     }
   }, [config, invoiceId, form, router, toast, isLoading]);
 
-  const { fields, append, remove, update } = useFieldArray({
-    control: form.control,
-    name: "lineItems",
-  });
-
   const newCustomerForm = useForm<NewCustomerFormData>({
     resolver: zodResolver(NewCustomerFormSchema),
-    defaultValues: { name: "", email: "", phone: "", address: "" },
+    defaultValues: { name: "", email: "", phone: "" },
   });
 
   function onAddNewCustomer(data: NewCustomerFormData) {
@@ -183,19 +185,19 @@ export default function EditInvoicePage() {
             discountAmount = data.discountValue;
         }
     }
-    const subtotalAfterDiscount = subtotal - discountAmount;
     
+    const taxableAmount = subtotal - discountAmount;
     let taxAmount = 0;
     if (data.applyTax && data.taxValue) {
         if (data.taxType === 'percentage') {
-            taxAmount = subtotalAfterDiscount * (data.taxValue / 100);
+            taxAmount = taxableAmount * (data.taxValue / 100);
         } else {
             taxAmount = data.taxValue;
         }
     }
     
     const shipping = data.applyShipping && data.shippingValue ? data.shippingValue : 0;
-    const total = subtotalAfterDiscount + taxAmount + shipping;
+    const total = taxableAmount + taxAmount + shipping;
 
     let partialPaymentAmount = 0;
     if (data.applyPartialPayment && data.partialPaymentValue) {
@@ -228,6 +230,7 @@ export default function EditInvoicePage() {
         partialPaymentType: data.partialPaymentType,
         partialPaymentValue: data.partialPaymentValue,
         currency: data.currency,
+        design: invoiceToEdit.design // Preserve design settings
     };
     
     updateInvoice(invoiceToEdit.invoiceId, updatedInvoice);
@@ -277,19 +280,19 @@ export default function EditInvoicePage() {
       }
   }
 
-  const subtotalAfterDiscount = subtotal - discountAmount;
+  const taxableAmount = subtotal - discountAmount;
   
   let taxAmount = 0;
   if (watchedValues.applyTax && watchedValues.taxValue) {
       if (watchedValues.taxType === 'percentage') {
-          taxAmount = subtotalAfterDiscount * (watchedValues.taxValue / 100);
+          taxAmount = taxableAmount * (watchedValues.taxValue / 100);
       } else {
           taxAmount = watchedValues.taxValue;
       }
   }
 
   const shippingAmount = watchedValues.applyShipping && watchedValues.shippingValue ? Number(watchedValues.shippingValue) : 0;
-  const total = subtotalAfterDiscount + taxAmount + shippingAmount;
+  const total = taxableAmount + taxAmount + shippingAmount;
 
   let partialPaymentAmount = 0;
   if (watchedValues.applyPartialPayment && watchedValues.partialPaymentValue) {
@@ -351,7 +354,7 @@ export default function EditInvoicePage() {
                   <FormItem>
                     <FormLabel>Customer</FormLabel>
                     <div className="flex gap-2">
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value || ''}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a customer" />
@@ -602,7 +605,7 @@ export default function EditInvoicePage() {
                   </Button>
                 </div>
             </CardContent>
-            {/* ... Rest of footer logic is fine ... */}
+            {/* ... Rest of footer ... */}
             <CardFooter className="flex flex-col items-end gap-2">
                 <div className="w-full max-w-sm space-y-2 self-end">
                     <div className="flex justify-between">
@@ -737,7 +740,7 @@ export default function EditInvoicePage() {
                         name="applyPartialPayment"
                         render={({ field }) => (
                             <FormItem className="flex justify-between items-center">
-                                <FormLabel htmlFor="apply-partial-switch">Request Partial Payment</FormLabel>
+                                <FormLabel htmlFor="apply-partial-switch">Record Partial Payment</FormLabel>
                                 <FormControl>
                                   <Switch
                                     id="apply-partial-switch"
@@ -804,7 +807,7 @@ export default function EditInvoicePage() {
           <div className="flex justify-end gap-2">
              <Button type="button" variant="outline" onClick={handlePreview}><Eye className="mr-2 h-4 w-4"/> Preview</Button>
             <Button type="button" variant="secondary" onClick={() => handleFormSubmit('Draft')}><Save className="mr-2 h-4 w-4"/> Save Draft</Button>
-            <Button type="button" onClick={() => handleFormSubmit('Pending')}><Send className="mr-2 h-4 w-4"/> Save and Send</Button>
+            <Button type="button" onClick={() => handleFormSubmit(form.getValues('status'))}><Send className="mr-2 h-4 w-4"/> Save Changes</Button>
           </div>
         </form>
       </Form>
@@ -826,9 +829,6 @@ export default function EditInvoicePage() {
               )} />
               <FormField control={newCustomerForm.control} name="phone" render={({ field }) => (
                 <FormItem><FormLabel>Phone (Optional)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
-              <FormField control={newCustomerForm.control} name="address" render={({ field }) => (
-                <FormItem><FormLabel>Address (Optional)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
               )} />
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setIsAddCustomerOpen(false)}>Cancel</Button>

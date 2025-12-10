@@ -82,7 +82,6 @@ const formSchema = z.object({
   name: z.string().min(2, "Name is required"),
   email: z.string().email("Invalid email"),
   phone: z.string().optional(),
-  address: z.string().optional(),
   companyName: z.string().optional(),
   associatedProducts: z.array(productAssociationSchema).optional(),
 });
@@ -149,7 +148,6 @@ export default function CustomersPage() {
         name: customer.name,
         email: customer.email,
         phone: customer.phone || '',
-        address: customer.address || '',
         companyName: customer.companyName || '',
         associatedProducts: customer.associatedProductIds?.map(id => ({ productId: id })) || [],
       });
@@ -160,7 +158,6 @@ export default function CustomersPage() {
           name: '', 
           email: '', 
           phone: '', 
-          address: '',
           companyName: '', 
           associatedProducts: [],
       });
@@ -181,7 +178,6 @@ export default function CustomersPage() {
         name: data.name,
         email: data.email,
         phone: data.phone,
-        address: data.address,
         companyName: data.customerType === 'company' ? data.companyName : undefined,
         associatedProductIds: data.associatedProducts?.map(p => p.productId) || []
     };
@@ -330,15 +326,6 @@ export default function CustomersPage() {
                 {formStep === 2 && (
                      <div className="space-y-6">
                         <div>
-                            <h3 className="text-lg font-medium">{customerType === 'company' ? 'Contact Person Details' : 'Contact Details'}</h3>
-                             <div className="space-y-4 mt-2">
-                                <FormField control={form.control} name="address" render={({ field }) => (
-                                    <FormItem><FormLabel>{customerType === 'company' ? 'Company Address (Optional)' : 'Address (Optional)'}</FormLabel><FormControl><Textarea {...field} className="min-h-[80px]" /></FormControl><FormMessage /></FormItem>
-                                )} />
-                            </div>
-                        </div>
-                         <Separator />
-                        <div>
                             <h3 className="text-lg font-medium">Associated Products</h3>
                             <div className="space-y-2 mt-2">
                                 {fields.map((field, index) => (
@@ -413,10 +400,6 @@ export default function CustomersPage() {
              <div className="grid grid-cols-3 gap-2">
                 <div className="font-semibold text-muted-foreground col-span-1">Phone</div>
                 <div className="font-medium col-span-2">{selectedCustomer?.phone || 'N/A'}</div>
-            </div>
-             <div className="grid grid-cols-3 gap-2">
-                <div className="font-semibold text-muted-foreground col-span-1">Address</div>
-                <div className="font-medium col-span-2">{selectedCustomer?.address || 'N/A'}</div>
             </div>
 
             {selectedCustomer?.associatedProductIds && selectedCustomer.associatedProductIds.length > 0 && (
@@ -493,9 +476,3 @@ export default function CustomersPage() {
     </div>
   );
 }
-
-    
-
-    
-
-

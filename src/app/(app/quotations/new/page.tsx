@@ -2,12 +2,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useForm, useFieldArray, Controller } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
@@ -15,13 +15,13 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from "@/lib/utils";
-import { CalendarIcon, PlusCircle, Trash2, Save, Send, Eye, UserPlus, Loader2, Palette } from 'lucide-react';
-import { format, parseISO } from "date-fns";
+import { CalendarIcon, PlusCircle, Trash2, Save, Send, Eye, UserPlus, Palette } from 'lucide-react';
+import { format } from "date-fns";
 import Link from 'next/link';
-import { useBrandsoft, type Customer, type Quotation, type Product } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Customer, type Quotation, type DesignSettings } from '@/hooks/use-brandsoft';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -37,13 +37,14 @@ const lineItemSchema = z.object({
 
 const formSchema = z.object({
   customerId: z.string().min(1, 'Customer is required.'),
-  quotationDate: z.date(),
-  validUntil: z.date(),
+  quotationDate: z.date({ required_error: "A quotation date is required." }),
+  validUntil: z.date({ required_error: "A validity date is required." }),
   status: z.enum(['Draft', 'Sent', 'Accepted', 'Declined']),
   currency: z.string().min(1, 'Currency is required'),
   lineItems: z.array(lineItemSchema).min(1, 'At least one line item is required.'),
   notes: z.string().optional(),
-  applyTax: z.boolean().default(false),
+  saveNotesAsDefault: z.boolean().default(false),
+  applyTax: z.boolean().default(true),
   taxName: z.string().optional(),
   taxType: z.enum(['percentage', 'flat']).default('percentage'),
   taxValue: z.coerce.number().optional(),
@@ -66,26 +67,39 @@ const NewCustomerFormSchema = z.object({
 });
 type NewCustomerFormData = z.infer<typeof NewCustomerFormSchema>;
 
-export default function EditQuotationPage() {
-  const { config, addCustomer, updateQuotation } = useBrandsoft();
+export default function NewQuotationPage() {
+  const { config, addCustomer, addQuotation, saveConfig } = useBrandsoft();
+  const { setFormData, getFormData } = useFormState('newQuotationData'); 
+  const designFormState = useFormState('designFormData');
   const router = useRouter();
-  const params = useParams();
-  const quotationId = params.id as string;
-  const formStateKey = `edit-quotation-${quotationId}`;
-  const { setFormData, getFormData } = useFormState(formStateKey);
-
   const { toast } = useToast();
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
-  const [useManualEntry, setUseManualEntry] = useState<boolean[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
+  const [useManualEntry, setUseManualEntry] = useState<boolean[]>([false]);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const form = useForm<QuotationFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      status: 'Draft',
-      lineItems: [],
-    }
+      status: 'Sent',
+      currency: 'USD', 
+      lineItems: [{ description: '', quantity: 1, price: 0 }],
+      notes: '',
+      saveNotesAsDefault: false,
+      applyTax: true,
+      taxName: 'VAT',
+      taxType: 'percentage',
+      taxValue: 17.5,
+      applyShipping: false,
+      shippingValue: 0,
+      applyDiscount: false,
+      discountType: 'percentage',
+      discountValue: 0,
+      applyPartialPayment: false,
+      partialPaymentType: 'percentage',
+      partialPaymentValue: 0,
+    },
   });
 
   const { fields, append, remove, update } = useFieldArray({
@@ -96,70 +110,48 @@ export default function EditQuotationPage() {
   const watchedValues = form.watch();
 
   useEffect(() => {
-    if (!config || !isLoading) return;
-
+    if (isInitialized || !config) return;
+  
     const storedData = getFormData();
-
+    const designData = designFormState.getFormData();
+  
     if (storedData && Object.keys(storedData).length > 0) {
-        const restoredData: any = { ...storedData };
-        if (restoredData.quotationDate) restoredData.quotationDate = new Date(restoredData.quotationDate);
-        if (restoredData.validUntil) restoredData.validUntil = new Date(restoredData.validUntil);
-        form.reset(restoredData);
-        setUseManualEntry(restoredData.lineItems?.map((item: any) => !item.productId) || []);
-        setIsLoading(false);
+      const restoredData: any = { ...storedData };
+      if (restoredData.quotationDate) restoredData.quotationDate = new Date(restoredData.quotationDate);
+      if (restoredData.validUntil) restoredData.validUntil = new Date(restoredData.validUntil);
+      
+      form.reset(restoredData);
     } else {
-      const quotationToEdit = config.quotations.find(q => q.quotationId?.toLowerCase() === quotationId?.toLowerCase());
-      if (quotationToEdit) {
-        const customer = config.customers.find(c => c.id === quotationToEdit.customerId) || config.customers.find(c => c.name === quotationToEdit.customer);
-        if (customer) {
-            const lineItems = quotationToEdit.lineItems || (quotationToEdit.subtotal ? [{
-                description: 'Original Items',
-                quantity: 1,
-                price: quotationToEdit.subtotal,
-                productId: ''
-            }] : []);
-
-            form.reset({
-              customerId: customer.id,
-              quotationDate: parseISO(quotationToEdit.date),
-              validUntil: parseISO(quotationToEdit.validUntil),
-              status: quotationToEdit.status,
-              currency: quotationToEdit.currency || config.profile.defaultCurrency,
-              notes: quotationToEdit.notes || '',
-              applyDiscount: !!quotationToEdit.discount,
-              discountType: quotationToEdit.discountType || 'flat',
-              discountValue: quotationToEdit.discountValue || 0,
-              applyTax: !!quotationToEdit.tax,
-              taxType: quotationToEdit.taxType || 'percentage',
-              taxValue: quotationToEdit.taxValue ?? 17.5,
-              taxName: quotationToEdit.taxName ?? 'VAT',
-              applyShipping: !!quotationToEdit.shipping,
-              shippingValue: quotationToEdit.shipping || 0,
-              applyPartialPayment: !!quotationToEdit.partialPayment,
-              partialPaymentType: quotationToEdit.partialPaymentType || 'percentage',
-              partialPaymentValue: quotationToEdit.partialPaymentValue || 0,
-              lineItems: lineItems
-            });
-            setUseManualEntry(lineItems.map(item => !item.productId));
-        } else {
-             toast({ title: "Error", description: "Customer for this quotation not found.", variant: 'destructive'});
-             router.push('/quotations');
-        }
-        setIsLoading(false);
-      } else if (config.quotations.length > 0) {
-        toast({ title: "Error", description: "Quotation not found.", variant: 'destructive'});
-        router.push('/quotations');
-      }
+      const today = new Date();
+      const validUntil = new Date();
+      validUntil.setDate(today.getDate() + 30);
+      
+      form.reset({
+        ...form.getValues(),
+        quotationDate: today,
+        validUntil: validUntil,
+        notes: '',
+        currency: config.profile.defaultCurrency,
+      });
     }
-  }, [config, quotationId, form, router, toast, isLoading, getFormData]);
+  
+    if (designData?.defaultCurrency) {
+      form.setValue('currency', designData.defaultCurrency);
+    }
+  
+    setIsInitialized(true);
+  }, [isInitialized, config, getFormData, designFormState, form]);
 
   useEffect(() => {
-    if (isLoading) return;
+    if (!isInitialized) return; 
+
     const subscription = form.watch((value) => {
-        setFormData(value);
+      setFormData(value);
     });
+    
     return () => subscription.unsubscribe();
-  }, [isLoading, form, setFormData]);
+  }, [form, setFormData, isInitialized]);
+
 
   const newCustomerForm = useForm<NewCustomerFormData>({
     resolver: zodResolver(NewCustomerFormSchema),
@@ -180,8 +172,11 @@ export default function EditQuotationPage() {
 
   function onSubmit(data: QuotationFormData) {
     if (!config) return;
-    const quotationToEdit = config.quotations.find(q => q.quotationId?.toLowerCase() === quotationId?.toLowerCase());
-    if (!quotationToEdit) return;
+
+    if (data.saveNotesAsDefault) {
+      const newConfig = { ...config, profile: { ...config.profile, paymentDetails: data.notes }};
+      saveConfig(newConfig, { redirect: false });
+    }
 
     const customer = config.customers.find(c => c.id === data.customerId);
     if (!customer) return;
@@ -219,7 +214,7 @@ export default function EditQuotationPage() {
         }
     }
 
-    const updatedQuotation: Omit<Quotation, 'quotationId'> = {
+    const newQuotation: Omit<Quotation, 'quotationId'> = {
         customer: customer.name,
         customerId: customer.id,
         date: format(data.quotationDate, 'yyyy-MM-dd'),
@@ -241,17 +236,23 @@ export default function EditQuotationPage() {
         partialPaymentType: data.partialPaymentType,
         partialPaymentValue: data.partialPaymentValue,
         currency: data.currency,
-        design: quotationToEdit.design,
     };
     
-    updateQuotation(quotationToEdit.quotationId, updatedQuotation);
-    setFormData(null);
+    const designData = designFormState.getFormData();
+    const numbering = designData ? {
+      prefix: designData.quotationPrefix,
+      startNumber: designData.quotationStartNumber,
+    } : undefined;
+
+    const savedQuotation = addQuotation(newQuotation, numbering);
     
     toast({
-        title: "Quotation Updated!",
-        description: `Quotation ${quotationToEdit.quotationId} has been updated.`
+        title: "Quotation Saved!",
+        description: `Quotation ${savedQuotation.quotationId} for ${customer.name} has been saved.`
     });
 
+    setFormData(null); 
+    
     router.push('/quotations');
   }
   
@@ -270,14 +271,26 @@ export default function EditQuotationPage() {
         return next;
       });
     }
-  }
-
-  const currencyCode = watchedValues.currency || config?.profile.defaultCurrency || '';
-  
-  const formatCurrency = (value: number) => {
-    return `${currencyCode}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
+  const handleAddItem = () => {
+    append({ productId: '', description: '', quantity: 1, price: 0 });
+    setUseManualEntry(prev => [...prev, true]);
+  };
+  
+  const handleRemoveItem = (index: number) => {
+    remove(index);
+    setUseManualEntry(prev => {
+        const next = [...prev];
+        next.splice(index, 1);
+        return next;
+    });
+  };
+  
+  const formatCurrency = (value: number) => {
+    return `${watchedValues.currency || ''}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+  
   const subtotal = watchedValues.lineItems ? watchedValues.lineItems.reduce((acc, item) => {
     return acc + (Number(item.quantity) || 0) * (Number(item.price) || 0);
   }, 0) : 0;
@@ -328,26 +341,26 @@ export default function EditQuotationPage() {
     }
   }
 
-  if (isLoading || !config) {
-    return (
-        <div className="flex h-[80vh] items-center justify-center">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        </div>
-    )
-  }
+  const isCustomizeDisabled = !watchedValues.customerId || watchedValues.lineItems.length === 0 || !watchedValues.lineItems[0]?.description;
+
+  const designData = designFormState.getFormData();
+  const nextQuotationId = `${designData?.quotationPrefix || config?.profile.quotationPrefix || 'QUO-'}${(Number(designData?.quotationStartNumber) || Number(config?.profile.quotationStartNumber) || 100) + (config?.quotations?.length || 0)}`;
 
   return (
     <div className="container mx-auto max-w-4xl space-y-6">
        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold font-headline">Edit Quotation {quotationId}</h1>
-            <p className="text-muted-foreground">Update the details for this quotation.</p>
+            <h1 className="text-3xl font-bold font-headline">New Quotation</h1>
+            <p className="text-muted-foreground">Fill in the details below to create a new quotation.</p>
           </div>
-           <div className="flex items-center gap-2">
-            <Button variant="outline" asChild>
-                <Link href="/quotations">Cancel</Link>
-            </Button>
-          </div>
+            <div className="flex items-center gap-2">
+                 <Button asChild disabled={isCustomizeDisabled}>
+                    <Link href={`/design?documentType=quotation&isNew=true`}><Palette className="mr-2 h-4 w-4"/> Customize</Link>
+                </Button>
+                <Button variant="outline" asChild>
+                    <Link href="/quotations">Cancel</Link>
+                </Button>
+            </div>
        </div>
       <Form {...form}>
         <form onSubmit={e => e.preventDefault()} className="space-y-8">
@@ -363,7 +376,7 @@ export default function EditQuotationPage() {
                   <FormItem>
                     <FormLabel>Customer</FormLabel>
                     <div className="flex gap-2">
-                      <Select onValueChange={field.onChange} value={field.value || ''}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a customer" />
@@ -386,7 +399,7 @@ export default function EditQuotationPage() {
             </CardContent>
           </Card>
           
-          <Card>
+           <Card>
             <CardHeader>
               <CardTitle>Quotation Details</CardTitle>
             </CardHeader>
@@ -425,7 +438,7 @@ export default function EditQuotationPage() {
                   </FormItem>
                 )}
               />
-              <FormField
+                <FormField
                 control={form.control}
                 name="validUntil"
                 render={({ field }) => (
@@ -459,39 +472,39 @@ export default function EditQuotationPage() {
                   </FormItem>
                 )}
               />
-               <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Status</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Draft">Draft</SelectItem>
-                          <SelectItem value="Sent">Sent</SelectItem>
-                          <SelectItem value="Accepted">Accepted</SelectItem>
-                          <SelectItem value="Declined">Declined</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Draft">Draft</SelectItem>
+                        <SelectItem value="Sent">Sent</SelectItem>
+                        <SelectItem value="Accepted">Accepted</SelectItem>
+                        <SelectItem value="Declined">Declined</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </CardContent>
              <CardContent>
-                <FormField
+                 <FormField
                   control={form.control}
                   name="currency"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Currency</FormLabel>
                         <FormControl>
-                          <Input {...field} disabled />
+                          <Input placeholder="e.g. USD, MWK" {...field} disabled />
                         </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -503,7 +516,6 @@ export default function EditQuotationPage() {
           <Card>
             <CardHeader>
               <CardTitle>Line Items</CardTitle>
-              <CardDescription>Note: Editing quotations with complex pre-existing items may require manual adjustment.</CardDescription>
             </CardHeader>
             <CardContent>
                 <div className="space-y-4">
@@ -537,7 +549,7 @@ export default function EditQuotationPage() {
                               render={({ field }) => (
                                 <FormItem>
                                   <FormLabel className="sr-only">Product</FormLabel>
-                                    <Select onValueChange={(value) => { field.onChange(value); handleProductSelect(value, index); }} defaultValue={field.value}>
+                                    <Select onValueChange={(value) => { field.onChange(value); handleProductSelect(value, index); }} value={field.value}>
                                       <FormControl>
                                         <SelectTrigger>
                                           <SelectValue placeholder="Select a product" />
@@ -560,7 +572,7 @@ export default function EditQuotationPage() {
                           type="button"
                           variant="destructive"
                           size="icon"
-                          onClick={() => remove(index)}
+                          onClick={() => handleRemoveItem(index)}
                           className="mt-6"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -607,13 +619,13 @@ export default function EditQuotationPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => { append({ productId: '', description: '', quantity: 1, price: 0 }); setUseManualEntry(prev => [...prev, true]); }}
+                    onClick={handleAddItem}
                   >
                     <PlusCircle className="mr-2 h-4 w-4" /> Add Item
                   </Button>
                 </div>
             </CardContent>
-            <CardFooter className="flex flex-col items-end gap-2">
+             <CardFooter className="flex flex-col items-end gap-2">
                 <div className="w-full max-w-sm space-y-2 self-end">
                     <div className="flex justify-between">
                         <span className="text-muted-foreground">Subtotal</span>
@@ -808,18 +820,38 @@ export default function EditQuotationPage() {
                       </FormItem>
                     )}
                   />
+                  <FormField
+                    control={form.control}
+                    name="saveNotesAsDefault"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm mt-4">
+                            <div className="space-y-0.5">
+                                <FormLabel>Save as default notes</FormLabel>
+                                <FormDescription>
+                                   Use these notes for all future quotations.
+                                </FormDescription>
+                            </div>
+                            <FormControl>
+                                <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                />
+                            </FormControl>
+                        </FormItem>
+                    )}
+                />
               </CardContent>
           </Card>
 
           <div className="flex justify-end gap-2">
-             <Button type="button" variant="outline" onClick={handlePreview}><Eye className="mr-2 h-4 w-4"/> Preview</Button>
+            <Button type="button" variant="outline" onClick={handlePreview}><Eye className="mr-2 h-4 w-4"/> Preview</Button>
             <Button type="button" variant="secondary" onClick={() => handleFormSubmit('Draft')}><Save className="mr-2 h-4 w-4"/> Save Draft</Button>
-            <Button type="button" onClick={() => handleFormSubmit('Sent')}><Send className="mr-2 h-4 w-4"/> Save Changes</Button>
+            <Button type="button" onClick={() => handleFormSubmit('Sent')}><Send className="mr-2 h-4 w-4"/> Save and Send</Button>
           </div>
         </form>
       </Form>
       
-      <Dialog open={isAddCustomerOpen} onOpenChange={setIsAddCustomerOpen}>
+       <Dialog open={isAddCustomerOpen} onOpenChange={setIsAddCustomerOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add New Customer</DialogTitle>
@@ -845,7 +877,7 @@ export default function EditQuotationPage() {
         </DialogContent>
       </Dialog>
 
-       <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
         <DialogContent className="max-w-4xl h-[90vh]">
           <DialogHeader>
             <DialogTitle>Quotation Preview</DialogTitle>
@@ -854,8 +886,13 @@ export default function EditQuotationPage() {
             <QuotationPreview
                 config={config}
                 customer={config?.customers.find(c => c.id === watchedValues.customerId) || null}
-                quotationData={watchedValues}
-                quotationId={quotationId}
+                quotationData={{
+                    ...watchedValues,
+                    quotationDate: watchedValues.quotationDate ? format(watchedValues.quotationDate, 'yyyy-MM-dd') : '',
+                    validUntil: watchedValues.validUntil ? format(watchedValues.validUntil, 'yyyy-MM-dd') : '',
+                    design: designFormState.getFormData()
+                }}
+                quotationId={nextQuotationId}
             />
           </div>
           <DialogFooter>
