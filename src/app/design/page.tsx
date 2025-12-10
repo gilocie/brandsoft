@@ -88,7 +88,12 @@ const ImageUploader = ({
     const fieldValue = useWatch({ control: form.control, name: fieldName });
     const opacityValue = opacityFieldName ? useWatch({ control: form.control, name: opacityFieldName }) : 1;
     
-    const imageSrc = typeof fieldValue === 'object' && fieldValue !== null && fieldValue.src ? fieldValue.src : fieldValue;
+    const imageSrc = useMemo(() => {
+      if (typeof fieldValue === 'object' && fieldValue?.src) {
+        return fieldValue.src;
+      }
+      return fieldValue;
+    }, [fieldValue]);
 
     const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
