@@ -65,7 +65,7 @@ import { PlusCircle, MoreHorizontal, Eye, FilePenLine, Trash2, FileText, FileBar
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { Separator } from '../separator';
+import { Separator } from '@/components/ui/separator';
 
 const formSchema = z.object({
   id: z.string().optional(),
