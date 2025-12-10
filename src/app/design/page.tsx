@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useForm, useWatch } from 'react-hook-form';
@@ -37,7 +36,7 @@ const designSettingsSchema = z.object({
   headerImageOpacity: z.number().min(0).max(1).optional(),
   footerImage: z.string().optional(),
   footerImageOpacity: z.number().min(0).max(1).optional(),
-  backgroundImage: z.union([z.string(), z.object({src: z.string(), name: z.string()})]).optional(),
+  backgroundImage: z.union([z.string(), z.object({src: z.any(), name: z.string()})]).optional(),
   backgroundImageOpacity: z.number().min(0).max(1).optional(),
   watermarkText: z.string().optional(),
   watermarkColor: z.string().optional(),
@@ -90,9 +89,15 @@ const ImageUploader = ({
     
     const imageSrc = useMemo(() => {
         if (!fieldValue) return undefined;
+        // 1. Handle Next.js Static Import Object (Preset)
         if (typeof fieldValue === 'object' && fieldValue?.src) {
-            return fieldValue.src;
+            // Check if .src is ALREADY a Next.js StaticImageData object
+            if (typeof fieldValue.src === 'object' && 'src' in fieldValue.src) {
+                return fieldValue.src.src; // Extract the actual string URL
+            }
+            return fieldValue.src; // It's already a string
         }
+        // 2. Handle Base64 String (Custom Upload)
         if (typeof fieldValue === 'string' && fieldValue.length > 0) {
             return fieldValue;
         }
@@ -223,8 +228,18 @@ function SettingsPanel({ form, documentType, onSubmit, returnUrl, documentData }
   const getBackgroundImageSrc = (bgValue: any): string | undefined => {
     if (!bgValue) return undefined;
     if (typeof bgValue === 'string') return bgValue;
-    if (typeof bgValue === 'object' && bgValue.src) return bgValue.src;
+    if (typeof bgValue === 'object' && bgValue.src) {
+        if (typeof bgValue.src === 'object' && 'src' in bgValue.src) {
+            return bgValue.src.src;
+        }
+        return bgValue.src;
+    }
     return undefined;
+  };
+  
+  const getPresetSrcString = (imgObj: any) => {
+    if (typeof imgObj.src === 'object' && 'src' in imgObj.src) return imgObj.src.src;
+    return imgObj.src;
   };
 
 
@@ -264,9 +279,11 @@ function SettingsPanel({ form, documentType, onSubmit, returnUrl, documentData }
                                                     type="button"
                                                     className={cn(
                                                         "aspect-square rounded-md overflow-hidden border-2 transition-all",
-                                                        getBackgroundImageSrc(selectedBackgroundImage) === image.src ? 'border-primary ring-2 ring-primary' : 'border-transparent hover:border-primary/50'
+                                                        getBackgroundImageSrc(selectedBackgroundImage) === getPresetSrcString(image) 
+                                                            ? 'border-primary ring-2 ring-primary' 
+                                                            : 'border-transparent hover:border-primary/50'
                                                     )}
-                                                    onClick={() => form.setValue('backgroundImage', image)}
+                                                    onClick={() => form.setValue('backgroundImage', image, { shouldDirty: true })}
                                                 >
                                                     <NextImage src={image.src} alt={image.name} className="w-full h-full object-cover" width={100} height={100} unoptimized />
                                                 </button>
@@ -514,7 +531,12 @@ function DocumentDesignPage() {
     const getBackgroundImageSrc = (bgValue: any): string | undefined => {
         if (!bgValue) return undefined;
         if (typeof bgValue === 'string') return bgValue;
-        if (typeof bgValue === 'object' && bgValue.src) return bgValue.src;
+        if (typeof bgValue === 'object' && bgValue.src) {
+            if (typeof bgValue.src === 'object' && 'src' in bgValue.src) {
+                return bgValue.src.src;
+            }
+            return bgValue.src;
+        }
         return undefined;
     };
     
