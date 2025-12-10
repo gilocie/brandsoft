@@ -5,19 +5,17 @@
 import { useBrandsoft, type Invoice } from "@/hooks/use-brandsoft";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, Award, CreditCard, FileBarChart2, Brush, ArrowRight, Library, Users, Package, CheckCircle, XCircle, Clock, AlertTriangle, DollarSign, FileClock, FileX, Receipt } from "lucide-react";
+import { FileText, Award, CreditCard, FileBarChart2, Brush, ArrowRight, Library, Users, Package, CheckCircle, XCircle, Clock, AlertTriangle, DollarSign, FileClock, FileX, Receipt, Lock } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 const modules = [
-  { title: "Invoice Designer", description: "Create and manage invoices.", icon: FileText, href: "/invoices", enabledKey: "invoice" },
-  { title: "Certificate Designer", description: "Design professional certificates.", icon: Award, href: "/certificates", enabledKey: "certificate" },
-  { title: "ID Card Designer", description: "Create company or event ID cards.", icon: CreditCard, href: "/id-cards", enabledKey: "idCard" },
-  { title: "Quotation Designer", description: "Generate and send quotations.", icon: FileBarChart2, href: "/quotations", enabledKey: "quotation" },
-  { title: "Marketing Materials", description: "Design flyers, posters, and more.", icon: Brush, href: "/marketing-materials", enabledKey: "marketing" },
-  { title: "Template Marketplace", description: "Browse and manage templates.", icon: Library, href: "/templates", enabledKey: null },
+  { title: "Invoice Designer", description: "Create and manage invoices.", icon: FileText, href: "/invoices", enabledKey: "invoice", isLocked: false },
+  { title: "Quotation Designer", description: "Generate and send quotations.", icon: FileBarChart2, href: "/quotations", enabledKey: "quotation", isLocked: false },
+  { title: "Certificate Designer", description: "Design professional certificates.", icon: Award, href: "/certificates", enabledKey: "certificate", isLocked: true },
 ];
 
 const StatCard = ({ title, value, icon: Icon, description, formatAsCurrency = false, variant, currencyCode }: { title: string, value: string | number, icon: React.ElementType, description: string, formatAsCurrency?: boolean, variant?: "default" | "primary", currencyCode?: string }) => (
@@ -152,24 +150,36 @@ export default function DashboardPage() {
       <div>
         <h2 className="text-2xl font-headline font-bold mt-8 mb-2">What would you like to create today?</h2>
       </div>
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-3">
         {enabledModules.map((module) => (
-          <Card key={module.title} className="flex flex-col transition-all hover:shadow-lg hover:-translate-y-1">
+          <Card key={module.title} className={cn(
+              "flex flex-col transition-all hover:shadow-lg",
+              module.isLocked ? "bg-muted/50" : "hover:-translate-y-1"
+          )}>
             <CardHeader>
               <div className="flex items-start gap-4">
-                <div className="bg-primary/10 p-3 rounded-lg">
-                  <module.icon className="h-6 w-6 text-primary" />
+                <div className={cn(
+                    "p-3 rounded-lg",
+                    module.isLocked ? "bg-gray-300" : "bg-primary/10"
+                    )}>
+                  <module.icon className={cn("h-6 w-6", module.isLocked ? "text-gray-500" : "text-primary")} />
                 </div>
                 <div>
-                  <CardTitle className="font-headline text-xl">{module.title}</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="font-headline text-xl">{module.title}</CardTitle>
+                    {module.isLocked && <Badge variant="secondary">Upcoming</Badge>}
+                  </div>
                   <CardDescription className="mt-1">{module.description}</CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="flex-grow flex items-end">
-              <Button asChild variant="ghost" className="text-primary hover:text-primary-foreground hover:bg-primary/80">
+              <Button asChild variant="ghost" disabled={module.isLocked} className={cn(
+                  module.isLocked ? "text-muted-foreground cursor-not-allowed" : "text-primary hover:text-primary-foreground hover:bg-primary/80"
+              )}>
                 <Link href={module.href}>
-                  Start Creating <ArrowRight className="ml-2 h-4 w-4" />
+                  {module.isLocked ? <Lock className="mr-2 h-4 w-4" /> : 'Start Creating'}
+                  {!module.isLocked && <ArrowRight className="ml-2 h-4 w-4" />}
                 </Link>
               </Button>
             </CardContent>
