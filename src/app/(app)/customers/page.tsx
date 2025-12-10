@@ -129,7 +129,7 @@ export default function CustomersPage() {
   const filteredCustomers = useMemo(() => {
     let customers = config?.customers || [];
     if (activeTab !== 'all') {
-      customers = customers.filter(c => (c.companyName ? 'company' : 'personal') === activeTab);
+      customers = customers.filter(c => (c.customerType || (c.companyName ? 'company' : 'personal')) === activeTab);
     }
     if (searchTerm) {
       customers = customers.filter(c => 
@@ -153,7 +153,7 @@ export default function CustomersPage() {
     if (customer) {
       form.reset({
         id: customer.id,
-        customerType: customer.companyName ? 'company' : 'personal',
+        customerType: customer.customerType || (customer.companyName ? 'company' : 'personal'),
         name: customer.name,
         email: customer.email,
         phone: customer.phone || '',
@@ -175,6 +175,7 @@ export default function CustomersPage() {
 
   const onSubmit = (data: CustomerFormData) => {
     const customerToSave: Partial<Customer> = {
+        customerType: data.customerType,
         name: data.name,
         email: data.email,
         phone: data.phone,
@@ -213,8 +214,9 @@ export default function CustomersPage() {
         const rows = text.split('\n').filter(row => row.trim() !== '');
         const header = rows.shift()?.trim().toLowerCase().split(',') || [];
         
-        if (!header.includes('name') || !header.includes('email')) {
-            toast({ variant: 'destructive', title: 'Invalid CSV Header', description: 'File must contain "name" and "email" columns.' });
+        const requiredHeaders = ['name', 'email', 'customerType'];
+        if (!requiredHeaders.every(h => header.includes(h))) {
+            toast({ variant: 'destructive', title: 'Invalid CSV Header', description: 'File must contain "name", "email", and "customerType" columns.' });
             return;
         }
 
@@ -228,12 +230,11 @@ export default function CustomersPage() {
                 const customerData: { [key: string]: string } = {};
                 header.forEach((h, i) => { customerData[h] = values[i]?.trim() || ''; });
 
-                const parsed = formSchema.pick({ name: true, email: true, phone: true, companyName: true, address: true }).safeParse(customerData);
+                const parsed = formSchema.pick({ name: true, email: true, phone: true, companyName: true, address: true, customerType: true }).safeParse(customerData);
 
                 if (parsed.success) {
                     newCustomers.push({
                       ...parsed.data,
-                      customerType: parsed.data.companyName ? 'company' : 'personal'
                     } as Omit<Customer, 'id'>);
                     importedCount++;
                 } else {
@@ -260,8 +261,8 @@ export default function CustomersPage() {
   };
   
   const handleDownloadSample = () => {
-    const csvHeader = "name,email,phone,companyName,address\n";
-    const csvExample = "John Doe,john@example.com,123-456-7890,,123 Main St\nJane Smith,jane@smith.co,,Smith & Co.,456 Oak Ave\n";
+    const csvHeader = "name,email,phone,companyName,address,customerType\n";
+    const csvExample = `"John Doe","john@example.com","+11234567890","","123 Main St","personal"\n"Jane Smith","jane@smith.co","+256987654321","Smith & Co.","456 Oak Ave","company"\n`;
     const csvContent = csvHeader + csvExample;
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
@@ -277,8 +278,8 @@ export default function CustomersPage() {
         toast({ variant: "destructive", title: "No Customers to Export" });
         return;
     }
-    const csvHeader = "name,email,phone,companyName,address\n";
-    const csvRows = config.customers.map(c => `"${c.name}","${c.email}","${c.phone || ''}","${c.companyName || ''}","${c.address || ''}"`).join("\n");
+    const csvHeader = "name,email,phone,companyName,address,customerType\n";
+    const csvRows = config.customers.map(c => `"${c.name}","${c.email}","${c.phone || ''}","${c.companyName || ''}","${c.address || ''}","${c.customerType || (c.companyName ? 'company' : 'personal')}"`).join("\n");
     const csvContent = csvHeader + csvRows;
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
@@ -414,7 +415,7 @@ export default function CustomersPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Bulk Upload Customers</DialogTitle>
-            <DialogDescription>Upload a CSV with columns: `name`, `email`, `phone`, `companyName`, `address`.</DialogDescription>
+            <DialogDescription>Upload a CSV with columns: `name`, `email`, `phone`, `companyName`, `address`, `customerType`.</DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-4">
              <div className="flex items-center justify-center w-full p-8 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); const file = e.dataTransfer.files[0]; if (file) handleBulkUpload(file); }} onClick={() => document.getElementById('bulk-upload-input')?.click()}>
@@ -494,3 +495,6 @@ export default function CustomersPage() {
 
 
 
+
+
+    
