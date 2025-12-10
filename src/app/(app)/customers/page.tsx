@@ -62,7 +62,8 @@ import { PlusCircle, ArrowRight, ArrowLeft, Trash2, MoreHorizontal, Eye, FilePen
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 
 const formSchema = z.object({
   id: z.string().optional(),
@@ -71,6 +72,7 @@ const formSchema = z.object({
   email: z.string().email("Invalid email"),
   phone: z.string().optional(),
   companyName: z.string().optional(),
+  address: z.string().optional(),
 });
 
 type CustomerFormData = z.infer<typeof formSchema>;
@@ -113,7 +115,6 @@ export default function CustomersPage() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [formStep, setFormStep] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [currentPage, setCurrentPage] = useState(0);
@@ -157,11 +158,11 @@ export default function CustomersPage() {
         email: customer.email,
         phone: customer.phone || '',
         companyName: customer.companyName || '',
+        address: customer.address || '',
       });
     } else {
-      form.reset({ id: undefined, customerType: 'personal', name: '', email: '', phone: '', companyName: '' });
+      form.reset({ id: undefined, customerType: 'personal', name: '', email: '', phone: '', companyName: '', address: '' });
     }
-    setFormStep(1);
     setIsFormOpen(true);
   };
   
@@ -178,6 +179,7 @@ export default function CustomersPage() {
         email: data.email,
         phone: data.phone,
         companyName: data.customerType === 'company' ? data.companyName : undefined,
+        address: data.address,
     };
     
     if (data.id) {
@@ -196,13 +198,6 @@ export default function CustomersPage() {
         setSelectedCustomer(null);
     }
   };
-
-  const handleNextStep = async () => {
-    const fieldsToValidate: (keyof CustomerFormData)[] = ['name', 'email'];
-    if(customerType === 'company') fieldsToValidate.push('companyName');
-    const isValid = await form.trigger(fieldsToValidate);
-    if (isValid) setFormStep(2);
-  }
 
   const handleBulkUpload = (file: File) => {
     if (!config) return;
@@ -233,10 +228,13 @@ export default function CustomersPage() {
                 const customerData: { [key: string]: string } = {};
                 header.forEach((h, i) => { customerData[h] = values[i]?.trim() || ''; });
 
-                const parsed = formSchema.pick({ name: true, email: true, phone: true, companyName: true }).safeParse(customerData);
+                const parsed = formSchema.pick({ name: true, email: true, phone: true, companyName: true, address: true }).safeParse(customerData);
 
                 if (parsed.success) {
-                    newCustomers.push({ ...parsed.data, customerType: parsed.data.companyName ? 'company' : 'personal' });
+                    newCustomers.push({
+                      ...parsed.data,
+                      customerType: parsed.data.companyName ? 'company' : 'personal'
+                    } as Omit<Customer, 'id'>);
                     importedCount++;
                 } else {
                     errorCount++;
@@ -262,8 +260,8 @@ export default function CustomersPage() {
   };
   
   const handleDownloadSample = () => {
-    const csvHeader = "name,email,phone,companyName\n";
-    const csvExample = "John Doe,john@example.com,123-456-7890,\nJane Smith,jane@smith.co,,Smith & Co.\n";
+    const csvHeader = "name,email,phone,companyName,address\n";
+    const csvExample = "John Doe,john@example.com,123-456-7890,,123 Main St\nJane Smith,jane@smith.co,,Smith & Co.,456 Oak Ave\n";
     const csvContent = csvHeader + csvExample;
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
@@ -279,8 +277,8 @@ export default function CustomersPage() {
         toast({ variant: "destructive", title: "No Customers to Export" });
         return;
     }
-    const csvHeader = "name,email,phone,companyName\n";
-    const csvRows = config.customers.map(c => `"${c.name}","${c.email}","${c.phone || ''}","${c.companyName || ''}"`).join("\n");
+    const csvHeader = "name,email,phone,companyName,address\n";
+    const csvRows = config.customers.map(c => `"${c.name}","${c.email}","${c.phone || ''}","${c.companyName || ''}","${c.address || ''}"`).join("\n");
     const csvContent = csvHeader + csvRows;
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
@@ -383,7 +381,7 @@ export default function CustomersPage() {
                 <FormField control={form.control} name="customerType" render={({ field }) => (
                     <FormItem>
                       <FormControl>
-                        <ToggleGroup type="single" value={field.value} onValueChange={(value) => { if(value) field.onChange(value); setFormStep(1); }} className="grid grid-cols-2">
+                        <ToggleGroup type="single" value={field.value} onValueChange={(value) => { if(value) field.onChange(value); }} className="grid grid-cols-2">
                           <ToggleGroupItem value="personal">Personal</ToggleGroupItem>
                           <ToggleGroupItem value="company">Company</ToggleGroupItem>
                         </ToggleGroup>
@@ -398,6 +396,7 @@ export default function CustomersPage() {
                         <FormField control={form.control} name="email" render={({ field }) => ( <FormItem><FormLabel>{customerType === 'company' ? 'Contact Person Email' : 'Email'}</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem> )}/>
                     </div>
                      <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem><FormLabel>Phone (Optional)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                     <FormField control={form.control} name="address" render={({ field }) => ( <FormItem><FormLabel>Address (Optional)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem> )}/>
                 </div>
                 <DialogFooter className="pt-4">
                   <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>Cancel</Button>
@@ -413,7 +412,7 @@ export default function CustomersPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Bulk Upload Customers</DialogTitle>
-            <DialogDescription>Upload a CSV with columns: `name`, `email`, `phone`, `companyName`.</DialogDescription>
+            <DialogDescription>Upload a CSV with columns: `name`, `email`, `phone`, `companyName`, `address`.</DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-4">
              <div className="flex items-center justify-center w-full p-8 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); const file = e.dataTransfer.files[0]; if (file) handleBulkUpload(file); }} onClick={() => document.getElementById('bulk-upload-input')?.click()}>
@@ -446,6 +445,10 @@ export default function CustomersPage() {
              <div className="grid grid-cols-3 gap-2">
                 <div className="font-semibold text-muted-foreground col-span-1">Phone</div>
                 <div className="font-medium col-span-2">{selectedCustomer?.phone || 'N/A'}</div>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+                <div className="font-semibold text-muted-foreground col-span-1">Address</div>
+                <div className="font-medium col-span-2">{selectedCustomer?.address || 'N/A'}</div>
             </div>
             {customerInvoice && (
                 <>
@@ -486,3 +489,4 @@ export default function CustomersPage() {
     </div>
   );
 }
+
