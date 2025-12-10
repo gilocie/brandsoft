@@ -329,7 +329,7 @@ export default function SetupPage() {
     >
       <div className="flex min-h-screen items-center justify-center bg-background/80 backdrop-blur-sm p-4">
         <Form {...form}>
-            <Card className="w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] sm:max-h-[550px]">
+            <Card className="w-full max-w-4xl shadow-2xl flex flex-col max-h-[90vh]">
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2">
@@ -582,7 +582,7 @@ const modules = [
 function Step3ModuleSelection({ control }: { control: Control<FormData> }) {
     return (
         <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 {modules.filter(m => m.status === 'available').map(item => (
                     <FormField key={item.id} control={control} name={item.id} render={({ field }) => (
                         <FormItem className="relative">
@@ -594,7 +594,7 @@ function Step3ModuleSelection({ control }: { control: Control<FormData> }) {
                                 />
                              </FormControl>
                             <FormLabel className={cn(
-                                "flex flex-col items-center justify-center p-4 rounded-lg border-2 cursor-pointer aspect-square transition-colors",
+                                "flex flex-col items-center justify-center p-4 rounded-lg border-2 cursor-pointer h-[300px] w-[300px] transition-colors",
                                 field.value ? "border-primary bg-primary/5 text-primary" : "text-muted-foreground hover:border-primary/50"
                             )}>
                                 <item.icon className="w-10 h-10 mb-2" />
@@ -606,9 +606,9 @@ function Step3ModuleSelection({ control }: { control: Control<FormData> }) {
             </div>
              <div>
                 <h3 className="text-sm font-medium text-muted-foreground mt-6 mb-2">Upcoming Tools</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                     {modules.filter(m => m.status === 'upcoming').map(item => (
-                         <div key={item.id} className="relative flex flex-col items-center justify-center p-4 rounded-lg border bg-muted/50 aspect-square">
+                         <div key={item.id} className="relative flex flex-col items-center justify-center p-4 rounded-lg border bg-muted/50 h-[300px] w-[300px]">
                             <div className="absolute top-2 left-2 text-xs font-bold text-destructive-foreground bg-destructive px-2 py-0.5 rounded-full">UPCOMING</div>
                              <item.icon className="w-10 h-10 mb-2 text-muted-foreground" />
                             <span className="text-sm font-semibold text-center text-muted-foreground">{item.label}</span>
