@@ -594,10 +594,10 @@ function Step3ModuleSelection({ control }: { control: Control<FormData> }) {
                                 />
                              </FormControl>
                             <FormLabel className={cn(
-                                "flex flex-col items-center justify-center p-2 rounded-lg border-2 cursor-pointer h-full aspect-square transition-colors",
+                                "flex flex-col items-center justify-center p-4 rounded-lg border-2 cursor-pointer h-28 aspect-square transition-colors",
                                 field.value ? "border-primary bg-primary/5 text-primary" : "text-muted-foreground hover:border-primary/50"
                             )}>
-                                <item.icon className="w-8 h-8 mb-2" />
+                                <item.icon className="w-6 h-6 mb-2" />
                                 <span className="text-xs font-semibold text-center">{item.label}</span>
                             </FormLabel>
                         </FormItem>
@@ -607,3 +607,4 @@ function Step3ModuleSelection({ control }: { control: Control<FormData> }) {
         </div>
     );
 }
+
