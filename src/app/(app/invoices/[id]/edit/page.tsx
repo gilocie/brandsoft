@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -85,24 +86,31 @@ export default function EditInvoicePage() {
   });
 
   useEffect(() => {
-    // Only run if config is loaded and we are still in loading state
     if (config && isLoading) {
       const invoiceToEdit = config.invoices.find(inv => inv.invoiceId?.toLowerCase() === invoiceId?.toLowerCase());
-      
+
       if (invoiceToEdit) {
-        // FIX: Try to find by ID first, then fallback to Name matching
         const customer = config.customers.find(c => c.id === invoiceToEdit.customerId) || 
                          config.customers.find(c => c.name === invoiceToEdit.customer);
-        
+
+        const lineItems = (invoiceToEdit.lineItems && invoiceToEdit.lineItems.length > 0)
+          ? invoiceToEdit.lineItems 
+          : (invoiceToEdit.subtotal ? [{
+              description: 'Original Items',
+              quantity: 1,
+              price: invoiceToEdit.subtotal || 0,
+              productId: ''
+            }] : []);
+
         form.reset({
-          customerId: customer?.id || '', // If this is empty, validation will fail
+          customerId: customer?.id || '',
           invoiceDate: parseISO(invoiceToEdit.date),
           dueDate: parseISO(invoiceToEdit.dueDate),
           status: invoiceToEdit.status,
           currency: invoiceToEdit.currency || config.profile.defaultCurrency,
           notes: invoiceToEdit.notes || '',
           applyDiscount: !!invoiceToEdit.discount,
-          discountType: invoiceToEdit.discountType || 'percentage', // Ensure default matches enum
+          discountType: invoiceToEdit.discountType || 'percentage',
           discountValue: invoiceToEdit.discountValue || 0,
           applyTax: !!invoiceToEdit.tax,
           taxType: invoiceToEdit.taxType || 'percentage',
@@ -113,20 +121,12 @@ export default function EditInvoicePage() {
           applyPartialPayment: !!invoiceToEdit.partialPayment,
           partialPaymentType: invoiceToEdit.partialPaymentType || 'percentage',
           partialPaymentValue: invoiceToEdit.partialPaymentValue || 0,
-          lineItems: invoiceToEdit.lineItems || (invoiceToEdit.subtotal ? [{
-            description: 'Original Items',
-            quantity: 1,
-            price: invoiceToEdit.subtotal || 0, // Ensure no undefined
-            productId: ''
-          }] : [])
+          lineItems: lineItems,
         });
 
-        // Set manual entry flags
-        setUseManualEntry(invoiceToEdit.lineItems?.map(item => !item.productId) ?? (invoiceToEdit.subtotal ? [true] : []));
-        
+        setUseManualEntry(lineItems.map(item => !item.productId));
         setIsLoading(false);
       } else {
-        // Only redirect if explicitly not found after config is definitely loaded
         if(config.invoices.length > 0) {
             toast({ title: "Error", description: "Invoice not found.", variant: 'destructive'});
             router.push('/invoices');
@@ -155,12 +155,11 @@ export default function EditInvoicePage() {
   const handleFormSubmit = (status: Invoice['status']) => {
     form.setValue('status', status);
     
-    // Debug: Log validation errors if submission fails
     form.handleSubmit(onSubmit, (errors) => {
         console.error("Validation Errors:", errors);
         toast({
             title: "Validation Error",
-            description: "Please check the form fields, specifically the Customer selection.",
+            description: "Please check the form for errors before submitting.",
             variant: "destructive"
         });
     })();
@@ -265,7 +264,6 @@ export default function EditInvoicePage() {
     return `${currencyCode}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
-  // Safe Calculation: Handle undefined/NaN during render
   const subtotal = watchedValues.lineItems?.reduce((acc, item) => {
     return acc + (Number(item.quantity) || 0) * (Number(item.price) || 0);
   }, 0) || 0;
