@@ -4,7 +4,7 @@
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useBrandsoft, type BrandsoftConfig, type DesignSettings, type Quotation, type Invoice } from '@/hooks/use-brandsoft.tsx';
+import { useBrandsoft, type BrandsoftConfig, type DesignSettings, type Quotation, type Invoice } from '@/hooks/use-brandsoft';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
@@ -89,20 +89,18 @@ const ImageUploader = ({
     
     const imageSrc = useMemo(() => {
         if (!fieldValue) return undefined;
-        // 1. Handle Next.js Static Import Object (Preset)
         if (typeof fieldValue === 'object' && fieldValue?.src) {
-            // Check if .src is ALREADY a Next.js StaticImageData object
             if (typeof fieldValue.src === 'object' && 'src' in fieldValue.src) {
-                return fieldValue.src.src; // Extract the actual string URL
+                return fieldValue.src.src;
             }
-            return fieldValue.src; // It's already a string
+            return fieldValue.src;
         }
-        // 2. Handle Base64 String (Custom Upload)
         if (typeof fieldValue === 'string' && fieldValue.length > 0) {
             return fieldValue;
         }
         return undefined;
     }, [fieldValue]);
+
 
     const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -834,7 +832,7 @@ function DocumentDesignPage() {
                                 )}
                            </>
                         ) : (
-                             <div className="w-[8.5in] h-[11in] bg-white shadow-lg flex items-center justify-center border flex-shrink-0">
+                             <div className="w-[210mm] h-[297mm] bg-white shadow-lg flex items-center justify-center border flex-shrink-0">
                                 <div className="text-center p-8">
                                     <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-4" />
                                     <h3 className="text-xl font-semibold mb-2">Loading Preview...</h3>
