@@ -63,6 +63,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const formSchema = z.object({
   id: z.string().optional(),
@@ -112,8 +113,10 @@ export default function CustomersPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
   const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [selectedCustomerIds, setSelectedCustomerIds] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [currentPage, setCurrentPage] = useState(0);
@@ -127,9 +130,18 @@ export default function CustomersPage() {
 
   const filteredCustomers = useMemo(() => {
     let customers = config?.customers || [];
-    if (activeTab !== 'all') {
+    
+    if (activeTab === 'unpaid') {
+        const unpaidCustomerIds = new Set(
+            (config?.invoices || [])
+                .filter(inv => inv.status === 'Pending' || inv.status === 'Overdue')
+                .map(inv => inv.customerId)
+        );
+        customers = customers.filter(c => unpaidCustomerIds.has(c.id));
+    } else if (activeTab !== 'all') {
       customers = customers.filter(c => (c.customerType || (c.companyName ? 'company' : 'personal')) === activeTab);
     }
+
     if (searchTerm) {
       customers = customers.filter(c => 
         c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -138,7 +150,7 @@ export default function CustomersPage() {
       );
     }
     return customers;
-  }, [config?.customers, activeTab, searchTerm]);
+  }, [config?.customers, config?.invoices, activeTab, searchTerm]);
 
   const paginatedCustomers = useMemo(() => {
     const startIndex = currentPage * ITEMS_PER_PAGE;
@@ -199,6 +211,17 @@ export default function CustomersPage() {
     }
   };
 
+    const handleBulkDelete = () => {
+        if (!config || selectedCustomerIds.length === 0) return;
+        const newCustomers = config.customers.filter(p => !selectedCustomerIds.includes(p.id));
+        saveConfig({ ...config, customers: newCustomers }, { redirect: false });
+        toast({
+            title: `${selectedCustomerIds.length} customer(s) deleted.`,
+        });
+        setSelectedCustomerIds([]);
+        setIsBulkDeleteOpen(false);
+    }
+
   const handleBulkUpload = (file: File) => {
     if (!config) return;
 
@@ -211,7 +234,6 @@ export default function CustomersPage() {
         }
 
         const rows = text.split('\n').filter(row => row.trim() !== '');
-        // Headers are converted to lowercase here (e.g., "companyName" becomes "companyname")
         const header = rows.shift()?.trim().toLowerCase().split(',') || [];
         
         const requiredHeaders = ['name', 'email'];
@@ -226,9 +248,7 @@ export default function CustomersPage() {
 
         rows.forEach((row) => {
             try {
-                // Regex to split by comma ONLY if not inside quotes (handles "Smith, John")
                 const values = row.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
-                // Fallback for simple split if regex fails or for simple CSVs
                 const simpleValues = row.split(',');
                 
                 const finalValues = values.length > simpleValues.length ? values : simpleValues;
@@ -236,7 +256,6 @@ export default function CustomersPage() {
                 const customerData: { [key: string]: string } = {};
                 
                 header.forEach((h, i) => { 
-                    // Remove quotes if the CSV value has them (e.g. "My Company")
                     let val = finalValues[i]?.trim() || '';
                     if (val.startsWith('"') && val.endsWith('"')) {
                         val = val.slice(1, -1);
@@ -244,24 +263,21 @@ export default function CustomersPage() {
                     customerData[h] = val; 
                 });
 
-                // --- THE FIX IS HERE ---
-                // We construct an object explicitly mapping the lowercase CSV keys 
-                // to the CamelCase keys your Schema expects.
                 const dataToValidate = {
                     name: customerData.name,
                     email: customerData.email,
                     phone: customerData.phone,
                     address: customerData.address,
-                    companyName: customerData.companyname // Map 'companyname' to 'companyName'
+                    companyName: customerData.companyname,
+                    customerType: customerData.customertype,
                 };
-
-                const parsed = formSchema.pick({ name: true, email: true, phone: true, companyName: true, address: true }).safeParse(dataToValidate);
+                
+                const parsed = formSchema.pick({ name: true, email: true, phone: true, companyName: true, address: true, customerType: true }).safeParse(dataToValidate);
 
                 if (parsed.success) {
                     const finalData = {
                       ...parsed.data,
-                      // Ensure customerType is set correctly based on the mapped data
-                      customerType: (parsed.data.companyName && parsed.data.companyName.length > 0) ? 'company' : 'personal' as 'company' | 'personal'
+                      customerType: (parsed.data.customerType && ['personal', 'company'].includes(parsed.data.customerType)) ? parsed.data.customerType : ((parsed.data.companyName && parsed.data.companyName.length > 0) ? 'company' : 'personal' as 'company' | 'personal')
                     };
                     newCustomers.push(finalData);
                     importedCount++;
@@ -325,16 +341,47 @@ export default function CustomersPage() {
     return config.invoices.find(inv => inv.customer === selectedCustomer.name && (inv.status === 'Pending' || inv.status === 'Overdue'));
   }, [selectedCustomer, config]);
 
+  const handleSelectCustomer = (customerId: string, checked: boolean | 'indeterminate') => {
+    setSelectedCustomerIds(prev =>
+      checked ? [...prev, customerId] : prev.filter(id => id !== customerId)
+    );
+  };
+
+  const handleSelectAll = (checked: boolean | 'indeterminate') => {
+    if (checked) {
+      setSelectedCustomerIds(paginatedCustomers.map(c => c.id));
+    } else {
+      setSelectedCustomerIds([]);
+    }
+  };
+
+  const allOnPageSelected = paginatedCustomers.length > 0 && paginatedCustomers.every(p => selectedCustomerIds.includes(p.id));
+  const someOnPageSelected = paginatedCustomers.some(p => selectedCustomerIds.includes(p.id)) && !allOnPageSelected;
+
   return (
     <div className="container mx-auto space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold font-headline">Customers</h1>
-          <p className="text-muted-foreground">Manage your customer profiles here.</p>
-        </div>
+        {selectedCustomerIds.length === 0 ? (
+          <div>
+            <h1 className="text-3xl font-bold font-headline">Customers</h1>
+            <p className="text-muted-foreground">Manage your customer profiles here.</p>
+          </div>
+        ) : (
+          <div>
+             <h1 className="text-3xl font-bold font-headline">{selectedCustomerIds.length} Selected</h1>
+          </div>
+        )}
         <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={handleExportAll}><Download className="mr-2 h-4 w-4" /> Export All</Button>
-            <Button onClick={() => handleOpenForm()}><PlusCircle className="mr-2 h-4 w-4" /> Add New Customer</Button>
+            {selectedCustomerIds.length > 0 ? (
+                <Button variant="destructive" onClick={() => setIsBulkDeleteOpen(true)}>
+                    <Trash2 className="mr-2 h-4 w-4" /> Delete ({selectedCustomerIds.length})
+                </Button>
+            ) : (
+                <>
+                  <Button variant="outline" onClick={handleExportAll}><Download className="mr-2 h-4 w-4" /> Export All</Button>
+                  <Button onClick={() => handleOpenForm()}><PlusCircle className="mr-2 h-4 w-4" /> Add New Customer</Button>
+                </>
+            )}
         </div>
       </div>
 
@@ -346,6 +393,7 @@ export default function CustomersPage() {
                 <TabsTrigger value="all">All</TabsTrigger>
                 <TabsTrigger value="personal">Personal</TabsTrigger>
                 <TabsTrigger value="company">Company</TabsTrigger>
+                <TabsTrigger value="unpaid">Unpaid</TabsTrigger>
               </TabsList>
             </Tabs>
              <div className="relative flex-1">
@@ -358,6 +406,12 @@ export default function CustomersPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                 <TableHead className="w-[50px] px-4">
+                    <Checkbox
+                        checked={allOnPageSelected || (someOnPageSelected ? 'indeterminate' : false)}
+                        onCheckedChange={handleSelectAll}
+                    />
+                </TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Phone</TableHead>
@@ -369,6 +423,12 @@ export default function CustomersPage() {
               {paginatedCustomers.length > 0 ? (
                 paginatedCustomers.map((customer: Customer) => (
                   <TableRow key={customer.id}>
+                    <TableCell className="px-4">
+                        <Checkbox
+                            checked={selectedCustomerIds.includes(customer.id)}
+                            onCheckedChange={(checked) => handleSelectCustomer(customer.id, checked)}
+                        />
+                    </TableCell>
                     <TableCell className="font-medium">{customer.name}</TableCell>
                     <TableCell>{customer.email}</TableCell>
                     <TableCell>{customer.phone || 'N/A'}</TableCell>
@@ -380,7 +440,7 @@ export default function CustomersPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center h-48">No customers found.</TableCell>
+                  <TableCell colSpan={6} className="text-center h-48">No customers found.</TableCell>
                 </TableRow>
               )}
             </TableBody>
@@ -519,6 +579,25 @@ export default function CustomersPage() {
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
+
+        {/* Bulk Delete Confirmation Dialog */}
+       <AlertDialog open={isBulkDeleteOpen} onOpenChange={setIsBulkDeleteOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Delete {selectedCustomerIds.length} customers?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete the selected customers.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setIsBulkDeleteOpen(false)}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive hover:bg-destructive/90">
+                        Delete
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     </div>
   );
 }
+
