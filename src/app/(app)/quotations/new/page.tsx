@@ -21,7 +21,7 @@ import Link from 'next/link';
 import { useBrandsoft, type Customer, type Quotation, type DesignSettings } from '@/hooks/use-brandsoft';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -64,7 +64,6 @@ const NewCustomerFormSchema = z.object({
   name: z.string().min(2, "Name is required"),
   email: z.string().email("Invalid email"),
   phone: z.string().optional(),
-  address: z.string().optional(),
 });
 type NewCustomerFormData = z.infer<typeof NewCustomerFormSchema>;
 
@@ -73,6 +72,7 @@ export default function NewQuotationPage() {
   const { setFormData, getFormData } = useFormState('newQuotationData'); 
   const designFormState = useFormState('designFormData');
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -85,7 +85,7 @@ export default function NewQuotationPage() {
     defaultValues: {
       status: 'Sent',
       currency: 'USD', 
-      lineItems: [{ description: '', quantity: 1, price: 0 }],
+      lineItems: [],
       notes: '',
       saveNotesAsDefault: false,
       applyTax: true,
@@ -123,6 +123,12 @@ export default function NewQuotationPage() {
       
       form.reset(restoredData);
     } else {
+        const productIds = searchParams.get('products')?.split(',');
+        const lineItemsFromProducts = productIds?.map(id => {
+            const product = config.products.find(p => p.id === id);
+            return product ? { productId: product.id, description: product.name, quantity: 1, price: product.price } : null;
+        }).filter((item): item is NonNullable<typeof item> => item !== null);
+
       const today = new Date();
       const validUntil = new Date();
       validUntil.setDate(today.getDate() + 30);
@@ -133,7 +139,9 @@ export default function NewQuotationPage() {
         validUntil: validUntil,
         notes: '',
         currency: config.profile.defaultCurrency,
+        lineItems: lineItemsFromProducts && lineItemsFromProducts.length > 0 ? lineItemsFromProducts : [{ description: '', quantity: 1, price: 0 }]
       });
+      setUseManualEntry(lineItemsFromProducts && lineItemsFromProducts.length > 0 ? lineItemsFromProducts.map(() => false) : [true]);
     }
   
     if (designData?.defaultCurrency) {
@@ -141,7 +149,7 @@ export default function NewQuotationPage() {
     }
   
     setIsInitialized(true);
-  }, [isInitialized, config, getFormData, designFormState, form]);
+  }, [isInitialized, config, getFormData, designFormState, form, searchParams]);
 
   useEffect(() => {
     if (!isInitialized) return; 
@@ -156,7 +164,7 @@ export default function NewQuotationPage() {
 
   const newCustomerForm = useForm<NewCustomerFormData>({
     resolver: zodResolver(NewCustomerFormSchema),
-    defaultValues: { name: "", email: "", phone: "", address: "" },
+    defaultValues: { name: "", email: "", phone: "" },
   });
 
   function onAddNewCustomer(data: NewCustomerFormData) {
@@ -868,9 +876,6 @@ export default function NewQuotationPage() {
               )} />
               <FormField control={newCustomerForm.control} name="phone" render={({ field }) => (
                 <FormItem><FormLabel>Phone (Optional)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
-              <FormField control={newCustomerForm.control} name="address" render={({ field }) => (
-                <FormItem><FormLabel>Address (Optional)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
               )} />
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setIsAddCustomerOpen(false)}>Cancel</Button>

@@ -1,8 +1,8 @@
 
-
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -61,8 +61,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { PlusCircle, MoreHorizontal, Eye, FilePenLine, Trash2 } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Eye, FilePenLine, Trash2, FileText, FileBarChart2 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const formSchema = z.object({
   id: z.string().optional(),
@@ -108,6 +109,7 @@ export default function ProductsPage() {
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   
   const form = useForm<ProductFormData>({
     resolver: zodResolver(formSchema),
@@ -148,6 +150,25 @@ export default function ProductsPage() {
         setSelectedProduct(null);
     }
   };
+
+  const handleSelectProduct = (productId: string, checked: boolean | 'indeterminate') => {
+    setSelectedProductIds(prev => 
+        checked ? [...prev, productId] : prev.filter(id => id !== productId)
+    );
+  };
+
+  const handleSelectAll = (checked: boolean | 'indeterminate') => {
+    if (checked) {
+        setSelectedProductIds(config?.products.map(p => p.id) || []);
+    } else {
+        setSelectedProductIds([]);
+    }
+  };
+
+  const allProductsSelected = config?.products.length === selectedProductIds.length && config.products.length > 0;
+  const someProductsSelected = selectedProductIds.length > 0 && selectedProductIds.length < (config?.products.length || 0);
+
+  const productQueryString = selectedProductIds.join(',');
   
   const currencyCode = config?.profile.defaultCurrency || '';
 
@@ -160,9 +181,26 @@ export default function ProductsPage() {
             Manage your items for faster invoicing.
           </p>
         </div>
-        <Button onClick={() => handleOpenForm()}>
-          <PlusCircle className="mr-2 h-4 w-4" /> Add New Item
-        </Button>
+        <div className="flex items-center gap-2">
+            {selectedProductIds.length > 0 ? (
+                <>
+                    <Button asChild>
+                        <Link href={`/invoices/new?products=${productQueryString}`}>
+                            <FileText className="mr-2 h-4 w-4" /> Create Invoice
+                        </Link>
+                    </Button>
+                    <Button asChild variant="secondary">
+                         <Link href={`/quotations/new?products=${productQueryString}`}>
+                            <FileBarChart2 className="mr-2 h-4 w-4" /> Create Quotation
+                        </Link>
+                    </Button>
+                </>
+            ) : (
+                <Button onClick={() => handleOpenForm()}>
+                    <PlusCircle className="mr-2 h-4 w-4" /> Add New Item
+                </Button>
+            )}
+        </div>
       </div>
 
       <Card>
@@ -170,6 +208,12 @@ export default function ProductsPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[50px] px-4">
+                    <Checkbox
+                        checked={allProductsSelected || (someProductsSelected ? 'indeterminate' : false)}
+                        onCheckedChange={handleSelectAll}
+                    />
+                </TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead>Type</TableHead>
@@ -181,6 +225,12 @@ export default function ProductsPage() {
               {config?.products && config.products.length > 0 ? (
                 config.products.map((product: Product) => (
                   <TableRow key={product.id}>
+                    <TableCell className="px-4">
+                        <Checkbox
+                            checked={selectedProductIds.includes(product.id)}
+                            onCheckedChange={(checked) => handleSelectProduct(product.id, checked)}
+                        />
+                    </TableCell>
                     <TableCell className="font-medium">{product.name}</TableCell>
                     <TableCell className="text-muted-foreground max-w-xs truncate">{product.description || 'N/A'}</TableCell>
                     <TableCell>
@@ -196,7 +246,7 @@ export default function ProductsPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center">
+                  <TableCell colSpan={6} className="text-center">
                     No products or services found.
                   </TableCell>
                 </TableRow>
