@@ -82,57 +82,64 @@ export default function EditInvoicePage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       status: 'Draft',
+      // FIX: Initialize lineItems as an empty array so useFieldArray registers correctly immediately
+      lineItems: [], 
+      currency: 'USD',
     }
   });
 
+  // Keep useFieldArray here
+  const { fields, append, remove, update } = useFieldArray({
+    control: form.control,
+    name: "lineItems",
+  });
+
   useEffect(() => {
-    // Only run if config is loaded and we are still in loading state
     if (config && isLoading) {
       const invoiceToEdit = config.invoices.find(inv => inv.invoiceId?.toLowerCase() === invoiceId?.toLowerCase());
-      
+
       if (invoiceToEdit) {
-        // FIX: Try to find by ID first, then fallback to Name matching
         const customer = config.customers.find(c => c.id === invoiceToEdit.customerId) || 
                          config.customers.find(c => c.name === invoiceToEdit.customer);
-        
-        if (customer) {
-            form.reset({
-              customerId: customer.id,
-              invoiceDate: parseISO(invoiceToEdit.date),
-              dueDate: parseISO(invoiceToEdit.dueDate),
-              status: invoiceToEdit.status,
-              currency: invoiceToEdit.currency || config.profile.defaultCurrency,
-              notes: invoiceToEdit.notes || '',
-              applyDiscount: !!invoiceToEdit.discount,
-              discountType: invoiceToEdit.discountType || 'percentage', // Ensure default matches enum
-              discountValue: invoiceToEdit.discountValue || 0,
-              applyTax: !!invoiceToEdit.tax,
-              taxType: invoiceToEdit.taxType || 'percentage',
-              taxValue: invoiceToEdit.taxValue ?? 17.5,
-              taxName: invoiceToEdit.taxName ?? 'VAT',
-              applyShipping: !!invoiceToEdit.shipping,
-              shippingValue: invoiceToEdit.shipping || 0,
-              applyPartialPayment: !!invoiceToEdit.partialPayment,
-              partialPaymentType: invoiceToEdit.partialPaymentType || 'percentage',
-              partialPaymentValue: invoiceToEdit.partialPaymentValue || 0,
-              lineItems: invoiceToEdit.lineItems || (invoiceToEdit.subtotal ? [{
-                description: 'Original Items',
-                quantity: 1,
-                price: invoiceToEdit.subtotal || 0, // Ensure no undefined
-                productId: ''
-              }] : [])
-            });
 
-            // Set manual entry flags
-            setUseManualEntry(invoiceToEdit.lineItems?.map(item => !item.productId) ?? (invoiceToEdit.subtotal ? [true] : []));
-        } else {
-            toast({ title: "Error", description: "Customer for this invoice not found.", variant: 'destructive'});
-            router.push('/invoices');
-        }
+        // Ensure lineItems is a valid array, even if empty
+        const lineItems = (invoiceToEdit.lineItems && invoiceToEdit.lineItems.length > 0)
+          ? invoiceToEdit.lineItems 
+          : (invoiceToEdit.subtotal ? [{
+              description: 'Original Items',
+              quantity: 1,
+              price: invoiceToEdit.subtotal || 0,
+              productId: ''
+            }] : []);
+
+        form.reset({
+          customerId: customer?.id || '',
+          invoiceDate: parseISO(invoiceToEdit.date),
+          dueDate: parseISO(invoiceToEdit.dueDate),
+          status: invoiceToEdit.status,
+          currency: invoiceToEdit.currency || config.profile.defaultCurrency,
+          notes: invoiceToEdit.notes || '',
+          applyDiscount: !!invoiceToEdit.discount,
+          discountType: invoiceToEdit.discountType || 'percentage',
+          discountValue: invoiceToEdit.discountValue || 0,
+          applyTax: !!invoiceToEdit.tax,
+          taxType: invoiceToEdit.taxType || 'percentage',
+          taxValue: invoiceToEdit.taxValue ?? 17.5,
+          taxName: invoiceToEdit.taxName ?? 'VAT',
+          applyShipping: !!invoiceToEdit.shipping,
+          shippingValue: invoiceToEdit.shipping || 0,
+          applyPartialPayment: !!invoiceToEdit.partialPayment,
+          partialPaymentType: invoiceToEdit.partialPaymentType || 'percentage',
+          partialPaymentValue: invoiceToEdit.partialPaymentValue || 0,
+          lineItems: lineItems,
+        });
+
+        // Sync manual entry state
+        setUseManualEntry(lineItems.map(item => !item.productId));
         
-        setIsLoading(false);
+        // Slight delay to ensure render cycle catches up if needed, though usually not required with the fix above
+        setTimeout(() => setIsLoading(false), 0);
       } else {
-        // Only redirect if explicitly not found after config is definitely loaded
         if(config.invoices.length > 0) {
             toast({ title: "Error", description: "Invoice not found.", variant: 'destructive'});
             router.push('/invoices');
@@ -140,11 +147,6 @@ export default function EditInvoicePage() {
       }
     }
   }, [config, invoiceId, form, router, toast, isLoading]);
-
-  const { fields, append, remove, update } = useFieldArray({
-    control: form.control,
-    name: "lineItems",
-  });
 
   const newCustomerForm = useForm<NewCustomerFormData>({
     resolver: zodResolver(NewCustomerFormSchema),
@@ -161,12 +163,11 @@ export default function EditInvoicePage() {
   const handleFormSubmit = (status: Invoice['status']) => {
     form.setValue('status', status);
     
-    // Debug: Log validation errors if submission fails
     form.handleSubmit(onSubmit, (errors) => {
         console.error("Validation Errors:", errors);
         toast({
             title: "Validation Error",
-            description: "Please check the form fields, specifically the Customer selection.",
+            description: "Please check the form for errors before submitting.",
             variant: "destructive"
         });
     })();
@@ -190,19 +191,20 @@ export default function EditInvoicePage() {
             discountAmount = data.discountValue;
         }
     }
-    const subtotalAfterDiscount = subtotal - discountAmount;
     
     let taxAmount = 0;
+    // Calculate tax based on subtotal minus discount
+    const taxableAmount = subtotal - discountAmount;
     if (data.applyTax && data.taxValue) {
         if (data.taxType === 'percentage') {
-            taxAmount = subtotalAfterDiscount * (data.taxValue / 100);
+            taxAmount = taxableAmount * (data.taxValue / 100);
         } else {
             taxAmount = data.taxValue;
         }
     }
     
     const shipping = data.applyShipping && data.shippingValue ? data.shippingValue : 0;
-    const total = subtotalAfterDiscount + taxAmount + shipping;
+    const total = taxableAmount + taxAmount + shipping;
 
     let partialPaymentAmount = 0;
     if (data.applyPartialPayment && data.partialPaymentValue) {
@@ -215,7 +217,7 @@ export default function EditInvoicePage() {
 
     const updatedInvoice: Omit<Invoice, 'invoiceId'> = {
         customer: customer.name,
-        customerId: customer.id, // Explicitly save ID for future matching
+        customerId: customer.id,
         date: format(data.invoiceDate, 'yyyy-MM-dd'),
         dueDate: format(data.dueDate, 'yyyy-MM-dd'),
         amount: total,
@@ -235,6 +237,7 @@ export default function EditInvoicePage() {
         partialPaymentType: data.partialPaymentType,
         partialPaymentValue: data.partialPaymentValue,
         currency: data.currency,
+        design: invoiceToEdit.design // Preserve design settings
     };
     
     updateInvoice(invoiceToEdit.invoiceId, updatedInvoice);
@@ -271,7 +274,6 @@ export default function EditInvoicePage() {
     return `${currencyCode}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
-  // Safe Calculation: Handle undefined/NaN during render
   const subtotal = watchedValues.lineItems?.reduce((acc, item) => {
     return acc + (Number(item.quantity) || 0) * (Number(item.price) || 0);
   }, 0) || 0;
@@ -285,19 +287,19 @@ export default function EditInvoicePage() {
       }
   }
 
-  const subtotalAfterDiscount = subtotal - discountAmount;
+  const taxableAmount = subtotal - discountAmount;
   
   let taxAmount = 0;
   if (watchedValues.applyTax && watchedValues.taxValue) {
       if (watchedValues.taxType === 'percentage') {
-          taxAmount = subtotalAfterDiscount * (watchedValues.taxValue / 100);
+          taxAmount = taxableAmount * (watchedValues.taxValue / 100);
       } else {
           taxAmount = watchedValues.taxValue;
       }
   }
 
   const shippingAmount = watchedValues.applyShipping && watchedValues.shippingValue ? Number(watchedValues.shippingValue) : 0;
-  const total = subtotalAfterDiscount + taxAmount + shippingAmount;
+  const total = taxableAmount + taxAmount + shippingAmount;
 
   let partialPaymentAmount = 0;
   if (watchedValues.applyPartialPayment && watchedValues.partialPaymentValue) {
@@ -359,7 +361,7 @@ export default function EditInvoicePage() {
                   <FormItem>
                     <FormLabel>Customer</FormLabel>
                     <div className="flex gap-2">
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value || ''}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a customer" />
@@ -610,7 +612,7 @@ export default function EditInvoicePage() {
                   </Button>
                 </div>
             </CardContent>
-            {/* ... Rest of footer logic is fine ... */}
+            {/* ... Rest of footer ... */}
             <CardFooter className="flex flex-col items-end gap-2">
                 <div className="w-full max-w-sm space-y-2 self-end">
                     <div className="flex justify-between">
@@ -733,7 +735,7 @@ export default function EditInvoicePage() {
 
                     <Separator />
 
-                    <div className="flex justify-between font-bold text-lg p-3 rounded-md bg-primary text-primary-foreground">
+                    <div className="flex justify-between font-bold text-lg pt-2">
                         <span>Total</span>
                         <span>{formatCurrency(total)}</span>
                     </div>
@@ -781,7 +783,7 @@ export default function EditInvoicePage() {
                      {watchedValues.applyPartialPayment && (
                         <>
                             <Separator />
-                            <div className="flex justify-between font-bold text-lg pt-2 p-3 rounded-md bg-primary text-primary-foreground">
+                            <div className="flex justify-between font-bold text-lg pt-2 text-primary">
                                 <span>Balance</span>
                                 <span>{formatCurrency(balance)}</span>
                             </div>
@@ -812,7 +814,7 @@ export default function EditInvoicePage() {
           <div className="flex justify-end gap-2">
              <Button type="button" variant="outline" onClick={handlePreview}><Eye className="mr-2 h-4 w-4"/> Preview</Button>
             <Button type="button" variant="secondary" onClick={() => handleFormSubmit('Draft')}><Save className="mr-2 h-4 w-4"/> Save Draft</Button>
-            <Button type="button" onClick={() => handleFormSubmit('Pending')}><Send className="mr-2 h-4 w-4"/> Save and Send</Button>
+            <Button type="button" onClick={() => handleFormSubmit(form.getValues('status'))}><Send className="mr-2 h-4 w-4"/> Save Changes</Button>
           </div>
         </form>
       </Form>
