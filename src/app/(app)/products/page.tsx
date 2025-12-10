@@ -156,13 +156,53 @@ export default function ProductsPage() {
   };
 
   const handleBulkUpload = (file: File) => {
-    // Placeholder for CSV parsing logic
-    console.log("Uploaded file:", file.name);
-    toast({
-      title: "Upload In Progress",
-      description: "Bulk upload functionality is coming soon!",
-    });
-    // Example: parseCsv(file).then(products => products.forEach(addProduct));
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const text = e.target?.result;
+        if (typeof text !== 'string') {
+            toast({ variant: 'destructive', title: 'Upload Failed', description: 'Could not read the file.' });
+            return;
+        }
+
+        const rows = text.split('\n').filter(row => row.trim() !== '');
+        const header = rows.shift()?.trim().split(',').map(h => h.toLowerCase().trim()) || [];
+        
+        if (!header.includes('name') || !header.includes('price') || !header.includes('type')) {
+            toast({ variant: 'destructive', title: 'Invalid CSV Header', description: 'File must contain name, price, and type columns.' });
+            return;
+        }
+
+        let importedCount = 0;
+        let errorCount = 0;
+
+        rows.forEach(row => {
+            try {
+                const values = row.split(',');
+                const productData: Partial<ProductFormData> = {};
+                
+                header.forEach((h, i) => {
+                    (productData as any)[h] = values[i] ? values[i].trim() : '';
+                });
+
+                const parsed = formSchema.pick({ name: true, price: true, type: true, description: true }).safeParse(productData);
+
+                if (parsed.success) {
+                    addProduct(parsed.data);
+                    importedCount++;
+                } else {
+                    errorCount++;
+                }
+            } catch {
+                errorCount++;
+            }
+        });
+        
+        toast({
+            title: 'Bulk Upload Complete',
+            description: `${importedCount} products imported. ${errorCount} rows failed.`,
+        });
+    };
+    reader.readAsText(file);
     setIsBulkUploadOpen(false);
   };
   
