@@ -137,7 +137,7 @@ export default function DashboardPage() {
         <p className="text-muted-foreground">Here's a snapshot of your business activity.</p>
       </div>
        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <StatCard title="Total Revenue" value={stats.paidAmount} icon={DollarSign} description={`${stats.paidCount} paid invoices`} formatAsCurrency variant="primary" currencyCode={currencyCode} />
           <StatCard title="Outstanding" value={stats.unpaidAmount} icon={FileClock} description={`${stats.unpaidCount + stats.overdueCount} unpaid invoices`} formatAsCurrency variant="primary" currencyCode={currencyCode} />
           <StatCard title="Canceled" value={stats.canceledAmount} icon={FileX} description={`${stats.canceledCount} canceled invoices`} formatAsCurrency variant="primary" currencyCode={currencyCode} />
