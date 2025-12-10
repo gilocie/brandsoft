@@ -26,6 +26,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { QuotationPreview } from '@/components/quotation-preview';
+import { useFormState } from '@/hooks/use-form-state';
 
 const lineItemSchema = z.object({
   productId: z.string().optional(),
@@ -70,28 +71,55 @@ export default function EditQuotationPage() {
   const { config, addCustomer, updateQuotation } = useBrandsoft();
   const router = useRouter();
   const params = useParams();
+  const quotationId = params.id as string;
+  const formStateKey = `edit-quotation-${quotationId}`;
+  const { setFormData, getFormData } = useFormState(formStateKey);
+
   const { toast } = useToast();
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
   const [useManualEntry, setUseManualEntry] = useState<boolean[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
-  const quotationId = params.id as string;
-
   const form = useForm<QuotationFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       status: 'Draft',
+      lineItems: [],
     }
   });
 
+  const { fields, append, remove, update } = useFieldArray({
+    control: form.control,
+    name: "lineItems",
+  });
+  
+  const watchedValues = form.watch();
+
   useEffect(() => {
-    if (config && isLoading) {
+    if (!config || !isLoading) return;
+
+    const storedData = getFormData();
+
+    if (storedData && Object.keys(storedData).length > 0) {
+        const restoredData: any = { ...storedData };
+        if (restoredData.quotationDate) restoredData.quotationDate = new Date(restoredData.quotationDate);
+        if (restoredData.validUntil) restoredData.validUntil = new Date(restoredData.validUntil);
+        form.reset(restoredData);
+        setUseManualEntry(restoredData.lineItems?.map((item: any) => !item.productId) || []);
+        setIsLoading(false);
+    } else {
       const quotationToEdit = config.quotations.find(q => q.quotationId?.toLowerCase() === quotationId?.toLowerCase());
-      
       if (quotationToEdit) {
         const customer = config.customers.find(c => c.id === quotationToEdit.customerId) || config.customers.find(c => c.name === quotationToEdit.customer);
         if (customer) {
+            const lineItems = quotationToEdit.lineItems || (quotationToEdit.subtotal ? [{
+                description: 'Original Items',
+                quantity: 1,
+                price: quotationToEdit.subtotal,
+                productId: ''
+            }] : []);
+
             form.reset({
               customerId: customer.id,
               quotationDate: parseISO(quotationToEdit.date),
@@ -111,14 +139,9 @@ export default function EditQuotationPage() {
               applyPartialPayment: !!quotationToEdit.partialPayment,
               partialPaymentType: quotationToEdit.partialPaymentType || 'percentage',
               partialPaymentValue: quotationToEdit.partialPaymentValue || 0,
-              lineItems: quotationToEdit.lineItems || (quotationToEdit.subtotal ? [{
-                description: 'Original Items',
-                quantity: 1,
-                price: quotationToEdit.subtotal,
-                productId: ''
-              }] : [])
+              lineItems: lineItems
             });
-            setUseManualEntry(quotationToEdit.lineItems?.map(item => !item.productId) ?? (quotationToEdit.subtotal ? [true] : []));
+            setUseManualEntry(lineItems.map(item => !item.productId));
         } else {
              toast({ title: "Error", description: "Customer for this quotation not found.", variant: 'destructive'});
              router.push('/quotations');
@@ -129,12 +152,15 @@ export default function EditQuotationPage() {
         router.push('/quotations');
       }
     }
-  }, [config, quotationId, form, router, toast, isLoading]);
+  }, [config, quotationId, form, router, toast, isLoading, getFormData]);
 
-  const { fields, append, remove, update } = useFieldArray({
-    control: form.control,
-    name: "lineItems",
-  });
+  useEffect(() => {
+    if (isLoading) return;
+    const subscription = form.watch((value) => {
+        setFormData(value);
+    });
+    return () => subscription.unsubscribe();
+  }, [isLoading, form, setFormData]);
 
   const newCustomerForm = useForm<NewCustomerFormData>({
     resolver: zodResolver(NewCustomerFormSchema),
@@ -216,9 +242,11 @@ export default function EditQuotationPage() {
         partialPaymentType: data.partialPaymentType,
         partialPaymentValue: data.partialPaymentValue,
         currency: data.currency,
+        design: quotationToEdit.design,
     };
     
     updateQuotation(quotationToEdit.quotationId, updatedQuotation);
+    setFormData(null);
     
     toast({
         title: "Quotation Updated!",
@@ -245,16 +273,15 @@ export default function EditQuotationPage() {
     }
   }
 
-  const watchedValues = form.watch();
   const currencyCode = watchedValues.currency || config?.profile.defaultCurrency || '';
   
   const formatCurrency = (value: number) => {
     return `${currencyCode}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
-  const subtotal = watchedValues.lineItems?.reduce((acc, item) => {
+  const subtotal = watchedValues.lineItems ? watchedValues.lineItems.reduce((acc, item) => {
     return acc + (Number(item.quantity) || 0) * (Number(item.price) || 0);
-  }, 0) || 0;
+  }, 0) : 0;
   
   let discountAmount = 0;
   if (watchedValues.applyDiscount && watchedValues.discountValue) {
@@ -337,7 +364,7 @@ export default function EditQuotationPage() {
                   <FormItem>
                     <FormLabel>Customer</FormLabel>
                     <div className="flex gap-2">
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value || ''}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a customer" />
@@ -788,7 +815,7 @@ export default function EditQuotationPage() {
           <div className="flex justify-end gap-2">
              <Button type="button" variant="outline" onClick={handlePreview}><Eye className="mr-2 h-4 w-4"/> Preview</Button>
             <Button type="button" variant="secondary" onClick={() => handleFormSubmit('Draft')}><Save className="mr-2 h-4 w-4"/> Save Draft</Button>
-            <Button type="button" onClick={() => handleFormSubmit('Sent')}><Send className="mr-2 h-4 w-4"/> Save and Send</Button>
+            <Button type="button" onClick={() => handleFormSubmit('Sent')}><Send className="mr-2 h-4 w-4"/> Save Changes</Button>
           </div>
         </form>
       </Form>
@@ -843,3 +870,5 @@ export default function EditQuotationPage() {
     </div>
   );
 }
+
+    

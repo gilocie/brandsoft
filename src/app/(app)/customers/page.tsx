@@ -495,7 +495,7 @@ export default function CustomersPage() {
               </>
           </div>
           <DialogFooter className="justify-between">
-            <Button size="sm" disabled={!customerInvoice}>
+            <Button size="sm" disabled>
               <Send className="mr-2 h-4 w-4" />
               Send Reminder
             </Button>
@@ -525,5 +525,7 @@ export default function CustomersPage() {
     </div>
   );
 }
+
+    
 
     

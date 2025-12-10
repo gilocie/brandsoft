@@ -26,6 +26,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { InvoicePreview } from '@/components/invoice-preview';
+import { useFormState } from '@/hooks/use-form-state';
 
 const lineItemSchema = z.object({
   productId: z.string().optional(),
@@ -70,83 +71,97 @@ export default function EditInvoicePage() {
   const { config, addCustomer, updateInvoice } = useBrandsoft();
   const router = useRouter();
   const params = useParams();
+  const invoiceId = params.id as string;
+  const formStateKey = `edit-invoice-${invoiceId}`;
+  const { setFormData, getFormData } = useFormState(formStateKey);
+
   const { toast } = useToast();
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
   const [useManualEntry, setUseManualEntry] = useState<boolean[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-
-  const invoiceId = params.id as string;
+  
 
   const form = useForm<InvoiceFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       status: 'Draft',
-      // FIX: Initialize lineItems as an empty array so useFieldArray registers correctly immediately
       lineItems: [], 
       currency: 'USD',
     }
   });
 
-  // Keep useFieldArray here
   const { fields, append, remove, update } = useFieldArray({
     control: form.control,
     name: "lineItems",
   });
+  
+  const watchedValues = form.watch();
 
   useEffect(() => {
-    if (config && isLoading) {
-      const invoiceToEdit = config.invoices.find(inv => inv.invoiceId?.toLowerCase() === invoiceId?.toLowerCase());
+    if (!config || !isLoading) return;
 
-      if (invoiceToEdit) {
-        const customer = config.customers.find(c => c.id === invoiceToEdit.customerId) || 
-                         config.customers.find(c => c.name === invoiceToEdit.customer);
-
-        // Ensure lineItems is a valid array, even if empty
-        const lineItems = (invoiceToEdit.lineItems && invoiceToEdit.lineItems.length > 0)
-          ? invoiceToEdit.lineItems 
-          : (invoiceToEdit.subtotal ? [{
-              description: 'Original Items',
-              quantity: 1,
-              price: invoiceToEdit.subtotal || 0,
-              productId: ''
-            }] : []);
-
-        form.reset({
-          customerId: customer?.id || '',
-          invoiceDate: parseISO(invoiceToEdit.date),
-          dueDate: parseISO(invoiceToEdit.dueDate),
-          status: invoiceToEdit.status,
-          currency: invoiceToEdit.currency || config.profile.defaultCurrency,
-          notes: invoiceToEdit.notes || '',
-          applyDiscount: !!invoiceToEdit.discount,
-          discountType: invoiceToEdit.discountType || 'percentage',
-          discountValue: invoiceToEdit.discountValue || 0,
-          applyTax: !!invoiceToEdit.tax,
-          taxType: invoiceToEdit.taxType || 'percentage',
-          taxValue: invoiceToEdit.taxValue ?? 17.5,
-          taxName: invoiceToEdit.taxName ?? 'VAT',
-          applyShipping: !!invoiceToEdit.shipping,
-          shippingValue: invoiceToEdit.shipping || 0,
-          applyPartialPayment: !!invoiceToEdit.partialPayment,
-          partialPaymentType: invoiceToEdit.partialPaymentType || 'percentage',
-          partialPaymentValue: invoiceToEdit.partialPaymentValue || 0,
-          lineItems: lineItems,
-        });
-
-        // Sync manual entry state
-        setUseManualEntry(lineItems.map(item => !item.productId));
-        
-        // Slight delay to ensure render cycle catches up if needed, though usually not required with the fix above
-        setTimeout(() => setIsLoading(false), 0);
-      } else {
-        if(config.invoices.length > 0) {
+    const storedData = getFormData();
+    
+    if (storedData && Object.keys(storedData).length > 0) {
+        const restoredData: any = { ...storedData };
+        if (restoredData.invoiceDate) restoredData.invoiceDate = new Date(restoredData.invoiceDate);
+        if (restoredData.dueDate) restoredData.dueDate = new Date(restoredData.dueDate);
+        form.reset(restoredData);
+        setUseManualEntry(restoredData.lineItems?.map((item: any) => !item.productId) || []);
+        setIsLoading(false);
+    } else {
+        const invoiceToEdit = config.invoices.find(inv => inv.invoiceId?.toLowerCase() === invoiceId?.toLowerCase());
+        if (invoiceToEdit) {
+            const customer = config.customers.find(c => c.id === invoiceToEdit.customerId) || 
+                             config.customers.find(c => c.name === invoiceToEdit.customer);
+            
+            const lineItems = (invoiceToEdit.lineItems && invoiceToEdit.lineItems.length > 0)
+              ? invoiceToEdit.lineItems 
+              : (invoiceToEdit.subtotal ? [{
+                  description: 'Original Items',
+                  quantity: 1,
+                  price: invoiceToEdit.subtotal || 0,
+                  productId: ''
+                }] : []);
+            
+            form.reset({
+              customerId: customer?.id || '',
+              invoiceDate: parseISO(invoiceToEdit.date),
+              dueDate: parseISO(invoiceToEdit.dueDate),
+              status: invoiceToEdit.status,
+              currency: invoiceToEdit.currency || config.profile.defaultCurrency,
+              notes: invoiceToEdit.notes || '',
+              applyDiscount: !!invoiceToEdit.discount,
+              discountType: invoiceToEdit.discountType || 'percentage',
+              discountValue: invoiceToEdit.discountValue || 0,
+              applyTax: !!invoiceToEdit.tax,
+              taxType: invoiceToEdit.taxType || 'percentage',
+              taxValue: invoiceToEdit.taxValue ?? 17.5,
+              taxName: invoiceToEdit.taxName ?? 'VAT',
+              applyShipping: !!invoiceToEdit.shipping,
+              shippingValue: invoiceToEdit.shipping || 0,
+              applyPartialPayment: !!invoiceToEdit.partialPayment,
+              partialPaymentType: invoiceToEdit.partialPaymentType || 'percentage',
+              partialPaymentValue: invoiceToEdit.partialPaymentValue || 0,
+              lineItems: lineItems,
+            });
+            setUseManualEntry(lineItems.map(item => !item.productId));
+            setIsLoading(false);
+        } else if(config.invoices.length > 0) {
             toast({ title: "Error", description: "Invoice not found.", variant: 'destructive'});
             router.push('/invoices');
         }
-      }
     }
-  }, [config, invoiceId, form, router, toast, isLoading]);
+  }, [config, invoiceId, form, router, toast, isLoading, getFormData]);
+
+  useEffect(() => {
+    if (isLoading) return;
+    const subscription = form.watch((value) => {
+        setFormData(value);
+    });
+    return () => subscription.unsubscribe();
+  }, [isLoading, form, setFormData]);
 
   const newCustomerForm = useForm<NewCustomerFormData>({
     resolver: zodResolver(NewCustomerFormSchema),
@@ -192,9 +207,8 @@ export default function EditInvoicePage() {
         }
     }
     
-    let taxAmount = 0;
-    // Calculate tax based on subtotal minus discount
     const taxableAmount = subtotal - discountAmount;
+    let taxAmount = 0;
     if (data.applyTax && data.taxValue) {
         if (data.taxType === 'percentage') {
             taxAmount = taxableAmount * (data.taxValue / 100);
@@ -241,6 +255,7 @@ export default function EditInvoicePage() {
     };
     
     updateInvoice(invoiceToEdit.invoiceId, updatedInvoice);
+    setFormData(null);
     
     toast({
         title: "Invoice Updated!",
@@ -267,7 +282,6 @@ export default function EditInvoicePage() {
     }
   }
 
-  const watchedValues = form.watch();
   const currencyCode = watchedValues.currency || config?.profile.defaultCurrency || '';
   
   const formatCurrency = (value: number) => {
@@ -747,7 +761,7 @@ export default function EditInvoicePage() {
                         name="applyPartialPayment"
                         render={({ field }) => (
                             <FormItem className="flex justify-between items-center">
-                                <FormLabel htmlFor="apply-partial-switch">Request Partial Payment</FormLabel>
+                                <FormLabel htmlFor="apply-partial-switch">Record Partial Payment</FormLabel>
                                 <FormControl>
                                   <Switch
                                     id="apply-partial-switch"
@@ -870,3 +884,5 @@ export default function EditInvoicePage() {
     </div>
   );
 }
+
+    
