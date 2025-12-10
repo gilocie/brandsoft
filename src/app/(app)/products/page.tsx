@@ -274,14 +274,20 @@ export default function ProductsPage() {
       {/* Add/Edit Dialog */}
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{selectedProduct ? 'Edit' : 'Add New'} Product or Service</DialogTitle>
-            <DialogDescription>
-              Fill in the details for the item.
-            </DialogDescription>
+          <DialogHeader className="flex-row justify-between items-center">
+            <div>
+              <DialogTitle>{selectedProduct ? 'Edit' : 'Add New'} Product or Service</DialogTitle>
+              <DialogDescription>
+                Fill in the details for the item.
+              </DialogDescription>
+            </div>
+            <Button variant="outline" onClick={() => { setIsFormOpen(false); setIsBulkUploadOpen(true); }}>
+              <UploadCloud className="mr-2 h-4 w-4" />
+              Bulk Upload
+            </Button>
           </DialogHeader>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
                <FormField
                 control={form.control}
                 name="type"
@@ -308,11 +314,6 @@ export default function ProductsPage() {
               <FormField control={form.control} name="description" render={({ field }) => (
                 <FormItem><FormLabel>Description (Optional)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
               )} />
-              <Separator />
-               <Button type="button" variant="outline" className="w-full" onClick={() => { setIsFormOpen(false); setIsBulkUploadOpen(true); }}>
-                    <UploadCloud className="mr-2 h-4 w-4" />
-                    Bulk Upload Products or Services
-                </Button>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>Cancel</Button>
                 <Button type="submit">Save Item</Button>
