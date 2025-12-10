@@ -133,15 +133,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
              <SidebarMenu>
                 {config ? visibleUpcomingNavItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
-                    <Link href={item.href}>
                     <SidebarMenuButton
+                        disabled
                         isActive={pathname.startsWith(item.href)}
                         tooltip={item.label}
                     >
                         <item.icon />
                         <span>{item.label}</span>
                     </SidebarMenuButton>
-                    </Link>
                 </SidebarMenuItem>
                 )) : (
                 // Skeleton loading for nav items
