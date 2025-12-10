@@ -137,7 +137,7 @@ export default function DashboardPage() {
         <p className="text-muted-foreground">Here's a snapshot of your business activity.</p>
       </div>
        
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <StatCard title="Total Revenue" value={stats.paidAmount} icon={DollarSign} description={`${stats.paidCount} paid invoices`} formatAsCurrency variant="primary" currencyCode={currencyCode} />
           <StatCard title="Outstanding" value={stats.unpaidAmount} icon={FileClock} description={`${stats.unpaidCount + stats.overdueCount} unpaid invoices`} formatAsCurrency variant="primary" currencyCode={currencyCode} />
           <StatCard title="Canceled" value={stats.canceledAmount} icon={FileX} description={`${stats.canceledCount} canceled invoices`} formatAsCurrency variant="primary" currencyCode={currencyCode} />
@@ -165,7 +165,7 @@ export default function DashboardPage() {
         <h2 className="text-2xl font-headline font-bold mt-8 mb-2">What would you like to create today?</h2>
       </div>
 
-       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {invoiceModule && (
                 <Card className="flex flex-col text-center transition-all hover:shadow-lg p-4 hover:-translate-y-1">
                     <CardHeader className="items-center">
@@ -203,7 +203,7 @@ export default function DashboardPage() {
                 </Card>
             )}
             {certificateModule && (
-                 <Card className="flex flex-col text-center bg-muted/50 p-4">
+                 <Card className="md:col-span-2 flex flex-col text-center bg-muted/50 p-4">
                     <CardHeader className="items-center">
                         <div className="p-3 rounded-lg bg-gray-300 self-center mb-2">
                             <certificateModule.icon className="h-6 w-6 text-gray-500" />
