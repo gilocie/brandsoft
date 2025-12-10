@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { AnalyticsChart } from "@/components/analytics-chart";
 
 const modules = [
   { title: "Invoice Designer", description: "Create and manage invoices.", icon: FileText, href: "/invoices", enabledKey: "invoice", isLocked: false },
@@ -224,12 +225,8 @@ export default function DashboardPage() {
             <h2 className="text-2xl font-headline font-bold mt-8 mb-4">Analytics Overview</h2>
         </div>
         
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <StatCard title="Total Customers" value={stats.totalCustomers} icon={Users} description="Total active customers" />
-          <StatCard title="Products & Services" value={stats.totalProducts} icon={Package} description="Total items available" />
-          <StatCard title="Receipts Issued" value={stats.receiptsIssued} icon={Receipt} description="Total receipts generated" />
-          <StatCard title="Overdue Invoices" value={stats.overdueCount} icon={AlertTriangle} description="Total overdue payments" />
-        </div>
+        <AnalyticsChart invoices={config.invoices} currencyCode={currencyCode} />
+
     </div>
   );
 }
