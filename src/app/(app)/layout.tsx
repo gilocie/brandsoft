@@ -1,5 +1,5 @@
 
-"use client";
+'use client';
 
 import {
   SidebarProvider,
@@ -14,9 +14,13 @@ import {
   SidebarTrigger,
   SidebarMenuSkeleton,
   SidebarSeparator,
-  SidebarGroup,
-  SidebarGroupLabel,
-} from "@/components/ui/sidebar";
+} from '@/components/ui/sidebar';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import {
   BriefcaseBusiness,
   LayoutDashboard,
@@ -29,28 +33,29 @@ import {
   Users,
   Package,
   Settings,
-} from "lucide-react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+  ChevronDown,
+} from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useBrandsoft } from '@/hooks/use-brandsoft';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 const mainNavItems = [
-  { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard", enabledKey: null },
-  { href: "/invoices", icon: FileText, label: "Invoices", enabledKey: "invoice" },
-  { href: "/quotations", icon: FileBarChart2, label: "Quotations", enabledKey: "quotation" },
-  { href: "/products", icon: Package, label: "Products", enabledKey: "invoice" },
-  { href: "/customers", icon: Users, label: "Customers", enabledKey: "invoice" },
+  { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', enabledKey: null },
+  { href: '/invoices', icon: FileText, label: 'Invoices', enabledKey: 'invoice' },
+  { href: '/quotations', icon: FileBarChart2, label: 'Quotations', enabledKey: 'quotation' },
+  { href: '/products', icon: Package, label: 'Products', enabledKey: 'invoice' },
+  { href: '/customers', icon: Users, label: 'Customers', enabledKey: 'invoice' },
 ];
 
 const upcomingNavItems = [
-  { href: "/certificates", icon: Award, label: "Certificates", enabledKey: "certificate" },
-  { href: "/id-cards", icon: CreditCard, label: "ID Cards", enabledKey: "idCard" },
-  { href: "/marketing-materials", icon: Brush, label: "Marketing", enabledKey: "marketing" },
-  { href: "/templates", icon: Library, label: "Templates", enabledKey: null },
+  { href: '/certificates', icon: Award, label: 'Certificates', enabledKey: 'certificate' },
+  { href: '/id-cards', icon: CreditCard, label: 'ID Cards', enabledKey: 'idCard' },
+  { href: '/marketing-materials', icon: Brush, label: 'Marketing', enabledKey: 'marketing' },
+  { href: '/templates', icon: Library, label: 'Templates', enabledKey: null },
 ];
 
 const navItems = [...mainNavItems, ...upcomingNavItems];
@@ -79,7 +84,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const visibleMainNavItems = getVisibleNavItems(mainNavItems);
   const visibleUpcomingNavItems = getVisibleNavItems(upcomingNavItems);
   
-  const pageTitle = navItems.find(item => pathname.startsWith(item.href))?.label || "Dashboard";
+  const pageTitle = navItems.find(item => pathname.startsWith(item.href))?.label || 'Dashboard';
 
   return (
     <SidebarProvider>
@@ -94,7 +99,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                             <BriefcaseBusiness className="h-5 w-5" />
                         </AvatarFallback>
                     </Avatar>
-                    <h1 className={cn("text-base font-bold", getFontClass(config.brand.font))}>
+                    <h1 className={cn('text-base font-bold', getFontClass(config.brand.font))}>
                         {config.brand.businessName}
                     </h1>
                 </Link>
@@ -126,28 +131,34 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             )}
           </SidebarMenu>
           
-          <SidebarSeparator className="my-4" />
+          <SidebarSeparator className="my-2" />
 
-          <SidebarGroup>
-            <SidebarGroupLabel>Upcoming Tools</SidebarGroupLabel>
-             <SidebarMenu>
-                {config ? visibleUpcomingNavItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                        disabled
-                        isActive={pathname.startsWith(item.href)}
-                        tooltip={item.label}
-                    >
-                        <item.icon />
-                        <span>{item.label}</span>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-                )) : (
-                // Skeleton loading for nav items
-                Array.from({length: 4}).map((_, i) => <SidebarMenuSkeleton key={i} showIcon />)
-                )}
-            </SidebarMenu>
-          </SidebarGroup>
+          <Accordion type="single" collapsible className="w-full px-2">
+            <AccordionItem value="upcoming-tools" className="border-none">
+              <AccordionTrigger className="text-sidebar-foreground/70 hover:text-sidebar-foreground hover:no-underline text-xs font-medium rounded-md px-2 [&[data-state=open]>svg]:text-sidebar-foreground">
+                <span className="flex-1 text-left">Upcoming Tools</span>
+              </AccordionTrigger>
+              <AccordionContent className="pt-2">
+                <SidebarMenu className="px-0">
+                    {config ? visibleUpcomingNavItems.map((item) => (
+                    <SidebarMenuItem key={item.href}>
+                        <SidebarMenuButton
+                            disabled
+                            isActive={pathname.startsWith(item.href)}
+                            tooltip={item.label}
+                        >
+                            <item.icon />
+                            <span>{item.label}</span>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    )) : (
+                    // Skeleton loading for nav items
+                    Array.from({length: 4}).map((_, i) => <SidebarMenuSkeleton key={i} showIcon />)
+                    )}
+                </SidebarMenu>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
 
         </SidebarContent>
         <SidebarFooter className="mt-auto mb-4">
