@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -61,11 +61,12 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { PlusCircle, MoreHorizontal, Eye, FilePenLine, Trash2, FileText, FileBarChart2, UploadCloud, Download } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Eye, FilePenLine, Trash2, FileText, FileBarChart2, UploadCloud, Download, Search } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const formSchema = z.object({
   id: z.string().optional(),
@@ -114,11 +115,24 @@ export default function ProductsPage() {
   const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState('all');
   
   const form = useForm<ProductFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: { name: '', description: '', price: 0, type: 'product' },
   });
+
+  const filteredProducts = useMemo(() => {
+    let products = config?.products || [];
+    if (activeTab !== 'all') {
+      products = products.filter(p => p.type === activeTab);
+    }
+    if (searchTerm) {
+      products = products.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    }
+    return products;
+  }, [config?.products, activeTab, searchTerm]);
 
   const handleOpenForm = (product: Product | null = null) => {
     setSelectedProduct(product);
@@ -239,14 +253,14 @@ export default function ProductsPage() {
 
   const handleSelectAll = (checked: boolean | 'indeterminate') => {
     if (checked) {
-        setSelectedProductIds(config?.products.map(p => p.id) || []);
+        setSelectedProductIds(filteredProducts.map(p => p.id));
     } else {
         setSelectedProductIds([]);
     }
   };
 
-  const allProductsSelected = config?.products.length === selectedProductIds.length && config.products.length > 0;
-  const someProductsSelected = selectedProductIds.length > 0 && selectedProductIds.length < (config?.products.length || 0);
+  const allProductsSelected = filteredProducts.length > 0 && filteredProducts.length === selectedProductIds.length;
+  const someProductsSelected = selectedProductIds.length > 0 && selectedProductIds.length < filteredProducts.length;
 
   const productQueryString = selectedProductIds.join(',');
   
@@ -282,8 +296,28 @@ export default function ProductsPage() {
             )}
         </div>
       </div>
-
-      <Card>
+      
+       <Card>
+        <CardHeader>
+           <div className="flex items-center justify-between gap-4">
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList>
+                <TabsTrigger value="all">All</TabsTrigger>
+                <TabsTrigger value="product">Products</TabsTrigger>
+                <TabsTrigger value="service">Services</TabsTrigger>
+              </TabsList>
+            </Tabs>
+             <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                    placeholder="Search by name..." 
+                    className="pl-10"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </div>
+           </div>
+        </CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
@@ -302,8 +336,8 @@ export default function ProductsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {config?.products && config.products.length > 0 ? (
-                config.products.map((product: Product) => (
+              {filteredProducts.length > 0 ? (
+                filteredProducts.map((product: Product) => (
                   <TableRow key={product.id}>
                     <TableCell className="px-4">
                         <Checkbox
@@ -326,7 +360,7 @@ export default function ProductsPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center">
+                  <TableCell colSpan={6} className="text-center h-48">
                     No products or services found.
                   </TableCell>
                 </TableRow>
@@ -484,3 +518,5 @@ export default function ProductsPage() {
   );
 }
     
+
+  
