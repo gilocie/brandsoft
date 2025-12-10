@@ -155,64 +155,60 @@ export default function DashboardPage() {
         <h2 className="text-2xl font-headline font-bold mt-8 mb-2">What would you like to create today?</h2>
       </div>
 
-       <div className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2">
-                {invoiceModule && (
-                    <Card className="flex flex-col text-center transition-all hover:shadow-lg p-4 hover:-translate-y-1">
-                        <CardHeader className="items-center">
-                            <div className="p-3 rounded-lg bg-primary/10 self-center mb-2">
-                                <invoiceModule.icon className="h-6 w-6 text-primary" />
-                            </div>
-                            <CardTitle className="font-headline text-xl">{invoiceModule.title}</CardTitle>
-                            <CardDescription className="mt-1">{invoiceModule.description}</CardDescription>
-                        </CardHeader>
-                        <CardContent className="flex-grow flex flex-col justify-end items-center">
-                            <Button asChild className="w-full">
-                                <Link href={invoiceModule.href}>
-                                    Start Creating <ArrowRight className="ml-2 h-4 w-4" />
-                                </Link>
-                            </Button>
-                        </CardContent>
-                    </Card>
-                )}
-                 {quotationModule && (
-                    <Card className="flex flex-col text-center transition-all hover:shadow-lg p-4 hover:-translate-y-1">
-                        <CardHeader className="items-center">
-                            <div className="p-3 rounded-lg bg-primary/10 self-center mb-2">
-                                <quotationModule.icon className="h-6 w-6 text-primary" />
-                            </div>
-                            <CardTitle className="font-headline text-xl">{quotationModule.title}</CardTitle>
-                            <CardDescription className="mt-1">{quotationModule.description}</CardDescription>
-                        </CardHeader>
-                        <CardContent className="flex-grow flex flex-col justify-end items-center">
-                            <Button asChild className="w-full">
-                                <Link href={quotationModule.href}>
-                                    Start Creating <ArrowRight className="ml-2 h-4 w-4" />
-                                </Link>
-                            </Button>
-                        </CardContent>
-                    </Card>
-                )}
-            </div>
-             <div className="grid gap-6">
-                {certificateModule && (
-                     <Card className="flex flex-col text-center bg-muted/50 p-4">
-                        <CardHeader className="items-center">
-                            <div className="p-3 rounded-lg bg-gray-300 self-center mb-2">
-                                <certificateModule.icon className="h-6 w-6 text-gray-500" />
-                            </div>
-                            <CardTitle className="font-headline text-xl">{certificateModule.title}</CardTitle>
-                            <CardDescription className="mt-1">{certificateModule.description}</CardDescription>
-                        </CardHeader>
-                        <CardContent className="flex-grow flex flex-col justify-end items-center">
-                            <div className="flex items-center justify-center gap-2 text-sm font-semibold text-destructive">
-                                <Lock className="h-4 w-4" />
-                                <span>Upcoming</span>
-                            </div>
-                        </CardContent>
-                    </Card>
-                )}
-            </div>
+       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {invoiceModule && (
+                <Card className="flex flex-col text-center transition-all hover:shadow-lg p-4 hover:-translate-y-1">
+                    <CardHeader className="items-center">
+                        <div className="p-3 rounded-lg bg-primary/10 self-center mb-2">
+                            <invoiceModule.icon className="h-6 w-6 text-primary" />
+                        </div>
+                        <CardTitle className="font-headline text-xl">{invoiceModule.title}</CardTitle>
+                        <CardDescription className="mt-1">{invoiceModule.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex-grow flex flex-col justify-end items-center">
+                        <Button asChild className="w-full">
+                            <Link href={invoiceModule.href}>
+                                Start Creating <ArrowRight className="ml-2 h-4 w-4" />
+                            </Link>
+                        </Button>
+                    </CardContent>
+                </Card>
+            )}
+             {quotationModule && (
+                <Card className="flex flex-col text-center transition-all hover:shadow-lg p-4 hover:-translate-y-1">
+                    <CardHeader className="items-center">
+                        <div className="p-3 rounded-lg bg-primary/10 self-center mb-2">
+                            <quotationModule.icon className="h-6 w-6 text-primary" />
+                        </div>
+                        <CardTitle className="font-headline text-xl">{quotationModule.title}</CardTitle>
+                        <CardDescription className="mt-1">{quotationModule.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex-grow flex flex-col justify-end items-center">
+                        <Button asChild className="w-full">
+                            <Link href={quotationModule.href}>
+                                Start Creating <ArrowRight className="ml-2 h-4 w-4" />
+                            </Link>
+                        </Button>
+                    </CardContent>
+                </Card>
+            )}
+            {certificateModule && (
+                 <Card className="flex flex-col text-center bg-muted/50 p-4">
+                    <CardHeader className="items-center">
+                        <div className="p-3 rounded-lg bg-gray-300 self-center mb-2">
+                            <certificateModule.icon className="h-6 w-6 text-gray-500" />
+                        </div>
+                        <CardTitle className="font-headline text-xl">{certificateModule.title}</CardTitle>
+                        <CardDescription className="mt-1">{certificateModule.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex-grow flex flex-col justify-end items-center">
+                        <div className="flex items-center justify-center gap-2 text-sm font-semibold text-destructive">
+                            <Lock className="h-4 w-4" />
+                            <span>Upcoming</span>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
        </div>
     </div>
   );
