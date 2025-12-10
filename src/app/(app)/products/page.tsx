@@ -61,7 +61,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { PlusCircle, MoreHorizontal, Eye, FilePenLine, Trash2, FileText, FileBarChart2, UploadCloud } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Eye, FilePenLine, Trash2, FileText, FileBarChart2, UploadCloud, Download } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
@@ -164,6 +164,23 @@ export default function ProductsPage() {
     });
     // Example: parseCsv(file).then(products => products.forEach(addProduct));
     setIsBulkUploadOpen(false);
+  };
+  
+  const handleDownloadSample = () => {
+    const csvHeader = "name,description,price,type\n";
+    const csvExample = "Sample Product,A great product,99.99,product\nSample Service,An excellent service,49.50,service\n";
+    const csvContent = csvHeader + csvExample;
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", "sample-products.csv");
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
   };
 
   const handleSelectProduct = (productId: string, checked: boolean | 'indeterminate') => {
@@ -274,7 +291,7 @@ export default function ProductsPage() {
       {/* Add/Edit Dialog */}
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent>
-          <DialogHeader className="flex-row justify-between items-center">
+           <DialogHeader className="flex-row justify-between items-start">
             <div>
               <DialogTitle>{selectedProduct ? 'Edit' : 'Add New'} Product or Service</DialogTitle>
               <DialogDescription>
@@ -332,7 +349,7 @@ export default function ProductsPage() {
               Upload a CSV file with your products. The file should have columns: `name`, `description`, `price`, `type`. The `type` column should be either 'product' or 'service'.
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
+          <div className="py-4 space-y-4">
              <div 
                 className="flex items-center justify-center w-full p-8 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted"
                 onDragOver={(e) => e.preventDefault()}
@@ -360,6 +377,10 @@ export default function ProductsPage() {
                     </p>
                 </div>
             </div>
+             <Button variant="default" className="w-full" onClick={handleDownloadSample}>
+                <Download className="mr-2 h-4 w-4" />
+                Download Sample CSV
+            </Button>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsBulkUploadOpen(false)}>Cancel</Button>
