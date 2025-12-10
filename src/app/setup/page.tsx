@@ -1,19 +1,19 @@
 
 
-"use client";
+'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import { useForm, Control } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useBrandsoft, type BrandsoftConfig, type Invoice, type Customer } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type BrandsoftConfig, type Invoice, type Customer, type Quotation } from '@/hooks/use-brandsoft';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, ArrowLeft, ArrowRight, PartyPopper, UploadCloud, BriefcaseBusiness } from 'lucide-react';
+import { Loader2, ArrowLeft, ArrowRight, PartyPopper, UploadCloud, BriefcaseBusiness, FileText, FileBarChart2, Award, CreditCard, Brush } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { hexToHsl, cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -42,8 +42,8 @@ const step2Schema = z.object({
 
 const step3Schema = z.object({
   invoice: z.boolean().default(true),
-  certificate: z.boolean().default(true),
-  idCard: z.boolean().default(true),
+  certificate: z.boolean().default(false),
+  idCard: z.boolean().default(false),
   quotation: z.boolean().default(true),
   marketing: z.boolean().default(false),
 });
@@ -142,6 +142,57 @@ const initialInvoices: Invoice[] = [
   },
 ];
 
+const initialQuotations: Quotation[] = [
+    {
+        quotationId: 'QUO-001',
+        customer: 'Liam Johnson',
+        customerId: 'CUST-1625243511000',
+        date: '2023-11-01',
+        validUntil: '2023-11-30',
+        amount: 500.0,
+        status: 'Sent',
+        subtotal: 500,
+        lineItems: [{ description: 'Website Redesign', quantity: 1, price: 500 }],
+        currency: 'USD',
+    },
+    {
+        quotationId: 'QUO-002',
+        customer: 'Olivia Smith',
+        customerId: 'CUST-1625243512000',
+        date: '2023-11-05',
+        validUntil: '2023-12-05',
+        amount: 1200.0,
+        status: 'Accepted',
+        subtotal: 1200,
+        lineItems: [{ description: 'E-commerce Platform Development', quantity: 1, price: 1200 }],
+        currency: 'USD',
+    },
+    {
+        quotationId: 'QUO-003',
+        customer: 'Emma Brown',
+        customerId: 'CUST-1625243514000',
+        date: '2023-11-10',
+        validUntil: '2023-12-10',
+        amount: 300.0,
+        status: 'Declined',
+        subtotal: 300,
+        lineItems: [{ description: 'Quarterly Social Media Management', quantity: 1, price: 300 }],
+        currency: 'USD',
+    },
+    {
+        quotationId: 'QUO-004',
+        customer: 'Noah Williams',
+        customerId: 'CUST-1625243513000',
+        date: '2023-11-12',
+        validUntil: '2023-12-12',
+        amount: 800.0,
+        status: 'Draft',
+        subtotal: 800,
+        lineItems: [{ description: 'Mobile App UI/UX Design', quantity: 1, price: 800 }],
+        currency: 'USD',
+    }
+];
+
 
 export default function SetupPage() {
   const { saveConfig } = useBrandsoft();
@@ -164,8 +215,8 @@ export default function SetupPage() {
       website: '',
       taxNumber: '',
       invoice: true,
-      certificate: true,
-      idCard: true,
+      certificate: false,
+      idCard: false,
       quotation: true,
       marketing: false,
     },
@@ -210,6 +261,10 @@ export default function SetupPage() {
         website: data.website || '',
         taxNumber: data.taxNumber || '',
         defaultCurrency: 'USD',
+        invoicePrefix: 'INV-',
+        invoiceStartNumber: 101,
+        quotationPrefix: 'QUO-',
+        quotationStartNumber: 101,
       },
       modules: {
         invoice: data.invoice,
@@ -221,6 +276,8 @@ export default function SetupPage() {
       customers: initialCustomers,
       products: [],
       invoices: initialInvoices,
+      quotations: initialQuotations,
+      templates: [],
       currencies: ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD'],
     };
     setIsFinishing(true);
@@ -515,24 +572,50 @@ function Step2BusinessProfile({ control }: { control: Control<FormData> }) {
 }
 
 const modules = [
-  { id: 'invoice', label: 'Invoice Designer' },
-  { id: 'certificate', label: 'Certificate Designer' },
-  { id: 'idCard', label: 'ID Card Designer' },
-  { id: 'quotation', label: 'Quotation Designer' },
-  { id: 'marketing', label: 'Marketing Material Designer' },
+  { id: 'invoice', label: 'Invoice Designer', icon: FileText, status: 'available' },
+  { id: 'quotation', label: 'Quotation Designer', icon: FileBarChart2, status: 'available' },
+  { id: 'certificate', label: 'Certificate Designer', icon: Award, status: 'upcoming' },
+  { id: 'idCard', label: 'ID Card Designer', icon: CreditCard, status: 'upcoming' },
+  { id: 'marketing', label: 'Marketing', icon: Brush, status: 'upcoming' },
 ] as const;
 
 function Step3ModuleSelection({ control }: { control: Control<FormData> }) {
-  return <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-    {modules.map(item => (
-      <FormField key={item.id} control={control} name={item.id} render={({ field }) => (
-        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-          <div className="space-y-0.5">
-            <FormLabel>{item.label}</FormLabel>
-          </div>
-          <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-        </FormItem>
-      )} />
-    ))}
-  </div>;
+    return (
+        <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {modules.filter(m => m.status === 'available').map(item => (
+                    <FormField key={item.id} control={control} name={item.id} render={({ field }) => (
+                        <FormItem className="relative">
+                             <FormControl>
+                                <Checkbox
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                    className="absolute top-3 right-3 h-5 w-5 z-10"
+                                />
+                             </FormControl>
+                            <FormLabel className={cn(
+                                "flex flex-col items-center justify-center p-4 rounded-lg border-2 cursor-pointer aspect-square transition-colors",
+                                field.value ? "border-primary bg-primary/5 text-primary" : "text-muted-foreground hover:border-primary/50"
+                            )}>
+                                <item.icon className="w-10 h-10 mb-2" />
+                                <span className="text-sm font-semibold text-center">{item.label}</span>
+                            </FormLabel>
+                        </FormItem>
+                    )} />
+                ))}
+            </div>
+             <div>
+                <h3 className="text-sm font-medium text-muted-foreground mt-6 mb-2">Upcoming Tools</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {modules.filter(m => m.status === 'upcoming').map(item => (
+                         <div key={item.id} className="relative flex flex-col items-center justify-center p-4 rounded-lg border bg-muted/50 aspect-square">
+                            <div className="absolute top-2 left-2 text-xs font-bold text-destructive-foreground bg-destructive px-2 py-0.5 rounded-full">UPCOMING</div>
+                             <item.icon className="w-10 h-10 mb-2 text-muted-foreground" />
+                            <span className="text-sm font-semibold text-center text-muted-foreground">{item.label}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
 }
