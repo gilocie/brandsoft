@@ -269,6 +269,34 @@ export default function ProductsPage() {
     }
   };
 
+  const handleExportAll = () => {
+    if (!config || !config.products || config.products.length === 0) {
+        toast({
+            variant: "destructive",
+            title: "No Products to Export",
+            description: "There are no products or services to export.",
+        });
+        return;
+    }
+    const csvHeader = "name,description,price,type\n";
+    const csvRows = config.products.map(p =>
+        `"${p.name.replace(/"/g, '""')}","${(p.description || '').replace(/"/g, '""')}",${p.price},${p.type}`
+    ).join("\n");
+
+    const csvContent = csvHeader + csvRows;
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", "products.csv");
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+  };
+
   const handleSelectProduct = (productId: string, checked: boolean | 'indeterminate') => {
     setSelectedProductIds(prev => 
         checked ? [...prev, productId] : prev.filter(id => id !== productId)
@@ -319,9 +347,14 @@ export default function ProductsPage() {
                     </Button>
                 </>
             ) : (
-                <Button onClick={() => handleOpenForm()}>
-                    <PlusCircle className="mr-2 h-4 w-4" /> Add New Item
-                </Button>
+                <>
+                    <Button variant="outline" onClick={handleExportAll}>
+                        <Download className="mr-2 h-4 w-4" /> Export All
+                    </Button>
+                    <Button onClick={() => handleOpenForm()}>
+                        <PlusCircle className="mr-2 h-4 w-4" /> Add New Item
+                    </Button>
+                </>
             )}
         </div>
       </div>
