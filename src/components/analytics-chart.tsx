@@ -56,9 +56,20 @@ export function AnalyticsChart({ invoices, currencyCode }: AnalyticsChartProps) 
   }, [invoices, timeRange]);
 
   const formatCurrency = (value: number) => {
+    // Validate currency code to prevent RangeError
+    let validCurrencyCode = 'USD'; // Default currency
+    try {
+        // Check if the provided currencyCode is valid
+        new Intl.NumberFormat('en-US', { style: 'currency', currency: currencyCode }).format(0);
+        validCurrencyCode = currencyCode;
+    } catch (e) {
+        // If not, it will throw an error. We catch it and use the default.
+        console.warn(`Invalid currency code "${currencyCode}" provided to AnalyticsChart. Defaulting to USD.`);
+    }
+
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: currencyCode || 'USD',
+      currency: validCurrencyCode,
     }).format(value);
   };
 
