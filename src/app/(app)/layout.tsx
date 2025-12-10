@@ -13,6 +13,9 @@ import {
   SidebarInset,
   SidebarTrigger,
   SidebarMenuSkeleton,
+  SidebarSeparator,
+  SidebarGroup,
+  SidebarGroupLabel,
 } from "@/components/ui/sidebar";
 import {
   BriefcaseBusiness,
@@ -35,25 +38,30 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-const navItems = [
+const mainNavItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard", enabledKey: null },
   { href: "/invoices", icon: FileText, label: "Invoices", enabledKey: "invoice" },
-  { href: "/customers", icon: Users, label: "Customers", enabledKey: "invoice" },
+  { href: "/quotations", icon: FileBarChart2, label: "Quotations", enabledKey: "quotation" },
   { href: "/products", icon: Package, label: "Products", enabledKey: "invoice" },
+  { href: "/customers", icon: Users, label: "Customers", enabledKey: "invoice" },
+];
+
+const upcomingNavItems = [
   { href: "/certificates", icon: Award, label: "Certificates", enabledKey: "certificate" },
   { href: "/id-cards", icon: CreditCard, label: "ID Cards", enabledKey: "idCard" },
-  { href: "/quotations", icon: FileBarChart2, label: "Quotations", enabledKey: "quotation" },
   { href: "/marketing-materials", icon: Brush, label: "Marketing", enabledKey: "marketing" },
   { href: "/templates", icon: Library, label: "Templates", enabledKey: null },
 ];
+
+const navItems = [...mainNavItems, ...upcomingNavItems];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { config } = useBrandsoft();
 
-  const getVisibleNavItems = () => {
+  const getVisibleNavItems = (items: typeof mainNavItems) => {
     if (!config) return [];
-    return navItems.filter(item => {
+    return items.filter(item => {
       if (item.enabledKey === null) return true;
       return config.modules[item.enabledKey as keyof typeof config.modules];
     });
@@ -68,7 +76,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const visibleNavItems = getVisibleNavItems();
+  const visibleMainNavItems = getVisibleNavItems(mainNavItems);
+  const visibleUpcomingNavItems = getVisibleNavItems(upcomingNavItems);
+  
   const pageTitle = navItems.find(item => pathname.startsWith(item.href))?.label || "Dashboard";
 
   return (
@@ -98,7 +108,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
-            {config ? visibleNavItems.map((item) => (
+            {config ? visibleMainNavItems.map((item) => (
               <SidebarMenuItem key={item.href}>
                 <Link href={item.href}>
                   <SidebarMenuButton
@@ -112,9 +122,34 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </SidebarMenuItem>
             )) : (
               // Skeleton loading for nav items
-              Array.from({length: 7}).map((_, i) => <SidebarMenuSkeleton key={i} showIcon />)
+              Array.from({length: 5}).map((_, i) => <SidebarMenuSkeleton key={i} showIcon />)
             )}
           </SidebarMenu>
+          
+          <SidebarSeparator className="my-4" />
+
+          <SidebarGroup>
+            <SidebarGroupLabel>Upcoming Tools</SidebarGroupLabel>
+             <SidebarMenu>
+                {config ? visibleUpcomingNavItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                    <Link href={item.href}>
+                    <SidebarMenuButton
+                        isActive={pathname.startsWith(item.href)}
+                        tooltip={item.label}
+                    >
+                        <item.icon />
+                        <span>{item.label}</span>
+                    </SidebarMenuButton>
+                    </Link>
+                </SidebarMenuItem>
+                )) : (
+                // Skeleton loading for nav items
+                Array.from({length: 4}).map((_, i) => <SidebarMenuSkeleton key={i} showIcon />)
+                )}
+            </SidebarMenu>
+          </SidebarGroup>
+
         </SidebarContent>
         <SidebarFooter className="mt-auto mb-4">
           <SidebarMenu>
