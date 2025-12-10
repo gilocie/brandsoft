@@ -5,7 +5,7 @@
 import { useBrandsoft, type Invoice } from "@/hooks/use-brandsoft";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, Award, CreditCard, FileBarChart2, Brush, ArrowRight, Library, Users, Package, CheckCircle, XCircle, Clock, AlertTriangle, DollarSign, FileClock, FileX, Receipt, Lock } from "lucide-react";
+import { FileText, Award, CreditCard, FileBarChart2, Brush, ArrowRight, Library, Users, Package, CheckCircle, XCircle, Clock, AlertTriangle, DollarSign, FileClock, FileX, Receipt, Lock, Crown } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMemo } from "react";
@@ -75,7 +75,7 @@ export default function DashboardPage() {
         paidAmount,
         unpaidAmount,
         canceledAmount,
-        quotationsSent: quotations.filter(q => q.status === 'Sent').length,
+        quotationsSent: quotations.filter(q => q.status === 'Sent' || q.status === 'Accepted').length,
         receiptsIssued: paidInvoices.length,
     }
   }, [config]);
@@ -137,18 +137,22 @@ export default function DashboardPage() {
         <p className="text-muted-foreground">Here's a snapshot of your business activity.</p>
       </div>
 
-       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-          <StatCard title="Total Revenue" value={stats.paidAmount} icon={DollarSign} description={`${stats.paidCount} paid invoices`} formatAsCurrency variant="primary" currencyCode={currencyCode} />
-          <StatCard title="Outstanding" value={stats.unpaidAmount} icon={FileClock} description={`${stats.unpaidCount + stats.overdueCount} unpaid invoices`} formatAsCurrency variant="primary" currencyCode={currencyCode} />
-          <StatCard title="Canceled" value={stats.canceledAmount} icon={FileX} description={`${stats.canceledCount} canceled invoices`} formatAsCurrency variant="primary" currencyCode={currencyCode} />
-          <StatCard title="Quotations Sent" value={stats.quotationsSent} icon={FileBarChart2} description="Total quotations issued" />
-          <StatCard title="Receipts Issued" value={stats.receiptsIssued} icon={Receipt} description="Total receipts generated" />
-          
+       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard title="Paid Invoices" value={stats.paidCount} icon={CheckCircle} description="Total completed payments" />
-          <StatCard title="Unpaid Invoices" value={stats.unpaidCount} icon={Clock} description="Total pending payments" />
-          <StatCard title="Overdue Invoices" value={stats.overdueCount} icon={AlertTriangle} description="Total overdue payments" />
-          <StatCard title="Total Customers" value={stats.totalCustomers} icon={Users} description="Total active customers" />
-          <StatCard title="Products & Services" value={stats.totalProducts} icon={Package} description="Total items available" />
+          <StatCard title="Unpaid Invoices" value={stats.unpaidCount + stats.overdueCount} icon={FileClock} description="Pending or overdue invoices" />
+          <StatCard title="Quotations Sent" value={stats.quotationsSent} icon={FileBarChart2} description="Total quotations issued" />
+          
+           <Card className="bg-green-900 text-white">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Your Plan</CardTitle>
+                <Crown className="h-4 w-4 text-white/70" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">Pro Plan</div>
+                <p className="text-xs text-white/80">Valid Forever</p>
+                <Button variant="secondary" size="sm" className="mt-4">Upgrade</Button>
+            </CardContent>
+           </Card>
       </div>
       
       <div>
@@ -210,6 +214,21 @@ export default function DashboardPage() {
                 </Card>
             )}
        </div>
+
+        <div>
+            <h2 className="text-2xl font-headline font-bold mt-8 mb-4">Analytics Overview</h2>
+        </div>
+        
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          <StatCard title="Total Revenue" value={stats.paidAmount} icon={DollarSign} description={`${stats.paidCount} paid invoices`} formatAsCurrency variant="primary" currencyCode={currencyCode} />
+          <StatCard title="Outstanding" value={stats.unpaidAmount} icon={FileClock} description={`${stats.unpaidCount + stats.overdueCount} unpaid invoices`} formatAsCurrency variant="primary" currencyCode={currencyCode} />
+          <StatCard title="Canceled" value={stats.canceledAmount} icon={FileX} description={`${stats.canceledCount} canceled invoices`} formatAsCurrency variant="primary" currencyCode={currencyCode} />
+          <StatCard title="Receipts Issued" value={stats.receiptsIssued} icon={Receipt} description="Total receipts generated" />
+          <StatCard title="Overdue Invoices" value={stats.overdueCount} icon={AlertTriangle} description="Total overdue payments" />
+          <StatCard title="Total Customers" value={stats.totalCustomers} icon={Users} description="Total active customers" />
+          <StatCard title="Products & Services" value={stats.totalProducts} icon={Package} description="Total items available" />
+        </div>
     </div>
   );
 }
+
