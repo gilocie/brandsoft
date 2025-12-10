@@ -574,16 +574,16 @@ function Step2BusinessProfile({ control }: { control: Control<FormData> }) {
 const modules = [
   { id: 'invoice', label: 'Invoice Designer', icon: FileText, status: 'available' },
   { id: 'quotation', label: 'Quotation Designer', icon: FileBarChart2, status: 'available' },
-  { id: 'certificate', label: 'Certificate Designer', icon: Award, status: 'upcoming' },
-  { id: 'idCard', label: 'ID Card Designer', icon: CreditCard, status: 'upcoming' },
-  { id: 'marketing', label: 'Marketing', icon: Brush, status: 'upcoming' },
+  { id: 'certificate', label: 'Certificate Designer', icon: Award, status: 'available' },
+  { id: 'idCard', label: 'ID Card Designer', icon: CreditCard, status: 'available' },
+  { id: 'marketing', label: 'Marketing', icon: Brush, status: 'available' },
 ] as const;
 
 function Step3ModuleSelection({ control }: { control: Control<FormData> }) {
     return (
         <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                {modules.filter(m => m.status === 'available').map(item => (
+                {modules.map(item => (
                     <FormField key={item.id} control={control} name={item.id} render={({ field }) => (
                         <FormItem className="relative">
                              <FormControl>
@@ -604,18 +604,7 @@ function Step3ModuleSelection({ control }: { control: Control<FormData> }) {
                     )} />
                 ))}
             </div>
-             <div>
-                <h3 className="text-sm font-medium text-muted-foreground mt-6 mb-2">Upcoming Tools</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                    {modules.filter(m => m.status === 'upcoming').map(item => (
-                         <div key={item.id} className="relative flex flex-col items-center justify-center p-4 rounded-lg border bg-muted/50 h-[300px] w-[300px]">
-                            <div className="absolute top-2 left-2 text-xs font-bold text-destructive-foreground bg-destructive px-2 py-0.5 rounded-full">UPCOMING</div>
-                             <item.icon className="w-10 h-10 mb-2 text-muted-foreground" />
-                            <span className="text-sm font-semibold text-center text-muted-foreground">{item.label}</span>
-                        </div>
-                    ))}
-                </div>
-            </div>
         </div>
     );
 }
+
