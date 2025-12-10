@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -595,7 +596,7 @@ function Step3ModuleSelection({ control }: { control: Control<FormData> }) {
                                         className="absolute top-2 right-2 h-4 w-4"
                                     />
                                 </FormControl>
-                                {item.status === 'upcoming' && !field.value && (
+                                {item.status === 'upcoming' && field.value && (
                                     <div className="absolute top-2 left-2 text-[10px] font-bold uppercase bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded-sm">
                                         Upcoming
                                     </div>
