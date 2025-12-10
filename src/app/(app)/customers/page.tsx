@@ -151,7 +151,7 @@ export default function CustomersPage() {
         phone: customer.phone || '',
         address: customer.address || '',
         companyName: customer.companyName || '',
-        associatedProductIds: customer.associatedProductIds?.map(id => ({ productId: id })) || [],
+        associatedProducts: customer.associatedProductIds?.map(id => ({ productId: id })) || [],
       });
     } else {
       form.reset({
@@ -204,7 +204,7 @@ export default function CustomersPage() {
   };
 
   const handleNextStep = async () => {
-    let fieldsToValidate: (keyof CustomerFormData)[] = ['name', 'email'];
+    let fieldsToValidate: (keyof CustomerFormData)[] = ['name', 'email', 'phone'];
     if(customerType === 'company') {
         fieldsToValidate.push('companyName');
     }
@@ -321,6 +321,9 @@ export default function CustomersPage() {
                                 <FormItem><FormLabel>{customerType === 'company' ? 'Contact Person Email' : 'Email'}</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
                             )} />
                         </div>
+                         <FormField control={form.control} name="phone" render={({ field }) => (
+                            <FormItem><FormLabel>Phone (Optional)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
                     </div>
                 )}
 
@@ -329,11 +332,8 @@ export default function CustomersPage() {
                         <div>
                             <h3 className="text-lg font-medium">{customerType === 'company' ? 'Contact Person Details' : 'Contact Details'}</h3>
                              <div className="space-y-4 mt-2">
-                                <FormField control={form.control} name="phone" render={({ field }) => (
-                                    <FormItem><FormLabel>Phone (Optional)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                )} />
                                 <FormField control={form.control} name="address" render={({ field }) => (
-                                    <FormItem><FormLabel>{customerType === 'company' ? 'Contact Person Address (Optional)' : 'Address (Optional)'}</FormLabel><FormControl><Textarea {...field} className="min-h-[80px]" /></FormControl><FormMessage /></FormItem>
+                                    <FormItem><FormLabel>{customerType === 'company' ? 'Company Address (Optional)' : 'Address (Optional)'}</FormLabel><FormControl><Textarea {...field} className="min-h-[80px]" /></FormControl><FormMessage /></FormItem>
                                 )} />
                             </div>
                         </div>
@@ -497,4 +497,5 @@ export default function CustomersPage() {
     
 
     
+
 
