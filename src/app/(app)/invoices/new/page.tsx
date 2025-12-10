@@ -79,7 +79,7 @@ export default function NewInvoicePage() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
-  const [useManualEntry, setUseManualEntry] = useState<boolean[]>([false]);
+  const [useManualEntry, setUseManualEntry] = useState<boolean[]>([]);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
@@ -124,9 +124,11 @@ export default function NewInvoicePage() {
         if (restoredData.invoiceDate) restoredData.invoiceDate = new Date(restoredData.invoiceDate);
         if (restoredData.dueDate) restoredData.dueDate = new Date(restoredData.dueDate);
         form.reset(restoredData);
+        setUseManualEntry(restoredData.lineItems.map((item: any) => !item.productId));
     } else {
-        const productIds = searchParams.get('products')?.split(',');
-        const lineItemsFromProducts = productIds?.map(id => {
+        const productIdsParam = searchParams.get('products');
+        const productIds = productIdsParam ? productIdsParam.split(',') : [];
+        const lineItemsFromProducts = productIds.map(id => {
             const product = config.products.find(p => p.id === id);
             return product ? { productId: product.id, description: product.name, quantity: 1, price: product.price } : null;
         }).filter((item): item is NonNullable<typeof item> => item !== null);
@@ -141,9 +143,9 @@ export default function NewInvoicePage() {
             dueDate: dueDate,
             notes: '',
             currency: config.profile.defaultCurrency,
-            lineItems: lineItemsFromProducts && lineItemsFromProducts.length > 0 ? lineItemsFromProducts : [{ description: '', quantity: 1, price: 0 }]
+            lineItems: lineItemsFromProducts.length > 0 ? lineItemsFromProducts : [{ description: '', quantity: 1, price: 0 }]
         });
-        setUseManualEntry(lineItemsFromProducts && lineItemsFromProducts.length > 0 ? lineItemsFromProducts.map(() => false) : [true]);
+        setUseManualEntry(lineItemsFromProducts.length > 0 ? lineItemsFromProducts.map(() => false) : [true]);
     }
 
     if (designData?.defaultCurrency) {
@@ -904,3 +906,4 @@ export default function NewInvoicePage() {
     </div>
   );
 }
+
