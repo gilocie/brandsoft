@@ -205,9 +205,10 @@ export default function DashboardPage() {
                             <CardDescription className="mt-1">{certificateModule.description}</CardDescription>
                         </CardHeader>
                         <CardContent className="flex-grow flex flex-col justify-end items-center">
-                            <Button variant="secondary" disabled className="cursor-not-allowed w-full">
-                                <Lock className="mr-2 h-4 w-4" /> Upcoming
-                            </Button>
+                            <div className="flex items-center justify-center gap-2 text-sm font-semibold text-destructive">
+                                <Lock className="h-4 w-4" />
+                                <span>Upcoming</span>
+                            </div>
                         </CardContent>
                     </Card>
                 )}
