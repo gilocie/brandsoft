@@ -157,9 +157,9 @@ export default function DashboardPage() {
               module.isLocked ? "bg-muted/50" : "hover:-translate-y-1"
           )}>
             <CardHeader>
-              <div className="flex items-start gap-4">
+              <div className="flex flex-col lg:flex-row items-start gap-4">
                 <div className={cn(
-                    "p-3 rounded-lg",
+                    "p-3 rounded-lg self-start",
                     module.isLocked ? "bg-gray-300" : "bg-primary/10"
                     )}>
                   <module.icon className={cn("h-6 w-6", module.isLocked ? "text-gray-500" : "text-primary")} />
