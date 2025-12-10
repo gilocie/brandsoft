@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useBrandsoft, type Invoice } from "@/hooks/use-brandsoft";
+import { useBrandsoft, type Invoice, type Quotation } from "@/hooks/use-brandsoft";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileText, Award, CreditCard, FileBarChart2, Brush, ArrowRight, Library, Users, Package, CheckCircle, XCircle, Clock, AlertTriangle, DollarSign, FileClock, FileX, Receipt, Lock, Crown } from "lucide-react";
@@ -165,9 +165,9 @@ export default function DashboardPage() {
         <h2 className="text-2xl font-headline font-bold mt-8 mb-2">What would you like to create today?</h2>
       </div>
 
-       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+       <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
             {invoiceModule && (
-                <Card className="flex flex-col text-center transition-all hover:shadow-lg p-4 hover:-translate-y-1">
+                 <Card className="flex flex-col text-center transition-all hover:shadow-lg p-4 hover:-translate-y-1">
                     <CardHeader className="items-center">
                         <div className="p-3 rounded-lg bg-primary/10 self-center mb-2">
                             <invoiceModule.icon className="h-6 w-6 text-primary" />
@@ -176,7 +176,7 @@ export default function DashboardPage() {
                         <CardDescription className="mt-1">{invoiceModule.description}</CardDescription>
                     </CardHeader>
                     <CardContent className="flex-grow flex flex-col justify-end items-center">
-                        <Button asChild className="w-full">
+                        <Button asChild className="w-full bg-primary hover:bg-primary/90">
                             <Link href={invoiceModule.href}>
                                 Start Creating <ArrowRight className="ml-2 h-4 w-4" />
                             </Link>
@@ -185,7 +185,7 @@ export default function DashboardPage() {
                 </Card>
             )}
              {quotationModule && (
-                <Card className="flex flex-col text-center transition-all hover:shadow-lg p-4 hover:-translate-y-1">
+                 <Card className="flex flex-col text-center transition-all hover:shadow-lg p-4 hover:-translate-y-1">
                     <CardHeader className="items-center">
                         <div className="p-3 rounded-lg bg-primary/10 self-center mb-2">
                             <quotationModule.icon className="h-6 w-6 text-primary" />
@@ -194,7 +194,7 @@ export default function DashboardPage() {
                         <CardDescription className="mt-1">{quotationModule.description}</CardDescription>
                     </CardHeader>
                     <CardContent className="flex-grow flex flex-col justify-end items-center">
-                        <Button asChild className="w-full">
+                        <Button asChild className="w-full bg-primary hover:bg-primary/90">
                             <Link href={quotationModule.href}>
                                 Start Creating <ArrowRight className="ml-2 h-4 w-4" />
                             </Link>
@@ -203,7 +203,7 @@ export default function DashboardPage() {
                 </Card>
             )}
             {certificateModule && (
-                 <Card className="md:col-span-2 flex flex-col text-center bg-muted/50 p-4">
+                 <Card className="col-span-2 lg:col-span-1 flex flex-col text-center bg-muted/50 p-4">
                     <CardHeader className="items-center">
                         <div className="p-3 rounded-lg bg-gray-300 self-center mb-2">
                             <certificateModule.icon className="h-6 w-6 text-gray-500" />
@@ -225,7 +225,7 @@ export default function DashboardPage() {
             <h2 className="text-2xl font-headline font-bold mt-8 mb-4">Analytics Overview</h2>
         </div>
         
-        <AnalyticsChart invoices={config.invoices} currencyCode={currencyCode} />
+        <AnalyticsChart invoices={config.invoices} quotations={config.quotations} currencyCode={currencyCode} />
 
     </div>
   );

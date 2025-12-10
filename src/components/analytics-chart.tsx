@@ -1,108 +1,66 @@
 
 'use client';
 
-import { useMemo, useState } from "react";
-import { addMonths, subMonths, startOfMonth, endOfMonth, format } from "date-fns";
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { useMemo } from "react";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Invoice } from "@/hooks/use-brandsoft";
+import type { Invoice, Quotation } from "@/hooks/use-brandsoft";
 
 interface AnalyticsChartProps {
   invoices: Invoice[];
-  currencyCode: string;
+  quotations: Quotation[];
+  currencyCode: string; // Keep for potential future use or other charts
 }
 
-export function AnalyticsChart({ invoices, currencyCode }: AnalyticsChartProps) {
-  const [timeRange, setTimeRange] = useState('this-year');
+const INVOICE_CHART_CONFIG = {
+  Paid: { label: "Paid", color: "hsl(var(--chart-2))" },
+  Pending: { label: "Pending", color: "hsl(var(--chart-3))" },
+  Overdue: { label: "Overdue", color: "hsl(var(--destructive))" },
+  Canceled: { label: "Canceled", color: "hsl(var(--muted-foreground))" },
+} as const;
+
+const QUOTATION_CHART_CONFIG = {
+  Sent: { label: "Sent", color: "hsl(var(--chart-1))" },
+  Accepted: { label: "Accepted", color: "hsl(var(--chart-2))" },
+  Declined: { label: "Declined", color: "hsl(var(--destructive))" },
+  Draft: { label: "Draft", color: "hsl(var(--muted-foreground))" },
+} as const;
+
+
+export function AnalyticsChart({ invoices, quotations }: AnalyticsChartProps) {
 
   const chartData = useMemo(() => {
-    const now = new Date();
-    let startDate: Date;
+    const invoiceCounts = (invoices || []).reduce((acc, invoice) => {
+      acc[invoice.status] = (acc[invoice.status] || 0) + 1;
+      return acc;
+    }, {} as Record<Invoice['status'], number>);
+    
+    const quotationCounts = (quotations || []).reduce((acc, quote) => {
+        acc[quote.status] = (acc[quote.status] || 0) + 1;
+        return acc;
+    }, {} as Record<Quotation['status'], number>);
 
-    switch (timeRange) {
-      case 'last-year':
-        startDate = startOfMonth(subMonths(now, 12));
-        break;
-      case 'all-time':
-        startDate = new Date(0); // Epoch
-        break;
-      case 'this-year':
-      default:
-        startDate = new Date(now.getFullYear(), 0, 1);
-        break;
-    }
+    return [
+      { name: 'Invoices', ...invoiceCounts },
+      { name: 'Quotations', ...quotationCounts },
+    ];
+  }, [invoices, quotations]);
 
-    const dataByMonth: { [key: string]: number } = {};
-
-    invoices.forEach(invoice => {
-      const invoiceDate = new Date(invoice.date);
-      if (invoiceDate >= startDate) {
-        const month = format(invoiceDate, 'MMM yyyy');
-        if (!dataByMonth[month]) {
-          dataByMonth[month] = 0;
-        }
-        dataByMonth[month] += invoice.amount;
-      }
-    });
-
-    const sortedMonths = Object.keys(dataByMonth).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
-
-    return sortedMonths.map(month => ({
-      name: month,
-      total: dataByMonth[month],
-    }));
-
-  }, [invoices, timeRange]);
-
-  const formatCurrency = (value: number) => {
-    // Validate currency code to prevent RangeError
-    let validCurrencyCode = 'USD'; // Default currency
-    try {
-        // Check if the provided currencyCode is valid
-        new Intl.NumberFormat('en-US', { style: 'currency', currency: currencyCode }).format(0);
-        validCurrencyCode = currencyCode;
-    } catch (e) {
-        // If not, it will throw an error. We catch it and use the default.
-        console.warn(`Invalid currency code "${currencyCode}" provided to AnalyticsChart. Defaulting to USD.`);
-    }
-
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: validCurrencyCode,
-    }).format(value);
-  };
 
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Revenue Analytics</CardTitle>
-            <CardDescription>An overview of your invoice amounts over time.</CardDescription>
+            <CardTitle>Document Status Overview</CardTitle>
+            <CardDescription>A summary of your current invoices and quotations by status.</CardDescription>
           </div>
-          <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Select a time range" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="this-year">This Year</SelectItem>
-              <SelectItem value="last-year">Last 12 Months</SelectItem>
-              <SelectItem value="all-time">All Time</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
       </CardHeader>
       <CardContent>
         {chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height={350}>
-            <AreaChart data={chartData}>
-              <defs>
-                <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
-                  <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
+            <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis
                 dataKey="name"
@@ -110,14 +68,13 @@ export function AnalyticsChart({ invoices, currencyCode }: AnalyticsChartProps) 
                 fontSize={12}
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={(value) => format(new Date(value), 'MMM')}
               />
               <YAxis
                 stroke="hsl(var(--muted-foreground))"
                 fontSize={12}
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={(value: number) => formatCurrency(value)}
+                allowDecimals={false}
               />
               <Tooltip
                 contentStyle={{
@@ -125,11 +82,20 @@ export function AnalyticsChart({ invoices, currencyCode }: AnalyticsChartProps) 
                   border: '1px solid hsl(var(--border))',
                   borderRadius: 'var(--radius)',
                 }}
-                labelStyle={{ color: 'hsl(var(--foreground))' }}
-                formatter={(value) => [formatCurrency(Number(value)), 'Total']}
+                labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 'bold' }}
               />
-              <Area type="monotone" dataKey="total" stroke="hsl(var(--primary))" fillOpacity={1} fill="url(#colorTotal)" />
-            </AreaChart>
+              <Legend wrapperStyle={{fontSize: "12px"}}/>
+               {/* Invoice Bars */}
+              <Bar dataKey="Paid" stackId="a" fill={INVOICE_CHART_CONFIG.Paid.color} name="Paid Inv." />
+              <Bar dataKey="Pending" stackId="a" fill={INVOICE_CHART_CONFIG.Pending.color} name="Pending Inv." />
+              <Bar dataKey="Overdue" stackId="a" fill={INVOICE_CHART_CONFIG.Overdue.color} name="Overdue Inv." />
+              <Bar dataKey="Canceled" stackId="a" fill={INVOICE_CHART_CONFIG.Canceled.color} name="Canceled Inv." />
+               {/* Quotation Bars */}
+              <Bar dataKey="Sent" stackId="b" fill={QUOTATION_CHART_CONFIG.Sent.color} name="Sent Quotes" />
+              <Bar dataKey="Accepted" stackId="b" fill={QUOTATION_CHART_CONFIG.Accepted.color} name="Accepted Quotes" />
+              <Bar dataKey="Declined" stackId="b" fill={QUOTATION_CHART_CONFIG.Declined.color} name="Declined Quotes" />
+              <Bar dataKey="Draft" stackId="b" fill={QUOTATION_CHART_CONFIG.Draft.color} name="Draft Quotes" />
+            </BarChart>
           </ResponsiveContainer>
         ) : (
           <div className="flex h-[350px] w-full items-center justify-center rounded-lg border-2 border-dashed">
