@@ -585,18 +585,18 @@ function Step3ModuleSelection({ control }: { control: Control<FormData> }) {
             <div className="grid grid-cols-5 gap-4">
                 {modules.map(item => (
                     <FormField key={item.id} control={control} name={item.id} render={({ field }) => (
-                        <FormItem className="relative">
-                             <FormControl>
-                                <Checkbox
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                    className="absolute top-2 right-2 h-4 w-4 z-10"
-                                />
-                             </FormControl>
+                        <FormItem>
                             <FormLabel className={cn(
-                                "flex flex-col items-center justify-center p-4 rounded-lg border-2 cursor-pointer h-28 aspect-square transition-colors",
+                                "relative flex flex-col items-center justify-center p-4 rounded-lg border-2 cursor-pointer aspect-square h-28 transition-colors",
                                 field.value ? "border-primary bg-primary/5 text-primary" : "text-muted-foreground hover:border-primary/50"
                             )}>
+                                <FormControl>
+                                    <Checkbox
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                        className="absolute top-2 right-2 h-4 w-4"
+                                    />
+                                </FormControl>
                                 <item.icon className="w-6 h-6 mb-2" />
                                 <span className="text-xs font-semibold text-center">{item.label}</span>
                             </FormLabel>
