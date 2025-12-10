@@ -112,46 +112,70 @@ export default function NewQuotationPage() {
 
   useEffect(() => {
     if (isInitialized || !config) return;
-  
+
     const storedData = getFormData();
     const designData = designFormState.getFormData();
-  
-    if (storedData && Object.keys(storedData).length > 0) {
-      const restoredData: any = { ...storedData };
-      if (restoredData.quotationDate) restoredData.quotationDate = new Date(restoredData.quotationDate);
-      if (restoredData.validUntil) restoredData.validUntil = new Date(restoredData.validUntil);
-      
-      form.reset(restoredData);
-      setUseManualEntry(restoredData.lineItems.map((item: any) => !item.productId));
-    } else {
-        const productIdsParam = searchParams.get('products');
-        const productIds = productIdsParam ? productIdsParam.split(',') : [];
+    const productIdsParam = searchParams.get('products');
+
+    if (productIdsParam) {
+        const productIds = productIdsParam.split(',');
         const lineItemsFromProducts = productIds.map(id => {
             const product = config.products.find(p => p.id === id);
-            return product ? { productId: product.id, description: product.name, quantity: 1, price: product.price } : null;
+            return product ? { 
+                productId: product.id, 
+                description: product.name, 
+                quantity: 1, 
+                price: product.price 
+            } : null;
         }).filter((item): item is NonNullable<typeof item> => item !== null);
 
-      const today = new Date();
-      const validUntil = new Date();
-      validUntil.setDate(today.getDate() + 30);
-      
-      form.reset({
-        ...form.getValues(),
-        quotationDate: today,
-        validUntil: validUntil,
-        notes: '',
-        currency: config.profile.defaultCurrency,
-        lineItems: lineItemsFromProducts.length > 0 ? lineItemsFromProducts : [{ description: '', quantity: 1, price: 0 }]
-      });
-      setUseManualEntry(lineItemsFromProducts.length > 0 ? lineItemsFromProducts.map(() => false) : [true]);
+        const today = new Date();
+        const validUntil = new Date();
+        validUntil.setDate(today.getDate() + 30);
+        
+        form.reset({
+            ...form.getValues(),
+            quotationDate: today,
+            validUntil: validUntil,
+            notes: '',
+            currency: config.profile.defaultCurrency,
+            lineItems: lineItemsFromProducts.length > 0 ? lineItemsFromProducts : [{ description: '', quantity: 1, price: 0 }]
+        });
+        
+        setUseManualEntry(lineItemsFromProducts.length > 0 ? lineItemsFromProducts.map(() => false) : [true]);
+        
+        setFormData(null);
+    } else if (storedData && Object.keys(storedData).length > 0) {
+        const restoredData: any = { ...storedData };
+        if (restoredData.quotationDate) restoredData.quotationDate = new Date(restoredData.quotationDate);
+        if (restoredData.validUntil) restoredData.validUntil = new Date(restoredData.validUntil);
+        
+        form.reset(restoredData);
+        if (restoredData.lineItems) {
+            setUseManualEntry(restoredData.lineItems.map((item: any) => !item.productId));
+        }
+    } else {
+        const today = new Date();
+        const validUntil = new Date();
+        validUntil.setDate(today.getDate() + 30);
+        
+        form.reset({
+            ...form.getValues(),
+            quotationDate: today,
+            validUntil: validUntil,
+            notes: '',
+            currency: config.profile.defaultCurrency || 'USD',
+            lineItems: [{ description: '', quantity: 1, price: 0 }]
+        });
+        setUseManualEntry([true]);
     }
-  
+
     if (designData?.defaultCurrency) {
-      form.setValue('currency', designData.defaultCurrency);
+        form.setValue('currency', designData.defaultCurrency);
     }
-  
+
     setIsInitialized(true);
-  }, [isInitialized, config, getFormData, designFormState, form, searchParams]);
+  }, [isInitialized, config, getFormData, designFormState, form, searchParams, setFormData]);
 
   useEffect(() => {
     if (!isInitialized) return; 
@@ -914,3 +938,5 @@ export default function NewQuotationPage() {
     </div>
   );
 }
+
+    

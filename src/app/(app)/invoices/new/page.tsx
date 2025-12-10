@@ -118,19 +118,19 @@ export default function NewInvoicePage() {
 
     const storedData = getFormData();
     const designData = designFormState.getFormData();
-    
-    if (storedData && Object.keys(storedData).length > 0) {
-        const restoredData: any = { ...storedData };
-        if (restoredData.invoiceDate) restoredData.invoiceDate = new Date(restoredData.invoiceDate);
-        if (restoredData.dueDate) restoredData.dueDate = new Date(restoredData.dueDate);
-        form.reset(restoredData);
-        setUseManualEntry(restoredData.lineItems.map((item: any) => !item.productId));
-    } else {
-        const productIdsParam = searchParams.get('products');
-        const productIds = productIdsParam ? productIdsParam.split(',') : [];
+    const productIdsParam = searchParams.get('products'); // Get URL params
+
+    // 1. CHECK URL PARAMS FIRST (Priority: High)
+    if (productIdsParam) {
+        const productIds = productIdsParam.split(',');
         const lineItemsFromProducts = productIds.map(id => {
             const product = config.products.find(p => p.id === id);
-            return product ? { productId: product.id, description: product.name, quantity: 1, price: product.price } : null;
+            return product ? { 
+                productId: product.id, 
+                description: product.name, 
+                quantity: 1, 
+                price: product.price 
+            } : null;
         }).filter((item): item is NonNullable<typeof item> => item !== null);
 
         const today = new Date();
@@ -145,7 +145,37 @@ export default function NewInvoicePage() {
             currency: config.profile.defaultCurrency,
             lineItems: lineItemsFromProducts.length > 0 ? lineItemsFromProducts : [{ description: '', quantity: 1, price: 0 }]
         });
+        
         setUseManualEntry(lineItemsFromProducts.length > 0 ? lineItemsFromProducts.map(() => false) : [true]);
+        
+        setFormData(null); 
+    } 
+    // 2. CHECK STORED SESSION DATA (Priority: Low)
+    else if (storedData && Object.keys(storedData).length > 0) {
+        const restoredData: any = { ...storedData };
+        if (restoredData.invoiceDate) restoredData.invoiceDate = new Date(restoredData.invoiceDate);
+        if (restoredData.dueDate) restoredData.dueDate = new Date(restoredData.dueDate);
+        
+        form.reset(restoredData);
+        if (restoredData.lineItems) {
+            setUseManualEntry(restoredData.lineItems.map((item: any) => !item.productId));
+        }
+    } 
+    // 3. FALLBACK DEFAULT
+    else {
+        const today = new Date();
+        const dueDate = new Date();
+        dueDate.setDate(today.getDate() + 30);
+        
+        form.reset({
+            ...form.getValues(),
+            invoiceDate: today,
+            dueDate: dueDate,
+            notes: '',
+            currency: config.profile.defaultCurrency || 'USD',
+            lineItems: [{ description: '', quantity: 1, price: 0 }]
+        });
+        setUseManualEntry([true]);
     }
 
     if (designData?.defaultCurrency) {
@@ -153,7 +183,7 @@ export default function NewInvoicePage() {
     }
 
     setIsInitialized(true);
-  }, [isInitialized, config, getFormData, designFormState, form, searchParams]);
+  }, [isInitialized, config, getFormData, designFormState, form, searchParams, setFormData]);
 
 
   useEffect(() => {
@@ -907,3 +937,4 @@ export default function NewInvoicePage() {
   );
 }
 
+    
