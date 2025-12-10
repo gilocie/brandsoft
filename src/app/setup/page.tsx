@@ -493,11 +493,11 @@ function Step1BrandIdentity({ control, form }: { control: Control<FormData>, for
 function Step2BusinessProfile({ control }: { control: Control<FormData> }) {
   return <div className="space-y-4">
     <FormField control={control} name="address" render={({ field }) => (
-      <FormItem><FormLabel>Business Address</FormLabel><FormControl><Input placeholder="123 Main St, Anytown, USA" {...field} /></FormControl><FormMessage /></FormItem>
+      <FormItem><FormLabel>Business Address</FormLabel><FormControl><Input placeholder="P.O. Box 303, Blantyre, Malawi" {...field} /></FormControl><FormMessage /></FormItem>
     )} />
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormField control={control} name="phone" render={({ field }) => (
-            <FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input placeholder="+1 (555) 123-4567" {...field} /></FormControl><FormMessage /></FormItem>
+            <FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input placeholder="+265 999 123 456" {...field} /></FormControl><FormMessage /></FormItem>
         )} />
         <FormField control={control} name="email" render={({ field }) => (
             <FormItem><FormLabel>Contact Email</FormLabel><FormControl><Input placeholder="contact@yourcompany.com" {...field} /></FormControl><FormMessage /></FormItem>
