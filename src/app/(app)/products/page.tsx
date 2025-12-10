@@ -106,7 +106,7 @@ const ProductActions = ({ product, onSelectAction }: { product: Product; onSelec
 };
 
 export default function ProductsPage() {
-  const { config, addProduct, updateProduct, deleteProduct } = useBrandsoft();
+  const { config, addProduct, updateProduct, deleteProduct, saveConfig } = useBrandsoft();
   const { toast } = useToast();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
@@ -156,6 +156,8 @@ export default function ProductsPage() {
   };
 
   const handleBulkUpload = (file: File) => {
+    if (!config) return;
+
     const reader = new FileReader();
     reader.onload = (e) => {
         const text = e.target?.result;
@@ -174,6 +176,7 @@ export default function ProductsPage() {
 
         let importedCount = 0;
         let errorCount = 0;
+        const newProducts: Product[] = [];
 
         rows.forEach(row => {
             try {
@@ -187,7 +190,7 @@ export default function ProductsPage() {
                 const parsed = formSchema.pick({ name: true, price: true, type: true, description: true }).safeParse(productData);
 
                 if (parsed.success) {
-                    addProduct(parsed.data);
+                    newProducts.push({ ...parsed.data, id: `PROD-${Date.now()}-${importedCount}` });
                     importedCount++;
                 } else {
                     errorCount++;
@@ -197,6 +200,11 @@ export default function ProductsPage() {
             }
         });
         
+        if (newProducts.length > 0) {
+            const newConfig = { ...config, products: [...(config.products || []), ...newProducts] };
+            saveConfig(newConfig, { redirect: false });
+        }
+
         toast({
             title: 'Bulk Upload Complete',
             description: `${importedCount} products imported. ${errorCount} rows failed.`,
