@@ -368,42 +368,44 @@ export default function CustomersPage() {
       
        {/* Add/Edit Dialog */}
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-          <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader className="flex-row justify-between items-start">
+          <DialogContent className="sm:max-w-[600px] max-h-[80vh] flex flex-col">
+            <DialogHeader className="flex-row justify-between items-start flex-shrink-0">
               <div>
                 <DialogTitle>{selectedCustomer ? 'Edit' : 'Add New'} Customer</DialogTitle>
                 <DialogDescription>Select customer type and fill in the details.</DialogDescription>
               </div>
                <Button variant="outline" onClick={() => { setIsFormOpen(false); setIsBulkUploadOpen(true); }}><UploadCloud className="mr-2 h-4 w-4" /> Bulk Upload</Button>
             </DialogHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
-                <FormField control={form.control} name="customerType" render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <ToggleGroup type="single" value={field.value} onValueChange={(value) => { if(value) field.onChange(value); }} className="grid grid-cols-2">
-                          <ToggleGroupItem value="personal">Personal</ToggleGroupItem>
-                          <ToggleGroupItem value="company">Company</ToggleGroupItem>
-                        </ToggleGroup>
-                      </FormControl>
-                    </FormItem>
-                )} />
-                <div className="space-y-4">
-                    <h3 className="text-lg font-medium">{customerType === 'personal' ? 'Personal Details' : 'Company & Contact Details'}</h3>
-                    {customerType === 'company' && ( <FormField control={form.control} name="companyName" render={({ field }) => ( <FormItem><FormLabel>Company Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/> )}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>{customerType === 'company' ? 'Contact Person Name' : 'Full Name'}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
-                        <FormField control={form.control} name="email" render={({ field }) => ( <FormItem><FormLabel>{customerType === 'company' ? 'Contact Person Email' : 'Email'}</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem> )}/>
+            <div className="flex-grow overflow-y-auto pr-6">
+                <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
+                    <FormField control={form.control} name="customerType" render={({ field }) => (
+                        <FormItem>
+                        <FormControl>
+                            <ToggleGroup type="single" value={field.value} onValueChange={(value) => { if(value) field.onChange(value); }} className="grid grid-cols-2">
+                            <ToggleGroupItem value="personal">Personal</ToggleGroupItem>
+                            <ToggleGroupItem value="company">Company</ToggleGroupItem>
+                            </ToggleGroup>
+                        </FormControl>
+                        </FormItem>
+                    )} />
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-medium">{customerType === 'personal' ? 'Personal Details' : 'Company & Contact Details'}</h3>
+                        {customerType === 'company' && ( <FormField control={form.control} name="companyName" render={({ field }) => ( <FormItem><FormLabel>Company Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/> )}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>{customerType === 'company' ? 'Contact Person Name' : 'Full Name'}</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                            <FormField control={form.control} name="email" render={({ field }) => ( <FormItem><FormLabel>{customerType === 'company' ? 'Contact Person Email' : 'Email'}</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                        </div>
+                        <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem><FormLabel>Phone (Optional)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                        <FormField control={form.control} name="address" render={({ field }) => ( <FormItem><FormLabel>Address (Optional)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem> )}/>
                     </div>
-                     <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem><FormLabel>Phone (Optional)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
-                     <FormField control={form.control} name="address" render={({ field }) => ( <FormItem><FormLabel>Address (Optional)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem> )}/>
-                </div>
-                <DialogFooter className="pt-4">
-                  <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>Cancel</Button>
-                  <Button type="submit">Save Customer</Button>
-                </DialogFooter>
-              </form>
-            </Form>
+                    <DialogFooter className="pt-4 sticky bottom-0 bg-background pb-0 -mb-2">
+                    <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>Cancel</Button>
+                    <Button type="submit">Save Customer</Button>
+                    </DialogFooter>
+                </form>
+                </Form>
+            </div>
           </DialogContent>
       </Dialog>
       
@@ -489,4 +491,5 @@ export default function CustomersPage() {
     </div>
   );
 }
+
 
