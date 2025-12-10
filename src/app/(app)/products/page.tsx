@@ -61,9 +61,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { PlusCircle, MoreHorizontal, Eye, FilePenLine, Trash2, FileText, FileBarChart2 } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Eye, FilePenLine, Trash2, FileText, FileBarChart2, UploadCloud } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useToast } from '@/hooks/use-toast';
+import { Separator } from '../separator';
 
 const formSchema = z.object({
   id: z.string().optional(),
@@ -105,9 +107,11 @@ const ProductActions = ({ product, onSelectAction }: { product: Product; onSelec
 
 export default function ProductsPage() {
   const { config, addProduct, updateProduct, deleteProduct } = useBrandsoft();
+  const { toast } = useToast();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   
@@ -149,6 +153,17 @@ export default function ProductsPage() {
         setIsDeleteOpen(false);
         setSelectedProduct(null);
     }
+  };
+
+  const handleBulkUpload = (file: File) => {
+    // Placeholder for CSV parsing logic
+    console.log("Uploaded file:", file.name);
+    toast({
+      title: "Upload In Progress",
+      description: "Bulk upload functionality is coming soon!",
+    });
+    // Example: parseCsv(file).then(products => products.forEach(addProduct));
+    setIsBulkUploadOpen(false);
   };
 
   const handleSelectProduct = (productId: string, checked: boolean | 'indeterminate') => {
@@ -293,6 +308,11 @@ export default function ProductsPage() {
               <FormField control={form.control} name="description" render={({ field }) => (
                 <FormItem><FormLabel>Description (Optional)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
               )} />
+              <Separator />
+               <Button type="button" variant="outline" className="w-full" onClick={() => { setIsFormOpen(false); setIsBulkUploadOpen(true); }}>
+                    <UploadCloud className="mr-2 h-4 w-4" />
+                    Bulk Upload Products or Services
+                </Button>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>Cancel</Button>
                 <Button type="submit">Save Item</Button>
@@ -302,6 +322,50 @@ export default function ProductsPage() {
         </DialogContent>
       </Dialog>
       
+      {/* Bulk Upload Dialog */}
+      <Dialog open={isBulkUploadOpen} onOpenChange={setIsBulkUploadOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Bulk Upload Products</DialogTitle>
+            <DialogDescription>
+              Upload a CSV file with your products. The file should have columns: `name`, `description`, `price`, `type`. The `type` column should be either 'product' or 'service'.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+             <div 
+                className="flex items-center justify-center w-full p-8 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted"
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                    e.preventDefault();
+                    const file = e.dataTransfer.files[0];
+                    if (file) handleBulkUpload(file);
+                }}
+                onClick={() => document.getElementById('bulk-upload-input')?.click()}
+             >
+                <input
+                    type="file"
+                    id="bulk-upload-input"
+                    accept=".csv"
+                    className="hidden"
+                    onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleBulkUpload(file);
+                    }}
+                />
+                <div className="text-center">
+                    <UploadCloud className="mx-auto h-12 w-12 text-muted-foreground" />
+                    <p className="mt-2 text-sm text-muted-foreground">
+                        Drag & drop a CSV file here, or click to select
+                    </p>
+                </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsBulkUploadOpen(false)}>Cancel</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* View Dialog */}
        <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
         <DialogContent>
