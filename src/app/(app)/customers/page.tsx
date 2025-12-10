@@ -214,9 +214,9 @@ export default function CustomersPage() {
         const rows = text.split('\n').filter(row => row.trim() !== '');
         const header = rows.shift()?.trim().toLowerCase().split(',') || [];
         
-        const requiredHeaders = ['name', 'email', 'customerType'];
+        const requiredHeaders = ['name', 'email'];
         if (!requiredHeaders.every(h => header.includes(h))) {
-            toast({ variant: 'destructive', title: 'Invalid CSV Header', description: 'File must contain "name", "email", and "customerType" columns.' });
+            toast({ variant: 'destructive', title: 'Invalid CSV Header', description: 'File must contain "name" and "email" columns.' });
             return;
         }
 
@@ -230,12 +230,14 @@ export default function CustomersPage() {
                 const customerData: { [key: string]: string } = {};
                 header.forEach((h, i) => { customerData[h] = values[i]?.trim() || ''; });
 
-                const parsed = formSchema.pick({ name: true, email: true, phone: true, companyName: true, address: true, customerType: true }).safeParse(customerData);
+                const parsed = formSchema.pick({ name: true, email: true, phone: true, companyName: true, address: true }).safeParse(customerData);
 
                 if (parsed.success) {
-                    newCustomers.push({
+                    const finalData = {
                       ...parsed.data,
-                    } as Omit<Customer, 'id'>);
+                      customerType: customerData.companyname ? 'company' : 'personal' as 'company' | 'personal'
+                    };
+                    newCustomers.push(finalData);
                     importedCount++;
                 } else {
                     errorCount++;
