@@ -582,7 +582,7 @@ const modules = [
 function Step3ModuleSelection({ control }: { control: Control<FormData> }) {
     return (
         <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-5 gap-4">
                 {modules.map(item => (
                     <FormField key={item.id} control={control} name={item.id} render={({ field }) => (
                         <FormItem className="relative">
@@ -590,15 +590,15 @@ function Step3ModuleSelection({ control }: { control: Control<FormData> }) {
                                 <Checkbox
                                     checked={field.value}
                                     onCheckedChange={field.onChange}
-                                    className="absolute top-3 right-3 h-5 w-5 z-10"
+                                    className="absolute top-2 right-2 h-4 w-4 z-10"
                                 />
                              </FormControl>
                             <FormLabel className={cn(
-                                "flex flex-col items-center justify-center p-4 rounded-lg border-2 cursor-pointer h-[300px] w-[300px] transition-colors",
+                                "flex flex-col items-center justify-center p-2 rounded-lg border-2 cursor-pointer h-full aspect-square transition-colors",
                                 field.value ? "border-primary bg-primary/5 text-primary" : "text-muted-foreground hover:border-primary/50"
                             )}>
-                                <item.icon className="w-10 h-10 mb-2" />
-                                <span className="text-sm font-semibold text-center">{item.label}</span>
+                                <item.icon className="w-8 h-8 mb-2" />
+                                <span className="text-xs font-semibold text-center">{item.label}</span>
                             </FormLabel>
                         </FormItem>
                     )} />
@@ -607,4 +607,3 @@ function Step3ModuleSelection({ control }: { control: Control<FormData> }) {
         </div>
     );
 }
-
