@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -16,7 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { Loader2, ArrowLeft, ArrowRight, PartyPopper, UploadCloud, BriefcaseBusiness, FileText, FileBarChart2, Award, CreditCard, Brush } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { hexToHsl, cn } from '@/lib/utils';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 
@@ -574,9 +572,9 @@ function Step2BusinessProfile({ control }: { control: Control<FormData> }) {
 const modules = [
   { id: 'invoice', label: 'Invoice Designer', icon: FileText, status: 'available' },
   { id: 'quotation', label: 'Quotation Designer', icon: FileBarChart2, status: 'available' },
-  { id: 'certificate', label: 'Certificate Designer', icon: Award, status: 'available' },
-  { id: 'idCard', label: 'ID Card Designer', icon: CreditCard, status: 'available' },
-  { id: 'marketing', label: 'Marketing', icon: Brush, status: 'available' },
+  { id: 'certificate', label: 'Certificate Designer', icon: Award, status: 'upcoming' },
+  { id: 'idCard', label: 'ID Card Designer', icon: CreditCard, status: 'upcoming' },
+  { id: 'marketing', label: 'Marketing', icon: Brush, status: 'upcoming' },
 ] as const;
 
 function Step3ModuleSelection({ control }: { control: Control<FormData> }) {
@@ -597,6 +595,11 @@ function Step3ModuleSelection({ control }: { control: Control<FormData> }) {
                                         className="absolute top-2 right-2 h-4 w-4"
                                     />
                                 </FormControl>
+                                {item.status === 'upcoming' && !field.value && (
+                                    <div className="absolute top-2 left-2 text-[10px] font-bold uppercase bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded-sm">
+                                        Upcoming
+                                    </div>
+                                )}
                                 <item.icon className="w-6 h-6 mb-2" />
                                 <span className="text-xs font-semibold text-center">{item.label}</span>
                             </FormLabel>
@@ -607,4 +610,3 @@ function Step3ModuleSelection({ control }: { control: Control<FormData> }) {
         </div>
     );
 }
-
