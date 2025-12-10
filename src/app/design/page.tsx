@@ -216,6 +216,13 @@ function SettingsPanel({ form, documentType, onSubmit, returnUrl, documentData }
     return Array.from(presets);
   }, [documentData]);
 
+  const getBackgroundImageSrc = (bgValue: any): string | undefined => {
+    if (!bgValue) return undefined;
+    if (typeof bgValue === 'string') return bgValue;
+    if (typeof bgValue === 'object' && bgValue.src) return bgValue.src;
+    return undefined;
+  };
+
 
   return (
     <div className="h-full overflow-y-auto">
@@ -253,7 +260,7 @@ function SettingsPanel({ form, documentType, onSubmit, returnUrl, documentData }
                                                     type="button"
                                                     className={cn(
                                                         "aspect-square rounded-md overflow-hidden border-2 transition-all",
-                                                        (selectedBackgroundImage as StaticImageData)?.src === image.src ? 'border-primary ring-2 ring-primary' : 'border-transparent hover:border-primary/50'
+                                                        getBackgroundImageSrc(selectedBackgroundImage) === image.src ? 'border-primary ring-2 ring-primary' : 'border-transparent hover:border-primary/50'
                                                     )}
                                                     onClick={() => form.setValue('backgroundImage', image)}
                                                 >
