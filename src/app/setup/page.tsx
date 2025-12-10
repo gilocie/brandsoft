@@ -586,14 +586,16 @@ function Step3ModuleSelection({ control }: { control: Control<FormData> }) {
                     <FormField key={item.id} control={control} name={item.id} render={({ field }) => (
                         <FormItem>
                             <FormLabel className={cn(
-                                "relative flex flex-col items-center justify-center p-4 rounded-lg border-2 cursor-pointer aspect-square h-28 transition-colors",
-                                field.value ? "border-primary bg-primary/5 text-primary" : "text-muted-foreground hover:border-primary/50"
+                                "relative flex flex-col items-center justify-center p-4 rounded-lg border-2 h-28 aspect-square transition-colors",
+                                field.value ? "border-primary bg-primary/5 text-primary" : "text-muted-foreground hover:border-primary/50",
+                                item.status === 'available' ? 'cursor-pointer' : field.value ? 'cursor-pointer' : 'cursor-default'
                             )}>
                                 <FormControl>
                                     <Checkbox
                                         checked={field.value}
                                         onCheckedChange={field.onChange}
                                         className="absolute top-2 right-2 h-4 w-4"
+                                        disabled={item.status === 'available'}
                                     />
                                 </FormControl>
                                 {item.status === 'upcoming' && field.value && (
