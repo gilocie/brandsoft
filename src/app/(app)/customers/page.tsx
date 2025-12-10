@@ -84,8 +84,6 @@ const formSchema = z.object({
   phone: z.string().optional(),
   address: z.string().optional(),
   companyName: z.string().optional(),
-  vatNumber: z.string().optional(),
-  companyAddress: z.string().optional(),
   associatedProducts: z.array(productAssociationSchema).optional(),
 });
 
@@ -153,8 +151,6 @@ export default function CustomersPage() {
         phone: customer.phone || '',
         address: customer.address || '',
         companyName: customer.companyName || '',
-        vatNumber: customer.vatNumber || '',
-        companyAddress: customer.companyAddress || '',
         associatedProductIds: customer.associatedProductIds?.map(id => ({ productId: id })) || [],
       });
     } else {
@@ -166,8 +162,6 @@ export default function CustomersPage() {
           phone: '', 
           address: '',
           companyName: '', 
-          vatNumber: '', 
-          companyAddress: '',
           associatedProducts: [],
       });
     }
@@ -189,8 +183,6 @@ export default function CustomersPage() {
         phone: data.phone,
         address: data.address,
         companyName: data.customerType === 'company' ? data.companyName : undefined,
-        vatNumber: data.customerType === 'company' ? data.vatNumber : undefined,
-        companyAddress: data.customerType === 'company' ? data.companyAddress : undefined,
         associatedProductIds: data.associatedProducts?.map(p => p.productId) || []
     };
     
@@ -334,21 +326,6 @@ export default function CustomersPage() {
 
                 {formStep === 2 && (
                      <div className="space-y-6">
-                        {customerType === 'company' && (
-                          <div>
-                            <h3 className="text-lg font-medium">Company Address & Tax</h3>
-                            <div className="space-y-4 mt-2">
-                                <FormField control={form.control} name="vatNumber" render={({ field }) => (
-                                    <FormItem><FormLabel>VAT / Tax ID (Optional)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                )} />
-                                <FormField control={form.control} name="companyAddress" render={({ field }) => (
-                                    <FormItem><FormLabel>Company Address (Optional)</FormLabel><FormControl><Textarea {...field} className="min-h-[80px]" /></FormControl><FormMessage /></FormItem>
-                                )} />
-                            </div>
-                           </div>
-                        )}
-                        
-                        <Separator />
                         <div>
                             <h3 className="text-lg font-medium">{customerType === 'company' ? 'Contact Person Details' : 'Contact Details'}</h3>
                              <div className="space-y-4 mt-2">
@@ -441,19 +418,6 @@ export default function CustomersPage() {
                 <div className="font-semibold text-muted-foreground col-span-1">Address</div>
                 <div className="font-medium col-span-2">{selectedCustomer?.address || 'N/A'}</div>
             </div>
-            {selectedCustomer?.companyName && (
-              <>
-                <Separator />
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="font-semibold text-muted-foreground col-span-1">Company Address</div>
-                  <div className="font-medium col-span-2">{selectedCustomer?.companyAddress || 'N/A'}</div>
-                </div>
-                 <div className="grid grid-cols-3 gap-2">
-                  <div className="font-semibold text-muted-foreground col-span-1">VAT/Tax ID</div>
-                  <div className="font-medium col-span-2">{selectedCustomer?.vatNumber || 'N/A'}</div>
-                </div>
-              </>
-            )}
 
             {selectedCustomer?.associatedProductIds && selectedCustomer.associatedProductIds.length > 0 && (
               <>
@@ -533,3 +497,4 @@ export default function CustomersPage() {
     
 
     
+
