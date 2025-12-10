@@ -274,7 +274,7 @@ export function InvoicePreview({
                 id={`invoice-preview-${invoiceId}`} 
                 className={cn(
                     "bg-white relative text-black overflow-hidden flex flex-col font-sans",
-                    "w-[210mm] min-h-[297mm]" 
+                    "w-[210mm] h-[297mm]" 
                 )}
                 style={{ backgroundColor: design.backgroundColor || '#FFFFFF', color: design.textColor || '#000000' }}
             >
