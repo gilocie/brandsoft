@@ -211,7 +211,7 @@ export default function ProductsPage() {
 
         let importedCount = 0;
         let errorCount = 0;
-        const newProducts: Product[] = [];
+        const newProducts: Omit<Product, 'id'>[] = [];
 
         rows.forEach((row, rowIndex) => {
             try {
@@ -225,7 +225,7 @@ export default function ProductsPage() {
                 const parsed = formSchema.pick({ name: true, price: true, type: true, description: true }).safeParse(productData);
 
                 if (parsed.success) {
-                    newProducts.push({ ...parsed.data, id: `PROD-${Date.now()}-${rowIndex}` });
+                    newProducts.push(parsed.data);
                     importedCount++;
                 } else {
                     errorCount++;
@@ -236,13 +236,16 @@ export default function ProductsPage() {
         });
         
         if (newProducts.length > 0) {
-            const newConfig = { ...config, products: [...(config.products || []), ...newProducts] };
-            saveConfig(newConfig, { redirect: false });
+           const newConfigProducts = [...(config.products || [])];
+           newProducts.forEach(p => {
+               newConfigProducts.push({ ...p, id: `PROD-${Date.now()}-${Math.random()}` });
+           });
+           saveConfig({ ...config, products: newConfigProducts }, { redirect: false });
         }
 
         toast({
             title: 'Bulk Upload Complete',
-            description: `${importedCount} products imported. ${errorCount} rows failed.`,
+            description: `${importedCount} products imported. ${errorCount > 0 ? `${errorCount} rows failed.` : ''}`,
         });
     };
     reader.readAsText(file);
@@ -290,12 +293,14 @@ export default function ProductsPage() {
   return (
     <div className="container mx-auto space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold font-headline">Products & Services</h1>
-          <p className="text-muted-foreground">
-            Manage your items for faster invoicing.
-          </p>
-        </div>
+        {selectedProductIds.length === 0 && (
+            <div>
+              <h1 className="text-3xl font-bold font-headline">Products & Services</h1>
+              <p className="text-muted-foreground">
+                Manage your items for faster invoicing.
+              </p>
+            </div>
+        )}
         <div className="flex items-center gap-2">
             {selectedProductIds.length > 0 ? (
                 <>
@@ -586,4 +591,4 @@ export default function ProductsPage() {
 }
     
 
-  
+    
