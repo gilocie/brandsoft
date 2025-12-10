@@ -150,38 +150,34 @@ export default function DashboardPage() {
       <div>
         <h2 className="text-2xl font-headline font-bold mt-8 mb-2">What would you like to create today?</h2>
       </div>
-      <div className="grid gap-6 md:grid-cols-3">
+       <div className="grid gap-6 md:grid-cols-3">
         {enabledModules.map((module) => (
           <Card key={module.title} className={cn(
-              "flex flex-col transition-all hover:shadow-lg",
+              "flex flex-col text-center transition-all hover:shadow-lg p-4",
               module.isLocked ? "bg-muted/50" : "hover:-translate-y-1"
           )}>
-            <CardHeader>
-              <div className="flex flex-col lg:flex-row items-start gap-4">
+            <CardHeader className="items-center">
                 <div className={cn(
-                    "p-3 rounded-lg self-start",
+                    "p-3 rounded-lg self-center mb-2",
                     module.isLocked ? "bg-gray-300" : "bg-primary/10"
                     )}>
                   <module.icon className={cn("h-6 w-6", module.isLocked ? "text-gray-500" : "text-primary")} />
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <CardTitle className="font-headline text-xl">{module.title}</CardTitle>
-                    {module.isLocked && <Badge variant="secondary">Upcoming</Badge>}
-                  </div>
-                  <CardDescription className="mt-1">{module.description}</CardDescription>
-                </div>
-              </div>
+                <CardTitle className="font-headline text-xl">{module.title}</CardTitle>
+                <CardDescription className="mt-1">{module.description}</CardDescription>
             </CardHeader>
-            <CardContent className="flex-grow flex items-end">
-              <Button asChild variant="ghost" disabled={module.isLocked} className={cn(
-                  module.isLocked ? "text-muted-foreground cursor-not-allowed" : "text-primary hover:text-primary-foreground hover:bg-primary/80"
-              )}>
-                <Link href={module.href}>
-                  {module.isLocked ? <Lock className="mr-2 h-4 w-4" /> : 'Start Creating'}
-                  {!module.isLocked && <ArrowRight className="ml-2 h-4 w-4" />}
-                </Link>
-              </Button>
+            <CardContent className="flex-grow flex flex-col justify-end items-center">
+              {module.isLocked ? (
+                <Button variant="secondary" disabled className="cursor-not-allowed w-full">
+                    <Lock className="mr-2 h-4 w-4" /> Upcoming
+                </Button>
+              ) : (
+                 <Button asChild className="w-full">
+                    <Link href={module.href}>
+                        Start Creating <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                </Button>
+              )}
             </CardContent>
           </Card>
         ))}
