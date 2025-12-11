@@ -19,7 +19,7 @@ const PlanCard = ({ title, price, currencyCode, features, isCurrent = false, cta
     <Card className={cn("flex flex-col h-full", isCurrent && "ring-2 ring-primary shadow-md", className)}>
         <CardHeader className="p-4 pb-2">
             <CardTitle>{title}</CardTitle>
-            <CardDescription className="text-3xl font-bold pt-2">
+            <CardDescription className="text-4xl sm:text-3xl font-bold pt-2">
                 {typeof price === 'number' ? `${currencyCode || 'K'}${price}` : price}
             </CardDescription>
         </CardHeader>
