@@ -131,7 +131,8 @@ export type Purchase = {
     paymentMethod: string;
     status: 'pending' | 'active';
     date: string;
-    receipt?: 'uploaded' | 'none';
+    receipt?: string | 'none';
+    whatsappNumber?: string;
 }
 
 

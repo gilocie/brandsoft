@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { KeyRound, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 const formSchema = z.object({
   orderId: z.string().min(1, "Order ID is required."),
@@ -80,7 +81,7 @@ export default function VerifyPurchasePage() {
             form.setValue('orderId', orderIdFromUrl);
             handleSubmit(orderIdFromUrl);
         }
-    }, [searchParams]);
+    }, [searchParams, form]);
 
 
     const handleActivation = () => {
@@ -151,6 +152,14 @@ export default function VerifyPurchasePage() {
 
                     {order && (
                         <Card className="mt-6 border-none shadow-none">
+                            {order.receipt && order.receipt !== 'none' && (
+                                <div className="mb-4">
+                                    <h3 className="text-sm font-medium mb-2">Transaction Receipt</h3>
+                                    <div className="border rounded-md p-2 bg-muted/50">
+                                        <Image src={order.receipt} alt="Transaction Receipt" width={400} height={400} className="rounded-md w-full h-auto object-contain" />
+                                    </div>
+                                </div>
+                            )}
                             <CardHeader className="p-0">
                                 <CardTitle>Order Details</CardTitle>
                             </CardHeader>

@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
-import { Check, CheckCircle, Circle, Loader2, UploadCloud, FileCheck } from 'lucide-react';
+import { CheckCircle, Loader2, UploadCloud, FileCheck } from 'lucide-react';
 import { PlanDetails } from './manage-plan-dialog';
 import { useBrandsoft } from '@/hooks/use-brandsoft';
 import { useToast } from '@/hooks/use-toast';
@@ -60,10 +60,24 @@ export function PurchaseDialog({ plan, isOpen, onClose }: PurchaseDialogProps) {
     const { toast } = useToast();
     const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
     const [receiptFile, setReceiptFile] = useState<File | null>(null);
+    const [receiptDataUrl, setReceiptDataUrl] = useState<string | null>(null);
     const [purchaseState, setPurchaseState] = useState<'idle' | 'processing' | 'success'>('idle');
     const [orderId, setOrderId] = useState('');
     const [whatsappNumber, setWhatsappNumber] = useState('');
 
+    const handleReceiptUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0] || null;
+        setReceiptFile(file);
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setReceiptDataUrl(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        } else {
+            setReceiptDataUrl(null);
+        }
+    };
 
     const handleConfirmPurchase = () => {
         if (!selectedPayment) {
@@ -79,7 +93,6 @@ export function PurchaseDialog({ plan, isOpen, onClose }: PurchaseDialogProps) {
             return;
         }
 
-
         setPurchaseState('processing');
 
         setTimeout(() => { // Simulate processing
@@ -93,7 +106,8 @@ export function PurchaseDialog({ plan, isOpen, onClose }: PurchaseDialogProps) {
                 paymentMethod: selectedPayment,
                 status: 'pending',
                 date: new Date().toISOString(),
-                receipt: receiptFile ? 'uploaded' : 'none',
+                receipt: receiptDataUrl || 'none',
+                whatsappNumber: whatsappNumber,
             });
 
             // Trigger admin notification
@@ -119,7 +133,7 @@ export function PurchaseDialog({ plan, isOpen, onClose }: PurchaseDialogProps) {
     const StepIndicator = ({ step, label, isComplete }: { step: number, label: string, isComplete: boolean }) => (
         <div className="flex items-center gap-2">
             <div className={cn("h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold", isComplete ? "bg-green-500 text-white" : "bg-muted text-muted-foreground")}>
-                {isComplete ? <Check className="h-4 w-4" /> : step}
+                {isComplete ? <CheckCircle className="h-4 w-4" /> : step}
             </div>
             <span className={cn("text-sm", isComplete && "text-muted-foreground line-through")}>{label}</span>
         </div>
@@ -194,7 +208,7 @@ export function PurchaseDialog({ plan, isOpen, onClose }: PurchaseDialogProps) {
                                                         {receiptFile ? <FileCheck className="h-4 w-4" /> : <UploadCloud className="h-4 w-4" />}
                                                         {receiptFile ? receiptFile.name : "Upload Transaction Receipt"}
                                                     </label>
-                                                    <Input id="receipt-upload" type="file" className="hidden" onChange={(e) => setReceiptFile(e.target.files?.[0] || null)} />
+                                                    <Input id="receipt-upload" type="file" className="hidden" onChange={handleReceiptUpload} />
                                                 </div>
                                             )}
                                         </AccordionContent>
