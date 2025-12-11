@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -56,6 +57,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
   id: z.string().optional(),
@@ -120,15 +122,19 @@ export default function CustomersPage() {
 
   const customerType = form.watch('customerType');
 
+  const unpaidCustomerIds = useMemo(() => {
+    if (!config?.invoices) return new Set();
+    return new Set(
+      (config.invoices)
+        .filter(inv => inv.status === 'Pending' || inv.status === 'Overdue')
+        .map(inv => inv.customerId)
+    );
+  }, [config?.invoices]);
+
   const filteredCustomers = useMemo(() => {
     let customers = config?.customers || [];
     
     if (activeTab === 'unpaid') {
-        const unpaidCustomerIds = new Set(
-            (config?.invoices || [])
-                .filter(inv => inv.status === 'Pending' || inv.status === 'Overdue')
-                .map(inv => inv.customerId)
-        );
         customers = customers.filter(c => unpaidCustomerIds.has(c.id));
     } else if (activeTab !== 'all') {
       customers = customers.filter(c => (c.customerType || (c.companyName ? 'company' : 'personal')) === activeTab);
@@ -142,7 +148,7 @@ export default function CustomersPage() {
       );
     }
     return customers;
-  }, [config?.customers, config?.invoices, activeTab, searchTerm]);
+  }, [config?.customers, activeTab, searchTerm, unpaidCustomerIds]);
 
   const paginatedCustomers = useMemo(() => {
     const startIndex = currentPage * ITEMS_PER_PAGE;
@@ -388,8 +394,13 @@ export default function CustomersPage() {
         
         {paginatedCustomers.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {paginatedCustomers.map((customer) => (
-                    <Card key={customer.id} className="flex flex-col">
+                {paginatedCustomers.map((customer) => {
+                    const isUnpaid = unpaidCustomerIds.has(customer.id);
+                    return (
+                    <Card key={customer.id} className={cn(
+                        "flex flex-col",
+                        isUnpaid && "border-primary ring-2 ring-primary/50"
+                      )}>
                         <CardHeader className="flex flex-row items-start justify-between gap-4 p-4">
                            <div className="flex items-center gap-4 flex-1 overflow-hidden">
                             <div className="flex-1 overflow-hidden">
@@ -432,7 +443,7 @@ export default function CustomersPage() {
                             <CustomerActions customer={customer} onSelectAction={handleSelectAction} />
                         </CardFooter>
                     </Card>
-                ))}
+                )})}
             </div>
         ) : (
             <div className="flex flex-col items-center justify-center text-center h-64 rounded-lg border-2 border-dashed">
