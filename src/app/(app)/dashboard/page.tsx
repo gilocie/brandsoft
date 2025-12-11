@@ -5,7 +5,7 @@
 import { useBrandsoft, type Invoice, type Quotation } from "@/hooks/use-brandsoft";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DialogTrigger } from "@/components/ui/dialog";
 import { FileText, Award, CreditCard, FileBarChart2, Brush, ArrowRight, Library, Users, Package, CheckCircle, XCircle, Clock, AlertTriangle, DollarSign, FileClock, FileX, Receipt, Lock, Crown, Check } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,6 +13,7 @@ import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { AnalyticsChart } from "@/components/analytics-chart";
+import { ManagePlanDialog } from "@/components/manage-plan-dialog";
 
 const modules = [
   { title: "Invoice Designer", description: "Create and manage invoices.", icon: FileText, href: "/invoices", enabledKey: "invoice", isLocked: false },
@@ -34,26 +35,6 @@ const StatCard = ({ title, value, icon: Icon, description, formatAsCurrency = fa
         </CardContent>
     </Card>
 );
-
-const PlanCard = ({ title, price, features, isCurrent = false, cta }: { title: string, price: string, features: string[], isCurrent?: boolean, cta: string }) => (
-    <Card className={cn("flex flex-col", isCurrent && "ring-2 ring-primary")}>
-        <CardHeader>
-            <CardTitle>{title}</CardTitle>
-            <CardDescription className="text-4xl font-bold">{price}</CardDescription>
-        </CardHeader>
-        <CardContent className="flex-grow space-y-2">
-            {features.map((feature, index) => (
-                <div key={index} className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm text-muted-foreground">{feature}</span>
-                </div>
-            ))}
-        </CardContent>
-        <div className="p-6 pt-0">
-             <Button className="w-full" disabled={isCurrent}>{isCurrent ? 'Current Plan' : cta}</Button>
-        </div>
-    </Card>
-)
 
 export default function DashboardPage() {
   const { config } = useBrandsoft();
@@ -182,48 +163,12 @@ export default function DashboardPage() {
             <CardContent>
                 <div className="text-2xl font-bold">28 Days</div>
                 <p className="text-xs text-white/80">Remaining</p>
-                <Dialog open={isPlanDialogOpen} onOpenChange={setIsPlanDialogOpen}>
-                    <DialogTrigger asChild>
-                        <Button variant="secondary" size="sm" className="mt-4">
-                            Manage
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-6xl">
-                        <DialogHeader>
-                            <DialogTitle className="text-3xl font-headline">Manage Your Plan</DialogTitle>
-                            <DialogDescription>
-                                Choose the plan that best fits your business needs.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 py-6">
-                            <PlanCard 
-                                title="Free Trial" 
-                                price="$0"
-                                features={["Up to 10 invoices", "Up to 10 customers", "Basic templates"]}
-                                isCurrent={true}
-                                cta="Select Plan"
-                            />
-                             <PlanCard 
-                                title="Standard" 
-                                price="$29"
-                                features={["Unlimited invoices", "Unlimited customers", "Premium templates", "Email support"]}
-                                cta="Upgrade"
-                            />
-                             <PlanCard 
-                                title="Pro" 
-                                price="$79"
-                                features={["All Standard features", "API access", "Priority support", "Advanced analytics"]}
-                                cta="Upgrade"
-                            />
-                             <PlanCard 
-                                title="Enterprise" 
-                                price="Custom"
-                                features={["All Pro features", "Dedicated support", "Custom integrations", "On-premise option"]}
-                                cta="Contact Us"
-                            />
-                        </div>
-                    </DialogContent>
-                </Dialog>
+                <DialogTrigger asChild>
+                    <Button variant="secondary" size="sm" className="mt-4" onClick={() => setIsPlanDialogOpen(true)}>
+                        Manage
+                    </Button>
+                </DialogTrigger>
+                <ManagePlanDialog isOpen={isPlanDialogOpen} onOpenChange={setIsPlanDialogOpen} />
             </CardContent>
            </Card>
       </div>
