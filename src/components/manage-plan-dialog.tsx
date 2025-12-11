@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -12,17 +13,20 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Button } from '@/components/ui/button';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useBrandsoft } from '@/hooks/use-brandsoft';
 
-const PlanCard = ({ title, price, features, isCurrent = false, cta, className }: { title: string, price: string, features: string[], isCurrent?: boolean, cta: string, className?: string }) => (
+const PlanCard = ({ title, price, currencyCode, features, isCurrent = false, cta, className }: { title: string, price: number | string, currencyCode?: string, features: string[], isCurrent?: boolean, cta: string, className?: string }) => (
     <Card className={cn("flex flex-col h-full", isCurrent && "ring-2 ring-primary shadow-md", className)}>
         <CardHeader className="p-4">
             <CardTitle>{title}</CardTitle>
-            <CardDescription className="text-3xl font-bold pt-2">{price}</CardDescription>
+            <CardDescription className="text-4xl font-bold">
+                {typeof price === 'number' ? `${currencyCode || '$'}${price}` : price}
+            </CardDescription>
         </CardHeader>
         <CardContent className="flex-grow space-y-2 p-4 pt-0">
             {features.map((feature, index) => (
-                <div key={index} className="flex items-start gap-2">
-                    <Check className="h-4 w-4 text-green-500 flex-shrink-0 mt-1" />
+                <div key={index} className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
                     <span className="text-sm text-muted-foreground">{feature}</span>
                 </div>
             ))}
@@ -40,6 +44,9 @@ const PlanCard = ({ title, price, features, isCurrent = false, cta, className }:
 );
 
 export function ManagePlanDialog() {
+    const { config } = useBrandsoft();
+    const currencyCode = config?.profile.defaultCurrency;
+
     return (
         <Dialog>
             <DialogTrigger asChild>
@@ -63,7 +70,8 @@ export function ManagePlanDialog() {
                         {/* Free Trial */}
                         <PlanCard 
                             title="Free Trial" 
-                            price="$0"
+                            price={0}
+                            currencyCode={currencyCode}
                             features={["Up to 10 invoices", "Up to 10 customers", "Basic templates"]}
                             isCurrent={true}
                             cta="Select Plan"
@@ -72,7 +80,8 @@ export function ManagePlanDialog() {
                         {/* Standard */}
                         <PlanCard 
                             title="Standard" 
-                            price="$29"
+                            price={29}
+                            currencyCode={currencyCode}
                             features={["Unlimited invoices", "Unlimited customers", "Premium templates", "Email support"]}
                             cta="Upgrade"
                         />
@@ -80,7 +89,8 @@ export function ManagePlanDialog() {
                         {/* Pro */}
                          <PlanCard 
                             title="Pro" 
-                            price="$79"
+                            price={79}
+                            currencyCode={currencyCode}
                             features={["All Standard features", "API access", "Priority support", "Advanced analytics"]}
                             cta="Upgrade"
                         />
