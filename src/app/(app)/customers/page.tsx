@@ -56,7 +56,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const formSchema = z.object({
   id: z.string().optional(),
@@ -392,11 +391,8 @@ export default function CustomersPage() {
                 {paginatedCustomers.map((customer) => (
                     <Card key={customer.id} className="flex flex-col">
                         <CardHeader className="flex flex-row items-start justify-between gap-4 p-4">
-                           <div className="flex items-center gap-4">
-                            <Avatar>
-                                <AvatarFallback>{customer.name.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1">
+                           <div className="flex items-center gap-4 flex-1 overflow-hidden">
+                            <div className="flex-1 overflow-hidden">
                                 <ShadcnCardTitle className="text-base font-semibold truncate">{customer.name}</ShadcnCardTitle>
                                 <p className="text-xs text-muted-foreground truncate">{customer.email}</p>
                             </div>
@@ -580,3 +576,5 @@ export default function CustomersPage() {
     </div>
   );
 }
+
+    
