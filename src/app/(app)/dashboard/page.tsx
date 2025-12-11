@@ -188,14 +188,14 @@ export default function DashboardPage() {
                             Manage
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-6xl">
+                    <DialogContent className="max-w-[90vw] md:max-w-6xl max-h-[80vh]">
                         <DialogHeader>
                             <DialogTitle className="text-3xl font-headline">Manage Your Plan</DialogTitle>
                             <DialogDescription>
                                 Choose the plan that best fits your business needs.
                             </DialogDescription>
                         </DialogHeader>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 py-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 py-6">
                             <PlanCard 
                                 title="Free Trial" 
                                 price="$0"
