@@ -158,8 +158,8 @@ export default function DashboardPage() {
                 <Crown className="h-4 w-4 text-white/70" />
             </CardHeader>
             <CardContent>
-                <div className="text-2xl font-bold">Pro Plan</div>
-                <p className="text-xs text-white/80">Valid Forever</p>
+                <div className="text-2xl font-bold">28 Days</div>
+                <p className="text-xs text-white/80">Remaining</p>
                 <Button variant="secondary" size="sm" className="mt-4" asChild>
                     <Link href="/settings">Manage</Link>
                 </Button>
