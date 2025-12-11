@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Circle, Loader2, UploadCloud, FileCheck, Check } from 'lucide-react';
+import { Check, CheckCircle, Circle, Loader2, UploadCloud, FileCheck } from 'lucide-react';
 import { PlanDetails } from './manage-plan-dialog';
 import { useBrandsoft } from '@/hooks/use-brandsoft';
 import { useToast } from '@/hooks/use-toast';
@@ -29,9 +29,8 @@ interface PurchaseDialogProps {
 const paymentMethods = [
     { 
         id: 'bank',
-        name: 'Bank Transfer', 
+        name: 'National Bank', 
         details: [
-            { label: "Bank", value: "National Bank" },
             { label: "Account Number", value: "1006067057" },
             { label: "Name", value: "Gift Ilocie" },
             { label: "Branch", value: "Victoria Avenue" },
