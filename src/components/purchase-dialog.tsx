@@ -158,7 +158,9 @@ export function PurchaseDialog({ plan, isOpen, onClose }: PurchaseDialogProps) {
                              <Accordion type="single" collapsible value={selectedPayment || ""} onValueChange={setSelectedPayment}>
                                 {paymentMethods.map(method => (
                                     <AccordionItem value={method.id} key={method.id}>
-                                        <AccordionTrigger>{method.name}</AccordionTrigger>
+                                        <AccordionTrigger className={cn("hover:no-underline", selectedPayment === method.id && "bg-primary/10 text-primary hover:bg-primary/20")}>
+                                            {method.name}
+                                        </AccordionTrigger>
                                         <AccordionContent className="space-y-2 text-sm">
                                              {method.details.map(detail => (
                                                 <div key={detail.label} className="flex justify-between">
