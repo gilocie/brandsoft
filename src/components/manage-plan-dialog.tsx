@@ -43,7 +43,7 @@ const PlanCard = ({ title, price, features, isCurrent = false, cta, className, p
                 variant={isCurrent ? "secondary" : "default"}
                 disabled={isCurrent}
              >
-                {cta}
+                {isCurrent ? 'Current Plan' : cta}
             </Button>
         </div>
     </Card>
@@ -94,18 +94,17 @@ export function ManagePlanDialog() {
             </DialogTrigger>
             
             <DialogContent className="max-w-7xl w-[90vw] max-h-[90vh] flex flex-col p-4 sm:p-6">
-                <DialogHeader className="flex-shrink-0 mb-2">
-                    <DialogTitle className="text-3xl font-headline">Manage Your Plan</DialogTitle>
-                    <DialogDescription>
-                        Choose the plan that best fits your business needs.
-                    </DialogDescription>
-                </DialogHeader>
-                 
-                <div className="flex justify-center my-4">
-                    <div className="w-full max-w-xs">
-                        <Label htmlFor="period-select">Select Billing Period</Label>
+                <DialogHeader className="flex-shrink-0 mb-4 flex flex-row items-center justify-between">
+                    <div>
+                        <DialogTitle className="text-3xl font-headline">Manage Your Plan</DialogTitle>
+                        <DialogDescription>
+                            Choose the plan that best fits your business needs.
+                        </DialogDescription>
+                    </div>
+                    <div className="w-full max-w-[200px]">
+                        <Label htmlFor="period-select" className="text-xs font-medium sr-only">Select Billing Period</Label>
                          <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-                            <SelectTrigger id="period-select" className="mt-1">
+                            <SelectTrigger id="period-select">
                                 <SelectValue placeholder="Select period" />
                             </SelectTrigger>
                             <SelectContent>
@@ -115,7 +114,7 @@ export function ManagePlanDialog() {
                             </SelectContent>
                         </Select>
                     </div>
-                </div>
+                </DialogHeader>
 
                 <div className="flex-1 overflow-y-auto min-h-0 py-2">
                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
