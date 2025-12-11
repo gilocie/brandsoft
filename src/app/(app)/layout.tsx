@@ -190,7 +190,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </h1>
           <Button variant="ghost" size="icon" asChild className="flex-shrink-0">
             <Link href="/settings">
-              <Settings className="h-5 w-5" />
+              <Settings className="h-5 w-5 text-primary" />
               <span className="sr-only">Settings</span>
             </Link>
           </Button>
