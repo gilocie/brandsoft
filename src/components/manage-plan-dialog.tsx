@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -49,10 +50,10 @@ const PlanCard = ({ title, price, features, isCurrent = false, cta, className, p
              <Button 
                 className="w-full" 
                 variant={isCurrent ? "secondary" : "default"}
-                disabled={isCurrent}
+                disabled={isCurrent && cta === "Current Plan"}
                 onClick={onBuyClick}
              >
-                {isCurrent ? 'Current Plan' : cta}
+                {cta}
             </Button>
         </div>
     </Card>
@@ -71,7 +72,7 @@ const planBasePrices = {
     pro: 15000,
 };
 
-export function ManagePlanDialog() {
+export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon?: boolean, isExpired?: boolean }) {
     const { config } = useBrandsoft();
     const currencyCode = config?.profile.defaultCurrency || 'K';
     const [selectedPeriod, setSelectedPeriod] = useState('1');
@@ -100,6 +101,17 @@ export function ManagePlanDialog() {
     const handleBuyClick = (planName: Plan, price: string, period: string) => {
         setPurchasePlan({ name: planName, price, period });
     };
+
+    const getPlanCTA = (planName: Plan) => {
+        const isCurrent = activePurchase?.planName === planName;
+        if (isCurrent && (isExpiringSoon || isExpired)) {
+            return "Renew Plan";
+        }
+        if (isCurrent) {
+            return "Current Plan";
+        }
+        return "Buy Key";
+    }
 
     return (
         <Dialog>
@@ -149,7 +161,7 @@ export function ManagePlanDialog() {
                             price={standardPrice}
                             features={["Unlimited invoices", "Unlimited customers", "Premium templates", "Email support"]}
                             isCurrent={activePurchase?.planName === 'Standard'}
-                            cta="Buy Key"
+                            cta={getPlanCTA("Standard")}
                             periodLabel={selectedPeriodLabel}
                             onBuyClick={() => handleBuyClick("Standard", standardPrice, selectedPeriodLabel || '1 Month')}
                         />
@@ -159,7 +171,7 @@ export function ManagePlanDialog() {
                             price={proPrice}
                             features={["All Standard features", "API access", "Priority support", "Advanced analytics"]}
                             isCurrent={activePurchase?.planName === 'Pro'}
-                            cta="Buy Key"
+                            cta={getPlanCTA("Pro")}
                             periodLabel={selectedPeriodLabel}
                             onBuyClick={() => handleBuyClick("Pro", proPrice, selectedPeriodLabel || '1 Month')}
                         />
@@ -169,7 +181,7 @@ export function ManagePlanDialog() {
                             price="Custom"
                             features={["All Pro features", "Dedicated support", "Custom integrations", "On-premise option"]}
                              isCurrent={activePurchase?.planName === 'Enterprise'}
-                            cta="Contact Us"
+                            cta={getPlanCTA("Enterprise")}
                             onBuyClick={() => { window.open('https://wa.me/265991972336', '_blank') }}
                         />
                     </div>

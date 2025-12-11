@@ -57,6 +57,9 @@ const PlanStatusCard = () => {
         return () => clearInterval(interval);
     }, [activePurchase]);
     
+    const isExpiringSoon = remainingTime > 0 && remainingTime <= 5;
+    const isExpired = remainingTime <= 0;
+
     if (!activePurchase) {
        // Default card if no active purchase
        return (
@@ -68,14 +71,11 @@ const PlanStatusCard = () => {
                 <CardContent>
                     <div className="text-2xl font-bold">Active</div>
                     <p className="text-xs text-white/80">&nbsp;</p>
-                    <ManagePlanDialog />
+                    <ManagePlanDialog isExpiringSoon={isExpiringSoon} isExpired={isExpired} />
                 </CardContent>
             </Card>
        )
     }
-
-    const isExpiringSoon = remainingTime > 0 && remainingTime <= 5;
-    const isExpired = remainingTime <= 0;
 
     return (
         <Card className={cn(
@@ -95,7 +95,7 @@ const PlanStatusCard = () => {
                 <p className="text-xs text-white/80">
                     {isExpired ? 'Your plan has expired.' : 'Remaining'}
                 </p>
-                <ManagePlanDialog />
+                <ManagePlanDialog isExpiringSoon={isExpiringSoon} isExpired={isExpired} />
             </CardContent>
         </Card>
     );
