@@ -17,9 +17,9 @@ import { useBrandsoft } from '@/hooks/use-brandsoft';
 
 const PlanCard = ({ title, price, currencyCode, features, isCurrent = false, cta, className }: { title: string, price: number | string, currencyCode?: string, features: string[], isCurrent?: boolean, cta: string, className?: string }) => (
     <Card className={cn("flex flex-col h-full", isCurrent && "ring-2 ring-primary shadow-md", className)}>
-        <CardHeader className="p-4">
+        <CardHeader className="p-4 pb-2">
             <CardTitle>{title}</CardTitle>
-            <CardDescription className="text-4xl font-bold">
+            <CardDescription className="text-3xl font-bold pt-2">
                 {typeof price === 'number' ? `${currencyCode || '$'}${price}` : price}
             </CardDescription>
         </CardHeader>
@@ -80,7 +80,7 @@ export function ManagePlanDialog() {
                         {/* Standard */}
                         <PlanCard 
                             title="Standard" 
-                            price={29}
+                            price="K5,000/ month"
                             currencyCode={currencyCode}
                             features={["Unlimited invoices", "Unlimited customers", "Premium templates", "Email support"]}
                             cta="Upgrade"
@@ -89,7 +89,7 @@ export function ManagePlanDialog() {
                         {/* Pro */}
                          <PlanCard 
                             title="Pro" 
-                            price={79}
+                            price="K15,000/Month"
                             currencyCode={currencyCode}
                             features={["All Standard features", "API access", "Priority support", "Advanced analytics"]}
                             cta="Upgrade"
@@ -99,6 +99,7 @@ export function ManagePlanDialog() {
                          <PlanCard 
                             title="Enterprise" 
                             price="Custom"
+                            currencyCode={currencyCode}
                             features={["All Pro features", "Dedicated support", "Custom integrations", "On-premise option"]}
                             cta="Contact Us"
                         />
