@@ -164,7 +164,7 @@ export default function DashboardPage() {
                         <div className="text-xl font-bold">Purchase Pending</div>
                         <p className="text-xs text-white/80">{pendingPurchase.planName} Plan</p>
                         <Button asChild variant="secondary" size="sm" className="mt-4">
-                            <Link href={`/verify-purchase?orderId=${pendingPurchase.orderId}&view=true`}>View</Link>
+                            <Link href={`/verify-purchase?orderId=${pendingPurchase.orderId}`}>View</Link>
                         </Button>
                     </CardContent>
                 </Card>

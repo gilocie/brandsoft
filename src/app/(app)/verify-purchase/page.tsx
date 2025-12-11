@@ -22,6 +22,7 @@ const formSchema = z.object({
 });
 
 type FormData = z.infer<typeof formSchema>;
+const ADMIN_PIN = '8090';
 
 export default function VerifyPurchasePage() {
     const { getPurchaseOrder, activatePurchaseOrder } = useBrandsoft();
@@ -33,9 +34,8 @@ export default function VerifyPurchasePage() {
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isActivated, setIsActivated] = useState(false);
+    const [isAdminMode, setIsAdminMode] = useState(false);
     
-    const isViewOnly = useMemo(() => searchParams.get('view') === 'true', [searchParams]);
-
     const form = useForm<FormData>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -67,6 +67,12 @@ export default function VerifyPurchasePage() {
     // Automatically search if orderId is in URL
     useEffect(() => {
         const orderIdFromUrl = searchParams.get('orderId');
+        const pinFromUrl = searchParams.get('pin');
+
+        if (pinFromUrl === ADMIN_PIN) {
+            setIsAdminMode(true);
+        }
+
         if (orderIdFromUrl) {
             form.setValue('orderId', orderIdFromUrl);
             handleSubmit(orderIdFromUrl);
@@ -83,7 +89,7 @@ export default function VerifyPurchasePage() {
     };
     
     const onFormSubmit = (data: FormData) => {
-        handleSubmit(data.orderId);
+        router.push(`/verify-purchase?orderId=${data.orderId}${isAdminMode ? `&pin=${ADMIN_PIN}`: ''}`);
     };
 
     return (
@@ -92,17 +98,17 @@ export default function VerifyPurchasePage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <KeyRound className="h-6 w-6 text-primary" />
-                        {isViewOnly ? 'Purchase Status' : 'Verify Purchase Order'}
+                        {order ? 'Purchase Status' : 'Verify Purchase Order'}
                     </CardTitle>
                     <CardDescription>
-                         {isViewOnly 
-                            ? 'Here are the details for your recent purchase.'
-                            : 'Enter the Order ID to verify and activate a purchase.'
+                         {order
+                            ? 'Here are the details for the purchase order.'
+                            : 'Enter the Order ID to view status or activate a purchase.'
                          }
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {!isViewOnly && (
+                    {!order && (
                         <Form {...form}>
                             <form onSubmit={form.handleSubmit(onFormSubmit)} className="flex items-end gap-2">
                                 <FormField
@@ -141,11 +147,11 @@ export default function VerifyPurchasePage() {
 
 
                     {order && (
-                        <Card className={cn("mt-6", isViewOnly && "border-none shadow-none")}>
-                            <CardHeader className={cn(isViewOnly && "p-0")}>
+                        <Card className="mt-6 border-none shadow-none">
+                            <CardHeader className="p-0">
                                 <CardTitle>Order Details</CardTitle>
                             </CardHeader>
-                            <CardContent className={cn("space-y-2 text-sm", isViewOnly && "p-0 pt-4")}>
+                            <CardContent className="p-0 pt-4 space-y-2 text-sm">
                                 <p className="flex justify-between"><strong>Order ID:</strong> <span>{order.orderId}</span></p>
                                 <p className="flex justify-between"><strong>Plan:</strong> <span>{order.planName} ({order.planPeriod})</span></p>
                                 <p className="flex justify-between"><strong>Price:</strong> <span>{order.planPrice}</span></p>
@@ -153,8 +159,8 @@ export default function VerifyPurchasePage() {
                                 <p className="flex justify-between"><strong>Date:</strong> <span>{new Date(order.date).toLocaleString()}</span></p>
                                 <p className="flex justify-between items-center"><strong>Status:</strong> <span className={cn("font-bold capitalize", isActivated ? "text-green-500" : "text-amber-500")}>{isActivated ? 'Active' : order.status}</span></p>
                             </CardContent>
-                            {!isViewOnly && (
-                                <CardFooter>
+                            {isAdminMode && (
+                                <CardFooter className="p-0 pt-6">
                                     {isActivated ? (
                                         <Alert variant="default" className="w-full bg-green-50 text-green-800 border-green-200">
                                             <CheckCircle className="h-4 w-4 text-green-600" />
