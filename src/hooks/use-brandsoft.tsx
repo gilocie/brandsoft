@@ -129,10 +129,11 @@ export type Purchase = {
     planPrice: string;
     planPeriod: string;
     paymentMethod: string;
-    status: 'pending' | 'active';
+    status: 'pending' | 'active' | 'declined';
     date: string;
     receipt?: string | 'none';
     whatsappNumber?: string;
+    declineReason?: string;
 }
 
 
@@ -239,6 +240,7 @@ interface BrandsoftContextType {
   addPurchaseOrder: (order: Purchase) => void;
   getPurchaseOrder: (orderId: string) => Purchase | null;
   activatePurchaseOrder: (orderId: string) => void;
+  declinePurchaseOrder: (orderId: string, reason: string) => void;
 }
 
 const BrandsoftContext = createContext<BrandsoftContextType | undefined>(undefined);
@@ -533,6 +535,15 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
         saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false });
       }
   };
+  
+  const declinePurchaseOrder = (orderId: string, reason: string) => {
+      const updatedPurchases = purchases.map(p => p.orderId === orderId ? { ...p, status: 'declined', declineReason: reason } : p);
+      setPurchases(updatedPurchases);
+      localStorage.setItem(PURCHASES_KEY, JSON.stringify(updatedPurchases));
+      if (config) {
+        saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false });
+      }
+  };
 
   const addCustomer = (customer: Omit<Customer, 'id'>): Customer => {
       const newCustomer = { ...customer, id: `CUST-${Date.now()}` };
@@ -670,6 +681,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     addPurchaseOrder,
     getPurchaseOrder,
     activatePurchaseOrder,
+    declinePurchaseOrder,
   };
 
   return <BrandsoftContext.Provider value={value}>{children}</BrandsoftContext.Provider>;

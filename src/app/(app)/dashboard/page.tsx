@@ -130,6 +130,7 @@ export default function DashboardPage() {
   const certificateModule = enabledModules.find(m => m.title === 'Certificate Designer');
   
   const pendingPurchase = config.purchases?.find(p => p.status === 'pending');
+  const declinedPurchase = config.purchases?.find(p => p.status === 'declined');
 
 
   return (
@@ -164,7 +165,21 @@ export default function DashboardPage() {
                         <div className="text-xl font-bold">Purchase Pending</div>
                         <p className="text-xs text-white/80">{pendingPurchase.planName} Plan</p>
                         <Button asChild variant="secondary" size="sm" className="mt-4">
-                            <Link href={`/verify-purchase?orderId=${pendingPurchase.orderId}`}>View</Link>
+                            <Link href={`/verify-purchase?orderId=${pendingPurchase.orderId}&view=true`}>View</Link>
+                        </Button>
+                    </CardContent>
+                </Card>
+            ) : declinedPurchase ? (
+                 <Card className="bg-destructive text-white">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Your Plan</CardTitle>
+                        <XCircle className="h-4 w-4 text-white/70" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-xl font-bold">Purchase Declined</div>
+                        <p className="text-xs text-white/80">{declinedPurchase.planName} Plan</p>
+                        <Button asChild variant="secondary" size="sm" className="mt-4">
+                            <Link href={`/verify-purchase?orderId=${declinedPurchase.orderId}&view=true`}>View Details</Link>
                         </Button>
                     </CardContent>
                 </Card>
