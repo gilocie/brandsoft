@@ -78,6 +78,10 @@
   * {
     @apply border-border;
   }
+  html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
   body {
     @apply bg-background text-foreground;
   }
@@ -95,5 +99,18 @@
   }
   ::-webkit-scrollbar:horizontal {
     display: none;
+  }
+}
+
+/* Prevent tables and other wide content from breaking layout */
+@media (max-width: 768px) {
+  table {
+    display: block;
+    overflow-x: auto;
+  }
+  
+  pre, code {
+    max-width: 100%;
+    overflow-x: auto;
   }
 }

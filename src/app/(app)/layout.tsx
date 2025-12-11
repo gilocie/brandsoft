@@ -182,21 +182,25 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </SidebarMenu>
         </SidebarFooter>
       </Sidebar>
-      <SidebarInset>
-        <header className="flex h-14 items-center gap-4 border-b bg-background/95 backdrop-blur-sm sticky top-0 px-4 md:px-6 z-10">
-          <SidebarTrigger className="md:hidden" />
-          <h1 className="text-lg font-semibold font-headline flex-1">
+      <SidebarInset className="overflow-x-hidden max-w-full">
+        <header className="flex h-14 items-center gap-4 border-b bg-background/95 backdrop-blur-sm sticky top-0 px-4 md:px-6 z-10 min-w-0">
+          <SidebarTrigger className="md:hidden flex-shrink-0" />
+          <h1 className="text-lg font-semibold font-headline flex-1 truncate">
             {pageTitle}
           </h1>
-          <Button variant="ghost" size="icon" asChild>
+          <Button variant="ghost" size="icon" asChild className="flex-shrink-0">
             <Link href="/settings">
               <Settings className="h-5 w-5" />
               <span className="sr-only">Settings</span>
             </Link>
           </Button>
         </header>
-        <div className="flex-1 flex flex-col overflow-x-hidden">
-            <main className="flex-1 p-4 md:p-6">{children}</main>
+        <div className="flex-1 flex flex-col overflow-x-hidden min-w-0">
+            <main className="flex-1 p-4 md:p-6 overflow-x-auto min-w-0">
+              <div className="w-full max-w-full">
+                {children}
+              </div>
+            </main>
             <footer className="p-4 pb-4 text-center text-sm text-muted-foreground sticky bottom-0 bg-background">
               © 2025 BrandSoft. All rights reserved.
             </footer>
