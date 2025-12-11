@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { FileText, Award, CreditCard, FileBarChart2, Brush, ArrowRight, Library, Users, Package, CheckCircle, XCircle, Clock, AlertTriangle, DollarSign, FileClock, FileX, Receipt, Lock, Crown, Check } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { AnalyticsChart } from "@/components/analytics-chart";
@@ -34,6 +34,73 @@ const StatCard = ({ title, value, icon: Icon, description, formatAsCurrency = fa
         </CardContent>
     </Card>
 );
+
+const PlanStatusCard = () => {
+    const { config } = useBrandsoft();
+    const [remainingTime, setRemainingTime] = useState(0);
+
+    const activePurchase = useMemo(() => config?.purchases?.find(p => p.status === 'active'), [config?.purchases]);
+
+    useEffect(() => {
+        if (!activePurchase?.expiresAt) return;
+
+        const calculateRemaining = () => {
+            const now = new Date().getTime();
+            const expiry = new Date(activePurchase!.expiresAt!).getTime();
+            const remainingMinutes = Math.max(0, Math.ceil((expiry - now) / (1000 * 60)));
+            setRemainingTime(remainingMinutes);
+        };
+
+        calculateRemaining();
+        const interval = setInterval(calculateRemaining, 60000); // Update every minute
+
+        return () => clearInterval(interval);
+    }, [activePurchase]);
+    
+    if (!activePurchase) {
+       // Default card if no active purchase
+       return (
+            <Card className="bg-green-900 text-white">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Your Plan</CardTitle>
+                    <Crown className="h-4 w-4 text-white/70" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">Trial</div>
+                    <p className="text-xs text-white/80">Active</p>
+                    <ManagePlanDialog />
+                </CardContent>
+            </Card>
+       )
+    }
+
+    const isExpiringSoon = remainingTime > 0 && remainingTime <= 5;
+    const isExpired = remainingTime <= 0;
+
+    return (
+        <Card className={cn(
+            "text-white",
+            isExpired && "bg-gray-500",
+            isExpiringSoon && !isExpired && "bg-destructive",
+            !isExpiringSoon && !isExpired && "bg-green-900",
+        )}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Your Plan</CardTitle>
+                {isExpired ? <XCircle className="h-4 w-4 text-white/70" /> : <Crown className="h-4 w-4 text-white/70" />}
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">
+                    {isExpired ? 'Expired' : `${remainingTime} Days`}
+                </div>
+                <p className="text-xs text-white/80">
+                    {isExpired ? activePurchase.planName : 'Remaining'}
+                </p>
+                <ManagePlanDialog />
+            </CardContent>
+        </Card>
+    );
+};
+
 
 export default function DashboardPage() {
   const { config } = useBrandsoft();
@@ -166,7 +233,7 @@ export default function DashboardPage() {
                         <div className="text-xl font-bold">Purchase Pending</div>
                         <p className="text-xs text-white/80">{pendingPurchase.planName} Plan</p>
                         <Button asChild variant="secondary" size="sm" className="mt-4">
-                            <Link href={`/verify-purchase?orderId=${pendingPurchase.orderId}&view=true`}>View</Link>
+                            <Link href={`/verify-purchase?orderId=${pendingPurchase.orderId}`}>View</Link>
                         </Button>
                     </CardContent>
                 </Card>
@@ -180,22 +247,12 @@ export default function DashboardPage() {
                         <div className="text-xl font-bold">Purchase Declined</div>
                         <p className="text-xs text-white/80">{declinedPurchase.planName} Plan</p>
                         <Button asChild variant="secondary" size="sm" className="mt-4">
-                            <Link href={`/verify-purchase?orderId=${declinedPurchase.orderId}&view=true`}>View Details</Link>
+                            <Link href={`/verify-purchase?orderId=${declinedPurchase.orderId}`}>View Details</Link>
                         </Button>
                     </CardContent>
                 </Card>
             ) : (
-                <Card className="bg-green-900 text-white">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Your Plan</CardTitle>
-                        <Crown className="h-4 w-4 text-white/70" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">28 Days</div>
-                        <p className="text-xs text-white/80">Remaining</p>
-                        <ManagePlanDialog />
-                    </CardContent>
-                </Card>
+                <PlanStatusCard />
             )}
       </div>
       

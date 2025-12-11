@@ -136,6 +136,7 @@ export type Purchase = {
     whatsappNumber?: string;
     declineReason?: string;
     isAcknowledged?: boolean;
+    expiresAt?: string;
 }
 
 
@@ -531,7 +532,24 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
   };
 
   const activatePurchaseOrder = (orderId: string) => {
-      const updatedPurchases = purchases.map(p => p.orderId === orderId ? { ...p, status: 'active' } : p);
+      const purchase = getPurchaseOrder(orderId);
+      if (!purchase) return;
+
+      const periodMap: { [key: string]: number } = {
+          '1 Month': 10,
+          '3 Months': 20,
+          '6 Months': 30,
+          '1 Year': 60,
+          'Once OFF': 60 * 24 * 365 * 3, // ~3 years
+      };
+      const durationMinutes = periodMap[purchase.planPeriod] || 0;
+      const expiresAt = new Date(new Date().getTime() + durationMinutes * 60 * 1000).toISOString();
+
+      const updatedPurchases = purchases.map(p => 
+          p.orderId === orderId ? { ...p, status: 'active', expiresAt } : 
+          (p.status === 'active' ? { ...p, status: 'pending', expiresAt: undefined } : p)
+      );
+
       setPurchases(updatedPurchases);
       localStorage.setItem(PURCHASES_KEY, JSON.stringify(updatedPurchases));
       if (config) {
