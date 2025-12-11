@@ -1,7 +1,7 @@
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
-import { BrandsoftProvider } from '@/hooks/use-brandsoft.tsx';
+import { BrandsoftProvider } from '@/hooks/use-brandsoft';
 
 export const metadata: Metadata = {
   title: 'BrandSoft',
