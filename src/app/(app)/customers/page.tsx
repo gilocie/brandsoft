@@ -49,7 +49,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { PlusCircle, Trash2, MoreHorizontal, Eye, FilePenLine, Send, UploadCloud, Download, Search } from 'lucide-react';
+import { PlusCircle, Trash2, MoreHorizontal, Eye, FilePenLine, Send, UploadCloud, Download, Search, Phone, Building2 } from 'lucide-react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
@@ -73,7 +73,7 @@ const CustomerActions = ({ customer, onSelectAction }: { customer: Customer; onS
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Button variant="default" size="icon" className="h-8 w-8">
                     <MoreHorizontal className="h-4 w-4" />
                     <span className="sr-only">Actions</span>
                 </Button>
@@ -404,9 +404,19 @@ export default function CustomersPage() {
                             />
                         </CardHeader>
                         <CardContent className="p-4 pt-0 flex-grow">
-                            <div className="text-sm space-y-1">
-                                <p className="text-muted-foreground">{customer.phone || 'No phone'}</p>
-                                {customer.companyName && <p className="font-medium">{customer.companyName}</p>}
+                            <div className="text-sm space-y-2">
+                                {customer.phone && (
+                                  <div className="flex items-center gap-2">
+                                    <Phone className="h-4 w-4 text-muted-foreground" />
+                                    <p className="text-muted-foreground">{customer.phone}</p>
+                                  </div>
+                                )}
+                                {customer.companyName && (
+                                  <div className="flex items-center gap-2">
+                                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                                    <p className="font-medium">{customer.companyName}</p>
+                                  </div>
+                                )}
                             </div>
                         </CardContent>
                         <CardFooter className="p-4 pt-0 flex justify-end">
@@ -576,5 +586,3 @@ export default function CustomersPage() {
     </div>
   );
 }
-
-    
