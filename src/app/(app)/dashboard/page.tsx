@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useBrandsoft, type Invoice, type Quotation } from "@/hooks/use-brandsoft";
@@ -187,7 +188,7 @@ export default function DashboardPage() {
                             Manage
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-4xl">
+                    <DialogContent className="max-w-6xl">
                         <DialogHeader>
                             <DialogTitle className="text-3xl font-headline">Manage Your Plan</DialogTitle>
                             <DialogDescription>
