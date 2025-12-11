@@ -166,8 +166,8 @@ export function PurchaseDialog({ plan, isOpen, onClose }: PurchaseDialogProps) {
                             </Card>
 
                             <div className="space-y-4">
-                                <StepIndicator step={1} label="Select Payment Method" isComplete={!!selectedPayment} />
-                                <StepIndicator step={2} label="Enter WhatsApp Number" isComplete={!!whatsappNumber} />
+                                <StepIndicator step={1} label="Enter WhatsApp Number" isComplete={!!whatsappNumber} />
+                                <StepIndicator step={2} label="Select Payment Method" isComplete={!!selectedPayment} />
                                 <StepIndicator step={3} label="Confirm Purchase" isComplete={purchaseState === 'success'} />
                             </div>
                         </div>
