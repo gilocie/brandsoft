@@ -129,6 +129,8 @@ export default function DashboardPage() {
   const invoiceModule = enabledModules.find(m => m.title === 'Invoice Designer');
   const quotationModule = enabledModules.find(m => m.title === 'Quotation Designer');
   const certificateModule = enabledModules.find(m => m.title === 'Certificate Designer');
+  
+  const pendingPurchase = config.purchases?.find(p => p.status === 'pending');
 
 
   return (
@@ -153,17 +155,33 @@ export default function DashboardPage() {
           <StatCard title="Unpaid Invoices" value={stats.unpaidCount + stats.overdueCount} icon={FileClock} description="Pending or overdue invoices" />
           <StatCard title="Quotations Sent" value={stats.quotationsSent} icon={FileBarChart2} description="Total quotations issued" />
           
-           <Card className="bg-green-900 text-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Your Plan</CardTitle>
-                <Crown className="h-4 w-4 text-white/70" />
-            </CardHeader>
-            <CardContent>
-                <div className="text-2xl font-bold">28 Days</div>
-                <p className="text-xs text-white/80">Remaining</p>
-                <ManagePlanDialog />
-            </CardContent>
-           </Card>
+            {pendingPurchase ? (
+                <Card className="bg-amber-500 text-white">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Your Plan</CardTitle>
+                        <Clock className="h-4 w-4 text-white/70" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-xl font-bold">Purchase Pending</div>
+                        <p className="text-xs text-white/80">{pendingPurchase.planName} Plan</p>
+                        <Button asChild variant="secondary" size="sm" className="mt-4">
+                            <Link href={`/verify-purchase?orderId=${pendingPurchase.orderId}`}>View</Link>
+                        </Button>
+                    </CardContent>
+                </Card>
+            ) : (
+                <Card className="bg-green-900 text-white">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Your Plan</CardTitle>
+                        <Crown className="h-4 w-4 text-white/70" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">28 Days</div>
+                        <p className="text-xs text-white/80">Remaining</p>
+                        <ManagePlanDialog />
+                    </CardContent>
+                </Card>
+            )}
       </div>
       
       <div>

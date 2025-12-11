@@ -207,6 +207,7 @@ export type BrandsoftConfig = {
   quotations: Quotation[];
   templates: BrandsoftTemplate[];
   currencies: string[];
+  purchases?: Purchase[];
 };
 
 interface NumberingOptions {
@@ -436,6 +437,9 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
         if (!parsedConfig.quotations || parsedConfig.quotations.length === 0) {
             parsedConfig.quotations = initialQuotations;
         }
+        if (!parsedConfig.purchases) {
+            parsedConfig.purchases = purchasesData ? JSON.parse(purchasesData) : [];
+        }
         setConfig(parsedConfig);
       }
     } catch (error) {
@@ -503,9 +507,12 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
   };
 
   const addPurchaseOrder = (order: Purchase) => {
-    const newPurchases = [...purchases, order];
-    setPurchases(newPurchases);
-    localStorage.setItem(PURCHASES_KEY, JSON.stringify(newPurchases));
+    const allPurchases = [...purchases, order];
+    setPurchases(allPurchases);
+    localStorage.setItem(PURCHASES_KEY, JSON.stringify(allPurchases));
+    if (config) {
+      saveConfig({ ...config, purchases: allPurchases }, { redirect: false });
+    }
   };
 
   const getPurchaseOrder = (orderId: string): Purchase | null => {
@@ -521,6 +528,9 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       const updatedPurchases = purchases.map(p => p.orderId === orderId ? { ...p, status: 'active' } : p);
       setPurchases(updatedPurchases);
       localStorage.setItem(PURCHASES_KEY, JSON.stringify(updatedPurchases));
+      if (config) {
+        saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false });
+      }
   };
 
   const addCustomer = (customer: Omit<Customer, 'id'>): Customer => {
