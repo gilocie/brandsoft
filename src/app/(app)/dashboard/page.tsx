@@ -160,7 +160,9 @@ export default function DashboardPage() {
             <CardContent>
                 <div className="text-2xl font-bold">Pro Plan</div>
                 <p className="text-xs text-white/80">Valid Forever</p>
-                <Button variant="secondary" size="sm" className="mt-4">Upgrade</Button>
+                <Button variant="secondary" size="sm" className="mt-4" asChild>
+                    <Link href="/settings">Manage</Link>
+                </Button>
             </CardContent>
            </Card>
       </div>
