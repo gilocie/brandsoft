@@ -140,9 +140,8 @@ export default function SettingsPage() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             <Tabs defaultValue="branding" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="branding"><Paintbrush className="mr-2 h-4 w-4" />Branding</TabsTrigger>
-                    <TabsTrigger value="general"><Cog className="mr-2 h-4 w-4" />General</TabsTrigger>
                     <TabsTrigger value="options"><SlidersHorizontal className="mr-2 h-4 w-4" />Modules</TabsTrigger>
                 </TabsList>
                 
@@ -208,37 +207,6 @@ export default function SettingsPage() {
                         </CardContent>
                     </Card>
                 </TabsContent>
-                
-
-                <TabsContent value="general">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Regional & Currency</CardTitle>
-                            <CardDescription>Manage currency and default payment details for documents.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            <div className="max-w-md space-y-4">
-                                <FormField control={form.control} name="defaultCurrency" render={({ field }) => (
-                                    <FormItem><FormLabel>Default Currency Code</FormLabel>
-                                    <FormControl><Input placeholder="e.g. USD, MWK" {...field} /></FormControl>
-                                    <FormDescription>Enter the 3-letter currency code for your documents.</FormDescription>
-                                    <FormMessage /></FormItem>
-                                )} />
-                            </div>
-                            <Separator />
-                             <div className="space-y-4">
-                               <FormField control={form.control} name="paymentDetails" render={({ field }) => (
-                                    <FormItem><FormLabel>Default Payment Details</FormLabel>
-                                    <FormControl><Textarea placeholder="Your bank details, mobile payment info, etc." {...field} className="min-h-[120px]" /></FormControl>
-                                    <FormDescription>These are your default notes for new invoices and quotations. You can override them on each document.</FormDescription>
-                                    <FormMessage /></FormItem>
-                                )} />
-                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-                
-
                 <TabsContent value="options">
                      <Card>
                         <CardHeader>
