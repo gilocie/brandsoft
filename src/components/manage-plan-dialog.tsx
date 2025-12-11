@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -14,7 +15,7 @@ import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const PlanCard = ({ title, price, features, isCurrent = false, cta, className }: { title: string, price: string, features: string[], isCurrent?: boolean, cta: string, className?: string }) => (
-    <Card className={cn("flex flex-col", isCurrent && "ring-2 ring-primary shadow-md", className)}>
+    <Card className={cn("flex flex-col h-full", isCurrent && "ring-2 ring-primary shadow-md", className)}>
         <CardHeader className="p-4">
             <CardTitle>{title}</CardTitle>
             <CardDescription className="text-3xl font-bold pt-2">{price}</CardDescription>
@@ -58,7 +59,7 @@ export function ManagePlanDialog() {
                 
                 {/* Scrollable Area */}
                 <div className="flex-1 overflow-y-auto min-h-0 py-2">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         
                         {/* Free Trial */}
                         <PlanCard 
