@@ -20,7 +20,7 @@ const PlanCard = ({ title, price, currencyCode, features, isCurrent = false, cta
         <CardHeader className="p-4 pb-2">
             <CardTitle>{title}</CardTitle>
             <CardDescription className="text-4xl sm:text-3xl font-bold pt-2">
-                {typeof price === 'number' ? `${currencyCode || 'K'}${price}` : price}
+                {typeof price === 'number' ? `${currencyCode || ''}${price}` : price}
             </CardDescription>
         </CardHeader>
         <CardContent className="flex-grow space-y-2 p-4 pt-0">
@@ -80,7 +80,7 @@ export function ManagePlanDialog() {
                         {/* Standard */}
                         <PlanCard 
                             title="Standard" 
-                            price="K5,000/ month"
+                            price="K5,000/month"
                             currencyCode={currencyCode}
                             features={["Unlimited invoices", "Unlimited customers", "Premium templates", "Email support"]}
                             cta="Upgrade"
