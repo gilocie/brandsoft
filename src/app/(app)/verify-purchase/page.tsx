@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -33,6 +33,8 @@ export default function VerifyPurchasePage() {
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isActivated, setIsActivated] = useState(false);
+    
+    const isViewOnly = useMemo(() => searchParams.get('view') === 'true', [searchParams]);
 
     const form = useForm<FormData>({
         resolver: zodResolver(formSchema),
@@ -41,23 +43,13 @@ export default function VerifyPurchasePage() {
         },
     });
 
-    // Automatically search if orderId is in URL
-    useEffect(() => {
-        const orderIdFromUrl = searchParams.get('orderId');
-        if (orderIdFromUrl) {
-            form.setValue('orderId', orderIdFromUrl);
-            handleSubmit(orderIdFromUrl);
-        }
-    }, [searchParams]);
-
-
     const handleSubmit = async (orderId: string) => {
         setIsLoading(true);
         setError(null);
         setOrder(null);
         setIsActivated(false);
 
-        await new Promise(resolve => setTimeout(resolve, 500)); // simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 500)); 
 
         const foundOrder = getPurchaseOrder(orderId);
 
@@ -71,6 +63,16 @@ export default function VerifyPurchasePage() {
         }
         setIsLoading(false);
     };
+
+    // Automatically search if orderId is in URL
+    useEffect(() => {
+        const orderIdFromUrl = searchParams.get('orderId');
+        if (orderIdFromUrl) {
+            form.setValue('orderId', orderIdFromUrl);
+            handleSubmit(orderIdFromUrl);
+        }
+    }, [searchParams]);
+
 
     const handleActivation = () => {
         if (order) {
@@ -90,31 +92,38 @@ export default function VerifyPurchasePage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <KeyRound className="h-6 w-6 text-primary" />
-                        Verify Purchase Order
+                        {isViewOnly ? 'Purchase Status' : 'Verify Purchase Order'}
                     </CardTitle>
-                    <CardDescription>Enter the Order ID to verify and activate a purchase.</CardDescription>
+                    <CardDescription>
+                         {isViewOnly 
+                            ? 'Here are the details for your recent purchase.'
+                            : 'Enter the Order ID to verify and activate a purchase.'
+                         }
+                    </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onFormSubmit)} className="flex items-end gap-2">
-                            <FormField
-                                control={form.control}
-                                name="orderId"
-                                render={({ field }) => (
-                                    <FormItem className="flex-grow">
-                                        <FormLabel>Order ID</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="BSO-..." {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <Button type="submit" disabled={isLoading}>
-                                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Verify'}
-                            </Button>
-                        </form>
-                    </Form>
+                    {!isViewOnly && (
+                        <Form {...form}>
+                            <form onSubmit={form.handleSubmit(onFormSubmit)} className="flex items-end gap-2">
+                                <FormField
+                                    control={form.control}
+                                    name="orderId"
+                                    render={({ field }) => (
+                                        <FormItem className="flex-grow">
+                                            <FormLabel>Order ID</FormLabel>
+                                            <FormControl>
+                                                <Input placeholder="BSO-..." {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <Button type="submit" disabled={isLoading}>
+                                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Verify'}
+                                </Button>
+                            </form>
+                        </Form>
+                    )}
 
                     {error && (
                         <Alert variant="destructive" className="mt-4">
@@ -124,12 +133,19 @@ export default function VerifyPurchasePage() {
                         </Alert>
                     )}
 
+                    {isLoading && !order && (
+                        <div className="flex justify-center items-center h-24">
+                           <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        </div>
+                    )}
+
+
                     {order && (
-                        <Card className="mt-6">
-                            <CardHeader>
+                        <Card className={cn("mt-6", isViewOnly && "border-none shadow-none")}>
+                            <CardHeader className={cn(isViewOnly && "p-0")}>
                                 <CardTitle>Order Details</CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-2 text-sm">
+                            <CardContent className={cn("space-y-2 text-sm", isViewOnly && "p-0 pt-4")}>
                                 <p className="flex justify-between"><strong>Order ID:</strong> <span>{order.orderId}</span></p>
                                 <p className="flex justify-between"><strong>Plan:</strong> <span>{order.planName} ({order.planPeriod})</span></p>
                                 <p className="flex justify-between"><strong>Price:</strong> <span>{order.planPrice}</span></p>
@@ -137,19 +153,21 @@ export default function VerifyPurchasePage() {
                                 <p className="flex justify-between"><strong>Date:</strong> <span>{new Date(order.date).toLocaleString()}</span></p>
                                 <p className="flex justify-between items-center"><strong>Status:</strong> <span className={cn("font-bold capitalize", isActivated ? "text-green-500" : "text-amber-500")}>{isActivated ? 'Active' : order.status}</span></p>
                             </CardContent>
-                            <CardFooter>
-                                {isActivated ? (
-                                    <Alert variant="default" className="w-full bg-green-50 text-green-800 border-green-200">
-                                        <CheckCircle className="h-4 w-4 text-green-600" />
-                                        <AlertTitle>Already Activated</AlertTitle>
-                                        <AlertDescription>This order has already been activated.</AlertDescription>
-                                    </Alert>
-                                ) : (
-                                    <Button className="w-full" onClick={handleActivation}>
-                                        Activate Plan
-                                    </Button>
-                                )}
-                            </CardFooter>
+                            {!isViewOnly && (
+                                <CardFooter>
+                                    {isActivated ? (
+                                        <Alert variant="default" className="w-full bg-green-50 text-green-800 border-green-200">
+                                            <CheckCircle className="h-4 w-4 text-green-600" />
+                                            <AlertTitle>Already Activated</AlertTitle>
+                                            <AlertDescription>This order has already been activated.</AlertDescription>
+                                        </Alert>
+                                    ) : (
+                                        <Button className="w-full" onClick={handleActivation}>
+                                            Activate Plan
+                                        </Button>
+                                    )}
+                                </CardFooter>
+                            )}
                         </Card>
                     )}
                 </CardContent>
