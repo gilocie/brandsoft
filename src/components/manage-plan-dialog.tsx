@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -49,7 +48,7 @@ export function ManagePlanDialog() {
                 </Button>
             </DialogTrigger>
             
-            <DialogContent className="max-w-6xl w-[95vw] max-h-[80vh] flex flex-col p-4 sm:p-6">
+            <DialogContent className="max-w-6xl w-[95vw] max-h-[90vh] flex flex-col p-4 sm:p-6">
                 <DialogHeader className="flex-shrink-0 mb-2">
                     <DialogTitle className="text-3xl font-headline">Manage Your Plan</DialogTitle>
                     <DialogDescription>
@@ -62,45 +61,37 @@ export function ManagePlanDialog() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         
                         {/* Free Trial */}
-                        <div>
-                            <PlanCard 
-                                title="Free Trial" 
-                                price="$0"
-                                features={["Up to 10 invoices", "Up to 10 customers", "Basic templates"]}
-                                isCurrent={true}
-                                cta="Select Plan"
-                            />
-                        </div>
+                        <PlanCard 
+                            title="Free Trial" 
+                            price="$0"
+                            features={["Up to 10 invoices", "Up to 10 customers", "Basic templates"]}
+                            isCurrent={true}
+                            cta="Select Plan"
+                        />
 
                         {/* Standard */}
-                        <div>
-                            <PlanCard 
-                                title="Standard" 
-                                price="$29"
-                                features={["Unlimited invoices", "Unlimited customers", "Premium templates", "Email support"]}
-                                cta="Upgrade"
-                            />
-                        </div>
+                        <PlanCard 
+                            title="Standard" 
+                            price="$29"
+                            features={["Unlimited invoices", "Unlimited customers", "Premium templates", "Email support"]}
+                            cta="Upgrade"
+                        />
 
                         {/* Pro */}
-                        <div>
-                             <PlanCard 
-                                title="Pro" 
-                                price="$79"
-                                features={["All Standard features", "API access", "Priority support", "Advanced analytics"]}
-                                cta="Upgrade"
-                            />
-                        </div>
+                         <PlanCard 
+                            title="Pro" 
+                            price="$79"
+                            features={["All Standard features", "API access", "Priority support", "Advanced analytics"]}
+                            cta="Upgrade"
+                        />
 
                         {/* Enterprise */}
-                        <div>
-                             <PlanCard 
-                                title="Enterprise" 
-                                price="Custom"
-                                features={["All Pro features", "Dedicated support", "Custom integrations", "On-premise option"]}
-                                cta="Contact Us"
-                            />
-                        </div>
+                         <PlanCard 
+                            title="Enterprise" 
+                            price="Custom"
+                            features={["All Pro features", "Dedicated support", "Custom integrations", "On-premise option"]}
+                            cta="Contact Us"
+                        />
                     </div>
                 </div>
             </DialogContent>
