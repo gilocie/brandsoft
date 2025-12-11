@@ -51,7 +51,6 @@ function VerifyPurchaseContent() {
     });
     
     const orderIdFromUrl = searchParams.get('orderId');
-    const viewOnlyMode = searchParams.get('view') === 'true';
 
     const handleSubmit = async (orderIdWithPin: string) => {
         setIsLoading(true);
@@ -79,7 +78,7 @@ function VerifyPurchaseContent() {
             }
             if (foundOrder.status === 'declined') {
                 setIsDeclined(true);
-                if (viewOnlyMode && !foundOrder.isAcknowledged) {
+                if (!foundOrder.isAcknowledged) {
                   acknowledgeDeclinedPurchase(foundOrder.orderId);
                 }
             }
@@ -125,20 +124,27 @@ function VerifyPurchaseContent() {
 
     const renderContent = () => {
         if (isLoading) {
+             if (orderIdFromUrl) {
+                 return (
+                    <div className="flex flex-col items-center justify-center h-24 text-center">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+                        <p className="text-muted-foreground">Redirecting to verification...</p>
+                    </div>
+                );
+            }
             return (
                 <div className="flex flex-col items-center justify-center h-24 text-center">
                     <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
-                    <p className="text-muted-foreground">Verifying order...</p>
                 </div>
             );
         }
 
         if (order) {
              const status = isActivated ? 'active' : isDeclined ? 'declined' : order.status;
-             const finalIsAdminMode = isAdminMode && !viewOnlyMode;
+             const finalIsAdminMode = isAdminMode;
              
              return (
-                <Card className="mt-6 border-none shadow-none">
+                <div className="mt-6 space-y-6">
                     <div className="flex flex-col md:flex-row gap-6">
                         {order.receipt && order.receipt !== 'none' && (
                             <div className="md:w-1/2 flex-shrink-0">
@@ -168,17 +174,6 @@ function VerifyPurchaseContent() {
                                         {status}
                                     </span>
                                 </p>
-                                {status === 'declined' && order.declineReason && (
-                                     <Alert variant="destructive">
-                                        <AlertTitle>Reason for Decline</AlertTitle>
-                                        <AlertDescription>
-                                            {order.declineReason}
-                                             <p className="mt-2 text-xs">
-                                                If you believe this is a mistake, please contact us on +265 991 972 336.
-                                            </p>
-                                        </AlertDescription>
-                                    </Alert>
-                                )}
                             </CardContent>
                              {finalIsAdminMode && status === 'pending' && (
                                 <CardFooter className="p-0 pt-6 flex gap-2">
@@ -211,20 +206,21 @@ function VerifyPurchaseContent() {
                                     </Button>
                                 </CardFooter>
                             )}
-                             {(status !== 'pending' && !finalIsAdminMode) && (
-                                <CardFooter className="p-0 pt-6">
-                                     <Alert variant={status === 'active' ? 'default' : 'destructive'} className={cn("w-full", status === 'active' && "bg-green-50 text-green-800 border-green-200")}>
-                                        <CheckCircle className={cn("h-4 w-4", status === 'active' && "text-green-600")} />
-                                        <AlertTitle>{status === 'active' ? 'Order Activated' : 'Order Declined'}</AlertTitle>
-                                        <AlertDescription>
-                                            {status === 'active' ? 'This order is already active.' : 'This order has been declined.'}
-                                        </AlertDescription>
-                                    </Alert>
-                                </CardFooter>
-                             )}
                         </div>
                     </div>
-                </Card>
+                     {status === 'declined' && order.declineReason && (
+                         <Alert variant="destructive">
+                            <XCircle className="h-4 w-4" />
+                            <AlertTitle>Order Declined</AlertTitle>
+                            <AlertDescription>
+                                {order.declineReason}
+                                <p className="mt-2 text-xs">
+                                    If you believe this is a mistake, please contact us on +265 991 972 336.
+                                </p>
+                            </AlertDescription>
+                        </Alert>
+                    )}
+                </div>
             );
         }
         
