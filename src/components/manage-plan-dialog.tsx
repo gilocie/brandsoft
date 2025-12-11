@@ -14,11 +14,19 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Button } from '@/components/ui/button';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useBrandsoft } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Purchase } from '@/hooks/use-brandsoft';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { PurchaseDialog } from './purchase-dialog';
 
-const PlanCard = ({ title, price, features, isCurrent = false, cta, className, periodLabel }: { title: string, price: string, features: string[], isCurrent?: boolean, cta: string, className?: string, periodLabel?: string }) => (
+type Plan = 'Free Trial' | 'Standard' | 'Pro' | 'Enterprise';
+export type PlanDetails = {
+    name: Plan;
+    price: string;
+    period: string;
+}
+
+const PlanCard = ({ title, price, features, isCurrent = false, cta, className, periodLabel, onBuyClick }: { title: Plan, price: string, features: string[], isCurrent?: boolean, cta: string, className?: string, periodLabel?: string, onBuyClick: () => void }) => (
     <Card className={cn("flex flex-col h-full", isCurrent && "ring-2 ring-primary shadow-md", className)}>
         <CardHeader className="p-4 pb-2">
             <CardTitle className="flex items-center justify-between">
@@ -42,6 +50,7 @@ const PlanCard = ({ title, price, features, isCurrent = false, cta, className, p
                 className="w-full" 
                 variant={isCurrent ? "secondary" : "default"}
                 disabled={isCurrent}
+                onClick={onBuyClick}
              >
                 {isCurrent ? 'Current Plan' : cta}
             </Button>
@@ -66,6 +75,7 @@ export function ManagePlanDialog() {
     const { config } = useBrandsoft();
     const currencyCode = config?.profile.defaultCurrency || 'K';
     const [selectedPeriod, setSelectedPeriod] = useState('1');
+    const [purchasePlan, setPurchasePlan] = useState<PlanDetails | null>(null);
 
     const calculatePrice = (plan: 'standard' | 'pro', period: string) => {
         const basePrice = planBasePrices[plan];
@@ -84,6 +94,10 @@ export function ManagePlanDialog() {
     const standardPrice = useMemo(() => calculatePrice('standard', selectedPeriod), [selectedPeriod, currencyCode]);
     const proPrice = useMemo(() => calculatePrice('pro', selectedPeriod), [selectedPeriod, currencyCode]);
     const selectedPeriodLabel = periods.find(p => p.value === selectedPeriod)?.label;
+    
+    const handleBuyClick = (planName: Plan, price: string, period: string) => {
+        setPurchasePlan({ name: planName, price, period });
+    };
 
     return (
         <Dialog>
@@ -125,6 +139,7 @@ export function ManagePlanDialog() {
                             features={["Up to 10 invoices", "Up to 10 customers", "Basic templates"]}
                             isCurrent={true}
                             cta="Current Plan"
+                            onBuyClick={() => {}}
                         />
 
                         <PlanCard 
@@ -133,6 +148,7 @@ export function ManagePlanDialog() {
                             features={["Unlimited invoices", "Unlimited customers", "Premium templates", "Email support"]}
                             cta="Buy Key"
                             periodLabel={selectedPeriodLabel}
+                            onBuyClick={() => handleBuyClick("Standard", standardPrice, selectedPeriodLabel || '1 Month')}
                         />
 
                          <PlanCard 
@@ -141,6 +157,7 @@ export function ManagePlanDialog() {
                             features={["All Standard features", "API access", "Priority support", "Advanced analytics"]}
                             cta="Buy Key"
                             periodLabel={selectedPeriodLabel}
+                            onBuyClick={() => handleBuyClick("Pro", proPrice, selectedPeriodLabel || '1 Month')}
                         />
 
                          <PlanCard 
@@ -148,9 +165,17 @@ export function ManagePlanDialog() {
                             price="Custom"
                             features={["All Pro features", "Dedicated support", "Custom integrations", "On-premise option"]}
                             cta="Contact Us"
+                            onBuyClick={() => { window.open('https://wa.me/265991972336', '_blank') }}
                         />
                     </div>
                 </div>
+                 {purchasePlan && (
+                    <PurchaseDialog 
+                        plan={purchasePlan} 
+                        isOpen={!!purchasePlan} 
+                        onClose={() => setPurchasePlan(null)} 
+                    />
+                )}
             </DialogContent>
         </Dialog>
     );

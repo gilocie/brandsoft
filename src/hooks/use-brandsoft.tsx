@@ -8,6 +8,7 @@ import { Page } from '@/stores/canvas-store';
 
 const LICENSE_KEY = 'brandsoft_license';
 const CONFIG_KEY = 'brandsoft_config';
+const PURCHASES_KEY = 'brandsoft_purchases';
 const VALID_SERIAL = 'BRANDSOFT-2024';
 
 export type Customer = {
@@ -122,6 +123,17 @@ export type Quotation = {
     currency?: string;
 };
 
+export type Purchase = {
+    orderId: string;
+    planName: string;
+    planPrice: string;
+    planPeriod: string;
+    paymentMethod: string;
+    status: 'pending' | 'active';
+    date: string;
+    receipt?: 'uploaded' | 'none';
+}
+
 
 export type BrandsoftTemplate = {
   id: string;
@@ -222,6 +234,9 @@ interface BrandsoftContextType {
   updateQuotation: (quotationId: string, data: Partial<Omit<Quotation, 'quotationId'>>) => void;
   deleteQuotation: (quotationId: string) => void;
   addCurrency: (currency: string) => void;
+  addPurchaseOrder: (order: Purchase) => void;
+  getPurchaseOrder: (orderId: string) => Purchase | null;
+  activatePurchaseOrder: (orderId: string) => void;
 }
 
 const BrandsoftContext = createContext<BrandsoftContextType | undefined>(undefined);
@@ -385,15 +400,22 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
   const [isActivated, setIsActivated] = useState<boolean | null>(null);
   const [isConfigured, setIsConfigured] = useState<boolean | null>(null);
   const [config, setConfig] = useState<BrandsoftConfig | null>(null);
+  const [purchases, setPurchases] = useState<Purchase[]>([]);
   const router = useRouter();
 
   useEffect(() => {
     try {
       const license = localStorage.getItem(LICENSE_KEY);
       const configData = localStorage.getItem(CONFIG_KEY);
+      const purchasesData = localStorage.getItem(PURCHASES_KEY);
 
       setIsActivated(!!license);
       setIsConfigured(!!configData);
+      
+      if (purchasesData) {
+        setPurchases(JSON.parse(purchasesData));
+      }
+
       if (configData) {
         const parsedConfig = JSON.parse(configData);
         if (parsedConfig.brand.brandsoftFooter === undefined) {
@@ -463,9 +485,11 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     localStorage.removeItem(LICENSE_KEY);
     localStorage.removeItem(CONFIG_KEY);
+    localStorage.removeItem(PURCHASES_KEY);
     setIsActivated(false);
     setIsConfigured(false);
     setConfig(null);
+    setPurchases([]);
     router.push('/activation');
   };
 
@@ -476,6 +500,27 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     if(options.redirect) {
         router.push('/dashboard');
     }
+  };
+
+  const addPurchaseOrder = (order: Purchase) => {
+    const newPurchases = [...purchases, order];
+    setPurchases(newPurchases);
+    localStorage.setItem(PURCHASES_KEY, JSON.stringify(newPurchases));
+  };
+
+  const getPurchaseOrder = (orderId: string): Purchase | null => {
+    const storedPurchases = localStorage.getItem(PURCHASES_KEY);
+    if (storedPurchases) {
+        const allPurchases: Purchase[] = JSON.parse(storedPurchases);
+        return allPurchases.find(p => p.orderId === orderId) || null;
+    }
+    return null;
+  };
+
+  const activatePurchaseOrder = (orderId: string) => {
+      const updatedPurchases = purchases.map(p => p.orderId === orderId ? { ...p, status: 'active' } : p);
+      setPurchases(updatedPurchases);
+      localStorage.setItem(PURCHASES_KEY, JSON.stringify(updatedPurchases));
   };
 
   const addCustomer = (customer: Omit<Customer, 'id'>): Customer => {
@@ -611,6 +656,9 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     updateQuotation,
     deleteQuotation,
     addCurrency,
+    addPurchaseOrder,
+    getPurchaseOrder,
+    activatePurchaseOrder,
   };
 
   return <BrandsoftContext.Provider value={value}>{children}</BrandsoftContext.Provider>;

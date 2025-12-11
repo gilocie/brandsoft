@@ -34,6 +34,7 @@ import {
   Package,
   Settings,
   ChevronDown,
+  KeyRound,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -58,7 +59,11 @@ const upcomingNavItems = [
   { href: '/templates', icon: Library, label: 'Templates', enabledKey: null },
 ];
 
-const navItems = [...mainNavItems, ...upcomingNavItems];
+const adminNavItems = [
+    { href: '/verify-purchase', icon: KeyRound, label: 'Verify Purchase', enabledKey: null },
+];
+
+const navItems = [...mainNavItems, ...upcomingNavItems, ...adminNavItems];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -154,6 +159,30 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     )) : (
                     // Skeleton loading for nav items
                     Array.from({length: 4}).map((_, i) => <SidebarMenuSkeleton key={i} showIcon />)
+                    )}
+                </SidebarMenu>
+              </AccordionContent>
+            </AccordionItem>
+             <AccordionItem value="admin-tools" className="border-none">
+              <AccordionTrigger className="text-sidebar-foreground/70 hover:text-sidebar-foreground hover:no-underline text-xs font-medium rounded-md px-2 [&[data-state=open]>svg]:text-sidebar-foreground">
+                <span className="flex-1 text-left">Admin</span>
+              </AccordionTrigger>
+              <AccordionContent className="pt-2">
+                <SidebarMenu className="px-0">
+                    {config ? adminNavItems.map((item) => (
+                     <SidebarMenuItem key={item.href}>
+                        <Link href={item.href}>
+                          <SidebarMenuButton
+                            isActive={pathname.startsWith(item.href)}
+                            tooltip={item.label}
+                          >
+                            <item.icon />
+                            <span>{item.label}</span>
+                          </SidebarMenuButton>
+                        </Link>
+                      </SidebarMenuItem>
+                    )) : (
+                     <SidebarMenuSkeleton showIcon />
                     )}
                 </SidebarMenu>
               </AccordionContent>
