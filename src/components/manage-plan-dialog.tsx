@@ -49,7 +49,7 @@ export function ManagePlanDialog() {
                 </Button>
             </DialogTrigger>
             
-            <DialogContent className="max-w-6xl w-[95vw] max-h-[90vh] flex flex-col p-4 sm:p-6">
+            <DialogContent className="max-w-5xl w-[95vw] max-h-[90vh] flex flex-col p-4 sm:p-6">
                 <DialogHeader className="flex-shrink-0 mb-2">
                     <DialogTitle className="text-3xl font-headline">Manage Your Plan</DialogTitle>
                     <DialogDescription>
