@@ -19,7 +19,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle as ShadcnDialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 
 const formSchema = z.object({
@@ -170,6 +170,9 @@ function VerifyPurchaseContent() {
                                                 <Button variant="secondary" size="icon"><Eye className="h-5 w-5" /></Button>
                                             </DialogTrigger>
                                             <DialogContent className="max-w-3xl">
+                                                <DialogHeader>
+                                                    <ShadcnDialogTitle>Transaction Receipt</ShadcnDialogTitle>
+                                                </DialogHeader>
                                                  <img src={order.receipt} alt="Transaction Receipt" className="rounded-md w-full h-auto" />
                                             </DialogContent>
                                         </Dialog>
@@ -233,7 +236,7 @@ function VerifyPurchaseContent() {
                         </div>
                     </div>
                      {status === 'declined' && order.declineReason && (
-                         <Alert variant="destructive">
+                         <Alert variant="destructive" className="mt-4">
                             <XCircle className="h-4 w-4" />
                             <AlertTitle>Order Declined</AlertTitle>
                             <AlertDescription>
