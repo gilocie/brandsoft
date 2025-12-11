@@ -18,10 +18,13 @@ import { useBrandsoft } from '@/hooks/use-brandsoft';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 
-const PlanCard = ({ title, price, features, isCurrent = false, cta, className }: { title: string, price: string, features: string[], isCurrent?: boolean, cta: string, className?: string }) => (
+const PlanCard = ({ title, price, features, isCurrent = false, cta, className, periodLabel }: { title: string, price: string, features: string[], isCurrent?: boolean, cta: string, className?: string, periodLabel?: string }) => (
     <Card className={cn("flex flex-col h-full", isCurrent && "ring-2 ring-primary shadow-md", className)}>
         <CardHeader className="p-4 pb-2">
-            <CardTitle>{title}</CardTitle>
+            <CardTitle className="flex items-center justify-between">
+                <span>{title}</span>
+                {periodLabel && <span className="text-xs font-normal text-muted-foreground">{periodLabel}</span>}
+            </CardTitle>
             <CardDescription className="text-4xl sm:text-3xl font-bold pt-2">
                 {price}
             </CardDescription>
@@ -69,18 +72,18 @@ export function ManagePlanDialog() {
         const months = Number(period);
         if(!isNaN(months)) {
             const total = basePrice * months;
-            const suffix = months > 1 ? `/ ${months} months` : '/month';
-            return `${currencyCode}${total.toLocaleString()}${suffix}`;
+            return `${currencyCode}${total.toLocaleString()}`;
         }
         if (period === 'once') {
              const total = basePrice * 36; // 3 years for 'Once OFF'
              return `${currencyCode}${total.toLocaleString()}`;
         }
-        return `${currencyCode}${basePrice.toLocaleString()}/month`;
+        return `${currencyCode}${basePrice.toLocaleString()}`;
     };
 
     const standardPrice = useMemo(() => calculatePrice('standard', selectedPeriod), [selectedPeriod, currencyCode]);
     const proPrice = useMemo(() => calculatePrice('pro', selectedPeriod), [selectedPeriod, currencyCode]);
+    const selectedPeriodLabel = periods.find(p => p.value === selectedPeriod)?.label;
 
     return (
         <Dialog>
@@ -115,7 +118,7 @@ export function ManagePlanDialog() {
                 </div>
 
                 <div className="flex-1 overflow-y-auto min-h-0 py-2">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         
                         <PlanCard 
                             title="Free Trial" 
@@ -130,6 +133,7 @@ export function ManagePlanDialog() {
                             price={standardPrice}
                             features={["Unlimited invoices", "Unlimited customers", "Premium templates", "Email support"]}
                             cta="Buy Key"
+                            periodLabel={selectedPeriodLabel}
                         />
 
                          <PlanCard 
@@ -137,6 +141,7 @@ export function ManagePlanDialog() {
                             price={proPrice}
                             features={["All Standard features", "API access", "Priority support", "Advanced analytics"]}
                             cta="Buy Key"
+                            periodLabel={selectedPeriodLabel}
                         />
 
                          <PlanCard 
