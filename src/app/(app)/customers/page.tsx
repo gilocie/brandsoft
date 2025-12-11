@@ -5,15 +5,15 @@ import { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useBrandsoft, type Customer, type Invoice } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Customer } from '@/hooks/use-brandsoft';
 import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
-  CardTitle,
+  CardDescription,
+  CardTitle as ShadcnCardTitle
 } from '@/components/ui/card';
 import {
   Dialog,
@@ -34,14 +34,6 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -57,13 +49,14 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { PlusCircle, ArrowRight, ArrowLeft, Trash2, MoreHorizontal, Eye, FilePenLine, Send, UploadCloud, Download, Search } from 'lucide-react';
+import { PlusCircle, Trash2, MoreHorizontal, Eye, FilePenLine, Send, UploadCloud, Download, Search } from 'lucide-react';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const formSchema = z.object({
   id: z.string().optional(),
@@ -347,20 +340,9 @@ export default function CustomersPage() {
     );
   };
 
-  const handleSelectAll = (checked: boolean | 'indeterminate') => {
-    if (checked) {
-      setSelectedCustomerIds(paginatedCustomers.map(c => c.id));
-    } else {
-      setSelectedCustomerIds([]);
-    }
-  };
-
-  const allOnPageSelected = paginatedCustomers.length > 0 && paginatedCustomers.every(p => selectedCustomerIds.includes(p.id));
-  const someOnPageSelected = paginatedCustomers.some(p => selectedCustomerIds.includes(p.id)) && !allOnPageSelected;
-
   return (
-    <div className="container mx-auto space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="container mx-auto space-y-6 max-w-[100vw] overflow-hidden">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         {selectedCustomerIds.length === 0 ? (
           <div>
             <h1 className="text-3xl font-bold font-headline">Customers</h1>
@@ -385,77 +367,75 @@ export default function CustomersPage() {
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-           <div className="flex items-center justify-between gap-4">
-            <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setCurrentPage(0); }}>
-              <TabsList>
-                <TabsTrigger value="all">All</TabsTrigger>
-                <TabsTrigger value="personal">Personal</TabsTrigger>
-                <TabsTrigger value="company">Company</TabsTrigger>
-                <TabsTrigger value="unpaid">Unpaid</TabsTrigger>
-              </TabsList>
-            </Tabs>
-             <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search by name, email, company..." className="pl-10" value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(0); }}/>
+      <div className="space-y-4">
+        <Card>
+            <CardHeader>
+               <div className="flex items-center justify-between gap-4 flex-wrap">
+                <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setCurrentPage(0); }} className="w-full md:w-auto">
+                  <TabsList>
+                    <TabsTrigger value="all">All</TabsTrigger>
+                    <TabsTrigger value="personal">Personal</TabsTrigger>
+                    <TabsTrigger value="company">Company</TabsTrigger>
+                    <TabsTrigger value="unpaid">Unpaid</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+                 <div className="relative flex-1 min-w-[200px]">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input placeholder="Search..." className="pl-10" value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(0); }}/>
+                </div>
+               </div>
+            </CardHeader>
+        </Card>
+        
+        {paginatedCustomers.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {paginatedCustomers.map((customer) => (
+                    <Card key={customer.id} className="flex flex-col">
+                        <CardHeader className="flex flex-row items-start justify-between gap-4 p-4">
+                           <div className="flex items-center gap-4">
+                            <Avatar>
+                                <AvatarFallback>{customer.name.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1">
+                                <ShadcnCardTitle className="text-base font-semibold truncate">{customer.name}</ShadcnCardTitle>
+                                <p className="text-xs text-muted-foreground truncate">{customer.email}</p>
+                            </div>
+                           </div>
+                           <Checkbox
+                                checked={selectedCustomerIds.includes(customer.id)}
+                                onCheckedChange={(checked) => handleSelectCustomer(customer.id, checked)}
+                                className="mt-1"
+                            />
+                        </CardHeader>
+                        <CardContent className="p-4 pt-0 flex-grow">
+                            <div className="text-sm space-y-1">
+                                <p className="text-muted-foreground">{customer.phone || 'No phone'}</p>
+                                {customer.companyName && <p className="font-medium">{customer.companyName}</p>}
+                            </div>
+                        </CardContent>
+                        <CardFooter className="p-4 pt-0 flex justify-end">
+                            <CustomerActions customer={customer} onSelectAction={handleSelectAction} />
+                        </CardFooter>
+                    </Card>
+                ))}
             </div>
-           </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                 <TableHead className="w-[50px] px-4">
-                    <Checkbox
-                        checked={allOnPageSelected || (someOnPageSelected ? 'indeterminate' : false)}
-                        onCheckedChange={handleSelectAll}
-                    />
-                </TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>Company</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedCustomers.length > 0 ? (
-                paginatedCustomers.map((customer: Customer) => (
-                  <TableRow key={customer.id}>
-                    <TableCell className="px-4">
-                        <Checkbox
-                            checked={selectedCustomerIds.includes(customer.id)}
-                            onCheckedChange={(checked) => handleSelectCustomer(customer.id, checked)}
-                        />
-                    </TableCell>
-                    <TableCell className="font-medium">{customer.name}</TableCell>
-                    <TableCell>{customer.email}</TableCell>
-                    <TableCell>{customer.phone || 'N/A'}</TableCell>
-                    <TableCell>{customer.companyName || 'N/A'}</TableCell>
-                    <TableCell className="text-right">
-                        <CustomerActions customer={customer} onSelectAction={handleSelectAction} />
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center h-48">No customers found.</TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
+        ) : (
+            <div className="flex flex-col items-center justify-center text-center h-64 rounded-lg border-2 border-dashed">
+                <p className="text-lg font-medium text-muted-foreground">No customers found.</p>
+                <p className="text-sm text-muted-foreground">Try adjusting your filters or add a new customer.</p>
+            </div>
+        )}
+
          {totalPages > 1 && (
-            <CardFooter className="flex items-center justify-between pt-4">
+            <div className="flex items-center justify-between pt-4">
                  <span className="text-sm text-muted-foreground">Page {currentPage + 1} of {totalPages}</span>
                 <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => p - 1)} disabled={currentPage === 0}>Previous</Button>
                     <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => p + 1)} disabled={currentPage >= totalPages - 1}>Next</Button>
                 </div>
-            </CardFooter>
+            </div>
         )}
-      </Card>
+      </div>
       
        {/* Add/Edit Dialog */}
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
@@ -600,4 +580,3 @@ export default function CustomersPage() {
     </div>
   );
 }
-
