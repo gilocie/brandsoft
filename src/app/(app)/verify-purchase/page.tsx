@@ -22,7 +22,7 @@ const formSchema = z.object({
 });
 
 type FormData = z.infer<typeof formSchema>;
-const ADMIN_PIN = '8090';
+const ADMIN_PIN_SUFFIX = '@8090';
 
 export default function VerifyPurchasePage() {
     const { getPurchaseOrder, activatePurchaseOrder } = useBrandsoft();
@@ -39,19 +39,27 @@ export default function VerifyPurchasePage() {
     const form = useForm<FormData>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            orderId: searchParams.get('orderId') || '',
+            orderId: '',
         },
     });
 
-    const handleSubmit = async (orderId: string) => {
+    const handleSubmit = async (orderIdWithPin: string) => {
         setIsLoading(true);
         setError(null);
         setOrder(null);
         setIsActivated(false);
+        
+        let cleanOrderId = orderIdWithPin;
+        if (orderIdWithPin.endsWith(ADMIN_PIN_SUFFIX)) {
+            setIsAdminMode(true);
+            cleanOrderId = orderIdWithPin.replace(ADMIN_PIN_SUFFIX, '');
+        } else {
+            setIsAdminMode(false);
+        }
 
         await new Promise(resolve => setTimeout(resolve, 500)); 
 
-        const foundOrder = getPurchaseOrder(orderId);
+        const foundOrder = getPurchaseOrder(cleanOrderId);
 
         if (foundOrder) {
             setOrder(foundOrder);
@@ -67,11 +75,6 @@ export default function VerifyPurchasePage() {
     // Automatically search if orderId is in URL
     useEffect(() => {
         const orderIdFromUrl = searchParams.get('orderId');
-        const pinFromUrl = searchParams.get('pin');
-
-        if (pinFromUrl === ADMIN_PIN) {
-            setIsAdminMode(true);
-        }
 
         if (orderIdFromUrl) {
             form.setValue('orderId', orderIdFromUrl);
@@ -89,7 +92,7 @@ export default function VerifyPurchasePage() {
     };
     
     const onFormSubmit = (data: FormData) => {
-        router.push(`/verify-purchase?orderId=${data.orderId}${isAdminMode ? `&pin=${ADMIN_PIN}`: ''}`);
+        router.push(`/verify-purchase?orderId=${data.orderId}`);
     };
 
     return (
