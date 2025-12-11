@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -252,6 +253,10 @@ export default function SetupPage() {
         font: data.font || 'Poppins',
         brandsoftFooter: data.brandsoftFooter,
         showCustomerAddress: true,
+        buttonPrimaryBg: data.primaryColor || '#9400D3',
+        buttonPrimaryBgHover: data.secondaryColor || '#D87093',
+        buttonPrimaryText: '#FFFFFF',
+        buttonPrimaryTextHover: '#FFFFFF',
       },
       profile: {
         address: data.address,

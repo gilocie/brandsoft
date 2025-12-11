@@ -20,6 +20,7 @@ export type Customer = {
   companyAddress?: string;
   vatNumber?: string;
   associatedProductIds?: string[];
+  customerType?: 'personal' | 'company';
 };
 
 export type Product = {
@@ -160,6 +161,11 @@ export type BrandsoftConfig = {
     showBrandsoftFooter?: boolean;
     showHeader?: boolean;
     showFooter?: boolean;
+    // Button styles
+    buttonPrimaryBg?: string;
+    buttonPrimaryBgHover?: string;
+    buttonPrimaryText?: string;
+    buttonPrimaryTextHover?: string;
   };
   profile: {
     address: string;
@@ -221,12 +227,12 @@ interface BrandsoftContextType {
 const BrandsoftContext = createContext<BrandsoftContextType | undefined>(undefined);
 
 const initialCustomers: Customer[] = [
-    { id: 'CUST-1625243511000', name: 'Liam Johnson', email: 'liam@example.com', address: '123 Main St, Anytown, USA' },
-    { id: 'CUST-1625243512000', name: 'Olivia Smith', email: 'olivia@example.com', companyName: 'Smith Designs', companyAddress: '456 Oak Ave, Anytown, USA' },
-    { id: 'CUST-1625243513000', name: 'Noah Williams', email: 'noah@example.com', address: '789 Pine Ln, Anytown, USA' },
-    { id: 'CUST-1625243514000', name: 'Emma Brown', email: 'emma@example.com', companyName: 'Brown & Co.', companyAddress: '321 Elm Rd, Anytown, USA' },
-    { id: 'CUST-1625243515000', name: 'James Jones', email: 'james@example.com', address: '654 Maple Dr, Anytown, USA' },
-    { id: 'CUST-1625243516000', name: 'Sophia Garcia', email: 'sophia@example.com', address: '987 Birch Ct, Anytown, USA' },
+    { id: 'CUST-1625243511000', name: 'Liam Johnson', email: 'liam@example.com', address: '123 Main St, Anytown, USA', customerType: 'personal' },
+    { id: 'CUST-1625243512000', name: 'Olivia Smith', email: 'olivia@example.com', companyName: 'Smith Designs', address: '456 Oak Ave, Anytown, USA', customerType: 'company' },
+    { id: 'CUST-1625243513000', name: 'Noah Williams', email: 'noah@example.com', address: '789 Pine Ln, Anytown, USA', customerType: 'personal' },
+    { id: 'CUST-1625243514000', name: 'Emma Brown', email: 'emma@example.com', companyName: 'Brown & Co.', address: '321 Elm Rd, Anytown, USA', customerType: 'company' },
+    { id: 'CUST-1625243515000', name: 'James Jones', email: 'james@example.com', address: '654 Maple Dr, Anytown, USA', customerType: 'personal' },
+    { id: 'CUST-1625243516000', name: 'Sophia Garcia', email: 'sophia@example.com', address: '987 Birch Ct, Anytown, USA', customerType: 'personal' },
 ];
 
 
@@ -429,6 +435,18 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
        if (accentHsl) {
         document.documentElement.style.setProperty('--accent', `${accentHsl.h} ${accentHsl.s}% ${accentHsl.l}%`);
       }
+    }
+    if (config?.brand.buttonPrimaryBg) {
+      document.documentElement.style.setProperty('--btn-primary-bg', config.brand.buttonPrimaryBg);
+    }
+    if (config?.brand.buttonPrimaryText) {
+      document.documentElement.style.setProperty('--btn-primary-text', config.brand.buttonPrimaryText);
+    }
+    if (config?.brand.buttonPrimaryBgHover) {
+      document.documentElement.style.setProperty('--btn-primary-bg-hover', config.brand.buttonPrimaryBgHover);
+    }
+    if (config?.brand.buttonPrimaryTextHover) {
+      document.documentElement.style.setProperty('--btn-primary-text-hover', config.brand.buttonPrimaryTextHover);
     }
   }, [config]);
 

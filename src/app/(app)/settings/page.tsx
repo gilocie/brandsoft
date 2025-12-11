@@ -44,6 +44,10 @@ const settingsSchema = z.object({
   font: z.string().optional(),
   defaultCurrency: z.string().min(1, "Default currency is required"),
   paymentDetails: z.string().optional(),
+  buttonPrimaryBg: z.string().optional(),
+  buttonPrimaryBgHover: z.string().optional(),
+  buttonPrimaryText: z.string().optional(),
+  buttonPrimaryTextHover: z.string().optional(),
 });
 
 type SettingsFormData = z.infer<typeof settingsSchema>;
@@ -66,6 +70,10 @@ export default function SettingsPage() {
       font: 'Poppins',
       defaultCurrency: 'USD',
       paymentDetails: '',
+      buttonPrimaryBg: '#9400D3',
+      buttonPrimaryBgHover: '#8A2BE2',
+      buttonPrimaryText: '#FFFFFF',
+      buttonPrimaryTextHover: '#FFFFFF',
     },
   });
   
@@ -79,6 +87,10 @@ export default function SettingsPage() {
             font: config.brand.font,
             defaultCurrency: config.profile.defaultCurrency,
             paymentDetails: config.profile.paymentDetails,
+            buttonPrimaryBg: config.brand.buttonPrimaryBg,
+            buttonPrimaryBgHover: config.brand.buttonPrimaryBgHover,
+            buttonPrimaryText: config.brand.buttonPrimaryText,
+            buttonPrimaryTextHover: config.brand.buttonPrimaryTextHover,
         });
         setLogoPreview(config.brand.logo);
     }
@@ -109,6 +121,10 @@ export default function SettingsPage() {
           primaryColor: data.primaryColor || '#9400D3',
           secondaryColor: data.secondaryColor || '#D87093',
           font: data.font || 'Poppins',
+          buttonPrimaryBg: data.buttonPrimaryBg,
+          buttonPrimaryBgHover: data.buttonPrimaryBgHover,
+          buttonPrimaryText: data.buttonPrimaryText,
+          buttonPrimaryTextHover: data.buttonPrimaryTextHover,
         },
         profile: {
           ...config.profile,
@@ -145,7 +161,7 @@ export default function SettingsPage() {
                     <TabsTrigger value="options"><SlidersHorizontal className="mr-2 h-4 w-4" />Modules</TabsTrigger>
                 </TabsList>
                 
-                <TabsContent value="branding">
+                <TabsContent value="branding" className="space-y-6">
                     <Card>
                         <CardHeader>
                             <CardTitle>Brand Identity</CardTitle>
@@ -206,6 +222,52 @@ export default function SettingsPage() {
                             </div>
                         </CardContent>
                     </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Button Customization</CardTitle>
+                            <CardDescription>Define the look of your primary buttons.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-4">
+                                    <h4 className="text-sm font-medium">Normal State</h4>
+                                    <FormField control={form.control} name="buttonPrimaryBg" render={({ field }) => (
+                                        <FormItem><FormLabel>Background</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>
+                                    )} />
+                                    <FormField control={form.control} name="buttonPrimaryText" render={({ field }) => (
+                                        <FormItem><FormLabel>Text Color</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>
+                                    )} />
+                                </div>
+                                <div className="space-y-4">
+                                    <h4 className="text-sm font-medium">Hover State</h4>
+                                    <FormField control={form.control} name="buttonPrimaryBgHover" render={({ field }) => (
+                                        <FormItem><FormLabel>Background</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>
+                                    )} />
+                                    <FormField control={form.control} name="buttonPrimaryTextHover" render={({ field }) => (
+                                        <FormItem><FormLabel>Text Color</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>
+                                    )} />
+                                </div>
+                           </div>
+                           <div className="pt-4">
+                               <Label>Preview</Label>
+                               <div className="p-4 rounded-md border flex justify-center">
+                                    <Button 
+                                        type="button" 
+                                        className="btn-primary-custom"
+                                        style={{
+                                            '--btn-primary-bg': form.watch('buttonPrimaryBg'),
+                                            '--btn-primary-text': form.watch('buttonPrimaryText'),
+                                            '--btn-primary-bg-hover': form.watch('buttonPrimaryBgHover'),
+                                            '--btn-primary-text-hover': form.watch('buttonPrimaryTextHover'),
+                                        } as React.CSSProperties}
+                                    >
+                                        Primary Button
+                                    </Button>
+                               </div>
+                           </div>
+                        </CardContent>
+                    </Card>
                 </TabsContent>
                 <TabsContent value="options">
                      <Card>
@@ -229,5 +291,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
-    

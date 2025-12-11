@@ -37,6 +37,12 @@
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 210 40% 98%;
+
+    /* Custom Button Colors */
+    --btn-primary-bg: hsl(var(--primary));
+    --btn-primary-text: hsl(var(--primary-foreground));
+    --btn-primary-bg-hover: hsl(var(--primary) / 0.9);
+    --btn-primary-text-hover: hsl(var(--primary-foreground));
   }
   .dark {
     --background: 240 10% 3.9%;
@@ -73,6 +79,18 @@
     --sidebar-ring: 210 40% 98%;
   }
 }
+
+@layer components {
+  .btn-primary-custom {
+    background-color: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
+  }
+  .btn-primary-custom:hover {
+    background-color: var(--btn-primary-bg-hover);
+    color: var(--btn-primary-text-hover);
+  }
+}
+
 
 @layer base {
   * {
