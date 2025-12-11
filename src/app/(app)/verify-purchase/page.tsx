@@ -14,11 +14,12 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useBrandsoft, type Purchase } from '@/hooks/use-brandsoft';
 import { useToast } from "@/hooks/use-toast";
-import { KeyRound, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { KeyRound, CheckCircle, XCircle, Loader2, Download, Eye } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 
 const formSchema = z.object({
@@ -88,6 +89,16 @@ function VerifyPurchaseContent() {
         setIsLoading(false);
     };
 
+    const handleDownloadReceipt = () => {
+        if (!order?.receipt || order.receipt === 'none') return;
+        const link = document.createElement('a');
+        link.href = order.receipt;
+        link.download = `receipt-${order.orderId}.jpg`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
 
     // Automatically search if orderId is in URL
     useEffect(() => {
@@ -149,8 +160,21 @@ function VerifyPurchaseContent() {
                         {order.receipt && order.receipt !== 'none' && (
                             <div className="md:w-1/2 flex-shrink-0">
                                 <h3 className="text-sm font-medium mb-2">Transaction Receipt</h3>
-                                <div className="border rounded-md p-2 bg-muted/50 h-64 overflow-hidden">
-                                    <Image src={order.receipt} alt="Transaction Receipt" width={400} height={400} className="rounded-md w-full h-full object-cover" />
+                                <div className="relative group">
+                                    <div className="border rounded-md p-2 bg-muted/50 h-64 overflow-hidden">
+                                        <Image src={order.receipt} alt="Transaction Receipt" width={400} height={400} className="rounded-md w-full h-full object-cover" />
+                                    </div>
+                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                        <Dialog>
+                                            <DialogTrigger asChild>
+                                                <Button variant="secondary" size="icon"><Eye className="h-5 w-5" /></Button>
+                                            </DialogTrigger>
+                                            <DialogContent className="max-w-3xl">
+                                                 <img src={order.receipt} alt="Transaction Receipt" className="rounded-md w-full h-auto" />
+                                            </DialogContent>
+                                        </Dialog>
+                                        <Button variant="secondary" size="icon" onClick={handleDownloadReceipt}><Download className="h-5 w-5" /></Button>
+                                    </div>
                                 </div>
                             </div>
                         )}
