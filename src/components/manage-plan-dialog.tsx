@@ -7,6 +7,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,15 +34,15 @@ const PlanCard = ({ title, price, features, isCurrent = false, cta }: { title: s
     </Card>
 );
 
-interface ManagePlanDialogProps {
-    isOpen: boolean;
-    onOpenChange: (isOpen: boolean) => void;
-}
-
-export function ManagePlanDialog({ isOpen, onOpenChange }: ManagePlanDialogProps) {
+export function ManagePlanDialog() {
     return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-6xl">
+        <Dialog>
+            <DialogTrigger asChild>
+                <Button variant="secondary" size="sm" className="mt-4">
+                    Manage
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-6xl max-h-[80vh]">
                 <DialogHeader>
                     <DialogTitle className="text-3xl font-headline">Manage Your Plan</DialogTitle>
                     <DialogDescription>

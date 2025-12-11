@@ -5,7 +5,6 @@
 import { useBrandsoft, type Invoice, type Quotation } from "@/hooks/use-brandsoft";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { DialogTrigger } from "@/components/ui/dialog";
 import { FileText, Award, CreditCard, FileBarChart2, Brush, ArrowRight, Library, Users, Package, CheckCircle, XCircle, Clock, AlertTriangle, DollarSign, FileClock, FileX, Receipt, Lock, Crown, Check } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -38,7 +37,6 @@ const StatCard = ({ title, value, icon: Icon, description, formatAsCurrency = fa
 
 export default function DashboardPage() {
   const { config } = useBrandsoft();
-  const [isPlanDialogOpen, setIsPlanDialogOpen] = useState(false);
 
   const stats = useMemo(() => {
     if (!config) {
@@ -163,12 +161,7 @@ export default function DashboardPage() {
             <CardContent>
                 <div className="text-2xl font-bold">28 Days</div>
                 <p className="text-xs text-white/80">Remaining</p>
-                <DialogTrigger asChild>
-                    <Button variant="secondary" size="sm" className="mt-4" onClick={() => setIsPlanDialogOpen(true)}>
-                        Manage
-                    </Button>
-                </DialogTrigger>
-                <ManagePlanDialog isOpen={isPlanDialogOpen} onOpenChange={setIsPlanDialogOpen} />
+                <ManagePlanDialog />
             </CardContent>
            </Card>
       </div>
