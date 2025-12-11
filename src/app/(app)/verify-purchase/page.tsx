@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -155,8 +156,8 @@ export default function VerifyPurchasePage() {
                             {order.receipt && order.receipt !== 'none' && (
                                 <div className="mb-4">
                                     <h3 className="text-sm font-medium mb-2">Transaction Receipt</h3>
-                                    <div className="border rounded-md p-2 bg-muted/50">
-                                        <Image src={order.receipt} alt="Transaction Receipt" width={400} height={400} className="rounded-md w-full h-auto object-contain" />
+                                    <div className="border rounded-md p-2 bg-muted/50 h-64 overflow-hidden">
+                                        <Image src={order.receipt} alt="Transaction Receipt" width={400} height={400} className="rounded-md w-full h-full object-cover" />
                                     </div>
                                 </div>
                             )}
