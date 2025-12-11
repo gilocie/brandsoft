@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Circle, Loader2, UploadCloud, FileCheck } from 'lucide-react';
+import { CheckCircle, Circle, Loader2, UploadCloud, FileCheck, Check } from 'lucide-react';
 import { PlanDetails } from './manage-plan-dialog';
 import { useBrandsoft } from '@/hooks/use-brandsoft';
 import { useToast } from '@/hooks/use-toast';
