@@ -87,11 +87,7 @@ export function AnalyticsChart({ invoices, quotations }: AnalyticsChartProps) {
   return (
     <Card>
       <CardHeader>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="hidden sm:block">
-            <CardTitle>Activity Overview</CardTitle>
-            <CardDescription>A summary of your documents created over time.</CardDescription>
-          </div>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-4">
            <div className="flex flex-col sm:flex-row items-center gap-2">
             <Tabs value={documentType} onValueChange={(v) => setDocumentType(v as DocumentType)}>
               <TabsList>
