@@ -74,6 +74,11 @@ export function PurchaseDialog({ plan, isOpen, onClose }: PurchaseDialogProps) {
             toast({ variant: 'destructive', title: 'Receipt Required', description: 'Please upload your transaction receipt for Airtel Money.' });
             return;
         }
+        if (!whatsappNumber) {
+            toast({ variant: 'destructive', title: 'WhatsApp Number Required', description: 'Please enter your WhatsApp number.' });
+            return;
+        }
+
 
         setPurchaseState('processing');
 
@@ -99,7 +104,7 @@ export function PurchaseDialog({ plan, isOpen, onClose }: PurchaseDialogProps) {
         }, 1500);
     };
     
-    const isConfirmDisabled = purchaseState !== 'idle' || !selectedPayment || (selectedPayment === 'airtel' && !receiptFile);
+    const isConfirmDisabled = purchaseState !== 'idle' || !selectedPayment || !whatsappNumber || (selectedPayment === 'airtel' && !receiptFile);
 
     const handleClose = () => {
         if (purchaseState !== 'processing') {
@@ -162,7 +167,8 @@ export function PurchaseDialog({ plan, isOpen, onClose }: PurchaseDialogProps) {
 
                             <div className="space-y-4">
                                 <StepIndicator step={1} label="Select Payment Method" isComplete={!!selectedPayment} />
-                                <StepIndicator step={2} label="Confirm Purchase" isComplete={purchaseState === 'success'} />
+                                <StepIndicator step={2} label="Enter WhatsApp Number" isComplete={!!whatsappNumber} />
+                                <StepIndicator step={3} label="Confirm Purchase" isComplete={purchaseState === 'success'} />
                             </div>
                         </div>
 
@@ -172,10 +178,10 @@ export function PurchaseDialog({ plan, isOpen, onClose }: PurchaseDialogProps) {
                              <Accordion type="single" collapsible value={selectedPayment || ""} onValueChange={setSelectedPayment}>
                                 {paymentMethods.map(method => (
                                     <AccordionItem value={method.id} key={method.id}>
-                                        <AccordionTrigger className={cn("hover:no-underline", selectedPayment === method.id && "bg-primary/10 text-primary hover:bg-primary/20")}>
+                                        <AccordionTrigger className={cn("hover:no-underline p-3 rounded-md", selectedPayment === method.id && "bg-primary/10 text-primary hover:bg-primary/20")}>
                                             {method.name}
                                         </AccordionTrigger>
-                                        <AccordionContent className="space-y-2 text-sm">
+                                        <AccordionContent className="p-3 space-y-2 text-sm border-t">
                                              {method.details.map(detail => (
                                                 <div key={detail.label} className="flex justify-between">
                                                     <span className="text-muted-foreground">{detail.label}:</span>
@@ -196,7 +202,11 @@ export function PurchaseDialog({ plan, isOpen, onClose }: PurchaseDialogProps) {
                                 ))}
                             </Accordion>
                              <Button className="w-full" disabled={isConfirmDisabled} onClick={handleConfirmPurchase}>
-                                {purchaseState === 'processing' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                {purchaseState === 'processing' ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                    <CheckCircle className="mr-2 h-4 w-4" />
+                                )}
                                 Confirm Purchase
                             </Button>
                         </div>
