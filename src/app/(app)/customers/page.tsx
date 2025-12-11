@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -56,6 +55,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const formSchema = z.object({
   id: z.string().optional(),
@@ -393,7 +393,16 @@ export default function CustomersPage() {
                         <CardHeader className="flex flex-row items-start justify-between gap-4 p-4">
                            <div className="flex items-center gap-4 flex-1 overflow-hidden">
                             <div className="flex-1 overflow-hidden">
-                                <ShadcnCardTitle className="text-base font-semibold truncate">{customer.name}</ShadcnCardTitle>
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <ShadcnCardTitle className="text-base font-semibold truncate cursor-pointer">{customer.name}</ShadcnCardTitle>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>{customer.name}</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
                                 <p className="text-xs text-muted-foreground truncate">{customer.email}</p>
                             </div>
                            </div>
