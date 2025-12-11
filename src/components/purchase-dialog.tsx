@@ -19,6 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
+import { Label } from './ui/label';
 
 interface PurchaseDialogProps {
   plan: PlanDetails;
@@ -27,26 +28,26 @@ interface PurchaseDialogProps {
 }
 
 const paymentMethods = [
-    { 
+    {
         id: 'bank',
-        name: 'National Bank', 
+        name: 'National Bank',
         details: [
             { label: "Account Number", value: "1006067057" },
             { label: "Name", value: "Gift Ilocie" },
             { label: "Branch", value: "Victoria Avenue" },
         ]
     },
-    { 
+    {
         id: 'airtel',
-        name: 'Airtel Money', 
+        name: 'Airtel Money',
         details: [
             { label: "Number", value: "+265 991 972 336" },
             { label: "Name", value: "Gift Ilocie" },
         ]
     },
-    { 
+    {
         id: 'tnm',
-        name: 'TNM Mpamba', 
+        name: 'TNM Mpamba',
         details: [
             { label: "Number", value: "+265 888 333 673" },
             { label: "Name", value: "Tamandani Tibula" },
@@ -61,6 +62,8 @@ export function PurchaseDialog({ plan, isOpen, onClose }: PurchaseDialogProps) {
     const [receiptFile, setReceiptFile] = useState<File | null>(null);
     const [purchaseState, setPurchaseState] = useState<'idle' | 'processing' | 'success'>('idle');
     const [orderId, setOrderId] = useState('');
+    const [whatsappNumber, setWhatsappNumber] = useState('');
+
 
     const handleConfirmPurchase = () => {
         if (!selectedPayment) {
@@ -89,7 +92,7 @@ export function PurchaseDialog({ plan, isOpen, onClose }: PurchaseDialogProps) {
             });
 
             // Trigger admin notification
-            const message = `New BrandSoft Order!%0A%0AOrder ID: ${newOrderId}%0APlan: ${plan.name} (${plan.period})%0APrice: ${plan.price}%0APayment Method: ${selectedPayment}%0A%0AVerify: ${window.location.origin}/verify-purchase?orderId=${newOrderId}`;
+            const message = `New BrandSoft Order!%0A%0AOrder ID: ${newOrderId}%0APlan: ${plan.name} (${plan.period})%0APrice: ${plan.price}%0APayment Method: ${selectedPayment}%0AUser WhatsApp: ${whatsappNumber}%0A%0AVerify: ${window.location.origin}/verify-purchase?orderId=${newOrderId}`;
             window.open(`https://wa.me/265991972336?text=${message}`, '_blank');
             
             setPurchaseState('success');
@@ -103,6 +106,7 @@ export function PurchaseDialog({ plan, isOpen, onClose }: PurchaseDialogProps) {
             setPurchaseState('idle');
             setReceiptFile(null);
             setSelectedPayment(null);
+            setWhatsappNumber('');
             onClose();
         }
     };
@@ -119,8 +123,19 @@ export function PurchaseDialog({ plan, isOpen, onClose }: PurchaseDialogProps) {
     return (
         <Dialog open={isOpen} onOpenChange={handleClose}>
             <DialogContent className="sm:max-w-2xl">
-                <DialogHeader>
-                    <DialogTitle>Complete Your Purchase</DialogTitle>
+                 <DialogHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <DialogTitle>Complete Your Purchase</DialogTitle>
+                    </div>
+                    <div className="w-full max-w-[200px]">
+                        <Label htmlFor="whatsapp-number" className="sr-only">WhatsApp Number</Label>
+                        <Input
+                            id="whatsapp-number"
+                            placeholder="Your WhatsApp Number"
+                            value={whatsappNumber}
+                            onChange={(e) => setWhatsappNumber(e.target.value)}
+                        />
+                    </div>
                 </DialogHeader>
 
                 {purchaseState === 'success' ? (
