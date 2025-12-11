@@ -25,7 +25,7 @@ const StatCard = ({ title, value, icon: Icon, description, formatAsCurrency = fa
             <Icon className={cn("h-4 w-4", variant === 'primary' ? "text-primary-foreground/70" : "text-muted-foreground")} />
         </CardHeader>
         <CardContent>
-            <div className="text-xl sm:text-2xl font-bold">
+            <div className="text-xl sm:text-2xl font-bold break-words">
                  {formatAsCurrency && (currencyCode || '')}{typeof value === 'number' && formatAsCurrency ? value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : value}
             </div>
             <p className={cn("text-xs", variant === 'primary' ? "text-primary-foreground/80" : "text-muted-foreground")}>{description}</p>
