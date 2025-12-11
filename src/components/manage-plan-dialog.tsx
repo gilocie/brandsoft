@@ -20,7 +20,7 @@ const PlanCard = ({ title, price, currencyCode, features, isCurrent = false, cta
         <CardHeader className="p-4 pb-2">
             <CardTitle>{title}</CardTitle>
             <CardDescription className="text-3xl font-bold pt-2">
-                {typeof price === 'number' ? `${currencyCode || '$'}${price}` : price}
+                {typeof price === 'number' ? `${currencyCode || 'K'}${price}` : price}
             </CardDescription>
         </CardHeader>
         <CardContent className="flex-grow space-y-2 p-4 pt-0">
@@ -55,7 +55,7 @@ export function ManagePlanDialog() {
                 </Button>
             </DialogTrigger>
             
-            <DialogContent className="max-w-5xl w-[90vw] max-h-[90vh] flex flex-col p-4 sm:p-6">
+            <DialogContent className="max-w-7xl w-[90vw] max-h-[90vh] flex flex-col p-4 sm:p-6">
                 <DialogHeader className="flex-shrink-0 mb-2">
                     <DialogTitle className="text-3xl font-headline">Manage Your Plan</DialogTitle>
                     <DialogDescription>
