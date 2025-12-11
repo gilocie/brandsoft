@@ -88,7 +88,7 @@ export function AnalyticsChart({ invoices, quotations }: AnalyticsChartProps) {
     <Card>
       <CardHeader>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
+          <div className="hidden sm:block">
             <CardTitle>Activity Overview</CardTitle>
             <CardDescription>A summary of your documents created over time.</CardDescription>
           </div>
