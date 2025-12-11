@@ -14,20 +14,20 @@ import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const PlanCard = ({ title, price, features, isCurrent = false, cta, className }: { title: string, price: string, features: string[], isCurrent?: boolean, cta: string, className?: string }) => (
-    <Card className={cn("flex flex-col h-full", isCurrent && "ring-2 ring-primary shadow-md", className)}>
-        <CardHeader>
+    <Card className={cn("flex flex-col", isCurrent && "ring-2 ring-primary shadow-md", className)}>
+        <CardHeader className="p-4">
             <CardTitle>{title}</CardTitle>
-            <CardDescription className="text-4xl font-bold">{price}</CardDescription>
+            <CardDescription className="text-3xl font-bold pt-2">{price}</CardDescription>
         </CardHeader>
-        <CardContent className="flex-grow space-y-2">
+        <CardContent className="flex-grow space-y-2 p-4 pt-0">
             {features.map((feature, index) => (
-                <div key={index} className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                <div key={index} className="flex items-start gap-2">
+                    <Check className="h-4 w-4 text-green-500 flex-shrink-0 mt-1" />
                     <span className="text-sm text-muted-foreground">{feature}</span>
                 </div>
             ))}
         </CardContent>
-        <div className="p-6 pt-0">
+        <div className="p-4 pt-0">
              <Button 
                 className="w-full" 
                 variant={isCurrent ? "secondary" : "default"}
@@ -57,7 +57,7 @@ export function ManagePlanDialog() {
                 </DialogHeader>
                 
                 {/* Scrollable Area */}
-                <div className="flex-1 overflow-y-auto min-h-0 py-2 px-1">
+                <div className="flex-1 overflow-y-auto min-h-0 py-2">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         
                         {/* Free Trial */}
