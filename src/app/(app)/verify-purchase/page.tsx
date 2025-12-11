@@ -15,6 +15,7 @@ import { useBrandsoft, type Purchase } from '@/hooks/use-brandsoft';
 import { useToast } from "@/hooks/use-toast";
 import { KeyRound, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
   orderId: z.string().min(1, "Order ID is required."),
