@@ -111,7 +111,14 @@ export function PurchaseDialog({ plan, isOpen, onClose }: PurchaseDialogProps) {
             });
 
             // Trigger admin notification
-            const message = `New BrandSoft Order!%0A%0AOrder ID: ${newOrderId}%0APlan: ${plan.name} (${plan.period})%0APrice: ${plan.price}%0APayment Method: ${selectedPayment}%0AUser WhatsApp: ${whatsappNumber}%0A%0AView Status: ${window.location.origin}/verify-purchase?orderId=${newOrderId}%0A(Add @8090 to the Order ID in the URL to activate)`;
+            const message = `*Please Activate My New Order!*
+%0A%0AOrder ID: ${newOrderId}
+%0APlan: ${plan.name} (${plan.period})
+%0APrice: ${plan.price}
+%0APayment Method: ${selectedPayment}
+%0AUser WhatsApp: ${whatsappNumber}
+%0A%0AView Status: ${window.location.origin}/verify-purchase?orderId=${newOrderId}
+%0A%0AMy regards`;
             window.open(`https://wa.me/265991972336?text=${message}`, '_blank');
             
             setPurchaseState('success');
