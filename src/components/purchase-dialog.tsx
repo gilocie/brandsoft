@@ -84,8 +84,8 @@ export function PurchaseDialog({ plan, isOpen, onClose }: PurchaseDialogProps) {
             toast({ variant: 'destructive', title: 'Payment Method Required', description: 'Please select a payment method.' });
             return;
         }
-        if (selectedPayment === 'airtel' && !receiptFile) {
-            toast({ variant: 'destructive', title: 'Receipt Required', description: 'Please upload your transaction receipt for Airtel Money.' });
+        if (!receiptFile) {
+            toast({ variant: 'destructive', title: 'Receipt Required', description: 'Please upload your transaction receipt.' });
             return;
         }
         if (!whatsappNumber) {
@@ -125,7 +125,7 @@ export function PurchaseDialog({ plan, isOpen, onClose }: PurchaseDialogProps) {
         }, 1500);
     };
     
-    const isConfirmDisabled = purchaseState !== 'idle' || !selectedPayment || !whatsappNumber || (selectedPayment === 'airtel' && !receiptFile);
+    const isConfirmDisabled = purchaseState !== 'idle' || !selectedPayment || !whatsappNumber || !receiptFile;
 
     const handleClose = () => {
         if (purchaseState !== 'processing') {
@@ -189,7 +189,8 @@ export function PurchaseDialog({ plan, isOpen, onClose }: PurchaseDialogProps) {
                             <div className="space-y-4">
                                 <StepIndicator step={1} label="Enter WhatsApp Number" isComplete={!!whatsappNumber} />
                                 <StepIndicator step={2} label="Select Payment Method" isComplete={!!selectedPayment} />
-                                <StepIndicator step={3} label="Confirm Purchase" isComplete={purchaseState === 'success'} />
+                                <StepIndicator step={3} label="Upload Receipt" isComplete={!!receiptFile} />
+                                <StepIndicator step={4} label="Confirm Purchase" isComplete={purchaseState === 'success'} />
                             </div>
                         </div>
 
@@ -209,15 +210,13 @@ export function PurchaseDialog({ plan, isOpen, onClose }: PurchaseDialogProps) {
                                                     <span className="font-mono">{detail.value}</span>
                                                 </div>
                                             ))}
-                                            {method.id === 'airtel' && (
-                                                <div className="pt-4">
-                                                    <label htmlFor="receipt-upload" className={cn("w-full cursor-pointer flex items-center justify-center gap-2 border-2 border-dashed rounded-md p-4 text-sm hover:bg-muted", receiptFile && "border-green-500 bg-green-50 text-green-700")}>
-                                                        {receiptFile ? <FileCheck className="h-4 w-4" /> : <UploadCloud className="h-4 w-4" />}
-                                                        {receiptFile ? receiptFile.name : "Upload Transaction Receipt"}
-                                                    </label>
-                                                    <Input id="receipt-upload" type="file" className="hidden" onChange={handleReceiptUpload} />
-                                                </div>
-                                            )}
+                                            <div className="pt-4">
+                                                <label htmlFor="receipt-upload" className={cn("w-full cursor-pointer flex items-center justify-center gap-2 border-2 border-dashed rounded-md p-4 text-sm hover:bg-muted", receiptFile && selectedPayment === method.id && "border-green-500 bg-green-50 text-green-700")}>
+                                                    {receiptFile && selectedPayment === method.id ? <FileCheck className="h-4 w-4" /> : <UploadCloud className="h-4 w-4" />}
+                                                    {receiptFile && selectedPayment === method.id ? receiptFile.name : "Upload Transaction Receipt"}
+                                                </label>
+                                                <Input id="receipt-upload" type="file" className="hidden" onChange={handleReceiptUpload} />
+                                            </div>
                                         </AccordionContent>
                                     </AccordionItem>
                                 ))}
