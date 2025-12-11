@@ -82,7 +82,7 @@ export default function VerifyPurchasePage() {
             form.setValue('orderId', orderIdFromUrl);
             handleSubmit(orderIdFromUrl);
         }
-    }, [searchParams, form]);
+    }, [searchParams, form, orderIdFromUrl]);
 
 
     const handleActivation = () => {
@@ -98,6 +98,106 @@ export default function VerifyPurchasePage() {
     };
     
     const showForm = !orderIdFromUrl;
+
+    const renderContent = () => {
+        if (orderIdFromUrl && isLoading) {
+            return (
+                <div className="flex flex-col items-center justify-center h-24 text-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+                    <p className="text-muted-foreground">Verifying your order...</p>
+                </div>
+            );
+        }
+
+        if (order) {
+             return (
+                <Card className="mt-6 border-none shadow-none">
+                    {order.receipt && order.receipt !== 'none' && (
+                        <div className="mb-4">
+                            <h3 className="text-sm font-medium mb-2">Transaction Receipt</h3>
+                            <div className="border rounded-md p-2 bg-muted/50 h-64 overflow-hidden">
+                                <Image src={order.receipt} alt="Transaction Receipt" width={400} height={400} className="rounded-md w-full h-full object-cover" />
+                            </div>
+                        </div>
+                    )}
+                    <CardHeader className="p-0">
+                        <CardTitle>Order Details</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0 pt-4 space-y-2 text-sm">
+                        <p className="flex justify-between"><strong>Order ID:</strong> <span>{order.orderId}</span></p>
+                        <p className="flex justify-between"><strong>Plan:</strong> <span>{order.planName} ({order.planPeriod})</span></p>
+                        <p className="flex justify-between"><strong>Price:</strong> <span>{order.planPrice}</span></p>
+                        <p className="flex justify-between"><strong>Payment:</strong> <span className="capitalize">{order.paymentMethod}</span></p>
+                        <p className="flex justify-between"><strong>Date:</strong> <span>{new Date(order.date).toLocaleString()}</span></p>
+                        <p className="flex justify-between items-center"><strong>Status:</strong> <span className={cn("font-bold capitalize", isActivated ? "text-green-500" : "text-amber-500")}>{isActivated ? 'Active' : order.status}</span></p>
+                    </CardContent>
+                    {isAdminMode && (
+                        <CardFooter className="p-0 pt-6">
+                            {isActivated ? (
+                                <Alert variant="default" className="w-full bg-green-50 text-green-800 border-green-200">
+                                    <CheckCircle className="h-4 w-4 text-green-600" />
+                                    <AlertTitle>Already Activated</AlertTitle>
+                                    <AlertDescription>This order has already been activated.</AlertDescription>
+                                </Alert>
+                            ) : (
+                                <Button className="w-full" onClick={handleActivation}>
+                                    Activate Plan
+                                </Button>
+                            )}
+                        </CardFooter>
+                    )}
+                </Card>
+            );
+        }
+        
+        if (error) {
+             return (
+                <Alert variant="destructive" className="mt-4">
+                    <XCircle className="h-4 w-4" />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                </Alert>
+            );
+        }
+
+        if (showForm) {
+            return (
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onFormSubmit)} className="flex items-end gap-2">
+                        <FormField
+                            control={form.control}
+                            name="orderId"
+                            render={({ field }) => (
+                                <FormItem className="flex-grow">
+                                    <FormLabel>Order ID</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="BSO-..." {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <Button type="submit" disabled={isLoading}>
+                            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Verify'}
+                        </Button>
+                    </form>
+                </Form>
+            );
+        }
+        
+        // Fallback loading state if orderIdFromUrl exists but nothing else has rendered yet
+        if(orderIdFromUrl) {
+           return (
+                <div className="flex flex-col items-center justify-center h-24 text-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+                    <p className="text-muted-foreground">Redirecting to verification...</p>
+                </div>
+            );
+        }
+
+        return null;
+    }
+
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-muted p-4">
@@ -115,82 +215,7 @@ export default function VerifyPurchasePage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {showForm && (
-                        <Form {...form}>
-                            <form onSubmit={form.handleSubmit(onFormSubmit)} className="flex items-end gap-2">
-                                <FormField
-                                    control={form.control}
-                                    name="orderId"
-                                    render={({ field }) => (
-                                        <FormItem className="flex-grow">
-                                            <FormLabel>Order ID</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="BSO-..." {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <Button type="submit" disabled={isLoading}>
-                                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Verify'}
-                                </Button>
-                            </form>
-                        </Form>
-                    )}
-
-                    {error && (
-                        <Alert variant="destructive" className="mt-4">
-                            <XCircle className="h-4 w-4" />
-                            <AlertTitle>Error</AlertTitle>
-                            <AlertDescription>{error}</AlertDescription>
-                        </Alert>
-                    )}
-
-                    {isLoading && (
-                        <div className="flex justify-center items-center h-24">
-                           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                        </div>
-                    )}
-
-
-                    {order && (
-                        <Card className="mt-6 border-none shadow-none">
-                            {order.receipt && order.receipt !== 'none' && (
-                                <div className="mb-4">
-                                    <h3 className="text-sm font-medium mb-2">Transaction Receipt</h3>
-                                    <div className="border rounded-md p-2 bg-muted/50 h-64 overflow-hidden">
-                                        <Image src={order.receipt} alt="Transaction Receipt" width={400} height={400} className="rounded-md w-full h-full object-cover" />
-                                    </div>
-                                </div>
-                            )}
-                            <CardHeader className="p-0">
-                                <CardTitle>Order Details</CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-0 pt-4 space-y-2 text-sm">
-                                <p className="flex justify-between"><strong>Order ID:</strong> <span>{order.orderId}</span></p>
-                                <p className="flex justify-between"><strong>Plan:</strong> <span>{order.planName} ({order.planPeriod})</span></p>
-                                <p className="flex justify-between"><strong>Price:</strong> <span>{order.planPrice}</span></p>
-                                <p className="flex justify-between"><strong>Payment:</strong> <span className="capitalize">{order.paymentMethod}</span></p>
-                                <p className="flex justify-between"><strong>Date:</strong> <span>{new Date(order.date).toLocaleString()}</span></p>
-                                <p className="flex justify-between items-center"><strong>Status:</strong> <span className={cn("font-bold capitalize", isActivated ? "text-green-500" : "text-amber-500")}>{isActivated ? 'Active' : order.status}</span></p>
-                            </CardContent>
-                            {isAdminMode && (
-                                <CardFooter className="p-0 pt-6">
-                                    {isActivated ? (
-                                        <Alert variant="default" className="w-full bg-green-50 text-green-800 border-green-200">
-                                            <CheckCircle className="h-4 w-4 text-green-600" />
-                                            <AlertTitle>Already Activated</AlertTitle>
-                                            <AlertDescription>This order has already been activated.</AlertDescription>
-                                        </Alert>
-                                    ) : (
-                                        <Button className="w-full" onClick={handleActivation}>
-                                            Activate Plan
-                                        </Button>
-                                    )}
-                                </CardFooter>
-                            )}
-                        </Card>
-                    )}
+                    {renderContent()}
                 </CardContent>
                 <CardFooter>
                   <Button variant="link" asChild className="mx-auto">
