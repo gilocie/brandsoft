@@ -74,10 +74,10 @@ export default function VerifyPurchasePage() {
         setIsLoading(false);
     };
 
+    const orderIdFromUrl = searchParams.get('orderId');
+
     // Automatically search if orderId is in URL
     useEffect(() => {
-        const orderIdFromUrl = searchParams.get('orderId');
-
         if (orderIdFromUrl) {
             form.setValue('orderId', orderIdFromUrl);
             handleSubmit(orderIdFromUrl);
@@ -96,6 +96,8 @@ export default function VerifyPurchasePage() {
     const onFormSubmit = (data: FormData) => {
         router.push(`/verify-purchase?orderId=${data.orderId}`);
     };
+    
+    const showForm = !orderIdFromUrl;
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-muted p-4">
@@ -113,7 +115,7 @@ export default function VerifyPurchasePage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {!order && (
+                    {showForm && (
                         <Form {...form}>
                             <form onSubmit={form.handleSubmit(onFormSubmit)} className="flex items-end gap-2">
                                 <FormField
@@ -144,7 +146,7 @@ export default function VerifyPurchasePage() {
                         </Alert>
                     )}
 
-                    {isLoading && !order && (
+                    {isLoading && (
                         <div className="flex justify-center items-center h-24">
                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
                         </div>
