@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
@@ -29,14 +30,14 @@ const ADMIN_PIN_SUFFIX = '@8090';
 
 
 function VerifyPurchaseContent() {
-    const { getPurchaseOrder, activatePurchaseOrder, declinePurchaseOrder } = useBrandsoft();
+    const { getPurchaseOrder, activatePurchaseOrder, declinePurchaseOrder, acknowledgeDeclinedPurchase } = useBrandsoft();
     const { toast } = useToast();
     const searchParams = useSearchParams();
     const router = useRouter();
 
     const [order, setOrder] = useState<Purchase | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const [isActivated, setIsActivated] = useState(false);
     const [isDeclined, setIsDeclined] = useState(false);
     const [isAdminMode, setIsAdminMode] = useState(false);
@@ -48,6 +49,9 @@ function VerifyPurchaseContent() {
             orderId: '',
         },
     });
+    
+    const orderIdFromUrl = searchParams.get('orderId');
+    const viewOnlyMode = searchParams.get('view') === 'true';
 
     const handleSubmit = async (orderIdWithPin: string) => {
         setIsLoading(true);
@@ -75,6 +79,9 @@ function VerifyPurchaseContent() {
             }
             if (foundOrder.status === 'declined') {
                 setIsDeclined(true);
+                if (viewOnlyMode && !foundOrder.isAcknowledged) {
+                  acknowledgeDeclinedPurchase(foundOrder.orderId);
+                }
             }
         } else {
             setError("No purchase order found with this ID.");
@@ -82,15 +89,16 @@ function VerifyPurchaseContent() {
         setIsLoading(false);
     };
 
-    const orderIdFromUrl = searchParams.get('orderId');
 
     // Automatically search if orderId is in URL
     useEffect(() => {
         if (orderIdFromUrl) {
             form.setValue('orderId', orderIdFromUrl);
             handleSubmit(orderIdFromUrl);
+        } else {
+            setIsLoading(false);
         }
-    }, [searchParams, form, orderIdFromUrl]);
+    }, [orderIdFromUrl]);
 
 
     const handleActivation = () => {
@@ -116,17 +124,19 @@ function VerifyPurchaseContent() {
     };
 
     const renderContent = () => {
-        if (orderIdFromUrl && isLoading) {
+        if (isLoading) {
             return (
                 <div className="flex flex-col items-center justify-center h-24 text-center">
                     <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
-                    <p className="text-muted-foreground">Redirecting to verification...</p>
+                    <p className="text-muted-foreground">Verifying order...</p>
                 </div>
             );
         }
 
         if (order) {
              const status = isActivated ? 'active' : isDeclined ? 'declined' : order.status;
+             const finalIsAdminMode = isAdminMode && !viewOnlyMode;
+             
              return (
                 <Card className="mt-6 border-none shadow-none">
                     {order.receipt && order.receipt !== 'none' && (
@@ -159,11 +169,16 @@ function VerifyPurchaseContent() {
                         {status === 'declined' && order.declineReason && (
                              <Alert variant="destructive">
                                 <AlertTitle>Reason for Decline</AlertTitle>
-                                <AlertDescription>{order.declineReason}</AlertDescription>
+                                <AlertDescription>
+                                    {order.declineReason}
+                                     <p className="mt-2 text-xs">
+                                        If you believe this is a mistake, please contact us on +265 991 972 336.
+                                    </p>
+                                </AlertDescription>
                             </Alert>
                         )}
                     </CardContent>
-                    {isAdminMode && status === 'pending' && (
+                    {finalIsAdminMode && status === 'pending' && (
                         <CardFooter className="p-0 pt-6 flex gap-2">
                              <AlertDialog>
                                 <AlertDialogTrigger asChild>
@@ -194,7 +209,7 @@ function VerifyPurchaseContent() {
                             </Button>
                         </CardFooter>
                     )}
-                     {status !== 'pending' && (
+                     {(status !== 'pending' && !finalIsAdminMode) && (
                         <CardFooter className="p-0 pt-6">
                              <Alert variant={status === 'active' ? 'default' : 'destructive'} className={cn("w-full", status === 'active' && "bg-green-50 text-green-800 border-green-200")}>
                                 <CheckCircle className={cn("h-4 w-4", status === 'active' && "text-green-600")} />

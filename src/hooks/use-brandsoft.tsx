@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
@@ -134,6 +135,7 @@ export type Purchase = {
     receipt?: string | 'none';
     whatsappNumber?: string;
     declineReason?: string;
+    isAcknowledged?: boolean;
 }
 
 
@@ -241,6 +243,7 @@ interface BrandsoftContextType {
   getPurchaseOrder: (orderId: string) => Purchase | null;
   activatePurchaseOrder: (orderId: string) => void;
   declinePurchaseOrder: (orderId: string, reason: string) => void;
+  acknowledgeDeclinedPurchase: (orderId: string) => void;
 }
 
 const BrandsoftContext = createContext<BrandsoftContextType | undefined>(undefined);
@@ -537,12 +540,23 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
   };
   
   const declinePurchaseOrder = (orderId: string, reason: string) => {
-      const updatedPurchases = purchases.map(p => p.orderId === orderId ? { ...p, status: 'declined', declineReason: reason } : p);
+      const updatedPurchases = purchases.map(p => p.orderId === orderId ? { ...p, status: 'declined', declineReason: reason, isAcknowledged: false } : p);
       setPurchases(updatedPurchases);
       localStorage.setItem(PURCHASES_KEY, JSON.stringify(updatedPurchases));
       if (config) {
         saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false });
       }
+  };
+  
+  const acknowledgeDeclinedPurchase = (orderId: string) => {
+    const updatedPurchases = purchases.map(p => 
+      (p.orderId === orderId && p.status === 'declined') ? { ...p, isAcknowledged: true } : p
+    );
+    setPurchases(updatedPurchases);
+    localStorage.setItem(PURCHASES_KEY, JSON.stringify(updatedPurchases));
+    if (config) {
+      saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false });
+    }
   };
 
   const addCustomer = (customer: Omit<Customer, 'id'>): Customer => {
@@ -682,6 +696,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     getPurchaseOrder,
     activatePurchaseOrder,
     declinePurchaseOrder,
+    acknowledgeDeclinedPurchase,
   };
 
   return <BrandsoftContext.Provider value={value}>{children}</BrandsoftContext.Provider>;

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useBrandsoft, type Invoice, type Quotation } from "@/hooks/use-brandsoft";
@@ -130,7 +131,7 @@ export default function DashboardPage() {
   const certificateModule = enabledModules.find(m => m.title === 'Certificate Designer');
   
   const pendingPurchase = config.purchases?.find(p => p.status === 'pending');
-  const declinedPurchase = config.purchases?.find(p => p.status === 'declined');
+  const declinedPurchase = config.purchases?.find(p => p.status === 'declined' && !p.isAcknowledged);
 
 
   return (
