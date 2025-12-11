@@ -93,7 +93,7 @@ function VerifyPurchaseContent() {
     // Automatically search if orderId is in URL
     useEffect(() => {
         if (orderIdFromUrl) {
-            form.setValue('orderId', orderIdFromUrl);
+            // No need to show form, just load data
             handleSubmit(orderIdFromUrl);
         } else {
             setIsLoading(false);
@@ -139,87 +139,91 @@ function VerifyPurchaseContent() {
              
              return (
                 <Card className="mt-6 border-none shadow-none">
-                    {order.receipt && order.receipt !== 'none' && (
-                        <div className="mb-4">
-                            <h3 className="text-sm font-medium mb-2">Transaction Receipt</h3>
-                            <div className="border rounded-md p-2 bg-muted/50 h-64 overflow-hidden">
-                                <Image src={order.receipt} alt="Transaction Receipt" width={400} height={400} className="rounded-md w-full h-full object-cover" />
+                    <div className="flex flex-col md:flex-row gap-6">
+                        {order.receipt && order.receipt !== 'none' && (
+                            <div className="md:w-1/2 flex-shrink-0">
+                                <h3 className="text-sm font-medium mb-2">Transaction Receipt</h3>
+                                <div className="border rounded-md p-2 bg-muted/50 h-64 overflow-hidden">
+                                    <Image src={order.receipt} alt="Transaction Receipt" width={400} height={400} className="rounded-md w-full h-full object-cover" />
+                                </div>
                             </div>
-                        </div>
-                    )}
-                    <CardHeader className="p-0">
-                        <CardTitle>Order Details</CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-0 pt-4 space-y-2 text-sm">
-                        <p className="flex justify-between"><strong>Order ID:</strong> <span>{order.orderId}</span></p>
-                        <p className="flex justify-between"><strong>Plan:</strong> <span>{order.planName} ({order.planPeriod})</span></p>
-                        <p className="flex justify-between"><strong>Price:</strong> <span>{order.planPrice}</span></p>
-                        <p className="flex justify-between"><strong>Payment:</strong> <span className="capitalize">{order.paymentMethod}</span></p>
-                        <p className="flex justify-between"><strong>Date:</strong> <span>{new Date(order.date).toLocaleString()}</span></p>
-                        <p className="flex justify-between items-center"><strong>Status:</strong> 
-                            <span className={cn(
-                                "font-bold capitalize", 
-                                status === 'active' && "text-green-500",
-                                status === 'pending' && "text-amber-500",
-                                status === 'declined' && "text-destructive",
-                            )}>
-                                {status}
-                            </span>
-                        </p>
-                        {status === 'declined' && order.declineReason && (
-                             <Alert variant="destructive">
-                                <AlertTitle>Reason for Decline</AlertTitle>
-                                <AlertDescription>
-                                    {order.declineReason}
-                                     <p className="mt-2 text-xs">
-                                        If you believe this is a mistake, please contact us on +265 991 972 336.
-                                    </p>
-                                </AlertDescription>
-                            </Alert>
                         )}
-                    </CardContent>
-                    {finalIsAdminMode && status === 'pending' && (
-                        <CardFooter className="p-0 pt-6 flex gap-2">
-                             <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="destructive" className="w-full">Decline</Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Decline Order {order.orderId}?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            Please provide a short reason for declining this order. This will be shown to the customer.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <Textarea 
-                                        placeholder="e.g., Incorrect amount, receipt unclear..."
-                                        value={declineReason}
-                                        onChange={(e) => setDeclineReason(e.target.value)}
-                                    />
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={handleDecline} disabled={!declineReason}>
-                                            Confirm Decline
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                            <Button className="w-full" onClick={handleActivation}>
-                                Activate Plan
-                            </Button>
-                        </CardFooter>
-                    )}
-                     {(status !== 'pending' && !finalIsAdminMode) && (
-                        <CardFooter className="p-0 pt-6">
-                             <Alert variant={status === 'active' ? 'default' : 'destructive'} className={cn("w-full", status === 'active' && "bg-green-50 text-green-800 border-green-200")}>
-                                <CheckCircle className={cn("h-4 w-4", status === 'active' && "text-green-600")} />
-                                <AlertTitle>{status === 'active' ? 'Order Activated' : 'Order Declined'}</AlertTitle>
-                                <AlertDescription>
-                                    {status === 'active' ? 'This order is already active.' : 'This order has been declined.'}
-                                </AlertDescription>
-                            </Alert>
-                        </CardFooter>
-                     )}
+                        <div className="flex-1">
+                            <CardHeader className="p-0">
+                                <CardTitle>Order Details</CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-0 pt-4 space-y-2 text-sm">
+                                <p className="flex justify-between"><strong>Order ID:</strong> <span>{order.orderId}</span></p>
+                                <p className="flex justify-between"><strong>Plan:</strong> <span>{order.planName} ({order.planPeriod})</span></p>
+                                <p className="flex justify-between"><strong>Price:</strong> <span>{order.planPrice}</span></p>
+                                <p className="flex justify-between"><strong>Payment:</strong> <span className="capitalize">{order.paymentMethod}</span></p>
+                                <p className="flex justify-between"><strong>Date:</strong> <span>{new Date(order.date).toLocaleString()}</span></p>
+                                <p className="flex justify-between items-center"><strong>Status:</strong> 
+                                    <span className={cn(
+                                        "font-bold capitalize", 
+                                        status === 'active' && "text-green-500",
+                                        status === 'pending' && "text-amber-500",
+                                        status === 'declined' && "text-destructive",
+                                    )}>
+                                        {status}
+                                    </span>
+                                </p>
+                                {status === 'declined' && order.declineReason && (
+                                     <Alert variant="destructive">
+                                        <AlertTitle>Reason for Decline</AlertTitle>
+                                        <AlertDescription>
+                                            {order.declineReason}
+                                             <p className="mt-2 text-xs">
+                                                If you believe this is a mistake, please contact us on +265 991 972 336.
+                                            </p>
+                                        </AlertDescription>
+                                    </Alert>
+                                )}
+                            </CardContent>
+                             {finalIsAdminMode && status === 'pending' && (
+                                <CardFooter className="p-0 pt-6 flex gap-2">
+                                     <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="destructive" className="w-full">Decline</Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Decline Order {order.orderId}?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    Please provide a short reason for declining this order. This will be shown to the customer.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <Textarea 
+                                                placeholder="e.g., Incorrect amount, receipt unclear..."
+                                                value={declineReason}
+                                                onChange={(e) => setDeclineReason(e.target.value)}
+                                            />
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction onClick={handleDecline} disabled={!declineReason}>
+                                                    Confirm Decline
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                    <Button className="w-full" onClick={handleActivation}>
+                                        Activate Plan
+                                    </Button>
+                                </CardFooter>
+                            )}
+                             {(status !== 'pending' && !finalIsAdminMode) && (
+                                <CardFooter className="p-0 pt-6">
+                                     <Alert variant={status === 'active' ? 'default' : 'destructive'} className={cn("w-full", status === 'active' && "bg-green-50 text-green-800 border-green-200")}>
+                                        <CheckCircle className={cn("h-4 w-4", status === 'active' && "text-green-600")} />
+                                        <AlertTitle>{status === 'active' ? 'Order Activated' : 'Order Declined'}</AlertTitle>
+                                        <AlertDescription>
+                                            {status === 'active' ? 'This order is already active.' : 'This order has been declined.'}
+                                        </AlertDescription>
+                                    </Alert>
+                                </CardFooter>
+                             )}
+                        </div>
+                    </div>
                 </Card>
             );
         }
@@ -264,7 +268,7 @@ function VerifyPurchaseContent() {
 
 
     return (
-        <Card className="w-full max-w-lg">
+        <Card className="w-full max-w-4xl">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <KeyRound className="h-6 w-6 text-primary" />
