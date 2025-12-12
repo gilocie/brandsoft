@@ -94,7 +94,7 @@ export type Purchase = {
     declineReason?: string;
     isAcknowledged?: boolean;
     expiresAt?: string;
-    remainingDays?: number;
+    remainingDays: number;
 }
 
 
@@ -369,49 +369,50 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     const purchaseToActivate = config.purchases.find(p => p.orderId === orderId);
     if (!purchaseToActivate) return;
 
-    const period = purchaseToActivate.planPeriod;
-    const now = Date.now();
+    const currentlyActivePlan = config.purchases.find(p => p.status === 'active');
+    const remainingDaysFromOldPlan = currentlyActivePlan ? (currentlyActivePlan.remainingDays || 0) : 0;
 
-    let durationMs = 0;
-    let remainingValue = 0;
+    const period = purchaseToActivate.planPeriod;
     const isTestPlan = isTestPlanPeriod(period);
 
+    let newPlanDuration = 0;
+
     if (isTestPlan) {
-      // TEST MODE: use minutes
-      const minutes = TEST_PERIOD_MINUTES[period];
-      remainingValue = minutes;                  // remainingDays field = minutes
-      durationMs = minutes * 60 * 1000;         // minutes → ms
+        newPlanDuration = TEST_PERIOD_MINUTES[period] || 0;
     } else {
-      // NORMAL MODE: use real days
-      const realPeriodMap: Record<string, number> = {
-        '1 Month': 30,
-        '3 Months': 90,
-        '6 Months': 180,
-        '1 Year': 365,
-        'Once OFF': 365 * 3,
-      };
-      const days = realPeriodMap[period] ?? 0;
-      remainingValue = days;                     // remainingDays = days
-      durationMs = days * 24 * 60 * 60 * 1000;   // days → ms
+        const realPeriodMap: Record<string, number> = {
+            '1 Month': 30,
+            '3 Months': 90,
+            '6 Months': 180,
+            '1 Year': 365,
+            'Once OFF': 365 * 3,
+        };
+        newPlanDuration = realPeriodMap[period] ?? 0;
     }
 
-    const newExpiresAt = new Date(now + durationMs).toISOString();
+    const totalRemainingDays = remainingDaysFromOldPlan + newPlanDuration;
+    
+    const durationMs = isTestPlan 
+        ? totalRemainingDays * 60 * 1000 // minutes to ms
+        : totalRemainingDays * 24 * 60 * 60 * 1000; // days to ms
+
+    const newExpiresAt = new Date(Date.now() + durationMs).toISOString();
 
     const updatedPurchases = config.purchases.map(p => {
-      if (p.orderId === orderId) {
-        return {
-          ...p,
-          status: 'active' as const,
-          date: new Date().toISOString(),
-          remainingDays: remainingValue,
-          expiresAt: newExpiresAt,
-        };
-      }
-      // deactivate any currently active plan
-      if (p.status === 'active') {
-        return { ...p, status: 'inactive' as const, remainingDays: 0 };
-      }
-      return p;
+        if (p.orderId === orderId) {
+            return {
+                ...p,
+                status: 'active' as const,
+                date: new Date().toISOString(),
+                remainingDays: totalRemainingDays,
+                expiresAt: newExpiresAt,
+            };
+        }
+        // Deactivate any other active plan
+        if (p.status === 'active') {
+            return { ...p, status: 'inactive' as const, remainingDays: 0 };
+        }
+        return p;
     });
 
     saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: true });
