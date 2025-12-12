@@ -11,6 +11,16 @@ const LICENSE_KEY = 'brandsoft_license';
 const CONFIG_KEY = 'brandsoft_config';
 const VALID_SERIAL = 'BRANDSOFT-2024';
 
+const TEST_PERIOD_MINUTES: Record<string, number> = {
+  '1 Month': 10,   // 10 minutes
+  '3 Months': 15,  // 15 minutes
+  '6 Months': 30,  // 30 minutes
+  '1 Year': 45,    // 45 minutes
+};
+
+const isTestPlanPeriod = (period: string) => period in TEST_PERIOD_MINUTES;
+
+
 export type Customer = {
   id: string;
   name: string;
@@ -353,62 +363,60 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     return config?.purchases?.find(p => p.orderId === orderId) || null;
   };
 
- const activatePurchaseOrder = (orderId: string) => {
+  const activatePurchaseOrder = (orderId: string) => {
     if (!config || !config.purchases) return;
 
     const purchaseToActivate = config.purchases.find(p => p.orderId === orderId);
     if (!purchaseToActivate) return;
-    
-    let remainingDaysFromOldPlan = 0;
-    const currentlyActivePurchase = config.purchases.find(p => p.status === 'active');
-    
-    if (currentlyActivePurchase) {
-        remainingDaysFromOldPlan = currentlyActivePurchase.remainingDays || 0;
-    }
 
-    const testPeriodMap: { [key: string]: number } = {
-        '1 Month': 10, 
-        '3 Months': 15, 
-        '6 Months': 30, 
-        '1 Year': 45,
-    };
-    
-    const isTestPlan = Object.keys(testPeriodMap).includes(purchaseToActivate.planPeriod);
-    
-    let newPlanDuration = 0;
-    if (isTestPlan) {
-      newPlanDuration = testPeriodMap[purchaseToActivate.planPeriod];
-    } else {
-      const realPeriodMap: { [key: string]: number } = {
-        '1 Month': 30, '3 Months': 90, '6 Months': 180, '1 Year': 365, 'Once OFF': 365 * 3,
-      };
-      newPlanDuration = realPeriodMap[purchaseToActivate.planPeriod] || 0;
-    }
-
-    const totalRemainingDays = remainingDaysFromOldPlan + newPlanDuration;
+    const period = purchaseToActivate.planPeriod;
     const now = Date.now();
-    const durationMs = totalRemainingDays * (isTestPlan ? 60 * 1000 : 24 * 60 * 60 * 1000);
+
+    let durationMs = 0;
+    let remainingValue = 0;
+    const isTestPlan = isTestPlanPeriod(period);
+
+    if (isTestPlan) {
+      // TEST MODE: use minutes
+      const minutes = TEST_PERIOD_MINUTES[period];
+      remainingValue = minutes;                  // remainingDays field = minutes
+      durationMs = minutes * 60 * 1000;         // minutes → ms
+    } else {
+      // NORMAL MODE: use real days
+      const realPeriodMap: Record<string, number> = {
+        '1 Month': 30,
+        '3 Months': 90,
+        '6 Months': 180,
+        '1 Year': 365,
+        'Once OFF': 365 * 3,
+      };
+      const days = realPeriodMap[period] ?? 0;
+      remainingValue = days;                     // remainingDays = days
+      durationMs = days * 24 * 60 * 60 * 1000;   // days → ms
+    }
+
     const newExpiresAt = new Date(now + durationMs).toISOString();
-    
+
     const updatedPurchases = config.purchases.map(p => {
       if (p.orderId === orderId) {
-        return { 
-            ...p, 
-            status: 'active' as 'active', 
-            date: new Date().toISOString(),
-            remainingDays: totalRemainingDays,
-            expiresAt: newExpiresAt,
+        return {
+          ...p,
+          status: 'active' as const,
+          date: new Date().toISOString(),
+          remainingDays: remainingValue,
+          expiresAt: newExpiresAt,
         };
       }
-      if (p.orderId === currentlyActivePurchase?.orderId) {
-        return { ...p, status: 'inactive' as 'inactive', remainingDays: 0 };
+      // deactivate any currently active plan
+      if (p.status === 'active') {
+        return { ...p, status: 'inactive' as const, remainingDays: 0 };
       }
       return p;
     });
 
     saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: true });
   };
-
+  
   const declinePurchaseOrder = (orderId: string, reason: string) => {
     if (!config || !config.purchases) return;
     const updatedPurchases = config.purchases.map(p =>
@@ -444,15 +452,18 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     const updatedPurchases = (freshConfig.purchases || []).map((p: Purchase) => {
       if (p.status === 'active' && p.expiresAt) {
         const expiryTime = new Date(p.expiresAt).getTime();
-        const isTestMode = Object.keys({ '1 Month': 10, '3 Months': 15, '6 Months': 30, '1 Year': 45 }).includes(p.planPeriod);
+        const isTestMode = isTestPlanPeriod(p.planPeriod);
 
         if (now >= expiryTime) {
           configChanged = true;
-          return { ...p, status: 'inactive' as 'inactive', remainingDays: 0 };
+          return { ...p, status: 'inactive' as const, remainingDays: 0 };
         }
         
         const remainingMs = expiryTime - now;
-        const remaining = isTestMode ? remainingMs / (1000 * 60) : remainingMs / (1000 * 60 * 60 * 24);
+        const remaining = isTestMode
+          ? remainingMs / (1000 * 60)                 // minutes
+          : remainingMs / (1000 * 60 * 60 * 24);      // days
+
         const roundedRemaining = Math.ceil(remaining);
         
         if (roundedRemaining !== p.remainingDays) {

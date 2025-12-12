@@ -42,6 +42,14 @@ import { AnalyticsChart } from '@/components/analytics-chart';
 import { ManagePlanDialog } from '@/components/manage-plan-dialog';
 import { useRouter } from 'next/navigation';
 
+const TEST_PERIOD_MINUTES: Record<string, number> = {
+  '1 Month': 10,
+  '3 Months': 15,
+  '6 Months': 30,
+  '1 Year': 45,
+};
+const isTestPlanPeriod = (period: string) => period in TEST_PERIOD_MINUTES;
+
 const modules = [
   {
     title: 'Invoice Designer',
@@ -148,23 +156,38 @@ const PlanStatusCard = ({ purchase }: { purchase: Purchase | null }) => {
 
   if (purchase.status === 'active') {
     const remaining = purchase.remainingDays || 0;
+    const isTestPlan = isTestPlanPeriod(purchase.planPeriod); // reuse same logic
     const isExpired = remaining <= 0;
-    const isExpiringSoon = !isExpired && remaining <= 5;
-    
-    const displayValue = isExpired ? '0' : Math.ceil(remaining);
-    const displayUnit = 'Days';
+
+    const isExpiringSoon = !isExpired && (
+      isTestPlan ? remaining <= 2 : remaining <= 5
+    );
+
+    const rounded = Math.ceil(remaining);
+    const displayValue = isExpired ? '0' : rounded;
+
+    const displayUnit = isTestPlan
+      ? rounded === 1 ? 'Min' : 'Mins'
+      : rounded === 1 ? 'Day' : 'Days';
 
     const displayText = isExpired ? `0 ${displayUnit}` : `${displayValue} ${displayUnit}`;
 
     return (
-      <Card className={cn('text-white', isExpired && 'bg-gray-500', isExpiringSoon && 'bg-destructive', !isExpiringSoon && !isExpired && 'bg-green-900')}>
+      <Card className={cn(
+        'text-white',
+        isExpired && 'bg-gray-500',
+        isExpiringSoon && 'bg-destructive',
+        !isExpiringSoon && !isExpired && 'bg-green-900'
+      )}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">{purchase.planName}</CardTitle>
           {isExpired ? <XCircle className="h-4 w-4 text-white/70" /> : <Crown className="h-4 w-4 text-white/70" />}
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{isExpired ? 'Expired' : displayText}</div>
-          <p className="text-xs text-white/80">{isExpired ? 'Your plan has expired.' : 'Remaining'}</p>
+          <p className="text-xs text-white/80">
+            {isExpired ? 'Your plan has expired.' : 'Remaining'}
+          </p>
           <ManagePlanDialog isExpiringSoon={isExpiringSoon} isExpired={isExpired} />
         </CardContent>
       </Card>
@@ -223,24 +246,25 @@ export default function DashboardPage() {
 
   // Consolidated useEffect for all real-time sync
   useEffect(() => {
-    // Initial check
+    // 1. Initial check on mount
     updatePurchaseStatus();
 
-    // Storage event listener (cross-tab updates)
+    // 2. Storage event listener for cross-tab updates
     const handleStorageChange = (e: StorageEvent) => {
+      // Only react to brandsoft-config changes
       if (e.key === 'brandsoft-config' || e.key === null) {
         console.log('Storage changed, refreshing dashboard...');
         forceRefresh();
       }
     };
 
-    // Custom event listener (same-tab updates)
+    // 3. Custom event listener for same-tab updates
     const handleCustomUpdate = () => {
       console.log('Custom update event received');
       forceRefresh();
     };
 
-    // Visibility change listener
+    // 4. Visibility change listener (when user returns to tab)
     const handleVisibilityChange = () => {
       if (!document.hidden) {
         console.log('Tab became visible, refreshing...');
@@ -248,13 +272,13 @@ export default function DashboardPage() {
       }
     };
 
-    // Focus listener
+    // 5. Focus listener (when window gains focus)
     const handleFocus = () => {
       console.log('Window focused, refreshing...');
       forceRefresh();
     };
 
-    // Polling as backup (every 3 seconds)
+    // 6. Polling as backup (every 3 seconds)
     const pollInterval = setInterval(() => {
       forceRefresh();
     }, 3000);
