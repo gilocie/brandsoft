@@ -347,15 +347,13 @@ export default function DashboardPage() {
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
 
-    // Priority 1: Check for any pending order first
+    // Priority 1: Check for any unacknowledged declined orders first
+    const unacknowledgedDeclined = purchases.find(p => p.status === 'declined' && !p.isAcknowledged);
+    if (unacknowledgedDeclined) return unacknowledgedDeclined;
+    
+    // Priority 2: Check for any pending order
     const pending = purchases.find((p) => p.status === 'pending');
     if (pending) return pending;
-    
-    // Priority 2: Check if the LATEST order is an unacknowledged decline
-    const latestOrder = purchases[0];
-    if (latestOrder.status === 'declined' && !latestOrder.isAcknowledged) {
-      return latestOrder;
-    }
 
     // Priority 3: Fallback to any active plan
     const active = purchases.find((p) => p.status === 'active');

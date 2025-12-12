@@ -69,7 +69,7 @@ export function usePurchases(
         }
         // Deactivate other active plans
         if (p.status === 'active') {
-            return { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: 'days' } };
+            return { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: 'days' as 'days' } };
         }
         return p;
     });
@@ -79,16 +79,21 @@ export function usePurchases(
   
   const declinePurchaseOrder = (orderId: string, reason: string) => {
     if (!config || !config.purchases) return;
-    const updatedPurchases = config.purchases.map(p =>
-      p.orderId === orderId
-        ? {
-            ...p,
-            status: 'declined' as 'declined',
-            declineReason: reason,
-            isAcknowledged: false,
-          }
-        : p
-    );
+    const updatedPurchases = config.purchases.map(p => {
+      if (p.orderId === orderId) {
+        return {
+          ...p,
+          status: 'declined' as const,
+          declineReason: reason,
+          isAcknowledged: false,
+        };
+      }
+      // Also deactivate any active plan when one is declined
+      if (p.status === 'active') {
+        return { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: 'days' as 'days'} };
+      }
+      return p;
+    });
     saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: true });
   };
   
