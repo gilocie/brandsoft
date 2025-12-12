@@ -162,7 +162,7 @@ const PlanStatusCard = ({ purchase }: { purchase: Purchase | null }) => {
     const rounded = Math.ceil(remaining);
     const displayValue = isExpired ? '0' : rounded;
 
-    const displayUnit = rounded === 1 ? 'Day' : 'Days';
+    const displayUnit = 'Days';
 
     const displayText = isExpired ? `0 ${displayUnit}` : `${displayValue} ${displayUnit}`;
 
@@ -230,13 +230,7 @@ const PlanStatusCard = ({ purchase }: { purchase: Purchase | null }) => {
 };
 
 export default function DashboardPage() {
-  const { config, updatePurchaseStatus } = useBrandsoft();
-  const [refreshKey, setRefreshKey] = useState(0);
-  
-  const forceRefresh = useCallback(() => {
-    setRefreshKey(prev => prev + 1);
-    updatePurchaseStatus();
-  }, [updatePurchaseStatus]);
+  const { config, updatePurchaseStatus, revalidate } = useBrandsoft();
 
   // Consolidated useEffect for all real-time sync
   useEffect(() => {
@@ -245,37 +239,32 @@ export default function DashboardPage() {
 
     // 2. Storage event listener for cross-tab updates
     const handleStorageChange = (e: StorageEvent) => {
-      // Only react to brandsoft-config changes
-      if (e.key === 'brandsoft-config' || e.key === null) {
-        forceRefresh();
+      if (e.key === 'brandsoft-config') {
+        revalidate();
       }
     };
 
-    // 3. Custom event listener for same-tab updates
-    const handleCustomUpdate = () => {
-      forceRefresh();
-    };
-
-    // 4. Visibility change listener (when user returns to tab)
+    // 3. Visibility change listener (when user returns to tab)
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        forceRefresh();
+        revalidate();
+        updatePurchaseStatus();
       }
     };
 
-    // 5. Focus listener (when window gains focus)
+    // 4. Focus listener (when window gains focus)
     const handleFocus = () => {
-      forceRefresh();
+      revalidate();
+      updatePurchaseStatus();
     };
-
-    // 6. Polling as backup (every 1 seconds)
+    
+    // 5. Polling for countdown updates
     const pollInterval = setInterval(() => {
-      forceRefresh();
-    }, 1000);
+        updatePurchaseStatus();
+    }, 5000); // Check every 5 seconds for countdown update
 
     // Register all listeners
     window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('brandsoft-update', handleCustomUpdate);
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('focus', handleFocus);
 
@@ -283,11 +272,10 @@ export default function DashboardPage() {
     return () => {
       clearInterval(pollInterval);
       window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('brandsoft-update', handleCustomUpdate);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleFocus);
     };
-  }, [forceRefresh, updatePurchaseStatus]);
+  }, [revalidate, updatePurchaseStatus]);
 
   const stats = useMemo(() => {
     if (!config) {
@@ -334,7 +322,7 @@ export default function DashboardPage() {
       ).length,
       receiptsIssued: paidInvoices.length,
     };
-  }, [config, refreshKey]);
+  }, [config]);
 
   const purchaseToShow = useMemo((): Purchase | null => {
     if (!config?.purchases || config.purchases.length === 0) return null;
@@ -362,7 +350,7 @@ export default function DashboardPage() {
     }
 
     return null;
-  }, [config?.purchases, refreshKey]);
+  }, [config?.purchases]);
 
   if (!config) {
     return (

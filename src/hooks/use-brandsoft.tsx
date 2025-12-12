@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { useState, useEffect, createContext, useContext, ReactNode, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { hexToHsl } from '@/lib/utils';
 import { useCustomers } from './use-customers';
@@ -21,6 +21,7 @@ interface BrandsoftContextType {
   isActivated: boolean | null;
   isConfigured: boolean | null;
   config: BrandsoftConfig | null;
+  revalidate: () => void;
   activate: (serial: string) => boolean;
   saveConfig: (newConfig: BrandsoftConfig, options?: { redirect?: boolean; revalidate?: boolean }) => void;
   logout: () => void;
@@ -59,6 +60,18 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
   const [isConfigured, setIsConfigured] = useState<boolean | null>(null);
   const [config, setConfig] = useState<BrandsoftConfig | null>(null);
   const router = useRouter();
+
+  const revalidate = useCallback(() => {
+    try {
+      const storedConfig = localStorage.getItem(CONFIG_KEY);
+      if (storedConfig) {
+        setConfig(JSON.parse(storedConfig));
+      }
+    } catch (error) {
+      console.error("Error revalidating config from localStorage", error);
+    }
+  }, []);
+
 
   useEffect(() => {
     try {
@@ -122,22 +135,22 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
   };
 
   const saveConfig = (newConfig: BrandsoftConfig, options: { redirect?: boolean; revalidate?: boolean } = {}) => {
-    const { redirect = true, revalidate = false } = options;
+    const { redirect = true, revalidate: shouldRevalidate = false } = options;
     
     setConfig(newConfig);
     
     localStorage.setItem(CONFIG_KEY, JSON.stringify(newConfig));
     setIsConfigured(true);
 
-    if (revalidate) {
-      window.dispatchEvent(new Event('brandsoft-update'));
-      
-      window.dispatchEvent(new StorageEvent('storage', {
-        key: CONFIG_KEY,
-        newValue: JSON.stringify(newConfig),
-        url: window.location.href,
-        storageArea: localStorage
-      }));
+    if (shouldRevalidate) {
+      // Dispatch a storage event to notify other tabs
+      window.dispatchEvent(
+        new StorageEvent("storage", {
+          key: CONFIG_KEY,
+          newValue: JSON.stringify(newConfig),
+          storageArea: localStorage,
+        })
+      );
     }
 
     if (redirect) {
@@ -156,6 +169,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     isActivated,
     isConfigured,
     config,
+    revalidate,
     activate,
     saveConfig,
     logout,
