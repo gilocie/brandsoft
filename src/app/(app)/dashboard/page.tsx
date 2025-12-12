@@ -261,13 +261,13 @@ export default function DashboardPage() {
   const { config, updatePurchaseStatus } = useBrandsoft();
 
   // ------------------------------------------------------------------
-  // FIX 1: Add a listener for when you click back to this tab
+  // FIX 1: Add listeners to force data refresh without a page reload.
   // ------------------------------------------------------------------
   useEffect(() => {
     // 1. Initial check
     updatePurchaseStatus();
 
-    // 2. Poll every 2 seconds
+    // 2. Poll every 2 seconds to catch background changes
     const intervalId = setInterval(() => {
         updatePurchaseStatus();
     }, 2000);
@@ -277,7 +277,7 @@ export default function DashboardPage() {
         updatePurchaseStatus();
     };
     
-    // 4. Listen for Window Focus (when user clicks tab)
+    // 4. Listen for Window Focus (when user clicks back to this tab)
     const handleFocus = () => {
         updatePurchaseStatus();
     };
@@ -346,7 +346,7 @@ export default function DashboardPage() {
   }, [config]);
 
   // ------------------------------------------------------------------
-  // FIX 2: STRICT Logic. Only look at the latest order.
+  // FIX 2: Corrected logic to only show the status of the LATEST order.
   // ------------------------------------------------------------------
   const purchaseToShow = useMemo((): Purchase | null => {
     if (!config?.purchases || config.purchases.length === 0) return null;
@@ -360,15 +360,17 @@ export default function DashboardPage() {
     const latestOrder = purchases[0];
 
     // 3. Check EXACTLY what the latest order is
+    // Priority 1: Is the MOST RECENT thing Pending?
     if (latestOrder.status === 'pending') {
         return latestOrder;
     }
 
+    // Priority 2: Is the MOST RECENT thing Declined (and not acknowledged)?
     if (latestOrder.status === 'declined' && !latestOrder.isAcknowledged) {
         return latestOrder;
     }
 
-    // 4. Fallback: If latest is active, or if declined was acknowledged, find the active plan
+    // 4. Fallback: If latest is not pending/declined, find the currently active plan
     const active = purchases.find((p) => p.status === 'active');
     if (active) return active;
   
@@ -600,3 +602,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
