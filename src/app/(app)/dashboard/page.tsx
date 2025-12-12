@@ -331,9 +331,8 @@ export default function DashboardPage() {
     const latestOrder = purchases[0];
 
     // Priority 1: Check for any pending order first
-    const pending = purchases.find((p) => p.status === 'pending');
-    if (pending) {
-      return pending;
+    if (latestOrder.status === 'pending') {
+        return latestOrder;
     }
     
     // Priority 2: Check if the LATEST order is an unacknowledged decline
