@@ -6,10 +6,11 @@ import { useState, useEffect, createContext, useContext, ReactNode } from 'react
 import { useRouter } from 'next/navigation';
 import { hexToHsl } from '@/lib/utils';
 import { Page } from '@/stores/canvas-store';
+import { useFirestore, useFirestoreDocData, useAuth as useFirebaseAuth } from 'reactfire';
+import { doc, setDoc } from 'firebase/firestore';
 
 const LICENSE_KEY = 'brandsoft_license';
-const CONFIG_KEY = 'brandsoft_config';
-const PURCHASES_KEY = 'brandsoft_purchases';
+const CONFIG_KEY = 'brandsoft_config_firestore'; // Changed key to reflect new storage
 const VALID_SERIAL = 'BRANDSOFT-2024';
 
 export type Customer = {
@@ -406,80 +407,52 @@ const initialQuotations: Quotation[] = [
 
 export function BrandsoftProvider({ children }: { children: ReactNode }) {
   const [isActivated, setIsActivated] = useState<boolean | null>(null);
-  const [isConfigured, setIsConfigured] = useState<boolean | null>(null);
-  const [config, setConfig] = useState<BrandsoftConfig | null>(null);
-  const [purchases, setPurchases] = useState<Purchase[]>([]);
   const router = useRouter();
+
+  const auth = useFirebaseAuth();
+  const firestore = useFirestore();
+  const configRef = auth.currentUser ? doc(firestore, 'configs', auth.currentUser.uid) : null;
+  const { data: config, status: configStatus } = useFirestoreDocData(configRef!, {
+    idField: 'id',
+  });
+  
+  const isConfigured = configStatus === 'success' && !!config;
 
   useEffect(() => {
     try {
       const license = localStorage.getItem(LICENSE_KEY);
-      const configData = localStorage.getItem(CONFIG_KEY);
-      const purchasesData = localStorage.getItem(PURCHASES_KEY);
-
       setIsActivated(!!license);
-      setIsConfigured(!!configData);
-      
-      if (purchasesData) {
-        setPurchases(JSON.parse(purchasesData));
-      }
-
-      if (configData) {
-        const parsedConfig = JSON.parse(configData);
-        if (parsedConfig.brand.brandsoftFooter === undefined) {
-          parsedConfig.brand.brandsoftFooter = true;
-        }
-        if (parsedConfig.brand.showCustomerAddress === undefined) {
-            parsedConfig.brand.showCustomerAddress = true;
-        }
-        if (!parsedConfig.invoices) {
-            parsedConfig.invoices = initialInvoices;
-        }
-         if (!parsedConfig.customers || parsedConfig.customers.length === 0) {
-            parsedConfig.customers = initialCustomers;
-        }
-        if (!parsedConfig.templates) {
-            parsedConfig.templates = [];
-        }
-        if (!parsedConfig.quotations || parsedConfig.quotations.length === 0) {
-            parsedConfig.quotations = initialQuotations;
-        }
-        if (!parsedConfig.purchases) {
-            parsedConfig.purchases = purchasesData ? JSON.parse(purchasesData) : [];
-        }
-        setConfig(parsedConfig);
-      }
     } catch (error) {
       console.error("Error accessing localStorage", error);
       setIsActivated(false);
-      setIsConfigured(false);
     }
   }, []);
 
   useEffect(() => {
-    if (config?.brand.primaryColor) {
-      const primaryHsl = hexToHsl(config.brand.primaryColor);
+    const brandConfig = (config as BrandsoftConfig | null)?.brand;
+    if (brandConfig?.primaryColor) {
+      const primaryHsl = hexToHsl(brandConfig.primaryColor);
       if (primaryHsl) {
         document.documentElement.style.setProperty('--primary', `${primaryHsl.h} ${primaryHsl.s}% ${primaryHsl.l}%`);
       }
     }
-    if (config?.brand.secondaryColor) {
-      const accentHsl = hexToHsl(config.brand.secondaryColor);
+    if (brandConfig?.secondaryColor) {
+      const accentHsl = hexToHsl(brandConfig.secondaryColor);
        if (accentHsl) {
         document.documentElement.style.setProperty('--accent', `${accentHsl.h} ${accentHsl.s}% ${accentHsl.l}%`);
       }
     }
-    if (config?.brand.buttonPrimaryBg) {
-      document.documentElement.style.setProperty('--btn-primary-bg', config.brand.buttonPrimaryBg);
+    if (brandConfig?.buttonPrimaryBg) {
+      document.documentElement.style.setProperty('--btn-primary-bg', brandConfig.buttonPrimaryBg);
     }
-    if (config?.brand.buttonPrimaryText) {
-      document.documentElement.style.setProperty('--btn-primary-text', config.brand.buttonPrimaryText);
+    if (brandConfig?.buttonPrimaryText) {
+      document.documentElement.style.setProperty('--btn-primary-text', brandConfig.buttonPrimaryText);
     }
-    if (config?.brand.buttonPrimaryBgHover) {
-      document.documentElement.style.setProperty('--btn-primary-bg-hover', config.brand.buttonPrimaryBgHover);
+    if (brandConfig?.buttonPrimaryBgHover) {
+      document.documentElement.style.setProperty('--btn-primary-bg-hover', brandConfig.buttonPrimaryBgHover);
     }
-    if (config?.brand.buttonPrimaryTextHover) {
-      document.documentElement.style.setProperty('--btn-primary-text-hover', config.brand.buttonPrimaryTextHover);
+    if (brandConfig?.buttonPrimaryTextHover) {
+      document.documentElement.style.setProperty('--btn-primary-text-hover', brandConfig.buttonPrimaryTextHover);
     }
   }, [config]);
 
@@ -495,93 +468,75 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
   
   const logout = () => {
     localStorage.removeItem(LICENSE_KEY);
-    localStorage.removeItem(CONFIG_KEY);
-    localStorage.removeItem(PURCHASES_KEY);
+    // Don't remove config, it's tied to user session now
     setIsActivated(false);
-    setIsConfigured(false);
-    setConfig(null);
-    setPurchases([]);
+    auth.signOut();
     router.push('/activation');
   };
 
   const saveConfig = (newConfig: BrandsoftConfig, options = { redirect: true }) => {
-    localStorage.setItem(CONFIG_KEY, JSON.stringify(newConfig));
-    setConfig(newConfig);
-    setIsConfigured(true);
-    if(options.redirect) {
-        router.push('/dashboard');
+    if (configRef) {
+      setDoc(configRef, newConfig, { merge: true });
+      if(options.redirect) {
+          router.push('/dashboard');
+      }
     }
   };
 
   const addPurchaseOrder = (order: Purchase) => {
-    const allPurchases = [...purchases, order];
-    setPurchases(allPurchases);
-    localStorage.setItem(PURCHASES_KEY, JSON.stringify(allPurchases));
     if (config) {
+      const allPurchases = [...(config.purchases || []), order];
       saveConfig({ ...config, purchases: allPurchases }, { redirect: false });
     }
   };
 
   const getPurchaseOrder = (orderId: string): Purchase | null => {
-    const storedPurchases = localStorage.getItem(PURCHASES_KEY);
-    if (storedPurchases) {
-        const allPurchases: Purchase[] = JSON.parse(storedPurchases);
-        return allPurchases.find(p => p.orderId === orderId) || null;
-    }
-    return null;
+    return (config as BrandsoftConfig | null)?.purchases?.find(p => p.orderId === orderId) || null;
   };
 
   const activatePurchaseOrder = (orderId: string) => {
-      const purchase = getPurchaseOrder(orderId);
+      const currentConfig = config as BrandsoftConfig;
+      if (!currentConfig || !currentConfig.purchases) return;
+
+      const purchase = currentConfig.purchases.find(p => p.orderId === orderId);
       if (!purchase) return;
 
       const periodMap: { [key: string]: number } = {
-          '1 Month': 10,
-          '3 Months': 20,
-          '6 Months': 30,
-          '1 Year': 60,
+          '1 Month': 10, '3 Months': 20, '6 Months': 30, '1 Year': 60,
           'Once OFF': 60 * 24 * 365 * 3, // ~3 years
       };
       const durationMinutes = periodMap[purchase.planPeriod] || 0;
       const expiresAt = new Date(new Date().getTime() + durationMinutes * 60 * 1000).toISOString();
 
-      const updatedPurchases = purchases.map(p => 
+      const updatedPurchases = currentConfig.purchases.map(p => 
           p.orderId === orderId ? { ...p, status: 'active', expiresAt } : 
           (p.status === 'active' ? { ...p, status: 'pending', expiresAt: undefined } : p)
       );
 
-      setPurchases(updatedPurchases);
-      localStorage.setItem(PURCHASES_KEY, JSON.stringify(updatedPurchases));
-      if (config) {
-        saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false });
-      }
+      saveConfig({ ...currentConfig, purchases: updatedPurchases }, { redirect: false });
   };
   
   const declinePurchaseOrder = (orderId: string, reason: string) => {
-      const updatedPurchases = purchases.map(p => p.orderId === orderId ? { ...p, status: 'declined', declineReason: reason, isAcknowledged: false } : p);
-      setPurchases(updatedPurchases);
-      localStorage.setItem(PURCHASES_KEY, JSON.stringify(updatedPurchases));
-      if (config) {
-        saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false });
-      }
+      const currentConfig = config as BrandsoftConfig;
+      if (!currentConfig || !currentConfig.purchases) return;
+      const updatedPurchases = currentConfig.purchases.map(p => p.orderId === orderId ? { ...p, status: 'declined', declineReason: reason, isAcknowledged: false } : p);
+      saveConfig({ ...currentConfig, purchases: updatedPurchases }, { redirect: false });
   };
   
   const acknowledgeDeclinedPurchase = (orderId: string) => {
-    const updatedPurchases = purchases.map(p => 
+    const currentConfig = config as BrandsoftConfig;
+    if (!currentConfig || !currentConfig.purchases) return;
+    const updatedPurchases = currentConfig.purchases.map(p => 
       (p.orderId === orderId && p.status === 'declined') ? { ...p, isAcknowledged: true } : p
     );
-    setPurchases(updatedPurchases);
-    localStorage.setItem(PURCHASES_KEY, JSON.stringify(updatedPurchases));
-    if (config) {
-      saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false });
-    }
+    saveConfig({ ...currentConfig, purchases: updatedPurchases }, { redirect: false });
   };
 
   const addCustomer = (customer: Omit<Customer, 'id'>): Customer => {
       const newCustomer = { ...customer, id: `CUST-${Date.now()}` };
       if (config) {
           const newConfig = { ...config, customers: [...config.customers, newCustomer] };
-          saveConfig(newConfig, { redirect: false });
+          saveConfig(newConfig as BrandsoftConfig, { redirect: false });
       }
       return newCustomer;
   };
@@ -591,14 +546,14 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
           const newCustomers = config.customers.map(c => 
               c.id === customerId ? { ...c, ...data } : c
           );
-          saveConfig({ ...config, customers: newCustomers }, { redirect: false });
+          saveConfig({ ...config, customers: newCustomers } as BrandsoftConfig, { redirect: false });
       }
   };
   
   const deleteCustomer = (customerId: string) => {
       if (config) {
           const newCustomers = config.customers.filter(c => c.id !== customerId);
-          saveConfig({ ...config, customers: newCustomers }, { redirect: false });
+          saveConfig({ ...config, customers: newCustomers } as BrandsoftConfig, { redirect: false });
       }
   };
 
@@ -606,7 +561,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       const newProduct = { ...product, id: `PROD-${Date.now()}` };
       if (config) {
           const newConfig = { ...config, products: [...(config.products || []), newProduct] };
-          saveConfig(newConfig, { redirect: false });
+          saveConfig(newConfig as BrandsoftConfig, { redirect: false });
       }
       return newProduct;
   };
@@ -616,86 +571,86 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
           const newProducts = (config.products || []).map(p => 
               p.id === productId ? { ...p, ...data } : p
           );
-          saveConfig({ ...config, products: newProducts }, { redirect: false });
+          saveConfig({ ...config, products: newProducts } as BrandsoftConfig, { redirect: false });
       }
   };
   
   const deleteProduct = (productId: string) => {
       if (config) {
           const newProducts = (config.products || []).filter(p => p.id !== productId);
-          saveConfig({ ...config, products: newProducts }, { redirect: false });
+          saveConfig({ ...config, products: newProducts } as BrandsoftConfig, { redirect: false });
       }
   };
   
   const addInvoice = (invoice: Omit<Invoice, 'invoiceId'>, numbering?: NumberingOptions): Invoice => {
     if (!config) throw new Error("Config not loaded");
-    const startNumber = numbering?.startNumber ?? config.profile.invoiceStartNumber;
-    const prefix = numbering?.prefix ?? config.profile.invoicePrefix;
-    const nextNumber = (Number(startNumber) || 100) + (config.invoices?.length || 0);
+    const startNumber = numbering?.startNumber ?? (config as BrandsoftConfig).profile.invoiceStartNumber;
+    const prefix = numbering?.prefix ?? (config as BrandsoftConfig).profile.invoicePrefix;
+    const nextNumber = (Number(startNumber) || 100) + ((config as BrandsoftConfig).invoices?.length || 0);
     const generatedId = `${prefix}${nextNumber}`.replace(/\s+/g, '');
     const newInvoice: Invoice = { ...invoice, invoiceId: generatedId };
-    const newConfig = { ...config, invoices: [...(config.invoices || []), newInvoice] };
-    saveConfig(newConfig, { redirect: false });
+    const newConfig = { ...config, invoices: [...((config as BrandsoftConfig).invoices || []), newInvoice] };
+    saveConfig(newConfig as BrandsoftConfig, { redirect: false });
     return newInvoice;
   };
 
   const updateInvoice = (invoiceId: string, data: Partial<Omit<Invoice, 'invoiceId'>>) => {
       if (config) {
-          const newInvoices = (config.invoices || []).map(i => 
+          const newInvoices = ((config as BrandsoftConfig).invoices || []).map(i => 
               i.invoiceId === invoiceId ? { ...i, ...data } : i
           );
-          saveConfig({ ...config, invoices: newInvoices }, { redirect: false });
+          saveConfig({ ...config, invoices: newInvoices } as BrandsoftConfig, { redirect: false });
       }
   };
   
   const deleteInvoice = (invoiceId: string) => {
       if (config) {
-          const newInvoices = (config.invoices || []).filter(i => i.invoiceId !== invoiceId);
-          saveConfig({ ...config, invoices: newInvoices }, { redirect: false });
+          const newInvoices = ((config as BrandsoftConfig).invoices || []).filter(i => i.invoiceId !== invoiceId);
+          saveConfig({ ...config, invoices: newInvoices } as BrandsoftConfig, { redirect: false });
       }
   };
   
    const addQuotation = (quotation: Omit<Quotation, 'quotationId'>, numbering?: NumberingOptions): Quotation => {
     if (!config) throw new Error("Config not loaded");
-    const startNumber = numbering?.startNumber ?? config.profile.quotationStartNumber;
-    const prefix = numbering?.prefix ?? config.profile.quotationPrefix;
-    const nextNumber = (Number(startNumber) || 100) + (config.quotations?.length || 0);
+    const startNumber = numbering?.startNumber ?? (config as BrandsoftConfig).profile.quotationStartNumber;
+    const prefix = numbering?.prefix ?? (config as BrandsoftConfig).profile.quotationPrefix;
+    const nextNumber = (Number(startNumber) || 100) + ((config as BrandsoftConfig).quotations?.length || 0);
     const generatedId = `${prefix}${nextNumber}`.replace(/\s+/g, '');
     const newQuotation: Quotation = { ...quotation, quotationId: generatedId };
-    const newConfig = { ...config, quotations: [...(config.quotations || []), newQuotation] };
-    saveConfig(newConfig, { redirect: false });
+    const newConfig = { ...config, quotations: [...((config as BrandsoftConfig).quotations || []), newQuotation] };
+    saveConfig(newConfig as BrandsoftConfig, { redirect: false });
     return newQuotation;
   };
 
   const updateQuotation = (quotationId: string, data: Partial<Omit<Quotation, 'quotationId'>>) => {
       if (config) {
-          const newQuotations = (config.quotations || []).map(q => 
+          const newQuotations = ((config as BrandsoftConfig).quotations || []).map(q => 
               q.quotationId === quotationId ? { ...q, ...data } : q
           );
-          saveConfig({ ...config, quotations: newQuotations }, { redirect: false });
+          saveConfig({ ...config, quotations: newQuotations } as BrandsoftConfig, { redirect: false });
       }
   };
   
   const deleteQuotation = (quotationId: string) => {
       if (config) {
-          const newQuotations = (config.quotations || []).filter(q => q.quotationId !== quotationId);
-          saveConfig({ ...config, quotations: newQuotations }, { redirect: false });
+          const newQuotations = ((config as BrandsoftConfig).quotations || []).filter(q => q.quotationId !== quotationId);
+          saveConfig({ ...config, quotations: newQuotations } as BrandsoftConfig, { redirect: false });
       }
   };
   
   const addCurrency = (currency: string) => {
-      if (config && !config.currencies.includes(currency)) {
-          const newConfig = { ...config, currencies: [...config.currencies, currency] };
-          saveConfig(newConfig, { redirect: false });
+      if (config && !(config as BrandsoftConfig).currencies.includes(currency)) {
+          const newConfig = { ...config, currencies: [...(config as BrandsoftConfig).currencies, currency] };
+          saveConfig(newConfig as BrandsoftConfig, { redirect: false });
       }
   };
 
   const value: BrandsoftContextType = {
     isActivated,
     isConfigured,
-    config,
+    config: config as BrandsoftConfig | null,
     activate,
-    saveConfig,
+    saveConfig: saveConfig as any,
     logout,
     addCustomer,
     updateCustomer,

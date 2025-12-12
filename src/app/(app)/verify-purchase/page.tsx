@@ -31,63 +31,52 @@ const ADMIN_PIN_SUFFIX = '@8090';
 
 
 function VerifyPurchaseContent() {
-    const { getPurchaseOrder, activatePurchaseOrder, declinePurchaseOrder, acknowledgeDeclinedPurchase } = useBrandsoft();
+    const { config, getPurchaseOrder, activatePurchaseOrder, declinePurchaseOrder, acknowledgeDeclinedPurchase } = useBrandsoft();
     const { toast } = useToast();
     const searchParams = useSearchParams();
     const router = useRouter();
 
     const [order, setOrder] = useState<Purchase | null>(null);
-    const [error, setError] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [isActivated, setIsActivated] = useState(false);
-    const [isDeclined, setIsDeclined] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const [isAdminMode, setIsAdminMode] = useState(false);
     const [declineReason, setDeclineReason] = useState('');
     
     const form = useForm<FormData>({
         resolver: zodResolver(formSchema),
-        defaultValues: {
-            orderId: '',
-        },
+        defaultValues: { orderId: '' },
     });
     
     const orderIdFromUrl = searchParams.get('orderId');
+    
+    useEffect(() => {
+        const handleSearch = async (orderIdWithPin: string) => {
+            setIsLoading(true);
+            setOrder(null);
+            
+            let cleanOrderId = orderIdWithPin;
+            if (orderIdWithPin.endsWith(ADMIN_PIN_SUFFIX)) {
+                setIsAdminMode(true);
+                cleanOrderId = orderIdWithPin.replace(ADMIN_PIN_SUFFIX, '');
+            } else {
+                setIsAdminMode(false);
+            }
 
-    const handleSubmit = async (orderIdWithPin: string) => {
-        setIsLoading(true);
-        setError(null);
-        setOrder(null);
-        setIsActivated(false);
-        setIsDeclined(false);
-        
-        let cleanOrderId = orderIdWithPin;
-        if (orderIdWithPin.endsWith(ADMIN_PIN_SUFFIX)) {
-            setIsAdminMode(true);
-            cleanOrderId = orderIdWithPin.replace(ADMIN_PIN_SUFFIX, '');
-        } else {
-            setIsAdminMode(false);
-        }
+            await new Promise(resolve => setTimeout(resolve, 500)); 
 
-        await new Promise(resolve => setTimeout(resolve, 500)); 
-
-        const foundOrder = getPurchaseOrder(cleanOrderId);
-
-        if (foundOrder) {
+            const foundOrder = getPurchaseOrder(cleanOrderId);
+            
             setOrder(foundOrder);
-            if (foundOrder.status === 'active') {
-                setIsActivated(true);
+            if (foundOrder?.status === 'declined' && !foundOrder.isAcknowledged) {
+              acknowledgeDeclinedPurchase(foundOrder.orderId);
             }
-            if (foundOrder.status === 'declined') {
-                setIsDeclined(true);
-                if (!foundOrder.isAcknowledged) {
-                  acknowledgeDeclinedPurchase(foundOrder.orderId);
-                }
-            }
-        } else {
-            setError("No purchase order found with this ID.");
+            setIsLoading(false);
+        };
+
+        if (orderIdFromUrl) {
+            handleSearch(orderIdFromUrl);
         }
-        setIsLoading(false);
-    };
+    }, [orderIdFromUrl, config, getPurchaseOrder, acknowledgeDeclinedPurchase]);
+
 
     const handleDownloadReceipt = () => {
         if (!order?.receipt || order.receipt === 'none') return;
@@ -99,23 +88,10 @@ function VerifyPurchaseContent() {
         document.body.removeChild(link);
     };
 
-
-    // Automatically search if orderId is in URL
-    useEffect(() => {
-        if (orderIdFromUrl) {
-            // No need to show form, just load data
-            handleSubmit(orderIdFromUrl);
-        } else {
-            setIsLoading(false);
-        }
-    }, [orderIdFromUrl]);
-
-
     const handleActivation = () => {
         if (order) {
             activatePurchaseOrder(order.orderId);
             toast({ title: "Activation Successful", description: `Order ${order.orderId} has been activated.` });
-            setIsActivated(true);
         }
     };
     
@@ -123,7 +99,6 @@ function VerifyPurchaseContent() {
         if (order && declineReason) {
             declinePurchaseOrder(order.orderId, declineReason);
             toast({ title: "Order Declined", description: `Order ${order.orderId} has been declined.` });
-            setIsDeclined(true);
         } else if (!declineReason) {
             toast({ variant: 'destructive', title: "Reason Required", description: "Please provide a reason for declining." });
         }
@@ -135,25 +110,25 @@ function VerifyPurchaseContent() {
 
     const renderContent = () => {
         if (isLoading) {
-             if (orderIdFromUrl) {
-                 return (
-                    <div className="flex flex-col items-center justify-center h-24 text-center">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
-                        <p className="text-muted-foreground">Verifying order...</p>
-                    </div>
-                );
-            }
-            return (
+             return (
                 <div className="flex flex-col items-center justify-center h-24 text-center">
                     <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+                    <p className="text-muted-foreground">Verifying order...</p>
                 </div>
             );
         }
 
+        if (orderIdFromUrl && !order) {
+            return (
+                <Alert variant="destructive" className="mt-4">
+                    <XCircle className="h-4 w-4" />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>No purchase order found with this ID.</AlertDescription>
+                </Alert>
+            );
+        }
+
         if (order) {
-             const status = isActivated ? 'active' : isDeclined ? 'declined' : order.status;
-             const finalIsAdminMode = isAdminMode;
-             
              return (
                 <div className="mt-6 space-y-6">
                     <div className="flex flex-col md:flex-row gap-6">
@@ -194,15 +169,15 @@ function VerifyPurchaseContent() {
                                 <p className="flex justify-between items-center"><strong>Status:</strong> 
                                     <span className={cn(
                                         "font-bold capitalize", 
-                                        status === 'active' && "text-green-500",
-                                        status === 'pending' && "text-amber-500",
-                                        status === 'declined' && "text-destructive",
+                                        order.status === 'active' && "text-green-500",
+                                        order.status === 'pending' && "text-amber-500",
+                                        order.status === 'declined' && "text-destructive",
                                     )}>
-                                        {status}
+                                        {order.status}
                                     </span>
                                 </p>
                             </CardContent>
-                             {finalIsAdminMode && status === 'pending' && (
+                             {isAdminMode && order.status === 'pending' && (
                                 <CardFooter className="p-0 pt-6 flex gap-2">
                                      <AlertDialog>
                                         <AlertDialogTrigger asChild>
@@ -235,7 +210,7 @@ function VerifyPurchaseContent() {
                             )}
                         </div>
                     </div>
-                     {status === 'declined' && order.declineReason && (
+                     {order.status === 'declined' && order.declineReason && (
                          <Alert variant="destructive" className="mt-4">
                             <XCircle className="h-4 w-4" />
                             <AlertTitle>Order Declined</AlertTitle>
@@ -251,16 +226,6 @@ function VerifyPurchaseContent() {
             );
         }
         
-        if (error) {
-             return (
-                <Alert variant="destructive" className="mt-4">
-                    <XCircle className="h-4 w-4" />
-                    <AlertTitle>Error</AlertTitle>
-                    <AlertDescription>{error}</AlertDescription>
-                </Alert>
-            );
-        }
-
         if (!orderIdFromUrl) {
             return (
                 <Form {...form}>
