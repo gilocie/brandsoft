@@ -52,6 +52,7 @@ const PlanCard = ({ title, price, features, isCurrent = false, cta, className, p
                 className="w-full" 
                 variant={isCurrent ? "secondary" : "default"}
                 onClick={onBuyClick}
+                disabled={cta === 'Current Plan'}
              >
                 {cta}
             </Button>
@@ -80,7 +81,13 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
     const [purchasePlan, setPurchasePlan] = useState<PlanDetails | null>(null);
     const [isManagePlanOpen, setIsManagePlanOpen] = useState(false);
 
-    const activePurchase = useMemo(() => config?.purchases?.find(p => p.status === 'active'), [config?.purchases]);
+    const currentPlan = useMemo(() => {
+        if (!config?.purchases || config.purchases.length === 0) return null;
+        const active = config.purchases.find(p => p.status === 'active');
+        if (active) return active;
+        const expired = config.purchases.filter(p => p.status === 'inactive' && p.expiresAt).sort((a,b) => new Date(b.expiresAt!).getTime() - new Date(a.expiresAt!).getTime());
+        return expired[0] || null;
+    }, [config?.purchases]);
 
     const calculatePrice = (plan: 'standard' | 'pro', period: string) => {
         const basePrice = planBasePrices[plan];
@@ -105,10 +112,11 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
     };
 
     const getPlanCTA = (planName: Plan) => {
-        if (activePurchase?.planName === planName) {
-            return "Renew Plan";
+        if (currentPlan?.planName === planName) {
+            return currentPlan.status === 'active' ? "Renew Plan" : "Renew Expired Plan";
         }
-        return "Buy Key";
+        if (!currentPlan) return "Get Started"; // For Free Trial
+        return `Upgrade to ${planName}`;
     }
     
     const handlePurchaseSuccess = () => {
@@ -161,16 +169,16 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
                             title="Free Trial" 
                             price={`${currencyCode}0`}
                             features={["Up to 10 invoices", "Up to 10 customers", "Basic templates"]}
-                            isCurrent={!activePurchase}
-                            cta={activePurchase ? "Downgrade to Trial" : "Current Plan"}
-                            onBuyClick={activePurchase ? handleDowngrade : () => {}}
+                            isCurrent={!currentPlan}
+                            cta={currentPlan ? "Downgrade to Trial" : "Current Plan"}
+                            onBuyClick={currentPlan ? handleDowngrade : () => {}}
                         />
 
                         <PlanCard 
                             title="Standard" 
                             price={standardPrice}
                             features={["Unlimited invoices", "Unlimited customers", "Premium templates", "Email support"]}
-                            isCurrent={activePurchase?.planName === 'Standard'}
+                            isCurrent={currentPlan?.planName === 'Standard'}
                             cta={getPlanCTA("Standard")}
                             periodLabel={selectedPeriodLabel}
                             onBuyClick={() => handleBuyClick("Standard", standardPrice, selectedPeriodLabel || '1 Month')}
@@ -180,7 +188,7 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
                             title="Pro" 
                             price={proPrice}
                             features={["All Standard features", "API access", "Priority support", "Advanced analytics"]}
-                            isCurrent={activePurchase?.planName === 'Pro'}
+                            isCurrent={currentPlan?.planName === 'Pro'}
                             cta={getPlanCTA("Pro")}
                             periodLabel={selectedPeriodLabel}
                             onBuyClick={() => handleBuyClick("Pro", proPrice, selectedPeriodLabel || '1 Month')}
@@ -190,7 +198,7 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
                             title="Enterprise" 
                             price="Custom"
                             features={["All Pro features", "Dedicated support", "Custom integrations", "On-premise option"]}
-                             isCurrent={activePurchase?.planName === 'Enterprise'}
+                             isCurrent={currentPlan?.planName === 'Enterprise'}
                             cta={getPlanCTA("Enterprise")}
                             onBuyClick={() => { window.open('https://wa.me/265991972336', '_blank') }}
                         />
