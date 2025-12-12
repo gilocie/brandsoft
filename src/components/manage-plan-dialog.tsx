@@ -28,6 +28,13 @@ export type PlanDetails = {
     period: string;
 }
 
+const planLevels: Record<Plan, number> = {
+  'Free Trial': 0,
+  'Standard': 1,
+  'Pro': 2,
+  'Enterprise': 3,
+};
+
 const PlanCard = ({ title, price, features, isCurrent = false, cta, className, periodLabel, onBuyClick }: { title: Plan, price: string, features: string[], isCurrent?: boolean, cta: string, className?: string, periodLabel?: string, onBuyClick: () => void }) => (
     <Card className={cn("flex flex-col h-full", isCurrent && "ring-2 ring-primary shadow-md", className)}>
         <CardHeader className="p-4 pb-2">
@@ -111,13 +118,20 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
         setPurchasePlan({ name: planName, price, period });
     };
 
-    const getPlanCTA = (planName: Plan) => {
-        if (currentPlan?.planName === planName) {
+    const getPlanCTA = (targetPlan: Plan) => {
+        if (currentPlan?.planName === targetPlan) {
             return currentPlan.status === 'active' ? "Renew Plan" : "Renew Expired Plan";
         }
-        if (!currentPlan) return "Get Started"; // For Free Trial
-        return `Upgrade to ${planName}`;
-    }
+        if (!currentPlan) return "Get Started"; // On Free Trial
+
+        const currentLevel = planLevels[currentPlan.planName as Plan] ?? 0;
+        const targetLevel = planLevels[targetPlan];
+
+        if(targetLevel < currentLevel) {
+            return `Downgrade to ${targetPlan}`;
+        }
+        return `Upgrade to ${targetPlan}`;
+    };
     
     const handlePurchaseSuccess = () => {
       setPurchasePlan(null); // Close the purchase dialog
