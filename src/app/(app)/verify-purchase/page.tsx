@@ -50,7 +50,7 @@ function VerifyPurchaseContent() {
         defaultValues: { orderId: '' },
     });
     
-     useEffect(() => {
+    useEffect(() => {
         if (!orderIdFromUrl) {
             setIsLoading(false);
             return;
@@ -128,7 +128,7 @@ function VerifyPurchaseContent() {
     const handleAcknowledgeAndRedirect = () => {
       if (order) {
         acknowledgeDeclinedPurchase(order.orderId);
-        router.push('/dashboard');
+        window.location.href = '/dashboard';
       }
     };
 
@@ -336,5 +336,3 @@ export default function VerifyPurchasePage() {
         </div>
     )
 }
-
-    
