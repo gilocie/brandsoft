@@ -247,32 +247,28 @@ export default function DashboardPage() {
     const handleStorageChange = (e: StorageEvent) => {
       // Only react to brandsoft-config changes
       if (e.key === 'brandsoft-config' || e.key === null) {
-        console.log('Storage changed, refreshing dashboard...');
         forceRefresh();
       }
     };
 
     // 3. Custom event listener for same-tab updates
     const handleCustomUpdate = () => {
-      console.log('Custom update event received');
       forceRefresh();
     };
 
     // 4. Visibility change listener (when user returns to tab)
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        console.log('Tab became visible, refreshing...');
         forceRefresh();
       }
     };
 
     // 5. Focus listener (when window gains focus)
     const handleFocus = () => {
-      console.log('Window focused, refreshing...');
       forceRefresh();
     };
 
-    // 6. Polling as backup (every 3 seconds)
+    // 6. Polling as backup (every 1 seconds)
     const pollInterval = setInterval(() => {
       forceRefresh();
     }, 1000);
