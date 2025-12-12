@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -163,9 +164,7 @@ const PlanStatusCard = ({ purchase }: { purchase: Purchase | null }) => {
     const rounded = Math.ceil(remaining);
     const displayValue = isExpired ? '0' : rounded;
 
-    const displayUnit = isTestPlan
-      ? rounded === 1 ? 'Min' : 'Mins'
-      : rounded === 1 ? 'Day' : 'Days';
+    const displayUnit = rounded === 1 ? 'Day' : 'Days';
 
     const displayText = isExpired ? `0 ${displayUnit}` : `${displayValue} ${displayUnit}`;
 
