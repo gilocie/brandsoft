@@ -257,7 +257,7 @@ const PlanStatusCard = ({ purchase }: { purchase: Purchase | null }) => {
   }
 
   // Logic for declined plan
-  if (purchase.status === 'declined') {
+  if (purchase.status === 'declined' && !purchase.isAcknowledged) {
     return (
       <Card className="bg-destructive text-white">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
