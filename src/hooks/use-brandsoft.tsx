@@ -244,6 +244,7 @@ interface BrandsoftContextType {
   activatePurchaseOrder: (orderId: string) => void;
   declinePurchaseOrder: (orderId: string, reason: string) => void;
   acknowledgeDeclinedPurchase: (orderId: string) => void;
+  updatePurchaseStatus: () => void;
 }
 
 const BrandsoftContext = createContext<BrandsoftContextType | undefined>(undefined);
@@ -354,7 +355,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
           }
           // Deactivate any other active plan
           if (p.status === 'active') {
-              return { ...p, status: 'inactive' as 'inactive', expiresAt: undefined };
+              return { ...p, status: 'inactive' as 'inactive' };
           }
           return p;
       });
@@ -374,6 +375,28 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       (p.orderId === orderId && p.status === 'declined') ? { ...p, isAcknowledged: true } : p
     );
     saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false });
+  };
+  
+  const updatePurchaseStatus = () => {
+    if (!config || !config.purchases) return;
+
+    let configChanged = false;
+    const now = new Date().getTime();
+
+    const updatedPurchases = config.purchases.map(p => {
+      if (p.status === 'active' && p.expiresAt) {
+        const expiryTime = new Date(p.expiresAt).getTime();
+        if (now >= expiryTime) {
+          configChanged = true;
+          return { ...p, status: 'inactive' as 'inactive' };
+        }
+      }
+      return p;
+    });
+
+    if (configChanged) {
+      saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false });
+    }
   };
 
   const addCustomer = (customer: Omit<Customer, 'id'>): Customer => {
@@ -514,6 +537,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     activatePurchaseOrder,
     declinePurchaseOrder,
     acknowledgeDeclinedPurchase,
+    updatePurchaseStatus,
   };
 
   return <BrandsoftContext.Provider value={value}>{children}</BrandsoftContext.Provider>;

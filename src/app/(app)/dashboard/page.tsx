@@ -36,7 +36,7 @@ const StatCard = ({ title, value, icon: Icon, description, formatAsCurrency = fa
 );
 
 const PlanStatusCard = () => {
-    const { config } = useBrandsoft();
+    const { config, updatePurchaseStatus } = useBrandsoft();
     const [remainingDays, setRemainingDays] = useState(0);
 
     const activePurchase = useMemo(() => config?.purchases?.find(p => p.status === 'active'), [config?.purchases]);
@@ -65,8 +65,12 @@ const PlanStatusCard = () => {
             }
 
             const remainingMs = Math.max(0, expiryTime - now);
-            const remainingDays = isTestMode ? (remainingMs / (1000 * 60)) : Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
-            setRemainingDays(remainingDays);
+            const remaining = isTestMode ? (remainingMs / (1000 * 60)) : Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
+            setRemainingDays(remaining);
+            
+            if (remainingMs === 0) {
+              updatePurchaseStatus();
+            }
         };
 
 
@@ -74,16 +78,19 @@ const PlanStatusCard = () => {
         const interval = setInterval(calculateRemaining, isTestMode ? 1000 : 60000 * 60);
 
         return () => clearInterval(interval);
-    }, [activePurchase]);
+    }, [activePurchase, updatePurchaseStatus]);
     
     const isTestMode = activePurchase ? !!({
         '1 Month': true, '3 Months': true, '6 Months': true, '1 Year': true
     }[activePurchase.planPeriod]) : false;
-
-    const displayUnit = isTestMode ? (remainingDays > 1 ? 'Mins' : 'Min') : (remainingDays > 1 ? 'Days' : 'Day');
+    
+    const isExpired = activePurchase ? remainingDays <= 0 : false;
+    
+    const displayUnit = isTestMode ? (Math.ceil(remainingDays) > 1 ? 'Mins' : 'Min') : (Math.ceil(remainingDays) > 1 ? 'Days' : 'Day');
+    const displayValue = isExpired ? '0' : Math.ceil(remainingDays);
+    const displayText = isExpired ? `0 Days` : `${displayValue} ${displayUnit}`;
     
     const isExpiringSoon = remainingDays > 0 && remainingDays <= 5;
-    const isExpired = activePurchase ? remainingDays <= 0 : false;
 
     if (!activePurchase) {
        return (
@@ -114,7 +121,7 @@ const PlanStatusCard = () => {
             </CardHeader>
             <CardContent>
                 <div className="text-2xl font-bold">
-                    {isExpired ? 'Expired' : `${Math.ceil(remainingDays)} ${displayUnit}`}
+                    {isExpired ? 'Expired' : displayText}
                 </div>
                 <p className="text-xs text-white/80">
                     {isExpired ? 'Your plan has expired.' : 'Remaining'}
