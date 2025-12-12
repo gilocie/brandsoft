@@ -156,7 +156,7 @@ const PlanStatusCard = ({ purchase }: { purchase: Purchase | null }) => {
 
   if (purchase.status === 'active') {
     const remaining = purchase.remainingDays || 0;
-    const isTestPlan = isTestPlanPeriod(purchase.planPeriod); // reuse same logic
+    const isTestPlan = isTestPlanPeriod(purchase.planPeriod); 
     const isExpired = remaining <= 0;
 
     const isExpiringSoon = !isExpired && (
