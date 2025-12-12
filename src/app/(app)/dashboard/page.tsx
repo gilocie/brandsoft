@@ -152,7 +152,8 @@ const PlanStatusCard = ({ purchase }: { purchase: Purchase | null }) => {
     const isExpiringSoon = !isExpired && remaining <= 5;
     
     const displayValue = isExpired ? '0' : Math.ceil(remaining);
-    const displayUnit = Math.ceil(remaining) > 1 ? 'Days' : 'Day';
+    const displayUnit = 'Days';
+
     const displayText = isExpired ? `0 ${displayUnit}` : `${displayValue} ${displayUnit}`;
 
     return (

@@ -310,14 +310,14 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     const oldRemainingDays = currentlyActivePurchase?.remainingDays || 0;
 
     const testPeriodMap: { [key: string]: number } = {
-        '1 Month': 10, '3 Months': 15, '6 Months': 30, '1 Year': 35,
+        '1 Month': 10, '3 Months': 15, '6 Months': 30, '1 Year': 45,
     };
     
-    const isTestMode = Object.keys(testPeriodMap).includes(purchaseToActivate.planPeriod);
+    const isTestPlan = Object.keys(testPeriodMap).includes(purchaseToActivate.planPeriod);
     
-    const newPlanDuration = isTestMode ? testPeriodMap[purchaseToActivate.planPeriod] : (
-        { '1 Month': 30, '3 Months': 90, '6 Months': 180, '1 Year': 365, 'Once OFF': 365 * 3 }[purchaseToActivate.planPeriod] || 0
-    );
+    const newPlanDuration = isTestPlan 
+      ? testPeriodMap[purchaseToActivate.planPeriod] 
+      : ({ '1 Month': 30, '3 Months': 90, '6 Months': 180, '1 Year': 365, 'Once OFF': 365 * 3 }[purchaseToActivate.planPeriod] || 0);
 
     const totalRemainingDays = oldRemainingDays + newPlanDuration;
     
@@ -328,7 +328,8 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
             ...p, 
             status: 'active' as 'active', 
             date: new Date().toISOString(),
-            remainingDays: totalRemainingDays 
+            remainingDays: totalRemainingDays,
+            expiresAt: new Date(Date.now() + totalRemainingDays * (isTestPlan ? 60 * 1000 : 24 * 60 * 60 * 1000)).toISOString()
         };
       }
       // Deactivate the old active purchase
@@ -379,14 +380,17 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
         if (now >= expiryTime) {
           configChanged = true;
           return { ...p, status: 'inactive' as 'inactive', remainingDays: 0 };
-        } else {
-             const isTestMode = Object.keys({ '1 Month': 10, '3 Months': 15, '6 Months': 30, '1 Year': 35 }).includes(p.planPeriod);
-             const remainingMs = expiryTime - now;
-             const remaining = isTestMode ? remainingMs / (1000 * 60) : remainingMs / (1000 * 60 * 60 * 24);
-             if (p.remainingDays !== Math.ceil(remaining)) {
-                 configChanged = true;
-                 return { ...p, remainingDays: Math.ceil(remaining) };
-             }
+        }
+        // This part is tricky because we now store remainingDays directly. 
+        // A full-fledged app would use a server to decrement this or calculate it on the fly.
+        // For this offline app, we'll recalculate on load, but not every second.
+        const isTestMode = Object.keys({ '1 Month': 10, '3 Months': 15, '6 Months': 30, '1 Year': 45 }).includes(p.planPeriod);
+        const remainingMs = expiryTime - now;
+        const remaining = isTestMode ? remainingMs / (1000 * 60) : remainingMs / (1000 * 60 * 60 * 24);
+        
+        if (Math.ceil(remaining) !== p.remainingDays) {
+            configChanged = true;
+            return {...p, remainingDays: Math.ceil(remaining) };
         }
       }
       return p;
@@ -552,3 +556,4 @@ export function useBrandsoft() {
   }
   return context;
 }
+
