@@ -13,6 +13,8 @@ import { usePurchases } from './use-purchases';
 import { useCurrencies } from './use-currencies';
 import type { BrandsoftConfig, Customer, Product, Invoice, Quotation, Purchase } from '@/types/brandsoft';
 
+export * from '@/types/brandsoft';
+
 const LICENSE_KEY = 'brandsoft_license';
 const CONFIG_KEY = 'brandsoft_config';
 const VALID_SERIAL = 'BRANDSOFT-2024';

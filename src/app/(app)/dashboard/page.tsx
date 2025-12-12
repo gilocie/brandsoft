@@ -4,9 +4,8 @@
 
 import {
   useBrandsoft,
-  type Invoice,
-  type Purchase,
 } from '@/hooks/use-brandsoft';
+import { type Invoice, type Purchase } from '@/types/brandsoft';
 import {
   Card,
   CardHeader,
