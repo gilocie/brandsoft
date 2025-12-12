@@ -31,46 +31,51 @@ export function usePurchases(
   };
 
   const activatePurchaseOrder = (orderId: string) => {
-    if (!config || !config.purchases) return;
-  
+    if (!config?.purchases) return;
+
     const purchaseToActivate = config.purchases.find(p => p.orderId === orderId);
     if (!purchaseToActivate) return;
-  
+
     const period = purchaseToActivate.planPeriod;
     const now = Date.now();
     const isTestPlan = isTestPlanPeriod(period);
-  
-    const newPlanDuration = isTestPlan ? TEST_PERIOD_MINUTES[period] : {
-      '1 Month': 30,
-      '3 Months': 90,
-      '6 Months': 180,
-      '1 Year': 365,
-      'Once OFF': 365*3
-    }[period] ?? 0;
-  
-    const unit: 'minutes' | 'days' = isTestPlan ? 'minutes' : 'days';
-    const multiplier = isTestPlan ? 60 * 1000 : 24 * 60 * 60 * 1000;
-  
+
+    // Determine plan duration in minutes or days
+    const newPlanDuration = isTestPlan
+        ? TEST_PERIOD_MINUTES[period]
+        : {
+            '1 Month': 30,
+            '3 Months': 90,
+            '6 Months': 180,
+            '1 Year': 365,
+            'Once OFF': 365 * 3
+        }[period] ?? 0;
+
+    const unit = isTestPlan ? 'minutes' : 'days';
+    const multiplier = isTestPlan ? 60 * 1000 : 24 * 60 * 60 * 1000; // ms
+
     const expiresAt = new Date(now + newPlanDuration * multiplier).toISOString();
-  
+
     const updatedPurchases = config.purchases.map(p => {
-      if (p.orderId === orderId) {
-        return {
-          ...p,
-          status: 'active' as const,
-          date: new Date().toISOString(),
-          remainingTime: { value: newPlanDuration, unit },
-          expiresAt,
-        };
-      }
-      if (p.status === 'active') {
-        return { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: 'days' as const } };
-      }
-      return p;
+        if (p.orderId === orderId) {
+            return {
+                ...p,
+                status: 'active' as const,
+                date: new Date().toISOString(),
+                remainingTime: { value: newPlanDuration, unit },
+                expiresAt
+            };
+        }
+        // Deactivate other active plans
+        if (p.status === 'active') {
+            return { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: 'days' } };
+        }
+        return p;
     });
-  
+
     saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: true });
-  };
+};
+
   
   const declinePurchaseOrder = (orderId: string, reason: string) => {
     if (!config || !config.purchases) return;
@@ -102,33 +107,33 @@ export function usePurchases(
     const now = Date.now();
 
     const updatedPurchases = config.purchases.map(p => {
-      if (p.status === 'active' && p.expiresAt) {
-        const expiryTime = new Date(p.expiresAt).getTime();
-        const remainingMs = expiryTime - now;
-        const isTest = isTestPlanPeriod(p.planPeriod);
+        if (p.status === 'active' && p.expiresAt) {
+            const expiryTime = new Date(p.expiresAt).getTime();
+            const remainingMs = expiryTime - now;
+            const isTest = isTestPlanPeriod(p.planPeriod);
+            const unit = isTest ? 'minutes' : 'days';
 
-        if (remainingMs <= 0) {
-          changed = true;
-          return { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: 'minutes' as const } };
+            if (remainingMs <= 0) {
+                changed = true;
+                return { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit } };
+            }
+
+            const remaining = isTest
+                ? Math.ceil(remainingMs / (1000 * 60))         // minutes
+                : Math.ceil(remainingMs / (1000 * 60 * 60 * 24)); // days
+
+            if (p.remainingTime?.value !== remaining || p.remainingTime?.unit !== unit) {
+                changed = true;
+                return { ...p, remainingTime: { value: remaining, unit } };
+            }
         }
-
-        const remaining = isTest
-            ? Math.ceil(remainingMs / (1000 * 60))
-            : Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
-        const unit: 'minutes' | 'days' = isTest ? 'minutes' : 'days';
-
-        if (p.remainingTime?.value !== remaining || p.remainingTime?.unit !== unit) {
-          changed = true;
-          return { ...p, remainingTime: { value: remaining, unit } };
-        }
-      }
-      return p;
+        return p;
     });
 
     if (changed) {
-      saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: false });
+        saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: false });
     }
-  };
+};
 
   return {
     addPurchaseOrder,

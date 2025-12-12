@@ -281,7 +281,7 @@ export default function DashboardPage() {
     // 6. Polling as backup (every 3 seconds)
     const pollInterval = setInterval(() => {
       forceRefresh();
-    }, 3000);
+    }, 1000);
 
     // Register all listeners
     window.addEventListener('storage', handleStorageChange);
