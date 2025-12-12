@@ -368,46 +368,49 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     return config?.purchases?.find(p => p.orderId === orderId) || null;
   };
 
-  const activatePurchaseOrder = (orderId: string) => {
-    if (!config || !config.purchases) return;
+    const activatePurchaseOrder = (orderId: string) => {
+        if (!config || !config.purchases) return;
 
-    const purchaseToActivate = config.purchases.find(p => p.orderId === orderId);
-    if (!purchaseToActivate) return;
+        const purchaseToActivate = config.purchases.find(p => p.orderId === orderId);
+        if (!purchaseToActivate) return;
 
-    const period = purchaseToActivate.planPeriod;
-    const now = Date.now();
-    const isTestPlan = isTestPlanPeriod(period);
+        const period = purchaseToActivate.planPeriod;
+        const now = Date.now();
+        const isTestPlan = isTestPlanPeriod(period);
 
-    const currentlyActivePlan = config.purchases.find(p => p.status === 'active');
-    const remainingFromOldPlan = currentlyActivePlan?.remainingTime?.value || 0;
-    
-    let newPlanDuration = isTestPlan
-        ? TEST_PERIOD_MINUTES[period] || 0
-        : { '1 Month':30, '3 Months':90, '6 Months':180, '1 Year':365, 'Once OFF':365*3 }[period] ?? 0;
+        const newPlanDuration = isTestPlan ? TEST_PERIOD_MINUTES[period] : {
+            '1 Month': 30,
+            '3 Months': 90,
+            '6 Months': 180,
+            '1 Year': 365,
+            'Once OFF': 365 * 3
+        }[period] ?? 0;
 
-    const totalRemaining = remainingFromOldPlan + newPlanDuration;
-    const unit = isTestPlan ? 'minutes' : 'days';
+        const unit = isTestPlan ? 'minutes' : 'days';
+        const multiplier = isTestPlan ? 60 * 1000 : 24 * 60 * 60 * 1000; // ms
 
-    const multiplier = isTestPlan ? 60 * 1000 : 24 * 60 * 60 * 1000; // ms
-    const expiresAt = new Date(now + totalRemaining * multiplier).toISOString();
+        const expiresAt = new Date(now + newPlanDuration * multiplier).toISOString();
 
-    const updatedPurchases = config.purchases.map(p => {
-        if (p.orderId === orderId) {
-        return {
-            ...p,
-            status: 'active' as const,
-            date: new Date().toISOString(),
-            remainingTime: { value: totalRemaining, unit },
-            expiresAt,
-        };
-        }
-        if (p.status === 'active') {
-        return { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: 'days' } };
-        }
-        return p;
-    });
+        const updatedPurchases = config.purchases.map(p => {
+            if (p.orderId === orderId) {
+                return {
+                    ...p,
+                    status: 'active' as const,
+                    date: new Date().toISOString(),
+                    remainingTime: {
+                        value: newPlanDuration,
+                        unit
+                    },
+                    expiresAt
+                };
+            }
+            if (p.status === 'active') {
+                return { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: 'days' } };
+            }
+            return p;
+        });
 
-    saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: true });
+        saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: true });
     };
   
   const declinePurchaseOrder = (orderId: string, reason: string) => {
@@ -433,41 +436,41 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: true });
   };
   
-  const updatePurchaseStatus = () => {
-    if (!config?.purchases) return;
+    const updatePurchaseStatus = () => {
+        if (!config?.purchases) return;
 
-    let changed = false;
-    const now = Date.now();
+        let changed = false;
+        const now = Date.now();
 
-    const updatedPurchases = config.purchases.map(p => {
-        if (p.status === 'active' && p.expiresAt) {
-        const expiryTime = new Date(p.expiresAt).getTime();
-        const remainingMs = expiryTime - now;
-        const isTest = isTestPlanPeriod(p.planPeriod);
+        const updatedPurchases = config.purchases.map(p => {
+            if (p.status === 'active' && p.expiresAt) {
+                const expiryTime = new Date(p.expiresAt).getTime();
+                const remainingMs = expiryTime - now;
+                const isTest = isTestPlanPeriod(p.planPeriod);
 
-        if (remainingMs <= 0) {
-            changed = true;
-            return { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: 'days' } };
+                if (remainingMs <= 0) {
+                    changed = true;
+                    return { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: 'minutes' } };
+                }
+
+                const remaining = isTest
+                    ? Math.ceil(remainingMs / (1000 * 60)) // minutes
+                    : Math.ceil(remainingMs / (1000 * 60 * 60 * 24)); // days
+                const unit = isTest ? 'minutes' : 'days';
+
+                if (p.remainingTime?.value !== remaining || p.remainingTime?.unit !== unit) {
+                    changed = true;
+                    return { ...p, remainingTime: { value: remaining, unit } };
+                }
+            }
+            return p;
+        });
+
+        if (changed) {
+            saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: false });
         }
+    };
 
-        const remaining = isTest
-            ? Math.floor(remainingMs / 60000)      // minutes
-            : Math.ceil(remainingMs / (1000*60*60*24)); // days
-
-        const unit = isTest ? 'minutes' : 'days';
-
-        if (p.remainingTime?.value !== remaining || p.remainingTime?.unit !== unit) {
-            changed = true;
-            return { ...p, remainingTime: { value: remaining, unit } };
-        }
-        }
-        return p;
-    });
-
-    if (changed) {
-        saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: false });
-    }
-  };
 
   const addCustomer = (customer: Omit<Customer, 'id'>): Customer => {
       const newCustomer = { ...customer, id: `CUST-${Date.now()}` };
@@ -620,3 +623,5 @@ export function useBrandsoft() {
   }
   return context;
 }
+
+    
