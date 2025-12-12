@@ -460,15 +460,19 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
         }
         
         const remainingMs = expiryTime - now;
-        const remaining = isTestMode
-          ? remainingMs / (1000 * 60)                 // minutes
-          : remainingMs / (1000 * 60 * 60 * 24);      // days
 
-        const roundedRemaining = Math.ceil(remaining);
-        
-        if (roundedRemaining !== p.remainingDays) {
+        let remaining;
+        if (isTestMode) {
+            // Count remaining MINUTES only
+            remaining = Math.floor(remainingMs / 60000); // 60000ms = 1 minute
+        } else {
+            // Count remaining DAYS
+            remaining = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
+        }
+
+        if (remaining !== p.remainingDays) {
             configChanged = true;
-            return {...p, remainingDays: roundedRemaining };
+            return { ...p, remainingDays: remaining };
         }
       }
       return p;
