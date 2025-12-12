@@ -58,7 +58,6 @@ function VerifyPurchaseContent() {
         const handleSearch = async (orderIdWithPin: string) => {
             setIsLoading(true);
             setProgress(0);
-            setOrder(null);
             
             const progressInterval = setInterval(() => {
                 setProgress(prev => (prev >= 90 ? 90 : prev + 10));
@@ -75,7 +74,7 @@ function VerifyPurchaseContent() {
                 setIsAdminMode(false);
             }
 
-            await new Promise(resolve => setTimeout(resolve, 1500)); 
+            await new Promise(resolve => setTimeout(resolve, 500)); 
 
             const foundOrder = getPurchaseOrder(cleanOrderId);
             
@@ -91,7 +90,7 @@ function VerifyPurchaseContent() {
         };
 
         handleSearch(orderIdFromUrl);
-    }, [orderIdFromUrl, getPurchaseOrder, acknowledgeDeclinedPurchase]);
+    }, [orderIdFromUrl, config, getPurchaseOrder, acknowledgeDeclinedPurchase]);
 
 
     const handleDownloadReceipt = () => {
@@ -116,7 +115,6 @@ function VerifyPurchaseContent() {
         if (order && declineReason) {
             declinePurchaseOrder(order.orderId, declineReason);
             toast({ title: "Order Declined", description: `Order ${order.orderId} has been declined.` });
-            setOrder({ ...order, status: 'declined', declineReason: declineReason });
         } else if (!declineReason) {
             toast({ variant: 'destructive', title: "Reason Required", description: "Please provide a reason for declining." });
         }
