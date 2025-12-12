@@ -97,9 +97,12 @@ function VerifyPurchaseContent() {
     }, [orderIdFromUrl, handleSearch, form]);
 
      useEffect(() => {
-        // Stop polling if we are showing a declined order to the user
-        if (order?.status === 'declined' && !order.isAcknowledged && !isAdminMode) {
+        // Stop polling for stable states to prevent loops
+        if (!isAdminMode && (order?.status === 'declined' && !order.isAcknowledged)) {
           return;
+        }
+        if (!isAdminMode && order?.status === 'active') {
+            return;
         }
 
         const forceRefresh = () => {
@@ -385,5 +388,3 @@ export default function VerifyPurchasePage() {
         </div>
     )
 }
-
-    
