@@ -240,7 +240,7 @@ export default function DashboardPage() {
             ) : declinedPurchase ? (
                  <Card className="bg-destructive text-white">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Your Plan</CardTitle>
+                        <CardTitle className="text-sm font-medium">Purchase Declined</CardTitle>
                         <XCircle className="h-4 w-4 text-white/70" />
                     </CardHeader>
                     <CardContent>
