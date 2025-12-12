@@ -36,9 +36,21 @@ export function usePurchases(
 
     const purchaseToActivate = config.purchases.find(p => p.orderId === orderId);
     if (!purchaseToActivate) return;
+    
+    const now = Date.now();
+    let remainingMsFromOldPlan = 0;
+
+    // Find the current active plan and calculate its remaining time in milliseconds
+    const currentActivePlan = config.purchases.find(p => p.status === 'active' && p.expiresAt);
+    if (currentActivePlan) {
+        const expiryTime = new Date(currentActivePlan.expiresAt).getTime();
+        if (expiryTime > now) {
+            remainingMsFromOldPlan = expiryTime - now;
+        }
+    }
+
 
     const period = purchaseToActivate.planPeriod;
-    const now = Date.now();
     const isTestPlan = isTestPlanPeriod(period);
 
     // Determine plan duration in minutes or days
@@ -53,17 +65,26 @@ export function usePurchases(
         }[period] ?? 0;
 
     const unit = isTestPlan ? 'minutes' : 'days';
-    const multiplier = isTestPlan ? 60 * 1000 : 24 * 60 * 60 * 1000; // ms
+    const multiplier = isTestPlan ? 60 * 1000 : 24 * 60 * 60 * 1000; // ms in a minute or a day
 
-    const expiresAt = new Date(now + newPlanDuration * multiplier).toISOString();
+    const newPlanDurationMs = newPlanDuration * multiplier;
+    const expiresAt = new Date(now + newPlanDurationMs + remainingMsFromOldPlan).toISOString();
+    
+    // Calculate total remaining time for display
+    const totalRemainingMs = newPlanDurationMs + remainingMsFromOldPlan;
+    const totalRemainingValue = isTestPlan 
+        ? Math.ceil(totalRemainingMs / (1000 * 60))
+        : Math.ceil(totalRemainingMs / (1000 * 60 * 60 * 24));
+
 
     const updatedPurchases = config.purchases.map(p => {
+        // Activate the new plan
         if (p.orderId === orderId) {
             return {
                 ...p,
                 status: 'active' as const,
                 date: new Date().toISOString(),
-                remainingTime: { value: newPlanDuration, unit },
+                remainingTime: { value: totalRemainingValue, unit },
                 expiresAt
             };
         }
