@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useBrandsoft, type Purchase } from '@/hooks/use-brandsoft';
 import { useToast } from "@/hooks/use-toast";
-import { KeyRound, CheckCircle, XCircle, Loader2, Download, Eye, Info } from 'lucide-react'; // Added Info icon
+import { KeyRound, CheckCircle, XCircle, Loader2, Download, Eye, Info } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
@@ -65,8 +65,10 @@ function VerifyPurchaseContent() {
             }, 150);
 
             let cleanOrderId = orderIdWithPin;
+            let isUserViewing = true;
             if (orderIdWithPin.endsWith(ADMIN_PIN_SUFFIX)) {
                 setIsAdminMode(true);
+                isUserViewing = false;
                 cleanOrderId = orderIdWithPin.replace(ADMIN_PIN_SUFFIX, '');
             } else {
                 setIsAdminMode(false);
@@ -77,7 +79,8 @@ function VerifyPurchaseContent() {
             const foundOrder = getPurchaseOrder(cleanOrderId);
             
             setOrder(foundOrder);
-            if (foundOrder?.status === 'declined' && !foundOrder.isAcknowledged) {
+            
+            if (isUserViewing && foundOrder?.status === 'declined' && !foundOrder.isAcknowledged) {
               acknowledgeDeclinedPurchase(foundOrder.orderId);
             }
             
@@ -87,7 +90,7 @@ function VerifyPurchaseContent() {
         };
 
         handleSearch(orderIdFromUrl);
-    }, [orderIdFromUrl, config, getPurchaseOrder, acknowledgeDeclinedPurchase]);
+    }, [orderIdFromUrl, getPurchaseOrder, acknowledgeDeclinedPurchase]);
 
 
     const handleDownloadReceipt = () => {
@@ -104,6 +107,7 @@ function VerifyPurchaseContent() {
         if (order) {
             activatePurchaseOrder(order.orderId);
             toast({ title: "Activation Successful", description: `Order ${order.orderId} has been activated.` });
+            setOrder({ ...order, status: 'active' }); 
         }
     };
     
@@ -111,6 +115,7 @@ function VerifyPurchaseContent() {
         if (order && declineReason) {
             declinePurchaseOrder(order.orderId, declineReason);
             toast({ title: "Order Declined", description: `Order ${order.orderId} has been declined.` });
+            setOrder({ ...order, status: 'declined', declineReason: declineReason });
         } else if (!declineReason) {
             toast({ variant: 'destructive', title: "Reason Required", description: "Please provide a reason for declining." });
         }
@@ -133,7 +138,7 @@ function VerifyPurchaseContent() {
                         <Info className="h-4 w-4 text-blue-600 animate-pulse" />
                         <AlertTitle>Verifying Purchase</AlertTitle>
                         <AlertDescription>
-                            Please wait while we look up order details for <strong>{orderIdFromUrl}</strong>...
+                            Please wait while we look up order details for <strong>{orderIdFromUrl?.replace(ADMIN_PIN_SUFFIX, '')}</strong>...
                         </AlertDescription>
                     </Alert>
                     <div className="space-y-1">
@@ -150,7 +155,7 @@ function VerifyPurchaseContent() {
                     <XCircle className="h-4 w-4" />
                     <AlertTitle>Not Found</AlertTitle>
                     <AlertDescription>
-                        No purchase order found with ID: <strong>{orderIdFromUrl}</strong>. Please check the ID and try again.
+                        No purchase order found with ID: <strong>{orderIdFromUrl?.replace(ADMIN_PIN_SUFFIX, '')}</strong>. Please check the ID and try again.
                     </AlertDescription>
                 </Alert>
             );
