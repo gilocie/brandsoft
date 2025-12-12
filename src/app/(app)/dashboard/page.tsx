@@ -153,14 +153,12 @@ const PlanStatusCard = ({ purchase }: { purchase: Purchase | null }) => {
       </Card>
     );
   }
+  
+  const remaining = purchase.remainingTime?.value || 0;
+  const isExpired = remaining <= 0 && purchase.status !== 'pending' && purchase.status !== 'declined';
+  const isExpiringSoon = !isExpired && (purchase.remainingTime?.unit === 'minutes' ? remaining <= 2 : remaining <= 5);
 
-  if (purchase.status === 'active') {
-    const remaining = purchase.remainingTime?.value || 0;
-    const isTestPlan = isTestPlanPeriod(purchase.planPeriod);
-    const isExpired = remaining <= 0;
-
-    const isExpiringSoon = !isExpired && (isTestPlan ? remaining <= 2 : remaining <= 5);
-
+  if (purchase.status === 'active' || isExpired) {
     const rounded = Math.ceil(remaining);
     const displayValue = isExpired ? '0' : rounded;
 
@@ -349,14 +347,12 @@ export default function DashboardPage() {
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
 
-    const latestOrder = purchases[0];
-
     // Priority 1: Check for any pending order first
-    if (latestOrder.status === 'pending') {
-        return latestOrder;
-    }
+    const pending = purchases.find((p) => p.status === 'pending');
+    if (pending) return pending;
     
     // Priority 2: Check if the LATEST order is an unacknowledged decline
+    const latestOrder = purchases[0];
     if (latestOrder.status === 'declined' && !latestOrder.isAcknowledged) {
       return latestOrder;
     }
@@ -364,6 +360,12 @@ export default function DashboardPage() {
     // Priority 3: Fallback to any active plan
     const active = purchases.find((p) => p.status === 'active');
     if (active) return active;
+    
+    // Priority 4: If no active plan, find the most recently expired one
+    const expiredPlans = purchases.filter(p => p.status === 'inactive' && p.expiresAt);
+    if(expiredPlans.length > 0) {
+        return expiredPlans.sort((a,b) => new Date(b.expiresAt!).getTime() - new Date(a.expiresAt!).getTime())[0];
+    }
 
     return null;
   }, [config?.purchases, refreshKey]);
