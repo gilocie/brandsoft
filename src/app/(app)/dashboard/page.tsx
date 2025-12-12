@@ -184,7 +184,7 @@ const PlanStatusCard = ({ purchase }: { purchase: Purchase | null }) => {
     );
   }
 
-  // Logic for active plan
+  // Active
   if (purchase.status === 'active') {
     const isTestMode = !!{
       '1 Month': true,
@@ -196,47 +196,27 @@ const PlanStatusCard = ({ purchase }: { purchase: Purchase | null }) => {
     const isExpiringSoon =
       !isExpired && (isTestMode ? remainingDays <= 2 : remainingDays <= 5);
     const displayUnit = isTestMode
-      ? Math.ceil(remainingDays) > 1
-        ? 'Mins'
-        : 'Min'
-      : Math.ceil(remainingDays) > 1
-        ? 'Days'
-        : 'Day';
+      ? Math.ceil(remainingDays) > 1 ? 'Mins' : 'Min'
+      : Math.ceil(remainingDays) > 1 ? 'Days' : 'Day';
     const displayValue = isExpired ? '0' : Math.ceil(remainingDays);
     const displayText = isExpired ? `0 ${displayUnit}` : `${displayValue} ${displayUnit}`;
 
     return (
-      <Card
-        className={cn(
-          'text-white',
-          isExpired && 'bg-gray-500',
-          isExpiringSoon && 'bg-destructive',
-          !isExpiringSoon && !isExpired && 'bg-green-900'
-        )}
-      >
+      <Card className={cn('text-white', isExpired && 'bg-gray-500', isExpiringSoon && 'bg-destructive', !isExpiringSoon && !isExpired && 'bg-green-900')}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">{purchase.planName}</CardTitle>
-          {isExpired ? (
-            <XCircle className="h-4 w-4 text-white/70" />
-          ) : (
-            <Crown className="h-4 w-4 text-white/70" />
-          )}
+          {isExpired ? <XCircle className="h-4 w-4 text-white/70" /> : <Crown className="h-4 w-4 text-white/70" />}
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{isExpired ? 'Expired' : displayText}</div>
-          <p className="text-xs text-white/80">
-            {isExpired ? 'Your plan has expired.' : 'Remaining'}
-          </p>
-          <ManagePlanDialog
-            isExpiringSoon={isExpiringSoon}
-            isExpired={isExpired}
-          />
+          <p className="text-xs text-white/80">{isExpired ? 'Your plan has expired.' : 'Remaining'}</p>
+          <ManagePlanDialog isExpiringSoon={isExpiringSoon} isExpired={isExpired} />
         </CardContent>
       </Card>
     );
   }
 
-  // Logic for pending plan
+  // Pending
   if (purchase.status === 'pending') {
     return (
       <Card className="bg-amber-500 text-white">
@@ -255,7 +235,7 @@ const PlanStatusCard = ({ purchase }: { purchase: Purchase | null }) => {
     );
   }
 
-  // Logic for declined plan
+  // Declined
   if (purchase.status === 'declined' && !purchase.isAcknowledged) {
     return (
       <Card className="bg-destructive text-white">
@@ -274,25 +254,43 @@ const PlanStatusCard = ({ purchase }: { purchase: Purchase | null }) => {
     );
   }
 
-  return null; // Fallback for 'inactive' or other statuses
+  return null;
 };
 
 export default function DashboardPage() {
   const { config, updatePurchaseStatus } = useBrandsoft();
 
-  // CRITICAL FIX: Add an interval to refresh status automatically
+  // ------------------------------------------------------------------
+  // FIX 1: Add a listener for when you click back to this tab
+  // ------------------------------------------------------------------
   useEffect(() => {
-    // Check status immediately on load
+    // 1. Initial check
     updatePurchaseStatus();
 
-    // Then, check status every 2 seconds to catch changes (like Decline) without a full page refresh
+    // 2. Poll every 2 seconds
     const intervalId = setInterval(() => {
         updatePurchaseStatus();
     }, 2000);
 
-    // Clean up the interval when the component unmounts
-    return () => clearInterval(intervalId);
-  }, []); // Empty dependency array ensures this runs only once on mount
+    // 3. Listen for Storage changes (from other tabs like Verify Page)
+    const handleStorageChange = () => {
+        updatePurchaseStatus();
+    };
+    
+    // 4. Listen for Window Focus (when user clicks tab)
+    const handleFocus = () => {
+        updatePurchaseStatus();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+        clearInterval(intervalId);
+        window.removeEventListener('storage', handleStorageChange);
+        window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
 
   const stats = useMemo(() => {
     if (!config) {
@@ -347,33 +345,30 @@ export default function DashboardPage() {
     };
   }, [config]);
 
-  // CRITICAL FIX: Logic update to prioritize the MOST RECENT order
+  // ------------------------------------------------------------------
+  // FIX 2: STRICT Logic. Only look at the latest order.
+  // ------------------------------------------------------------------
   const purchaseToShow = useMemo((): Purchase | null => {
     if (!config?.purchases || config.purchases.length === 0) return null;
   
-    // 1. Sort purchases by date (Newest first)
+    // 1. Sort by Date Descending (Newest First)
     const purchases = [...config.purchases].sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
     
-    // Get the very latest purchase attempt
-    const mostRecentPurchase = purchases[0];
-  
-    // 2. Priority: Check for any Pending purchase first (Always show pending)
-    const pending = purchases.find((p) => p.status === 'pending');
-    if (pending) return pending;
-  
-    // 3. Priority: Check DECLINED
-    // CRITICAL FIX: Only show the declined card if the MOST RECENT purchase failed.
-    // We do NOT use .find() here, because that digs up old history.
-    if (
-      mostRecentPurchase.status === 'declined' && 
-      !mostRecentPurchase.isAcknowledged
-    ) {
-      return mostRecentPurchase;
+    // 2. Grab the ONLY important order (The newest one)
+    const latestOrder = purchases[0];
+
+    // 3. Check EXACTLY what the latest order is
+    if (latestOrder.status === 'pending') {
+        return latestOrder;
     }
-  
-    // 4. Priority: Fallback - Is there ANY active plan?
+
+    if (latestOrder.status === 'declined' && !latestOrder.isAcknowledged) {
+        return latestOrder;
+    }
+
+    // 4. Fallback: If latest is active, or if declined was acknowledged, find the active plan
     const active = purchases.find((p) => p.status === 'active');
     if (active) return active;
   
