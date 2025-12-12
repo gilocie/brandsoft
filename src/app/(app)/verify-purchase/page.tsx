@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
@@ -21,6 +20,7 @@ import Image from 'next/image';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle as ShadcnDialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { Progress } from '@/components/ui/progress';
 
 const formSchema = z.object({
   orderId: z.string().min(1, "Order ID is required."),
@@ -40,6 +40,7 @@ function VerifyPurchaseContent() {
     const [isLoading, setIsLoading] = useState(false);
     const [isAdminMode, setIsAdminMode] = useState(false);
     const [declineReason, setDeclineReason] = useState('');
+    const [progress, setProgress] = useState(0);
     
     const form = useForm<FormData>({
         resolver: zodResolver(formSchema),
@@ -51,8 +52,13 @@ function VerifyPurchaseContent() {
     useEffect(() => {
         const handleSearch = async (orderIdWithPin: string) => {
             setIsLoading(true);
+            setProgress(0);
             setOrder(null);
             
+            const progressInterval = setInterval(() => {
+                setProgress(prev => (prev >= 95 ? 95 : prev + 5));
+            }, 100);
+
             let cleanOrderId = orderIdWithPin;
             if (orderIdWithPin.endsWith(ADMIN_PIN_SUFFIX)) {
                 setIsAdminMode(true);
@@ -61,7 +67,7 @@ function VerifyPurchaseContent() {
                 setIsAdminMode(false);
             }
 
-            await new Promise(resolve => setTimeout(resolve, 500)); 
+            await new Promise(resolve => setTimeout(resolve, 1500)); 
 
             const foundOrder = getPurchaseOrder(cleanOrderId);
             
@@ -69,6 +75,9 @@ function VerifyPurchaseContent() {
             if (foundOrder?.status === 'declined' && !foundOrder.isAcknowledged) {
               acknowledgeDeclinedPurchase(foundOrder.orderId);
             }
+            
+            clearInterval(progressInterval);
+            setProgress(100);
             setIsLoading(false);
         };
 
@@ -112,8 +121,8 @@ function VerifyPurchaseContent() {
         if (isLoading) {
              return (
                 <div className="flex flex-col items-center justify-center h-24 text-center">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
-                    <p className="text-muted-foreground">Verifying order...</p>
+                    <Progress value={progress} className="w-full" />
+                    <p className="text-muted-foreground mt-2 text-sm">Verifying order...</p>
                 </div>
             );
         }
@@ -291,3 +300,5 @@ export default function VerifyPurchasePage() {
         </div>
     )
 }
+
+    
