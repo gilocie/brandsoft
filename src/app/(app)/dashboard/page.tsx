@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -35,7 +34,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { AnalyticsChart } from '@/components/analytics-chart';
 import { ManagePlanDialog } from '@/components/manage-plan-dialog';
@@ -259,39 +258,72 @@ const PlanStatusCard = ({ purchase }: { purchase: Purchase | null }) => {
 
 export default function DashboardPage() {
   const { config, updatePurchaseStatus } = useBrandsoft();
+  
+  // Add a force refresh counter to trigger re-renders
+  const [refreshKey, setRefreshKey] = useState(0);
+  
+  // Memoized refresh function that forces a re-render
+  const forceRefresh = useCallback(() => {
+    setRefreshKey(prev => prev + 1);
+    updatePurchaseStatus();
+  }, [updatePurchaseStatus]);
 
-  // ------------------------------------------------------------------
-  // FIX 1: Add listeners to force data refresh without a page reload.
-  // ------------------------------------------------------------------
+  // ✅ FIX: Proper real-time synchronization
   useEffect(() => {
-    // 1. Initial check
+    // 1. Initial check on mount
     updatePurchaseStatus();
 
-    // 2. Poll every 2 seconds to catch background changes
-    const intervalId = setInterval(() => {
-        updatePurchaseStatus();
-    }, 2000);
-
-    // 3. Listen for Storage changes (from other tabs like Verify Page)
-    const handleStorageChange = () => {
-        updatePurchaseStatus();
+    // 2. Storage event listener for cross-tab updates
+    const handleStorageChange = (e: StorageEvent) => {
+      // Only react to brandsoft-config changes
+      if (e.key === 'brandsoft-config' || e.key === null) {
+        console.log('Storage changed, refreshing dashboard...');
+        forceRefresh();
+      }
     };
-    
-    // 4. Listen for Window Focus (when user clicks back to this tab)
+
+    // 3. Custom event listener for same-tab updates
+    const handleCustomUpdate = (e: Event) => {
+      console.log('Custom update event received');
+      forceRefresh();
+    };
+
+    // 4. Visibility change listener (when user returns to tab)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('Tab became visible, refreshing...');
+        forceRefresh();
+      }
+    };
+
+    // 5. Focus listener (when window gains focus)
     const handleFocus = () => {
-        updatePurchaseStatus();
+      console.log('Window focused, refreshing...');
+      forceRefresh();
     };
 
+    // 6. Polling as backup (every 3 seconds)
+    const pollInterval = setInterval(() => {
+      forceRefresh();
+    }, 3000);
+
+    // Register all listeners
     window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('brandsoft-update', handleCustomUpdate);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('focus', handleFocus);
 
+    // Cleanup
     return () => {
-        clearInterval(intervalId);
-        window.removeEventListener('storage', handleStorageChange);
-        window.removeEventListener('focus', handleFocus);
+      clearInterval(pollInterval);
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('brandsoft-update', handleCustomUpdate);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
     };
-  }, []);
+  }, [forceRefresh, updatePurchaseStatus]);
 
+  // ✅ FIX: Add refreshKey as dependency to force recalculation
   const stats = useMemo(() => {
     if (!config) {
       return {
@@ -319,14 +351,8 @@ export default function DashboardPage() {
     const canceledInvoices = invoices.filter((inv) => inv.status === 'Canceled');
 
     const paidAmount = paidInvoices.reduce((sum, inv) => sum + inv.amount, 0);
-    const unpaidAmount = unpaidInvoices.reduce(
-      (sum, inv) => sum + inv.amount,
-      0
-    );
-    const canceledAmount = canceledInvoices.reduce(
-      (sum, inv) => sum + inv.amount,
-      0
-    );
+    const unpaidAmount = unpaidInvoices.reduce((sum, inv) => sum + inv.amount, 0);
+    const canceledAmount = canceledInvoices.reduce((sum, inv) => sum + inv.amount, 0);
 
     return {
       paidCount: paidInvoices.length,
@@ -343,39 +369,31 @@ export default function DashboardPage() {
       ).length,
       receiptsIssued: paidInvoices.length,
     };
-  }, [config]);
+  }, [config, refreshKey]); // ← Added refreshKey dependency
 
-  // ------------------------------------------------------------------
-  // FIX 2: Corrected logic to only show the status of the LATEST order.
-  // ------------------------------------------------------------------
+  // ✅ FIX: Add refreshKey dependency to force recalculation
   const purchaseToShow = useMemo((): Purchase | null => {
     if (!config?.purchases || config.purchases.length === 0) return null;
-  
-    // 1. Sort by Date Descending (Newest First)
+
     const purchases = [...config.purchases].sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
-    
-    // 2. Grab the ONLY important order (The newest one)
+
     const latestOrder = purchases[0];
 
-    // 3. Check EXACTLY what the latest order is
-    // Priority 1: Is the MOST RECENT thing Pending?
     if (latestOrder.status === 'pending') {
-        return latestOrder;
+      return latestOrder;
     }
 
-    // Priority 2: Is the MOST RECENT thing Declined (and not acknowledged)?
     if (latestOrder.status === 'declined' && !latestOrder.isAcknowledged) {
-        return latestOrder;
+      return latestOrder;
     }
 
-    // 4. Fallback: If latest is not pending/declined, find the currently active plan
     const active = purchases.find((p) => p.status === 'active');
     if (active) return active;
-  
+
     return null;
-  }, [config?.purchases]);
+  }, [config?.purchases, refreshKey]); // ← Added refreshKey dependency
 
   if (!config) {
     return (
@@ -602,5 +620,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
