@@ -364,9 +364,18 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
   };
   
   const declinePurchaseOrder = (orderId: string, reason: string) => {
-      if (!config || !config.purchases) return;
-      const updatedPurchases = config.purchases.map(p => p.orderId === orderId ? { ...p, status: 'declined', declineReason: reason, isAcknowledged: false } : p);
-      saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false });
+    if (!config || !config.purchases) return;
+    const updatedPurchases = config.purchases.map(p =>
+      p.orderId === orderId
+        ? {
+            ...p,
+            status: 'declined' as 'declined',
+            declineReason: reason,
+            isAcknowledged: false,
+          }
+        : p
+    );
+    saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false });
   };
   
   const acknowledgeDeclinedPurchase = (orderId: string) => {
@@ -550,3 +559,5 @@ export function useBrandsoft() {
   }
   return context;
 }
+
+    
