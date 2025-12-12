@@ -6,11 +6,9 @@ import { useState, useEffect, createContext, useContext, ReactNode } from 'react
 import { useRouter } from 'next/navigation';
 import { hexToHsl } from '@/lib/utils';
 import { Page } from '@/stores/canvas-store';
-import { useFirestore, useFirestoreDocData, useAuth as useFirebaseAuth } from 'reactfire';
-import { doc, setDoc } from 'firebase/firestore';
 
 const LICENSE_KEY = 'brandsoft_license';
-const CONFIG_KEY = 'brandsoft_config_firestore'; // Changed key to reflect new storage
+const CONFIG_KEY = 'brandsoft_config';
 const VALID_SERIAL = 'BRANDSOFT-2024';
 
 export type Customer = {
@@ -250,209 +248,52 @@ interface BrandsoftContextType {
 
 const BrandsoftContext = createContext<BrandsoftContextType | undefined>(undefined);
 
-const initialCustomers: Customer[] = [
-    { id: 'CUST-1625243511000', name: 'Liam Johnson', email: 'liam@example.com', address: '123 Main St, Anytown, USA', customerType: 'personal' },
-    { id: 'CUST-1625243512000', name: 'Olivia Smith', email: 'olivia@example.com', companyName: 'Smith Designs', address: '456 Oak Ave, Anytown, USA', customerType: 'company' },
-    { id: 'CUST-1625243513000', name: 'Noah Williams', email: 'noah@example.com', address: '789 Pine Ln, Anytown, USA', customerType: 'personal' },
-    { id: 'CUST-1625243514000', name: 'Emma Brown', email: 'emma@example.com', companyName: 'Brown & Co.', address: '321 Elm Rd, Anytown, USA', customerType: 'company' },
-    { id: 'CUST-1625243515000', name: 'James Jones', email: 'james@example.com', address: '654 Maple Dr, Anytown, USA', customerType: 'personal' },
-    { id: 'CUST-1625243516000', name: 'Sophia Garcia', email: 'sophia@example.com', address: '987 Birch Ct, Anytown, USA', customerType: 'personal' },
-];
-
-
-const initialInvoices: Invoice[] = [
-  {
-    invoiceId: 'INV001',
-    customer: 'Liam Johnson',
-    customerId: 'CUST-1625243511000',
-    date: '2023-06-23',
-    dueDate: '2023-07-23',
-    amount: 250.0,
-    status: 'Paid',
-    subtotal: 250,
-    discount: 0,
-    tax: 0,
-    shipping: 0,
-    lineItems: [{ description: 'Web Design Consultation', quantity: 2, price: 125 }],
-    currency: 'USD',
-  },
-  {
-    invoiceId: 'INV002',
-    customer: 'Olivia Smith',
-    customerId: 'CUST-1625243512000',
-    date: '2023-07-15',
-    dueDate: '2023-08-15',
-    amount: 150.0,
-    status: 'Pending',
-    subtotal: 150,
-    discount: 0,
-    tax: 0,
-    shipping: 0,
-     lineItems: [{ description: 'Logo Design', quantity: 1, price: 150 }],
-     currency: 'USD',
-  },
-  {
-    invoiceId: 'INV003',
-    customer: 'Noah Williams',
-    customerId: 'CUST-1625243513000',
-    date: '2023-08-01',
-    dueDate: '2023-09-01',
-    amount: 350.0,
-    status: 'Paid',
-    subtotal: 350,
-    discount: 0,
-    tax: 0,
-    shipping: 0,
-     lineItems: [{ description: 'Social Media Campaign', quantity: 1, price: 350 }],
-     currency: 'USD',
-  },
-  {
-    invoiceId: 'INV004',
-    customer: 'Emma Brown',
-    customerId: 'CUST-1625243514000',
-    date: '2023-09-10',
-    dueDate: '2023-10-10',
-    amount: 450.0,
-    status: 'Overdue',
-    subtotal: 450,
-    discount: 0,
-    tax: 0,
-    shipping: 0,
-     lineItems: [{ description: 'SEO Audit', quantity: 1, price: 450 }],
-     currency: 'USD',
-  },
-  {
-    invoiceId: 'INV005',
-    customer: 'James Jones',
-    customerId: 'CUST-1625243515000',
-    date: '2023-10-20',
-    dueDate: '2023-11-20',
-    amount: 550.0,
-    status: 'Pending',
-    subtotal: 550,
-    discount: 0,
-    tax: 0,
-    shipping: 0,
-     lineItems: [{ description: 'Complete Branding Package', quantity: 1, price: 550 }],
-     currency: 'USD',
-  },
-   {
-    invoiceId: 'INV006',
-    customer: 'Sophia Garcia',
-    customerId: 'CUST-1625243516000',
-    date: '2023-10-22',
-    dueDate: '2023-11-22',
-    amount: 300.0,
-    status: 'Canceled',
-    subtotal: 300,
-    discount: 0,
-    tax: 0,
-    shipping: 0,
-     lineItems: [{ description: 'Business Card Design', quantity: 200, price: 1.5 }],
-     currency: 'USD',
-  },
-];
-
-const initialQuotations: Quotation[] = [
-    {
-        quotationId: 'QUO-001',
-        customer: 'Liam Johnson',
-        customerId: 'CUST-1625243511000',
-        date: '2023-11-01',
-        validUntil: '2023-11-30',
-        amount: 500.0,
-        status: 'Sent',
-        subtotal: 500,
-        lineItems: [{ description: 'Website Redesign', quantity: 1, price: 500 }],
-        currency: 'USD',
-    },
-    {
-        quotationId: 'QUO-002',
-        customer: 'Olivia Smith',
-        customerId: 'CUST-1625243512000',
-        date: '2023-11-05',
-        validUntil: '2023-12-05',
-        amount: 1200.0,
-        status: 'Accepted',
-        subtotal: 1200,
-        lineItems: [{ description: 'E-commerce Platform Development', quantity: 1, price: 1200 }],
-        currency: 'USD',
-    },
-    {
-        quotationId: 'QUO-003',
-        customer: 'Emma Brown',
-        customerId: 'CUST-1625243514000',
-        date: '2023-11-10',
-        validUntil: '2023-12-10',
-        amount: 300.0,
-        status: 'Declined',
-        subtotal: 300,
-        lineItems: [{ description: 'Quarterly Social Media Management', quantity: 1, price: 300 }],
-        currency: 'USD',
-    },
-    {
-        quotationId: 'QUO-004',
-        customer: 'Noah Williams',
-        customerId: 'CUST-1625243513000',
-        date: '2023-11-12',
-        validUntil: '2023-12-12',
-        amount: 800.0,
-        status: 'Draft',
-        subtotal: 800,
-        lineItems: [{ description: 'Mobile App UI/UX Design', quantity: 1, price: 800 }],
-        currency: 'USD',
-    }
-];
-
-
 export function BrandsoftProvider({ children }: { children: ReactNode }) {
   const [isActivated, setIsActivated] = useState<boolean | null>(null);
+  const [isConfigured, setIsConfigured] = useState<boolean | null>(null);
+  const [config, setConfig] = useState<BrandsoftConfig | null>(null);
   const router = useRouter();
-
-  const auth = useFirebaseAuth();
-  const firestore = useFirestore();
-  const configRef = auth.currentUser ? doc(firestore, 'configs', auth.currentUser.uid) : null;
-  const { data: config, status: configStatus } = useFirestoreDocData(configRef!, {
-    idField: 'id',
-  });
-  
-  const isConfigured = configStatus === 'success' && !!config;
 
   useEffect(() => {
     try {
       const license = localStorage.getItem(LICENSE_KEY);
+      const storedConfig = localStorage.getItem(CONFIG_KEY);
       setIsActivated(!!license);
+      setIsConfigured(!!storedConfig);
+      if (storedConfig) {
+        setConfig(JSON.parse(storedConfig));
+      }
     } catch (error) {
       console.error("Error accessing localStorage", error);
       setIsActivated(false);
+      setIsConfigured(false);
     }
   }, []);
 
   useEffect(() => {
-    const brandConfig = (config as BrandsoftConfig | null)?.brand;
-    if (brandConfig?.primaryColor) {
-      const primaryHsl = hexToHsl(brandConfig.primaryColor);
+    if (config?.brand.primaryColor) {
+      const primaryHsl = hexToHsl(config.brand.primaryColor);
       if (primaryHsl) {
         document.documentElement.style.setProperty('--primary', `${primaryHsl.h} ${primaryHsl.s}% ${primaryHsl.l}%`);
       }
     }
-    if (brandConfig?.secondaryColor) {
-      const accentHsl = hexToHsl(brandConfig.secondaryColor);
+    if (config?.brand.secondaryColor) {
+      const accentHsl = hexToHsl(config.brand.secondaryColor);
        if (accentHsl) {
         document.documentElement.style.setProperty('--accent', `${accentHsl.h} ${accentHsl.s}% ${accentHsl.l}%`);
       }
     }
-    if (brandConfig?.buttonPrimaryBg) {
-      document.documentElement.style.setProperty('--btn-primary-bg', brandConfig.buttonPrimaryBg);
+    if (config?.brand.buttonPrimaryBg) {
+      document.documentElement.style.setProperty('--btn-primary-bg', config.brand.buttonPrimaryBg);
     }
-    if (brandConfig?.buttonPrimaryText) {
-      document.documentElement.style.setProperty('--btn-primary-text', brandConfig.buttonPrimaryText);
+    if (config?.brand.buttonPrimaryText) {
+      document.documentElement.style.setProperty('--btn-primary-text', config.brand.buttonPrimaryText);
     }
-    if (brandConfig?.buttonPrimaryBgHover) {
-      document.documentElement.style.setProperty('--btn-primary-bg-hover', brandConfig.buttonPrimaryBgHover);
+    if (config?.brand.buttonPrimaryBgHover) {
+      document.documentElement.style.setProperty('--btn-primary-bg-hover', config.brand.buttonPrimaryBgHover);
     }
-    if (brandConfig?.buttonPrimaryTextHover) {
-      document.documentElement.style.setProperty('--btn-primary-text-hover', brandConfig.buttonPrimaryTextHover);
+    if (config?.brand.buttonPrimaryTextHover) {
+      document.documentElement.style.setProperty('--btn-primary-text-hover', config.brand.buttonPrimaryTextHover);
     }
   }, [config]);
 
@@ -468,18 +309,18 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
   
   const logout = () => {
     localStorage.removeItem(LICENSE_KEY);
-    // Don't remove config, it's tied to user session now
+    localStorage.removeItem(CONFIG_KEY);
     setIsActivated(false);
-    auth.signOut();
+    setIsConfigured(false);
     router.push('/activation');
   };
 
   const saveConfig = (newConfig: BrandsoftConfig, options = { redirect: true }) => {
-    if (configRef) {
-      setDoc(configRef, newConfig, { merge: true });
-      if(options.redirect) {
-          router.push('/dashboard');
-      }
+    setConfig(newConfig);
+    localStorage.setItem(CONFIG_KEY, JSON.stringify(newConfig));
+    setIsConfigured(true);
+    if(options.redirect) {
+        router.push('/dashboard');
     }
   };
 
@@ -491,14 +332,13 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
   };
 
   const getPurchaseOrder = (orderId: string): Purchase | null => {
-    return (config as BrandsoftConfig | null)?.purchases?.find(p => p.orderId === orderId) || null;
+    return config?.purchases?.find(p => p.orderId === orderId) || null;
   };
 
   const activatePurchaseOrder = (orderId: string) => {
-      const currentConfig = config as BrandsoftConfig;
-      if (!currentConfig || !currentConfig.purchases) return;
+      if (!config || !config.purchases) return;
 
-      const purchase = currentConfig.purchases.find(p => p.orderId === orderId);
+      const purchase = config.purchases.find(p => p.orderId === orderId);
       if (!purchase) return;
 
       const periodMap: { [key: string]: number } = {
@@ -508,35 +348,33 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       const durationMinutes = periodMap[purchase.planPeriod] || 0;
       const expiresAt = new Date(new Date().getTime() + durationMinutes * 60 * 1000).toISOString();
 
-      const updatedPurchases = currentConfig.purchases.map(p => 
+      const updatedPurchases = config.purchases.map(p => 
           p.orderId === orderId ? { ...p, status: 'active', expiresAt } : 
           (p.status === 'active' ? { ...p, status: 'pending', expiresAt: undefined } : p)
       );
 
-      saveConfig({ ...currentConfig, purchases: updatedPurchases }, { redirect: false });
+      saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false });
   };
   
   const declinePurchaseOrder = (orderId: string, reason: string) => {
-      const currentConfig = config as BrandsoftConfig;
-      if (!currentConfig || !currentConfig.purchases) return;
-      const updatedPurchases = currentConfig.purchases.map(p => p.orderId === orderId ? { ...p, status: 'declined', declineReason: reason, isAcknowledged: false } : p);
-      saveConfig({ ...currentConfig, purchases: updatedPurchases }, { redirect: false });
+      if (!config || !config.purchases) return;
+      const updatedPurchases = config.purchases.map(p => p.orderId === orderId ? { ...p, status: 'declined', declineReason: reason, isAcknowledged: false } : p);
+      saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false });
   };
   
   const acknowledgeDeclinedPurchase = (orderId: string) => {
-    const currentConfig = config as BrandsoftConfig;
-    if (!currentConfig || !currentConfig.purchases) return;
-    const updatedPurchases = currentConfig.purchases.map(p => 
+    if (!config || !config.purchases) return;
+    const updatedPurchases = config.purchases.map(p => 
       (p.orderId === orderId && p.status === 'declined') ? { ...p, isAcknowledged: true } : p
     );
-    saveConfig({ ...currentConfig, purchases: updatedPurchases }, { redirect: false });
+    saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false });
   };
 
   const addCustomer = (customer: Omit<Customer, 'id'>): Customer => {
       const newCustomer = { ...customer, id: `CUST-${Date.now()}` };
       if (config) {
           const newConfig = { ...config, customers: [...config.customers, newCustomer] };
-          saveConfig(newConfig as BrandsoftConfig, { redirect: false });
+          saveConfig(newConfig, { redirect: false });
       }
       return newCustomer;
   };
@@ -546,14 +384,14 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
           const newCustomers = config.customers.map(c => 
               c.id === customerId ? { ...c, ...data } : c
           );
-          saveConfig({ ...config, customers: newCustomers } as BrandsoftConfig, { redirect: false });
+          saveConfig({ ...config, customers: newCustomers }, { redirect: false });
       }
   };
   
   const deleteCustomer = (customerId: string) => {
       if (config) {
           const newCustomers = config.customers.filter(c => c.id !== customerId);
-          saveConfig({ ...config, customers: newCustomers } as BrandsoftConfig, { redirect: false });
+          saveConfig({ ...config, customers: newCustomers }, { redirect: false });
       }
   };
 
@@ -561,7 +399,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       const newProduct = { ...product, id: `PROD-${Date.now()}` };
       if (config) {
           const newConfig = { ...config, products: [...(config.products || []), newProduct] };
-          saveConfig(newConfig as BrandsoftConfig, { redirect: false });
+          saveConfig(newConfig, { redirect: false });
       }
       return newProduct;
   };
@@ -571,86 +409,86 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
           const newProducts = (config.products || []).map(p => 
               p.id === productId ? { ...p, ...data } : p
           );
-          saveConfig({ ...config, products: newProducts } as BrandsoftConfig, { redirect: false });
+          saveConfig({ ...config, products: newProducts }, { redirect: false });
       }
   };
   
   const deleteProduct = (productId: string) => {
       if (config) {
           const newProducts = (config.products || []).filter(p => p.id !== productId);
-          saveConfig({ ...config, products: newProducts } as BrandsoftConfig, { redirect: false });
+          saveConfig({ ...config, products: newProducts }, { redirect: false });
       }
   };
   
   const addInvoice = (invoice: Omit<Invoice, 'invoiceId'>, numbering?: NumberingOptions): Invoice => {
     if (!config) throw new Error("Config not loaded");
-    const startNumber = numbering?.startNumber ?? (config as BrandsoftConfig).profile.invoiceStartNumber;
-    const prefix = numbering?.prefix ?? (config as BrandsoftConfig).profile.invoicePrefix;
-    const nextNumber = (Number(startNumber) || 100) + ((config as BrandsoftConfig).invoices?.length || 0);
+    const startNumber = numbering?.startNumber ?? config.profile.invoiceStartNumber;
+    const prefix = numbering?.prefix ?? config.profile.invoicePrefix;
+    const nextNumber = (Number(startNumber) || 100) + (config.invoices?.length || 0);
     const generatedId = `${prefix}${nextNumber}`.replace(/\s+/g, '');
     const newInvoice: Invoice = { ...invoice, invoiceId: generatedId };
-    const newConfig = { ...config, invoices: [...((config as BrandsoftConfig).invoices || []), newInvoice] };
-    saveConfig(newConfig as BrandsoftConfig, { redirect: false });
+    const newConfig = { ...config, invoices: [...(config.invoices || []), newInvoice] };
+    saveConfig(newConfig, { redirect: false });
     return newInvoice;
   };
 
   const updateInvoice = (invoiceId: string, data: Partial<Omit<Invoice, 'invoiceId'>>) => {
       if (config) {
-          const newInvoices = ((config as BrandsoftConfig).invoices || []).map(i => 
+          const newInvoices = (config.invoices || []).map(i => 
               i.invoiceId === invoiceId ? { ...i, ...data } : i
           );
-          saveConfig({ ...config, invoices: newInvoices } as BrandsoftConfig, { redirect: false });
+          saveConfig({ ...config, invoices: newInvoices }, { redirect: false });
       }
   };
   
   const deleteInvoice = (invoiceId: string) => {
       if (config) {
-          const newInvoices = ((config as BrandsoftConfig).invoices || []).filter(i => i.invoiceId !== invoiceId);
-          saveConfig({ ...config, invoices: newInvoices } as BrandsoftConfig, { redirect: false });
+          const newInvoices = (config.invoices || []).filter(i => i.invoiceId !== invoiceId);
+          saveConfig({ ...config, invoices: newInvoices }, { redirect: false });
       }
   };
   
    const addQuotation = (quotation: Omit<Quotation, 'quotationId'>, numbering?: NumberingOptions): Quotation => {
     if (!config) throw new Error("Config not loaded");
-    const startNumber = numbering?.startNumber ?? (config as BrandsoftConfig).profile.quotationStartNumber;
-    const prefix = numbering?.prefix ?? (config as BrandsoftConfig).profile.quotationPrefix;
-    const nextNumber = (Number(startNumber) || 100) + ((config as BrandsoftConfig).quotations?.length || 0);
+    const startNumber = numbering?.startNumber ?? config.profile.quotationStartNumber;
+    const prefix = numbering?.prefix ?? config.profile.quotationPrefix;
+    const nextNumber = (Number(startNumber) || 100) + (config.quotations?.length || 0);
     const generatedId = `${prefix}${nextNumber}`.replace(/\s+/g, '');
     const newQuotation: Quotation = { ...quotation, quotationId: generatedId };
-    const newConfig = { ...config, quotations: [...((config as BrandsoftConfig).quotations || []), newQuotation] };
-    saveConfig(newConfig as BrandsoftConfig, { redirect: false });
+    const newConfig = { ...config, quotations: [...(config.quotations || []), newQuotation] };
+    saveConfig(newConfig, { redirect: false });
     return newQuotation;
   };
 
   const updateQuotation = (quotationId: string, data: Partial<Omit<Quotation, 'quotationId'>>) => {
       if (config) {
-          const newQuotations = ((config as BrandsoftConfig).quotations || []).map(q => 
+          const newQuotations = (config.quotations || []).map(q => 
               q.quotationId === quotationId ? { ...q, ...data } : q
           );
-          saveConfig({ ...config, quotations: newQuotations } as BrandsoftConfig, { redirect: false });
+          saveConfig({ ...config, quotations: newQuotations }, { redirect: false });
       }
   };
   
   const deleteQuotation = (quotationId: string) => {
       if (config) {
-          const newQuotations = ((config as BrandsoftConfig).quotations || []).filter(q => q.quotationId !== quotationId);
-          saveConfig({ ...config, quotations: newQuotations } as BrandsoftConfig, { redirect: false });
+          const newQuotations = (config.quotations || []).filter(q => q.quotationId !== quotationId);
+          saveConfig({ ...config, quotations: newQuotations }, { redirect: false });
       }
   };
   
   const addCurrency = (currency: string) => {
-      if (config && !(config as BrandsoftConfig).currencies.includes(currency)) {
-          const newConfig = { ...config, currencies: [...(config as BrandsoftConfig).currencies, currency] };
-          saveConfig(newConfig as BrandsoftConfig, { redirect: false });
+      if (config && !config.currencies.includes(currency)) {
+          const newConfig = { ...config, currencies: [...config.currencies, currency] };
+          saveConfig(newConfig, { redirect: false });
       }
   };
 
   const value: BrandsoftContextType = {
     isActivated,
     isConfigured,
-    config: config as BrandsoftConfig | null,
+    config,
     activate,
-    saveConfig: saveConfig as any,
+    saveConfig,
     logout,
     addCustomer,
     updateCustomer,
