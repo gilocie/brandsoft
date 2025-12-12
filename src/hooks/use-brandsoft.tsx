@@ -84,7 +84,7 @@ export type Purchase = {
     declineReason?: string;
     isAcknowledged?: boolean;
     expiresAt?: string;
-    remainingDays?: number; // Added this field
+    remainingDays?: number;
 }
 
 
@@ -162,6 +162,59 @@ export type BrandsoftConfig = {
   currencies: string[];
   purchases?: Purchase[];
 };
+
+export type Invoice = {
+    invoiceId: string;
+    customer: string;
+    customerId?: string;
+    date: string;
+    dueDate: string;
+    amount: number;
+    status: 'Draft' | 'Pending' | 'Paid' | 'Overdue' | 'Canceled';
+    subtotal?: number;
+    discount?: number;
+    discountType?: 'percentage' | 'flat';
+    discountValue?: number;
+    tax?: number;
+    taxName?: string;
+    taxType?: 'percentage' | 'flat';
+    taxValue?: number;
+    shipping?: number;
+    notes?: string;
+    lineItems: LineItem[];
+    partialPayment?: number;
+    partialPaymentType?: 'percentage' | 'flat';
+    partialPaymentValue?: number;
+    currency?: string;
+    design?: DesignSettings;
+};
+
+export type Quotation = {
+    quotationId: string;
+    customer: string;
+    customerId?: string;
+    date: string;
+    validUntil: string;
+    amount: number;
+    status: 'Draft' | 'Sent' | 'Accepted' | 'Declined';
+    subtotal?: number;
+    discount?: number;
+    discountType?: 'percentage' | 'flat';
+    discountValue?: number;
+    tax?: number;
+    taxName?: string;
+    taxType?: 'percentage' | 'flat';
+    taxValue?: number;
+    shipping?: number;
+    notes?: string;
+    lineItems: LineItem[];
+    partialPayment?: number;
+    partialPaymentType?: 'percentage' | 'flat';
+    partialPaymentValue?: number;
+    currency?: string;
+    design?: DesignSettings;
+};
+
 
 interface NumberingOptions {
   prefix?: string;
@@ -300,39 +353,53 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     return config?.purchases?.find(p => p.orderId === orderId) || null;
   };
 
-  const activatePurchaseOrder = (orderId: string) => {
+ const activatePurchaseOrder = (orderId: string) => {
     if (!config || !config.purchases) return;
 
     const purchaseToActivate = config.purchases.find(p => p.orderId === orderId);
     if (!purchaseToActivate) return;
     
+    let remainingDaysFromOldPlan = 0;
     const currentlyActivePurchase = config.purchases.find(p => p.status === 'active');
-    const oldRemainingDays = currentlyActivePurchase?.remainingDays || 0;
+    
+    if (currentlyActivePurchase) {
+        remainingDaysFromOldPlan = currentlyActivePurchase.remainingDays || 0;
+    }
 
     const testPeriodMap: { [key: string]: number } = {
-        '1 Month': 10, '3 Months': 15, '6 Months': 30, '1 Year': 45,
+        '1 Month': 10, 
+        '3 Months': 15, 
+        '6 Months': 30, 
+        '1 Year': 45,
     };
     
     const isTestPlan = Object.keys(testPeriodMap).includes(purchaseToActivate.planPeriod);
     
-    const newPlanDuration = isTestPlan 
-      ? testPeriodMap[purchaseToActivate.planPeriod] 
-      : ({ '1 Month': 30, '3 Months': 90, '6 Months': 180, '1 Year': 365, 'Once OFF': 365 * 3 }[purchaseToActivate.planPeriod] || 0);
+    let newPlanDuration = 0;
+    if (isTestPlan) {
+      newPlanDuration = testPeriodMap[purchaseToActivate.planPeriod];
+    } else {
+      const realPeriodMap: { [key: string]: number } = {
+        '1 Month': 30, '3 Months': 90, '6 Months': 180, '1 Year': 365, 'Once OFF': 365 * 3,
+      };
+      newPlanDuration = realPeriodMap[purchaseToActivate.planPeriod] || 0;
+    }
 
-    const totalRemainingDays = oldRemainingDays + newPlanDuration;
+    const totalRemainingDays = remainingDaysFromOldPlan + newPlanDuration;
+    const now = Date.now();
+    const durationMs = totalRemainingDays * (isTestPlan ? 60 * 1000 : 24 * 60 * 60 * 1000);
+    const newExpiresAt = new Date(now + durationMs).toISOString();
     
     const updatedPurchases = config.purchases.map(p => {
-      // Activate the new purchase
       if (p.orderId === orderId) {
         return { 
             ...p, 
             status: 'active' as 'active', 
             date: new Date().toISOString(),
             remainingDays: totalRemainingDays,
-            expiresAt: new Date(Date.now() + totalRemainingDays * (isTestPlan ? 60 * 1000 : 24 * 60 * 60 * 1000)).toISOString()
+            expiresAt: newExpiresAt,
         };
       }
-      // Deactivate the old active purchase
       if (p.orderId === currentlyActivePurchase?.orderId) {
         return { ...p, status: 'inactive' as 'inactive', remainingDays: 0 };
       }
@@ -341,7 +408,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
 
     saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: true });
   };
-  
+
   const declinePurchaseOrder = (orderId: string, reason: string) => {
     if (!config || !config.purchases) return;
     const updatedPurchases = config.purchases.map(p =>
@@ -377,26 +444,26 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     const updatedPurchases = (freshConfig.purchases || []).map((p: Purchase) => {
       if (p.status === 'active' && p.expiresAt) {
         const expiryTime = new Date(p.expiresAt).getTime();
+        const isTestMode = Object.keys({ '1 Month': 10, '3 Months': 15, '6 Months': 30, '1 Year': 45 }).includes(p.planPeriod);
+
         if (now >= expiryTime) {
           configChanged = true;
           return { ...p, status: 'inactive' as 'inactive', remainingDays: 0 };
         }
-        // This part is tricky because we now store remainingDays directly. 
-        // A full-fledged app would use a server to decrement this or calculate it on the fly.
-        // For this offline app, we'll recalculate on load, but not every second.
-        const isTestMode = Object.keys({ '1 Month': 10, '3 Months': 15, '6 Months': 30, '1 Year': 45 }).includes(p.planPeriod);
+        
         const remainingMs = expiryTime - now;
         const remaining = isTestMode ? remainingMs / (1000 * 60) : remainingMs / (1000 * 60 * 60 * 24);
+        const roundedRemaining = Math.ceil(remaining);
         
-        if (Math.ceil(remaining) !== p.remainingDays) {
+        if (roundedRemaining !== p.remainingDays) {
             configChanged = true;
-            return {...p, remainingDays: Math.ceil(remaining) };
+            return {...p, remainingDays: roundedRemaining };
         }
       }
       return p;
     });
 
-    if (configChanged || JSON.stringify(config.purchases) !== JSON.stringify(updatedPurchases)) {
+    if (configChanged) {
       saveConfig({ ...freshConfig, purchases: updatedPurchases }, { redirect: false, revalidate: false });
     } else {
         if(JSON.stringify(config) !== JSON.stringify(freshConfig)) {
@@ -556,4 +623,3 @@ export function useBrandsoft() {
   }
   return context;
 }
-
