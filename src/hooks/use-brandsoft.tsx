@@ -356,42 +356,51 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
 
     const purchaseToActivate = config.purchases.find(p => p.orderId === orderId);
     if (!purchaseToActivate) return;
-    
-    const currentlyActivePurchase = config.purchases.find(p => p.status === 'active');
 
+    const now = new Date().getTime();
     let remainingMs = 0;
+
+    // Find the currently active plan and calculate its remaining time
+    const currentlyActivePurchase = config.purchases.find(p => p.status === 'active');
     if (currentlyActivePurchase && currentlyActivePurchase.expiresAt) {
-        const now = new Date().getTime();
         const expiryTime = new Date(currentlyActivePurchase.expiresAt).getTime();
         remainingMs = Math.max(0, expiryTime - now);
     }
     
-    const periodMsMap: { [key: string]: number } = {
-        '1 Month': 30 * 24 * 60 * 60 * 1000,
-        '3 Months': 90 * 24 * 60 * 60 * 1000,
-        '6 Months': 180 * 24 * 60 * 60 * 1000,
-        '1 Year': 365 * 24 * 60 * 60 * 1000,
-        'Once OFF': 365 * 3 * 24 * 60 * 60 * 1000,
-    };
-
+    // Test mode durations (in minutes, converted to milliseconds)
     const testPeriodMsMap: { [key: string]: number } = {
       '1 Month': 10 * 60 * 1000,
       '3 Months': 15 * 60 * 1000,
       '6 Months': 30 * 60 * 1000,
       '1 Year': 35 * 60 * 1000,
     };
+
+    // Real mode durations (in days, converted to milliseconds)
+     const periodMsMap: { [key: string]: number } = {
+        '1 Month': 30 * 24 * 60 * 60 * 1000,
+        '3 Months': 90 * 24 * 60 * 60 * 1000,
+        '6 Months': 180 * 24 * 60 * 60 * 1000,
+        '1 Year': 365 * 24 * 60 * 60 * 1000,
+        'Once OFF': 365 * 3 * 24 * 60 * 60 * 1000,
+    };
     
+    // Determine if the *new* plan is a test plan
     const isTestMode = Object.keys(testPeriodMsMap).includes(purchaseToActivate.planPeriod);
     const durationMap = isTestMode ? testPeriodMsMap : periodMsMap;
 
+    // Get the duration of the new plan
     const newPlanDurationMs = durationMap[purchaseToActivate.planPeriod] || 0;
+    
+    // Calculate total duration and new expiration date
     const totalDurationMs = remainingMs + newPlanDurationMs;
-    const newExpiresAt = new Date(new Date().getTime() + totalDurationMs).toISOString();
+    const newExpiresAt = new Date(now + totalDurationMs).toISOString();
 
     const updatedPurchases = config.purchases.map(p => {
+      // Activate the new purchase
       if (p.orderId === orderId) {
         return { ...p, status: 'active' as 'active', expiresAt: newExpiresAt, date: new Date().toISOString() };
       }
+      // Deactivate the old active purchase
       if (p.orderId === currentlyActivePurchase?.orderId) {
         return { ...p, status: 'inactive' as 'inactive' };
       }
