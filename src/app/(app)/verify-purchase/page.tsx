@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
@@ -14,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useBrandsoft, type Purchase } from '@/hooks/use-brandsoft';
 import { useToast } from "@/hooks/use-toast";
-import { KeyRound, CheckCircle, XCircle, Loader2, Download, Eye } from 'lucide-react';
+import { KeyRound, CheckCircle, XCircle, Loader2, Download, Eye, Info } from 'lucide-react'; // Added Info icon
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
@@ -36,9 +34,12 @@ function VerifyPurchaseContent() {
     const { toast } = useToast();
     const searchParams = useSearchParams();
     const router = useRouter();
+    
+    const orderIdFromUrl = searchParams.get('orderId');
 
     const [order, setOrder] = useState<Purchase | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
+    // FIX 1: Initialize loading to TRUE if we have an ID in the URL
+    const [isLoading, setIsLoading] = useState(!!orderIdFromUrl);
     const [isAdminMode, setIsAdminMode] = useState(false);
     const [declineReason, setDeclineReason] = useState('');
     const [progress, setProgress] = useState(0);
@@ -48,17 +49,21 @@ function VerifyPurchaseContent() {
         defaultValues: { orderId: '' },
     });
     
-    const orderIdFromUrl = searchParams.get('orderId');
-    
     useEffect(() => {
+        if (!orderIdFromUrl) {
+            setIsLoading(false);
+            return;
+        }
+
         const handleSearch = async (orderIdWithPin: string) => {
             setIsLoading(true);
             setProgress(0);
             setOrder(null);
             
+            // Progress simulation
             const progressInterval = setInterval(() => {
-                setProgress(prev => (prev >= 95 ? 95 : prev + 5));
-            }, 100);
+                setProgress(prev => (prev >= 90 ? 90 : prev + 10));
+            }, 150);
 
             let cleanOrderId = orderIdWithPin;
             if (orderIdWithPin.endsWith(ADMIN_PIN_SUFFIX)) {
@@ -68,7 +73,8 @@ function VerifyPurchaseContent() {
                 setIsAdminMode(false);
             }
 
-            await new Promise(resolve => setTimeout(resolve, 1500)); 
+            // Simulate network delay
+            await new Promise(resolve => setTimeout(resolve, 2000)); 
 
             const foundOrder = getPurchaseOrder(cleanOrderId);
             
@@ -82,9 +88,7 @@ function VerifyPurchaseContent() {
             setIsLoading(false);
         };
 
-        if (orderIdFromUrl) {
-            handleSearch(orderIdFromUrl);
-        }
+        handleSearch(orderIdFromUrl);
     }, [orderIdFromUrl, config, getPurchaseOrder, acknowledgeDeclinedPurchase]);
 
 
@@ -115,25 +119,40 @@ function VerifyPurchaseContent() {
     };
     
     const onFormSubmit = (data: FormData) => {
+        // Force loading state when submitting form manually
+        setIsLoading(true); 
         router.push(`/verify-purchase?orderId=${data.orderId}`);
     };
 
     const renderContent = () => {
+        // FIX 2: Show the "Please Wait" Alert instead of just the progress bar
         if (isLoading) {
              return (
-                <div className="flex flex-col items-center justify-center h-24 text-center">
-                    <Progress value={progress} className="w-full" />
-                    <p className="text-muted-foreground mt-2 text-sm">Verifying order...</p>
+                <div className="mt-4 space-y-4">
+                    <Alert className="bg-blue-50 border-blue-200 text-blue-800">
+                        <Info className="h-4 w-4 text-blue-600 animate-pulse" />
+                        <AlertTitle>Verifying Purchase</AlertTitle>
+                        <AlertDescription>
+                            Please wait while we look up order details for <strong>{orderIdFromUrl}</strong>...
+                        </AlertDescription>
+                    </Alert>
+                    <div className="space-y-1">
+                        <Progress value={progress} className="w-full h-2" />
+                        <p className="text-xs text-muted-foreground text-center">Searching database...</p>
+                    </div>
                 </div>
             );
         }
 
-        if (orderIdFromUrl && !order) {
+        // FIX 3: Ensure this only shows if NOT loading and we have an ID but NO order
+        if (!isLoading && orderIdFromUrl && !order) {
             return (
                 <Alert variant="destructive" className="mt-4">
                     <XCircle className="h-4 w-4" />
-                    <AlertTitle>Error</AlertTitle>
-                    <AlertDescription>No purchase order found with this ID.</AlertDescription>
+                    <AlertTitle>Not Found</AlertTitle>
+                    <AlertDescription>
+                        No purchase order found with ID: <strong>{orderIdFromUrl}</strong>. Please check the ID and try again.
+                    </AlertDescription>
                 </Alert>
             );
         }
