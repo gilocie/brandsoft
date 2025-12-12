@@ -230,7 +230,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     if (config?.brand.secondaryColor) {
       const accentHsl = hexToHsl(config.brand.secondaryColor);
        if (accentHsl) {
-        document.documentElement.style.setProperty('--accent', `${accentHsl.h} ${accentHsl.s}% ${primaryHsl.l}%`);
+        document.documentElement.style.setProperty('--accent', `${accentHsl.h} ${accentHsl.s}% ${accentHsl.l}%`);
       }
     }
     if (config?.brand.buttonPrimaryBg) {
@@ -320,16 +320,13 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     );
 
     const totalRemainingDays = oldRemainingDays + newPlanDuration;
-    const newExpiresAt = new Date(new Date().getTime() + totalRemainingDays * (isTestMode ? 60 * 1000 : 24 * 60 * 60 * 1000)).toISOString();
-
-
+    
     const updatedPurchases = config.purchases.map(p => {
       // Activate the new purchase
       if (p.orderId === orderId) {
         return { 
             ...p, 
             status: 'active' as 'active', 
-            expiresAt: newExpiresAt, 
             date: new Date().toISOString(),
             remainingDays: totalRemainingDays 
         };
