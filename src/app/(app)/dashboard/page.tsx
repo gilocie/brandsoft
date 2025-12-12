@@ -160,8 +160,8 @@ const PlanStatusCard = ({ purchase }: { purchase: Purchase | null }) => {
   if (purchase.status === 'active' || isExpired) {
     const rounded = Math.ceil(remaining);
     const displayValue = isExpired ? '0' : rounded;
-
-    const displayUnit = 'Days';
+    
+    const displayUnit = rounded === 1 ? 'Day' : 'Days';
 
     const displayText = isExpired ? `0 ${displayUnit}` : `${displayValue} ${displayUnit}`;
 
@@ -260,7 +260,7 @@ export default function DashboardPage() {
     // 5. Polling for countdown updates
     const pollInterval = setInterval(() => {
         updatePurchaseStatus();
-    }, 5000); // Check every 5 seconds for countdown update
+    }, 1000); // Check every second for countdown update
 
     // Register all listeners
     window.addEventListener('storage', handleStorageChange);
