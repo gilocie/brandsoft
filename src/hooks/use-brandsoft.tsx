@@ -17,7 +17,6 @@ const TEST_PERIOD_MINUTES: Record<string, number> = {
   '6 Months': 30,  // 30 minutes
   '1 Year': 45,    // 45 minutes
 };
-
 const isTestPlanPeriod = (period: string) => period in TEST_PERIOD_MINUTES;
 
 
@@ -369,34 +368,40 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     const purchaseToActivate = config.purchases.find(p => p.orderId === orderId);
     if (!purchaseToActivate) return;
 
-    const currentlyActivePlan = config.purchases.find(p => p.status === 'active');
-    const remainingDaysFromOldPlan = currentlyActivePlan ? (currentlyActivePlan.remainingDays || 0) : 0;
-
     const period = purchaseToActivate.planPeriod;
+    const now = Date.now();
     const isTestPlan = isTestPlanPeriod(period);
 
-    let newPlanDuration = 0;
-
-    if (isTestPlan) {
-        newPlanDuration = TEST_PERIOD_MINUTES[period] || 0;
-    } else {
-        const realPeriodMap: Record<string, number> = {
-            '1 Month': 30,
-            '3 Months': 90,
-            '6 Months': 180,
-            '1 Year': 365,
-            'Once OFF': 365 * 3,
-        };
-        newPlanDuration = realPeriodMap[period] ?? 0;
-    }
-
-    const totalRemainingDays = remainingDaysFromOldPlan + newPlanDuration;
+    const currentlyActivePlan = config.purchases.find(p => p.status === 'active');
+    const remainingDaysFromOldPlan = currentlyActivePlan ? (currentlyActivePlan.remainingDays || 0) : 0;
     
-    const durationMs = isTestPlan 
-        ? totalRemainingDays * 60 * 1000 // minutes to ms
-        : totalRemainingDays * 24 * 60 * 60 * 1000; // days to ms
+    let newPlanDuration = 0;
+    
+    if (isTestPlan) {
+      console.log("ACTIVATION: Test Mode Detected.");
+      newPlanDuration = TEST_PERIOD_MINUTES[period] || 0;
+      console.log(`ACTIVATION: New test plan duration (minutes): ${newPlanDuration}`);
+    } else {
+      console.log("ACTIVATION: Real Mode Detected.");
+      const realPeriodMap: Record<string, number> = {
+        '1 Month': 30,
+        '3 Months': 90,
+        '6 Months': 180,
+        '1 Year': 365,
+        'Once OFF': 365 * 3,
+      };
+      newPlanDuration = realPeriodMap[period] ?? 0;
+      console.log(`ACTIVATION: New real plan duration (days): ${newPlanDuration}`);
+    }
+    
+    const totalRemaining = remainingDaysFromOldPlan + newPlanDuration;
+    console.log(`ACTIVATION: Old Remaining: ${remainingDaysFromOldPlan}, New Duration: ${newPlanDuration}, Total: ${totalRemaining}`);
+    
+    const durationUnit = isTestPlan ? 'minutes' : 'days';
+    const msMultiplier = isTestPlan ? 60 * 1000 : 24 * 60 * 60 * 1000;
+    const durationMs = totalRemaining * msMultiplier;
 
-    const newExpiresAt = new Date(Date.now() + durationMs).toISOString();
+    const newExpiresAt = new Date(now + durationMs).toISOString();
 
     const updatedPurchases = config.purchases.map(p => {
         if (p.orderId === orderId) {
@@ -404,7 +409,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
                 ...p,
                 status: 'active' as const,
                 date: new Date().toISOString(),
-                remainingDays: totalRemainingDays,
+                remainingDays: totalRemaining,
                 expiresAt: newExpiresAt,
             };
         }
