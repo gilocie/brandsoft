@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -268,7 +269,7 @@ export default function DashboardPage() {
     updatePurchaseStatus();
   }, [updatePurchaseStatus]);
 
-  // ✅ SINGLE consolidated useEffect for all real-time sync
+  // Consolidated useEffect for all real-time sync
   useEffect(() => {
     // Initial check
     updatePurchaseStatus();
@@ -378,14 +379,18 @@ export default function DashboardPage() {
 
     const latestOrder = purchases[0];
 
-    if (latestOrder.status === 'pending') {
-      return latestOrder;
+    // Priority 1: Check for any pending order first
+    const pending = purchases.find((p) => p.status === 'pending');
+    if (pending) {
+      return pending;
     }
-
+    
+    // Priority 2: Check if the LATEST order is an unacknowledged decline
     if (latestOrder.status === 'declined' && !latestOrder.isAcknowledged) {
       return latestOrder;
     }
 
+    // Priority 3: Fallback to any active plan
     const active = purchases.find((p) => p.status === 'active');
     if (active) return active;
 
@@ -494,7 +499,7 @@ export default function DashboardPage() {
               variant="primary"
               currencyCode={currencyCode}
             />
-            <StatCard
+             <StatCard
               title="Canceled"
               value={stats.canceledAmount}
               icon={FileX}

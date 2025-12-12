@@ -316,7 +316,6 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     router.push('/activation');
   };
 
-  // ✅ FIXED: Proper saveConfig with event dispatching
   const saveConfig = (newConfig: BrandsoftConfig, options: { redirect?: boolean; revalidate?: boolean } = {}) => {
     const { redirect = true, revalidate = false } = options;
     
@@ -327,13 +326,11 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(CONFIG_KEY, JSON.stringify(newConfig));
     setIsConfigured(true);
 
-    // ✅ Dispatch events AFTER localStorage is updated
     if (revalidate) {
-      // Dispatch custom event for same-tab updates
+      // For same-tab updates
       window.dispatchEvent(new Event('brandsoft-update'));
       
-      // Dispatch storage event for cross-tab updates
-      // Note: This won't trigger in the same tab by default, but we handle it with custom event
+      // For cross-tab updates (with proper structure)
       window.dispatchEvent(new StorageEvent('storage', {
         key: CONFIG_KEY,
         newValue: JSON.stringify(newConfig),
@@ -413,8 +410,12 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
 
     let configChanged = false;
     const now = new Date().getTime();
+    
+    // We get the fresh config directly from localStorage here
+    const storedConfig = localStorage.getItem(CONFIG_KEY);
+    const freshConfig = storedConfig ? JSON.parse(storedConfig) : config;
 
-    const updatedPurchases = config.purchases.map(p => {
+    const updatedPurchases = (freshConfig.purchases || []).map((p: Purchase) => {
       if (p.status === 'active' && p.expiresAt) {
         const expiryTime = new Date(p.expiresAt).getTime();
         if (now >= expiryTime) {
@@ -425,8 +426,13 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       return p;
     });
 
-    if (configChanged) {
-      saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: true });
+    if (configChanged || JSON.stringify(config.purchases) !== JSON.stringify(updatedPurchases)) {
+      saveConfig({ ...freshConfig, purchases: updatedPurchases }, { redirect: false, revalidate: false });
+    } else {
+        // If nothing changed but the hook's state is stale, update it
+        if(JSON.stringify(config) !== JSON.stringify(freshConfig)) {
+            setConfig(freshConfig);
+        }
     }
   };
 
@@ -581,5 +587,3 @@ export function useBrandsoft() {
   }
   return context;
 }
-
-    
