@@ -19,6 +19,7 @@ import { useBrandsoft, type Purchase } from '@/hooks/use-brandsoft';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { PurchaseDialog } from './purchase-dialog';
+import { useRouter } from 'next/navigation';
 
 type Plan = 'Free Trial' | 'Standard' | 'Pro' | 'Enterprise';
 export type PlanDetails = {
@@ -74,9 +75,11 @@ const planBasePrices = {
 
 export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon?: boolean, isExpired?: boolean }) {
     const { config } = useBrandsoft();
+    const router = useRouter();
     const currencyCode = config?.profile.defaultCurrency || 'K';
     const [selectedPeriod, setSelectedPeriod] = useState('1');
     const [purchasePlan, setPurchasePlan] = useState<PlanDetails | null>(null);
+    const [isManagePlanOpen, setIsManagePlanOpen] = useState(false);
 
     const activePurchase = useMemo(() => config?.purchases?.find(p => p.status === 'active'), [config?.purchases]);
 
@@ -112,9 +115,16 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
         }
         return "Buy Key";
     }
+    
+    const handlePurchaseSuccess = () => {
+      setPurchasePlan(null); // Close the purchase dialog
+      setIsManagePlanOpen(false); // Close the manage plan dialog
+      router.push('/dashboard'); // Navigate to dashboard
+    };
 
     return (
-        <Dialog>
+        <>
+        <Dialog open={isManagePlanOpen} onOpenChange={setIsManagePlanOpen}>
             <DialogTrigger asChild>
                 <Button variant="secondary" size="sm" className="mt-4">
                     Manage
@@ -186,14 +196,17 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
                         />
                     </div>
                 </div>
-                 {purchasePlan && (
-                    <PurchaseDialog 
-                        plan={purchasePlan} 
-                        isOpen={!!purchasePlan} 
-                        onClose={() => setPurchasePlan(null)} 
-                    />
-                )}
             </DialogContent>
         </Dialog>
+        
+        {purchasePlan && (
+            <PurchaseDialog 
+                plan={purchasePlan} 
+                isOpen={!!purchasePlan} 
+                onClose={() => setPurchasePlan(null)}
+                onSuccess={handlePurchaseSuccess}
+            />
+        )}
+        </>
     );
 }

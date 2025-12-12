@@ -42,7 +42,11 @@ const PlanStatusCard = () => {
     const activePurchase = useMemo(() => config?.purchases?.find(p => p.status === 'active'), [config?.purchases]);
 
     useEffect(() => {
-        if (!activePurchase?.expiresAt) return;
+        if (!activePurchase?.expiresAt) {
+            // No active plan or it doesn't have an expiry date
+            if (activePurchase) updatePurchaseStatus(); // Check if it *should* have expired
+            return;
+        }
 
         const testDurations: { [key: string]: number } = {
             '1 Month': 10 * 60 * 1000,      // 10 minutes
@@ -68,14 +72,13 @@ const PlanStatusCard = () => {
             const remaining = isTestMode ? (remainingMs / (1000 * 60)) : Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
             setRemainingDays(remaining);
             
-            if (remainingMs === 0) {
+            if (now >= expiryTime) {
               updatePurchaseStatus();
             }
         };
 
-
         calculateRemaining();
-        const interval = setInterval(calculateRemaining, isTestMode ? 1000 : 60000 * 60);
+        const interval = setInterval(calculateRemaining, isTestMode ? 1000 : 60000); // Check every minute for real dates
 
         return () => clearInterval(interval);
     }, [activePurchase, updatePurchaseStatus]);
@@ -88,9 +91,10 @@ const PlanStatusCard = () => {
     
     const displayUnit = isTestMode ? (Math.ceil(remainingDays) > 1 ? 'Mins' : 'Min') : (Math.ceil(remainingDays) > 1 ? 'Days' : 'Day');
     const displayValue = isExpired ? '0' : Math.ceil(remainingDays);
-    const displayText = isExpired ? `0 Days` : `${displayValue} ${displayUnit}`;
+    const displayText = isExpired ? `0 ${displayUnit}` : `${displayValue} ${displayUnit}`;
     
-    const isExpiringSoon = remainingDays > 0 && remainingDays <= 5;
+    const isExpiringSoon = activePurchase ? remainingDays > 0 && (isTestMode ? remainingDays <= 2 : remainingDays <= 5) : false;
+
 
     if (!activePurchase) {
        return (
@@ -186,19 +190,18 @@ export default function DashboardPage() {
       
       const active = purchases.find(p => p.status === 'active');
       if (active) {
-        // If there's an active plan, don't show any pending/declined cards.
+        // If there's an active plan, we don't need to show pending/declined cards.
         return undefined;
       }
       
       const pending = purchases.find(p => p.status === 'pending');
       const latestDeclined = purchases.find(p => p.status === 'declined' && !p.isAcknowledged);
       
-      // Show the most recent of pending or unacknowledged declined orders.
-      if (pending && latestDeclined) {
-        return new Date(pending.date) > new Date(latestDeclined.date) ? pending : latestDeclined;
-      }
+      // If there is a pending order, it should take precedence over an older declined one.
+      if (pending) return pending;
+      if (latestDeclined) return latestDeclined;
       
-      return pending || latestDeclined;
+      return undefined;
 
   }, [config?.purchases]);
 

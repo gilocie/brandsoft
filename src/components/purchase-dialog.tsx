@@ -6,10 +6,8 @@ import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from '@/components/ui/dialog';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
@@ -21,11 +19,14 @@ import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { useRouter } from 'next/navigation';
+
 
 interface PurchaseDialogProps {
   plan: PlanDetails;
   isOpen: boolean;
   onClose: () => void;
+  onSuccess: () => void;
 }
 
 const paymentMethods = [
@@ -56,9 +57,10 @@ const paymentMethods = [
     }
 ];
 
-export function PurchaseDialog({ plan, isOpen, onClose }: PurchaseDialogProps) {
+export function PurchaseDialog({ plan, isOpen, onClose, onSuccess }: PurchaseDialogProps) {
     const { addPurchaseOrder } = useBrandsoft();
     const { toast } = useToast();
+    const router = useRouter();
     const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
     const [receiptFile, setReceiptFile] = useState<File | null>(null);
     const [receiptDataUrl, setReceiptDataUrl] = useState<string | null>(null);
@@ -129,13 +131,18 @@ export function PurchaseDialog({ plan, isOpen, onClose }: PurchaseDialogProps) {
     
     const isConfirmDisabled = purchaseState !== 'idle' || !selectedPayment || !whatsappNumber || !receiptFile;
 
-    const handleClose = () => {
+    const handleDialogClose = () => {
         if (purchaseState !== 'processing') {
+            if (purchaseState === 'success') {
+                onSuccess(); // This will close the parent dialog too
+            } else {
+                onClose(); // Just close this dialog
+            }
+            // Reset state
             setPurchaseState('idle');
             setReceiptFile(null);
             setSelectedPayment(null);
             setWhatsappNumber('');
-            onClose();
         }
     };
     
@@ -149,7 +156,7 @@ export function PurchaseDialog({ plan, isOpen, onClose }: PurchaseDialogProps) {
     );
 
     return (
-        <Dialog open={isOpen} onOpenChange={handleClose}>
+        <Dialog open={isOpen} onOpenChange={handleDialogClose}>
             <DialogContent className="sm:max-w-2xl">
                  <DialogHeader className="flex flex-row items-center justify-between">
                     <div>
@@ -171,7 +178,7 @@ export function PurchaseDialog({ plan, isOpen, onClose }: PurchaseDialogProps) {
                         <CheckCircle className="h-16 w-16 text-green-500 mx-auto" />
                         <h2 className="text-2xl font-bold">Purchase Successful!</h2>
                         <p className="text-muted-foreground">Your order <code className="bg-muted px-2 py-1 rounded-md">{orderId}</code> is pending approval. You will be notified once your plan is activated.</p>
-                        <Button onClick={handleClose}>Close</Button>
+                        <Button onClick={handleDialogClose}>Close</Button>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-4">
