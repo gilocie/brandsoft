@@ -280,10 +280,19 @@ const PlanStatusCard = ({ purchase }: { purchase: Purchase | null }) => {
 export default function DashboardPage() {
   const { config, updatePurchaseStatus } = useBrandsoft();
 
-  // Re-check statuses on dashboard load
+  // CRITICAL FIX: Add an interval to refresh status automatically
   useEffect(() => {
+    // Check status immediately on load
     updatePurchaseStatus();
-  }, []);
+
+    // Then, check status every 2 seconds to catch changes (like Decline) without a full page refresh
+    const intervalId = setInterval(() => {
+        updatePurchaseStatus();
+    }, 2000);
+
+    // Clean up the interval when the component unmounts
+    return () => clearInterval(intervalId);
+  }, []); // Empty dependency array ensures this runs only once on mount
 
   const stats = useMemo(() => {
     if (!config) {
@@ -338,6 +347,7 @@ export default function DashboardPage() {
     };
   }, [config]);
 
+  // CRITICAL FIX: Logic update to prioritize the MOST RECENT order
   const purchaseToShow = useMemo((): Purchase | null => {
     if (!config?.purchases || config.purchases.length === 0) return null;
   
@@ -353,7 +363,9 @@ export default function DashboardPage() {
     const pending = purchases.find((p) => p.status === 'pending');
     if (pending) return pending;
   
-    // 3. Priority: Check if the MOST RECENT purchase was Declined and not acknowledged
+    // 3. Priority: Check DECLINED
+    // CRITICAL FIX: Only show the declined card if the MOST RECENT purchase failed.
+    // We do NOT use .find() here, because that digs up old history.
     if (
       mostRecentPurchase.status === 'declined' && 
       !mostRecentPurchase.isAcknowledged
@@ -361,7 +373,7 @@ export default function DashboardPage() {
       return mostRecentPurchase;
     }
   
-    // 4. Priority: Fallback to the latest Active plan
+    // 4. Priority: Fallback - Is there ANY active plan?
     const active = purchases.find((p) => p.status === 'active');
     if (active) return active;
   
