@@ -316,18 +316,19 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     router.push('/activation');
   };
 
-  const saveConfig = (newConfig: BrandsoftConfig, options = { redirect: true, revalidate: false }) => {
+  const saveConfig = (newConfig: BrandsoftConfig, options: { redirect?: boolean; revalidate?: boolean } = {}) => {
+    const { redirect = true, revalidate = false } = options;
     setConfig(newConfig);
     localStorage.setItem(CONFIG_KEY, JSON.stringify(newConfig));
     setIsConfigured(true);
 
-    if (options.revalidate) {
+    if (revalidate) {
         // This is a bit of a hack to force a re-render of consuming components
         // A better solution would involve a more robust state management library
         window.dispatchEvent(new Event('storage'));
     }
 
-    if(options.redirect) {
+    if(redirect) {
         router.push('/dashboard');
     }
   };
@@ -419,7 +420,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       const newCustomer = { ...customer, id: `CUST-${Date.now()}` };
       if (config) {
           const newConfig = { ...config, customers: [...config.customers, newCustomer] };
-          saveConfig(newConfig, { redirect: false });
+          saveConfig(newConfig, { redirect: false, revalidate: false });
       }
       return newCustomer;
   };
@@ -429,14 +430,14 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
           const newCustomers = config.customers.map(c => 
               c.id === customerId ? { ...c, ...data } : c
           );
-          saveConfig({ ...config, customers: newCustomers }, { redirect: false });
+          saveConfig({ ...config, customers: newCustomers }, { redirect: false, revalidate: false });
       }
   };
   
   const deleteCustomer = (customerId: string) => {
       if (config) {
           const newCustomers = config.customers.filter(c => c.id !== customerId);
-          saveConfig({ ...config, customers: newCustomers }, { redirect: false });
+          saveConfig({ ...config, customers: newCustomers }, { redirect: false, revalidate: false });
       }
   };
 
@@ -444,7 +445,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       const newProduct = { ...product, id: `PROD-${Date.now()}` };
       if (config) {
           const newConfig = { ...config, products: [...(config.products || []), newProduct] };
-          saveConfig(newConfig, { redirect: false });
+          saveConfig(newConfig, { redirect: false, revalidate: false });
       }
       return newProduct;
   };
@@ -454,14 +455,14 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
           const newProducts = (config.products || []).map(p => 
               p.id === productId ? { ...p, ...data } : p
           );
-          saveConfig({ ...config, products: newProducts }, { redirect: false });
+          saveConfig({ ...config, products: newProducts }, { redirect: false, revalidate: false });
       }
   };
   
   const deleteProduct = (productId: string) => {
       if (config) {
           const newProducts = (config.products || []).filter(p => p.id !== productId);
-          saveConfig({ ...config, products: newProducts }, { redirect: false });
+          saveConfig({ ...config, products: newProducts }, { redirect: false, revalidate: false });
       }
   };
   
@@ -473,7 +474,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     const generatedId = `${prefix}${nextNumber}`.replace(/\s+/g, '');
     const newInvoice: Invoice = { ...invoice, invoiceId: generatedId };
     const newConfig = { ...config, invoices: [...(config.invoices || []), newInvoice] };
-    saveConfig(newConfig, { redirect: false });
+    saveConfig(newConfig, { redirect: false, revalidate: false });
     return newInvoice;
   };
 
@@ -482,14 +483,14 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
           const newInvoices = (config.invoices || []).map(i => 
               i.invoiceId === invoiceId ? { ...i, ...data } : i
           );
-          saveConfig({ ...config, invoices: newInvoices }, { redirect: false });
+          saveConfig({ ...config, invoices: newInvoices }, { redirect: false, revalidate: false });
       }
   };
   
   const deleteInvoice = (invoiceId: string) => {
       if (config) {
           const newInvoices = (config.invoices || []).filter(i => i.invoiceId !== invoiceId);
-          saveConfig({ ...config, invoices: newInvoices }, { redirect: false });
+          saveConfig({ ...config, invoices: newInvoices }, { redirect: false, revalidate: false });
       }
   };
   
@@ -501,7 +502,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     const generatedId = `${prefix}${nextNumber}`.replace(/\s+/g, '');
     const newQuotation: Quotation = { ...quotation, quotationId: generatedId };
     const newConfig = { ...config, quotations: [...(config.quotations || []), newQuotation] };
-    saveConfig(newConfig, { redirect: false });
+    saveConfig(newConfig, { redirect: false, revalidate: false });
     return newQuotation;
   };
 
@@ -510,21 +511,21 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
           const newQuotations = (config.quotations || []).map(q => 
               q.quotationId === quotationId ? { ...q, ...data } : q
           );
-          saveConfig({ ...config, quotations: newQuotations }, { redirect: false });
+          saveConfig({ ...config, quotations: newQuotations }, { redirect: false, revalidate: false });
       }
   };
   
   const deleteQuotation = (quotationId: string) => {
       if (config) {
           const newQuotations = (config.quotations || []).filter(q => q.quotationId !== quotationId);
-          saveConfig({ ...config, quotations: newQuotations }, { redirect: false });
+          saveConfig({ ...config, quotations: newQuotations }, { redirect: false, revalidate: false });
       }
   };
   
   const addCurrency = (currency: string) => {
       if (config && !config.currencies.includes(currency)) {
           const newConfig = { ...config, currencies: [...config.currencies, currency] };
-          saveConfig(newConfig, { redirect: false });
+          saveConfig(newConfig, { redirect: false, revalidate: false });
       }
   };
 
