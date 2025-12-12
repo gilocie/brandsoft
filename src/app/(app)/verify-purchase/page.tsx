@@ -97,6 +97,11 @@ function VerifyPurchaseContent() {
     }, [orderIdFromUrl, handleSearch, form]);
 
      useEffect(() => {
+        // Stop polling if we are showing a declined order to the user
+        if (order?.status === 'declined' && !order.isAcknowledged && !isAdminMode) {
+          return;
+        }
+
         const forceRefresh = () => {
              if (orderIdFromUrl) {
                 handleSearch(orderIdFromUrl);
@@ -137,7 +142,7 @@ function VerifyPurchaseContent() {
           document.removeEventListener('visibilitychange', handleVisibilityChange);
           window.removeEventListener('focus', handleFocus);
         };
-      }, [orderIdFromUrl, handleSearch]);
+      }, [orderIdFromUrl, handleSearch, order, isAdminMode]);
 
 
     const handleDownloadReceipt = () => {
@@ -177,7 +182,7 @@ function VerifyPurchaseContent() {
       if (order) {
         acknowledgeDeclinedPurchase(order.orderId);
         setTimeout(() => {
-            window.location.href = '/dashboard';
+            router.push('/dashboard');
         }, 100);
       }
     };
