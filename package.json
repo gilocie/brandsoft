@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "patch-package && node update-web-deps.js"
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@genkit-ai/google-genai": "^1.20.0",
