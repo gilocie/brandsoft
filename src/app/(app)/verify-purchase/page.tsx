@@ -66,15 +66,16 @@ function VerifyPurchaseContent() {
 
             let cleanOrderId = orderIdWithPin;
             let isUserViewing = true;
+
             if (orderIdWithPin.endsWith(ADMIN_PIN_SUFFIX)) {
                 setIsAdminMode(true);
-                isUserViewing = false;
+                isUserViewing = false; 
                 cleanOrderId = orderIdWithPin.replace(ADMIN_PIN_SUFFIX, '');
             } else {
                 setIsAdminMode(false);
             }
 
-            await new Promise(resolve => setTimeout(resolve, 2000)); 
+            await new Promise(resolve => setTimeout(resolve, 1500)); 
 
             const foundOrder = getPurchaseOrder(cleanOrderId);
             
