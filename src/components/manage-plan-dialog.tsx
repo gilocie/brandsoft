@@ -51,7 +51,6 @@ const PlanCard = ({ title, price, features, isCurrent = false, cta, className, p
              <Button 
                 className="w-full" 
                 variant={isCurrent ? "secondary" : "default"}
-                disabled={isCurrent && cta === "Current Plan"}
                 onClick={onBuyClick}
              >
                 {cta}
@@ -106,12 +105,8 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
     };
 
     const getPlanCTA = (planName: Plan) => {
-        const isCurrent = activePurchase?.planName === planName;
-        if (isCurrent && (isExpiringSoon || isExpired)) {
+        if (activePurchase?.planName === planName) {
             return "Renew Plan";
-        }
-        if (isCurrent) {
-            return "Current Plan";
         }
         return "Buy Key";
     }

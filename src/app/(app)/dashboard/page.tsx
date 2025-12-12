@@ -158,9 +158,7 @@ const PlanStatusCard = ({ purchase }: { purchase: Purchase | null }) => {
     const isTestPlan = isTestPlanPeriod(purchase.planPeriod);
     const isExpired = remaining <= 0;
 
-    const isExpiringSoon = !isExpired && (
-      isTestPlan ? remaining <= 2 : remaining <= 5
-    );
+    const isExpiringSoon = !isExpired && (isTestPlan ? remaining <= 2 : remaining <= 5);
 
     const rounded = Math.ceil(remaining);
     const displayValue = isExpired ? '0' : rounded;
@@ -175,8 +173,8 @@ const PlanStatusCard = ({ purchase }: { purchase: Purchase | null }) => {
       <Card className={cn(
         'text-white',
         isExpired && 'bg-gray-500',
-        isExpiringSoon && 'bg-destructive',
-        !isExpiringSoon && !isExpired && 'bg-green-900'
+        !isExpired && isExpiringSoon && 'bg-destructive',
+        !isExpired && !isExpiringSoon && 'bg-green-900'
       )}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">{purchase.planName}</CardTitle>
