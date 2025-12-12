@@ -163,30 +163,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </SidebarMenu>
               </AccordionContent>
             </AccordionItem>
-             <AccordionItem value="admin-tools" className="border-none">
-              <AccordionTrigger className="text-sidebar-foreground/70 hover:text-sidebar-foreground hover:no-underline text-xs font-medium rounded-md px-2 [&[data-state=open]>svg]:text-sidebar-foreground">
-                <span className="flex-1 text-left">Admin</span>
-              </AccordionTrigger>
-              <AccordionContent className="pt-2">
-                <SidebarMenu className="px-0">
-                    {config ? adminNavItems.map((item) => (
-                     <SidebarMenuItem key={item.href}>
-                        <Link href={item.href}>
-                          <SidebarMenuButton
-                            isActive={pathname.startsWith(item.href)}
-                            tooltip={item.label}
-                          >
-                            <item.icon />
-                            <span>{item.label}</span>
-                          </SidebarMenuButton>
-                        </Link>
-                      </SidebarMenuItem>
-                    )) : (
-                     <SidebarMenuSkeleton showIcon />
-                    )}
-                </SidebarMenu>
-              </AccordionContent>
-            </AccordionItem>
           </Accordion>
 
         </SidebarContent>
