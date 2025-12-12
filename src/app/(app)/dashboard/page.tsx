@@ -124,52 +124,11 @@ const StatCard = ({
 
 const PlanStatusCard = ({ purchase }: { purchase: Purchase | null }) => {
   const { acknowledgeDeclinedPurchase } = useBrandsoft();
-  const [remainingDays, setRemainingDays] = useState(0);
   const router = useRouter();
 
   const handleViewDeclined = (orderId: string) => {
     router.push(`/verify-purchase?orderId=${orderId}`);
   };
-
-  useEffect(() => {
-    if (!purchase || purchase.status !== 'active' || !purchase.expiresAt) {
-      return;
-    }
-
-    const testDurations: { [key: string]: number } = {
-      '1 Month': 10 * 60 * 1000,
-      '3 Months': 15 * 60 * 1000,
-      '6 Months': 30 * 60 * 1000,
-      '1 Year': 35 * 60 * 1000,
-    };
-    const testDuration = purchase.planPeriod ? testDurations[purchase.planPeriod] : undefined;
-    const isTestMode = !!testDuration;
-
-    const calculateRemaining = () => {
-      const now = new Date().getTime();
-      let expiryTime;
-
-      if (isTestMode && purchase.date) {
-        const activationTime = new Date(purchase.date).getTime();
-        expiryTime = activationTime + testDuration;
-      } else if (purchase.expiresAt) {
-        expiryTime = new Date(purchase.expiresAt).getTime();
-      } else {
-        return;
-      }
-
-      const remainingMs = Math.max(0, expiryTime - now);
-      const remaining = isTestMode
-        ? remainingMs / (1000 * 60)
-        : Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
-      setRemainingDays(remaining);
-    };
-
-    calculateRemaining();
-    const interval = setInterval(calculateRemaining, isTestMode ? 1000 : 60000);
-
-    return () => clearInterval(interval);
-  }, [purchase]);
 
   if (!purchase) {
     return (
@@ -187,18 +146,13 @@ const PlanStatusCard = ({ purchase }: { purchase: Purchase | null }) => {
     );
   }
 
-  // Active
   if (purchase.status === 'active') {
-    const isTestMode = !!{
-      '1 Month': true,
-      '3 Months': true,
-      '6 Months': true,
-      '1 Year': true,
-    }[purchase.planPeriod];
-    const isExpired = remainingDays <= 0;
-    const isExpiringSoon = !isExpired && (isTestMode ? remainingDays <= 5 : remainingDays <= 5);
-    const displayUnit = Math.ceil(remainingDays) > 1 ? 'Days' : 'Day';
-    const displayValue = isExpired ? '0' : Math.ceil(remainingDays);
+    const remaining = purchase.remainingDays || 0;
+    const isExpired = remaining <= 0;
+    const isExpiringSoon = !isExpired && remaining <= 5;
+    
+    const displayValue = isExpired ? '0' : Math.ceil(remaining);
+    const displayUnit = Math.ceil(remaining) > 1 ? 'Days' : 'Day';
     const displayText = isExpired ? `0 ${displayUnit}` : `${displayValue} ${displayUnit}`;
 
     return (

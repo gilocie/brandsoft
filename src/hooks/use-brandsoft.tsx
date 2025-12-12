@@ -71,58 +71,6 @@ export interface DesignSettings {
     paymentDetails?: string;
 }
 
-export type Invoice = {
-    invoiceId: string;
-    customer: string;
-    customerId?: string;
-    date: string;
-    dueDate: string;
-    amount: number;
-    status: 'Paid' | 'Pending' | 'Overdue' | 'Canceled' | 'Draft';
-    subtotal?: number;
-    discount?: number;
-    discountType?: 'percentage' | 'flat';
-    discountValue?: number;
-    tax?: number;
-    taxName?: string;
-    taxType?: 'percentage' | 'flat';
-    taxValue?: number;
-    shipping?: number;
-    notes?: string;
-    lineItems?: LineItem[];
-    partialPayment?: number;
-    partialPaymentType?: 'percentage' | 'flat';
-    partialPaymentValue?: number;
-    design?: DesignSettings;
-    currency?: string;
-};
-
-export type Quotation = {
-    quotationId: string;
-    customer: string;
-    customerId?: string;
-    date: string;
-    validUntil: string;
-    amount: number;
-    status: 'Draft' | 'Sent' | 'Accepted' | 'Declined';
-    subtotal?: number;
-    discount?: number;
-    discountType?: 'percentage' | 'flat';
-    discountValue?: number;
-    tax?: number;
-    taxName?: string;
-    taxType?: 'percentage' | 'flat';
-    taxValue?: number;
-    shipping?: number;
-    notes?: string;
-    lineItems?: LineItem[];
-    partialPayment?: number;
-    partialPaymentType?: 'percentage' | 'flat';
-    partialPaymentValue?: number;
-    design?: DesignSettings;
-    currency?: string;
-};
-
 export type Purchase = {
     orderId: string;
     planName: string;
@@ -136,6 +84,7 @@ export type Purchase = {
     declineReason?: string;
     isAcknowledged?: boolean;
     expiresAt?: string;
+    remainingDays?: number; // Added this field
 }
 
 
@@ -281,7 +230,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     if (config?.brand.secondaryColor) {
       const accentHsl = hexToHsl(config.brand.secondaryColor);
        if (accentHsl) {
-        document.documentElement.style.setProperty('--accent', `${accentHsl.h} ${accentHsl.s}% ${accentHsl.l}%`);
+        document.documentElement.style.setProperty('--accent', `${accentHsl.h} ${accentHsl.s}% ${primaryHsl.l}%`);
       }
     }
     if (config?.brand.buttonPrimaryBg) {
@@ -356,53 +305,38 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
 
     const purchaseToActivate = config.purchases.find(p => p.orderId === orderId);
     if (!purchaseToActivate) return;
-
-    const now = new Date().getTime();
-    let remainingMs = 0;
-
-    // Find the currently active plan and calculate its remaining time
+    
     const currentlyActivePurchase = config.purchases.find(p => p.status === 'active');
-    if (currentlyActivePurchase && currentlyActivePurchase.expiresAt) {
-        const expiryTime = new Date(currentlyActivePurchase.expiresAt).getTime();
-        remainingMs = Math.max(0, expiryTime - now);
-    }
-    
-    // Test mode durations (in minutes, converted to milliseconds)
-    const testPeriodMsMap: { [key: string]: number } = {
-      '1 Month': 10 * 60 * 1000,
-      '3 Months': 15 * 60 * 1000,
-      '6 Months': 30 * 60 * 1000,
-      '1 Year': 35 * 60 * 1000,
-    };
+    const oldRemainingDays = currentlyActivePurchase?.remainingDays || 0;
 
-    // Real mode durations (in days, converted to milliseconds)
-     const periodMsMap: { [key: string]: number } = {
-        '1 Month': 30 * 24 * 60 * 60 * 1000,
-        '3 Months': 90 * 24 * 60 * 60 * 1000,
-        '6 Months': 180 * 24 * 60 * 60 * 1000,
-        '1 Year': 365 * 24 * 60 * 60 * 1000,
-        'Once OFF': 365 * 3 * 24 * 60 * 60 * 1000,
+    const testPeriodMap: { [key: string]: number } = {
+        '1 Month': 10, '3 Months': 15, '6 Months': 30, '1 Year': 35,
     };
     
-    // Determine if the *new* plan is a test plan
-    const isTestMode = Object.keys(testPeriodMsMap).includes(purchaseToActivate.planPeriod);
-    const durationMap = isTestMode ? testPeriodMsMap : periodMsMap;
-
-    // Get the duration of the new plan
-    const newPlanDurationMs = durationMap[purchaseToActivate.planPeriod] || 0;
+    const isTestMode = Object.keys(testPeriodMap).includes(purchaseToActivate.planPeriod);
     
-    // Calculate total duration and new expiration date
-    const totalDurationMs = remainingMs + newPlanDurationMs;
-    const newExpiresAt = new Date(now + totalDurationMs).toISOString();
+    const newPlanDuration = isTestMode ? testPeriodMap[purchaseToActivate.planPeriod] : (
+        { '1 Month': 30, '3 Months': 90, '6 Months': 180, '1 Year': 365, 'Once OFF': 365 * 3 }[purchaseToActivate.planPeriod] || 0
+    );
+
+    const totalRemainingDays = oldRemainingDays + newPlanDuration;
+    const newExpiresAt = new Date(new Date().getTime() + totalRemainingDays * (isTestMode ? 60 * 1000 : 24 * 60 * 60 * 1000)).toISOString();
+
 
     const updatedPurchases = config.purchases.map(p => {
       // Activate the new purchase
       if (p.orderId === orderId) {
-        return { ...p, status: 'active' as 'active', expiresAt: newExpiresAt, date: new Date().toISOString() };
+        return { 
+            ...p, 
+            status: 'active' as 'active', 
+            expiresAt: newExpiresAt, 
+            date: new Date().toISOString(),
+            remainingDays: totalRemainingDays 
+        };
       }
       // Deactivate the old active purchase
       if (p.orderId === currentlyActivePurchase?.orderId) {
-        return { ...p, status: 'inactive' as 'inactive' };
+        return { ...p, status: 'inactive' as 'inactive', remainingDays: 0 };
       }
       return p;
     });
@@ -447,7 +381,15 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
         const expiryTime = new Date(p.expiresAt).getTime();
         if (now >= expiryTime) {
           configChanged = true;
-          return { ...p, status: 'inactive' as 'inactive' };
+          return { ...p, status: 'inactive' as 'inactive', remainingDays: 0 };
+        } else {
+             const isTestMode = Object.keys({ '1 Month': 10, '3 Months': 15, '6 Months': 30, '1 Year': 35 }).includes(p.planPeriod);
+             const remainingMs = expiryTime - now;
+             const remaining = isTestMode ? remainingMs / (1000 * 60) : remainingMs / (1000 * 60 * 60 * 24);
+             if (p.remainingDays !== Math.ceil(remaining)) {
+                 configChanged = true;
+                 return { ...p, remainingDays: Math.ceil(remaining) };
+             }
         }
       }
       return p;
