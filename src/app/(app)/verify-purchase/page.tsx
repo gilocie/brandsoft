@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
@@ -300,5 +301,3 @@ export default function VerifyPurchasePage() {
         </div>
     )
 }
-
-    
