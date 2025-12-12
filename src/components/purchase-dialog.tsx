@@ -99,19 +99,20 @@ export function PurchaseDialog({ plan, isOpen, onClose }: PurchaseDialogProps) {
         setTimeout(() => { // Simulate processing
             const newOrderId = `BSO-${Date.now()}`;
             setOrderId(newOrderId);
-            addPurchaseOrder({
+            
+            const newOrder = {
                 orderId: newOrderId,
                 planName: plan.name,
                 planPrice: plan.price,
                 planPeriod: plan.period,
                 paymentMethod: selectedPayment,
-                status: 'pending',
+                status: 'pending' as 'pending',
                 date: new Date().toISOString(),
                 receipt: receiptDataUrl || 'none',
                 whatsappNumber: whatsappNumber,
-            });
+            };
+            addPurchaseOrder(newOrder);
 
-            // Trigger admin notification
             const message = `*Please Activate My New Order!*
 %0A%0AOrder ID: ${newOrderId}
 %0APlan: ${plan.name} (${plan.period})

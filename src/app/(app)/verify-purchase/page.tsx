@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
@@ -38,7 +39,6 @@ function VerifyPurchaseContent() {
     const orderIdFromUrl = searchParams.get('orderId');
 
     const [order, setOrder] = useState<Purchase | null>(null);
-    // FIX 1: Initialize loading to TRUE if we have an ID in the URL
     const [isLoading, setIsLoading] = useState(!!orderIdFromUrl);
     const [isAdminMode, setIsAdminMode] = useState(false);
     const [declineReason, setDeclineReason] = useState('');
@@ -60,7 +60,6 @@ function VerifyPurchaseContent() {
             setProgress(0);
             setOrder(null);
             
-            // Progress simulation
             const progressInterval = setInterval(() => {
                 setProgress(prev => (prev >= 90 ? 90 : prev + 10));
             }, 150);
@@ -73,7 +72,6 @@ function VerifyPurchaseContent() {
                 setIsAdminMode(false);
             }
 
-            // Simulate network delay
             await new Promise(resolve => setTimeout(resolve, 2000)); 
 
             const foundOrder = getPurchaseOrder(cleanOrderId);
@@ -119,13 +117,15 @@ function VerifyPurchaseContent() {
     };
     
     const onFormSubmit = (data: FormData) => {
-        // Force loading state when submitting form manually
         setIsLoading(true); 
         router.push(`/verify-purchase?orderId=${data.orderId}`);
     };
+    
+    const handleReturnToDashboard = () => {
+        router.push('/dashboard');
+    }
 
     const renderContent = () => {
-        // FIX 2: Show the "Please Wait" Alert instead of just the progress bar
         if (isLoading) {
              return (
                 <div className="mt-4 space-y-4">
@@ -144,7 +144,6 @@ function VerifyPurchaseContent() {
             );
         }
 
-        // FIX 3: Ensure this only shows if NOT loading and we have an ID but NO order
         if (!isLoading && orderIdFromUrl && !order) {
             return (
                 <Alert variant="destructive" className="mt-4">
@@ -201,6 +200,7 @@ function VerifyPurchaseContent() {
                                         order.status === 'active' && "text-green-500",
                                         order.status === 'pending' && "text-amber-500",
                                         order.status === 'declined' && "text-destructive",
+                                        order.status === 'inactive' && "text-gray-500",
                                     )}>
                                         {order.status}
                                     </span>
@@ -302,8 +302,8 @@ function VerifyPurchaseContent() {
                 {renderContent()}
             </CardContent>
             <CardFooter>
-              <Button variant="link" asChild className="mx-auto">
-                <Link href="/dashboard">Return to Dashboard</Link>
+              <Button variant="link" onClick={handleReturnToDashboard} className="mx-auto">
+                Return to Dashboard
               </Button>
             </CardFooter>
         </Card>

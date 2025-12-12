@@ -44,18 +44,43 @@ const PlanStatusCard = () => {
     useEffect(() => {
         if (!activePurchase?.expiresAt) return;
 
+        const testDurations: { [key: string]: number } = {
+            '1 Month': 10 * 60 * 1000,      // 10 minutes
+            '3 Months': 15 * 60 * 1000,     // 15 minutes
+            '6 Months': 30 * 60 * 1000,     // 30 minutes
+            '1 Year': 35 * 60 * 1000,       // 35 minutes
+        };
+        const testDuration = testDurations[activePurchase.planPeriod];
+        const isTestMode = !!testDuration;
+        
         const calculateRemaining = () => {
             const now = new Date().getTime();
-            const expiry = new Date(activePurchase!.expiresAt!).getTime();
-            const remaining = Math.max(0, Math.ceil((expiry - now) / (1000 * 60 * 60 * 24)));
-            setRemainingDays(remaining);
+            let expiryTime;
+
+            if (isTestMode) {
+                const activationTime = new Date(activePurchase.date).getTime();
+                expiryTime = activationTime + testDuration;
+            } else {
+                expiryTime = new Date(activePurchase.expiresAt!).getTime();
+            }
+
+            const remainingMs = Math.max(0, expiryTime - now);
+            const remainingDays = isTestMode ? (remainingMs / (1000 * 60)) : Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
+            setRemainingDays(remainingDays);
         };
 
+
         calculateRemaining();
-        const interval = setInterval(calculateRemaining, 60000 * 60); // Update every hour
+        const interval = setInterval(calculateRemaining, isTestMode ? 1000 : 60000 * 60);
 
         return () => clearInterval(interval);
     }, [activePurchase]);
+    
+    const isTestMode = activePurchase ? !!({
+        '1 Month': true, '3 Months': true, '6 Months': true, '1 Year': true
+    }[activePurchase.planPeriod]) : false;
+
+    const displayUnit = isTestMode ? (remainingDays > 1 ? 'Mins' : 'Min') : (remainingDays > 1 ? 'Days' : 'Day');
     
     const isExpiringSoon = remainingDays > 0 && remainingDays <= 5;
     const isExpired = activePurchase ? remainingDays <= 0 : false;
@@ -89,7 +114,7 @@ const PlanStatusCard = () => {
             </CardHeader>
             <CardContent>
                 <div className="text-2xl font-bold">
-                    {isExpired ? 'Expired' : `${remainingDays} Days`}
+                    {isExpired ? 'Expired' : `${Math.ceil(remainingDays)} ${displayUnit}`}
                 </div>
                 <p className="text-xs text-white/80">
                     {isExpired ? 'Your plan has expired.' : 'Remaining'}
@@ -147,17 +172,27 @@ export default function DashboardPage() {
     }
   }, [config]);
 
-  const purchaseToShow = useMemo((): Purchase | undefined => {
+   const purchaseToShow = useMemo((): Purchase | undefined => {
       if (!config?.purchases) return undefined;
+      
       const purchases = [...config.purchases].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       
       const active = purchases.find(p => p.status === 'active');
-      if (active) return undefined; // Handled by PlanStatusCard
-
-      const pending = purchases.find(p => p.status === 'pending');
-      const declined = purchases.find(p => p.status === 'declined' && !p.isAcknowledged);
+      if (active) {
+        // If there's an active plan, don't show any pending/declined cards.
+        return undefined;
+      }
       
-      return declined || pending;
+      const pending = purchases.find(p => p.status === 'pending');
+      const latestDeclined = purchases.find(p => p.status === 'declined' && !p.isAcknowledged);
+      
+      // Show the most recent of pending or unacknowledged declined orders.
+      if (pending && latestDeclined) {
+        return new Date(pending.date) > new Date(latestDeclined.date) ? pending : latestDeclined;
+      }
+      
+      return pending || latestDeclined;
+
   }, [config?.purchases]);
 
 

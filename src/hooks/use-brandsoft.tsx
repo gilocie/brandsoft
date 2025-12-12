@@ -129,7 +129,7 @@ export type Purchase = {
     planPrice: string;
     planPeriod: string;
     paymentMethod: string;
-    status: 'pending' | 'active' | 'declined';
+    status: 'pending' | 'active' | 'declined' | 'inactive';
     date: string;
     receipt?: string | 'none';
     whatsappNumber?: string;
@@ -239,7 +239,7 @@ interface BrandsoftContextType {
   updateQuotation: (quotationId: string, data: Partial<Omit<Quotation, 'quotationId'>>) => void;
   deleteQuotation: (quotationId: string) => void;
   addCurrency: (currency: string) => void;
-  addPurchaseOrder: (order: Omit<Purchase, 'orderId' | 'status' | 'date' | 'isAcknowledged'>) => Purchase;
+  addPurchaseOrder: (order: Purchase) => Purchase;
   getPurchaseOrder: (orderId: string) => Purchase | null;
   activatePurchaseOrder: (orderId: string) => void;
   declinePurchaseOrder: (orderId: string, reason: string) => void;
@@ -324,20 +324,11 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     }
   };
   
-  const addPurchaseOrder = (orderData: Omit<Purchase, 'orderId' | 'status' | 'date' | 'isAcknowledged'>): Purchase => {
+  const addPurchaseOrder = (orderData: Purchase): Purchase => {
     if (!config) throw new Error("Configuration not loaded.");
-
-    const newOrder: Purchase = {
-        ...orderData,
-        orderId: `BSO-${Date.now()}`,
-        status: 'pending',
-        date: new Date().toISOString(),
-        isAcknowledged: false,
-    };
-    
-    const allPurchases = [...(config.purchases || []), newOrder];
+    const allPurchases = [...(config.purchases || []), orderData];
     saveConfig({ ...config, purchases: allPurchases }, { redirect: false });
-    return newOrder;
+    return orderData;
   };
 
   const getPurchaseOrder = (orderId: string): Purchase | null => {
@@ -361,8 +352,9 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
           if (p.orderId === orderId) {
               return { ...p, status: 'active' as 'active', expiresAt };
           }
+          // Deactivate any other active plan
           if (p.status === 'active') {
-              return { ...p, status: 'pending' as 'pending', expiresAt: undefined };
+              return { ...p, status: 'inactive' as 'inactive', expiresAt: undefined };
           }
           return p;
       });
