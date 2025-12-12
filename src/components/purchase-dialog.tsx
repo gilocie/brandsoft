@@ -149,7 +149,7 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess }: PurchaseDia
     const StepIndicator = ({ step, label, isComplete }: { step: number, label: string, isComplete: boolean }) => (
         <div className="flex items-center gap-2">
             <div className={cn("h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold", isComplete ? "bg-green-500 text-white" : "bg-muted text-muted-foreground")}>
-                {isComplete ? <CheckCircle className="h-4 w-4" /> : step}
+                {isComplete ? <FileCheck className="h-4 w-4" /> : step}
             </div>
             <span className={cn("text-sm", isComplete && "text-muted-foreground line-through")}>{label}</span>
         </div>

@@ -92,7 +92,10 @@ export type Purchase = {
     declineReason?: string;
     isAcknowledged?: boolean;
     expiresAt?: string;
-    remainingDays: number;
+    remainingTime: {
+        value: number;
+        unit: 'minutes' | 'days';
+    };
 }
 
 
@@ -249,7 +252,7 @@ interface BrandsoftContextType {
   updateQuotation: (quotationId: string, data: Partial<Omit<Quotation, 'quotationId'>>) => void;
   deleteQuotation: (quotationId: string) => void;
   addCurrency: (currency: string) => void;
-  addPurchaseOrder: (order: Purchase) => Purchase;
+  addPurchaseOrder: (order: Omit<Purchase, 'remainingTime'>) => Purchase;
   getPurchaseOrder: (orderId: string) => Purchase | null;
   activatePurchaseOrder: (orderId: string) => void;
   declinePurchaseOrder: (orderId: string, reason: string) => void;
@@ -350,11 +353,15 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     }
   };
   
-  const addPurchaseOrder = (orderData: Purchase): Purchase => {
+  const addPurchaseOrder = (orderData: Omit<Purchase, 'remainingTime'>): Purchase => {
     if (!config) throw new Error("Configuration not loaded.");
-    const allPurchases = [...(config.purchases || []), orderData];
+    const newOrder: Purchase = {
+        ...orderData,
+        remainingTime: { value: 0, unit: 'days' }
+    };
+    const allPurchases = [...(config.purchases || []), newOrder];
     saveConfig({ ...config, purchases: allPurchases }, { redirect: false, revalidate: true });
-    return orderData;
+    return newOrder;
   };
 
   const getPurchaseOrder = (orderId: string): Purchase | null => {
@@ -366,50 +373,42 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
 
     const purchaseToActivate = config.purchases.find(p => p.orderId === orderId);
     if (!purchaseToActivate) return;
-    
+
     const period = purchaseToActivate.planPeriod;
     const now = Date.now();
-
-    let newPlanDuration = 0;
     const isTestPlan = isTestPlanPeriod(period);
 
-    if (isTestPlan) {
-      newPlanDuration = TEST_PERIOD_MINUTES[period] || 0;
-    } else {
-      const realPeriodMap: Record<string, number> = {
-        '1 Month': 30, '3 Months': 90, '6 Months': 180, '1 Year': 365, 'Once OFF': 365 * 3,
-      };
-      newPlanDuration = realPeriodMap[period] ?? 0;
-    }
-    
     const currentlyActivePlan = config.purchases.find(p => p.status === 'active');
-    const remainingDaysFromOldPlan = currentlyActivePlan ? (currentlyActivePlan.remainingDays || 0) : 0;
+    const remainingFromOldPlan = currentlyActivePlan?.remainingTime?.value || 0;
     
-    console.log(`Activating plan. Old plan remaining days/mins: ${remainingDaysFromOldPlan}. New plan duration: ${newPlanDuration}. Test mode: ${isTestPlan}`);
-    const totalRemaining = remainingDaysFromOldPlan + newPlanDuration;
-    
-    const msMultiplier = isTestPlan ? 60 * 1000 : 24 * 60 * 60 * 1000;
-    const durationMs = totalRemaining * msMultiplier;
-    const newExpiresAt = new Date(now + durationMs).toISOString();
+    let newPlanDuration = isTestPlan
+        ? TEST_PERIOD_MINUTES[period] || 0
+        : { '1 Month':30, '3 Months':90, '6 Months':180, '1 Year':365, 'Once OFF':365*3 }[period] ?? 0;
+
+    const totalRemaining = remainingFromOldPlan + newPlanDuration;
+    const unit = isTestPlan ? 'minutes' : 'days';
+
+    const multiplier = isTestPlan ? 60 * 1000 : 24 * 60 * 60 * 1000; // ms
+    const expiresAt = new Date(now + totalRemaining * multiplier).toISOString();
 
     const updatedPurchases = config.purchases.map(p => {
         if (p.orderId === orderId) {
-            return {
-                ...p,
-                status: 'active' as const,
-                date: new Date().toISOString(),
-                remainingDays: totalRemaining,
-                expiresAt: newExpiresAt,
-            };
+        return {
+            ...p,
+            status: 'active' as const,
+            date: new Date().toISOString(),
+            remainingTime: { value: totalRemaining, unit },
+            expiresAt,
+        };
         }
         if (p.status === 'active') {
-            return { ...p, status: 'inactive' as const, remainingDays: 0 };
+        return { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: 'days' } };
         }
         return p;
     });
 
     saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: true });
-  };
+    };
   
   const declinePurchaseOrder = (orderId: string, reason: string) => {
     if (!config || !config.purchases) return;
@@ -435,49 +434,38 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
   };
   
   const updatePurchaseStatus = () => {
-    if (!config || !config.purchases) return;
+    if (!config?.purchases) return;
 
-    let configChanged = false;
-    const now = new Date().getTime();
-    
-    const storedConfig = localStorage.getItem(CONFIG_KEY);
-    const freshConfig = storedConfig ? JSON.parse(storedConfig) : config;
+    let changed = false;
+    const now = Date.now();
 
-    const updatedPurchases = (freshConfig.purchases || []).map((p: Purchase) => {
-      if (p.status === 'active' && p.expiresAt) {
+    const updatedPurchases = config.purchases.map(p => {
+        if (p.status === 'active' && p.expiresAt) {
         const expiryTime = new Date(p.expiresAt).getTime();
-        const isTestMode = isTestPlanPeriod(p.planPeriod);
-
-        if (now >= expiryTime) {
-          configChanged = true;
-          return { ...p, status: 'inactive' as const, remainingDays: 0 };
-        }
-        
         const remainingMs = expiryTime - now;
+        const isTest = isTestPlanPeriod(p.planPeriod);
 
-        let remaining;
-        if (isTestMode) {
-            // We want whole minutes only
-            remaining = Math.floor(remainingMs / 60000); // 60000ms = 1 minute
-        } else {
-            // Normal real days logic
-            remaining = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
+        if (remainingMs <= 0) {
+            changed = true;
+            return { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: 'days' } };
         }
 
-        if (remaining !== p.remainingDays) {
-            configChanged = true;
-            return { ...p, remainingDays: remaining };
+        const remaining = isTest
+            ? Math.floor(remainingMs / 60000)      // minutes
+            : Math.ceil(remainingMs / (1000*60*60*24)); // days
+
+        const unit = isTest ? 'minutes' : 'days';
+
+        if (p.remainingTime?.value !== remaining || p.remainingTime?.unit !== unit) {
+            changed = true;
+            return { ...p, remainingTime: { value: remaining, unit } };
         }
-      }
-      return p;
+        }
+        return p;
     });
 
-    if (configChanged) {
-      saveConfig({ ...freshConfig, purchases: updatedPurchases }, { redirect: false, revalidate: false });
-    } else {
-        if(JSON.stringify(config) !== JSON.stringify(freshConfig)) {
-            setConfig(freshConfig);
-        }
+    if (changed) {
+        saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: false });
     }
   };
 
