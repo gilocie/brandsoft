@@ -4,233 +4,17 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { hexToHsl } from '@/lib/utils';
-import { Page } from '@/stores/canvas-store';
+import { useCustomers } from './use-customers';
+import { useProducts } from './use-products';
+import { useInvoices } from './use-invoices';
+import { useQuotations } from './use-quotations';
+import { usePurchases } from './use-purchases';
+import { useCurrencies } from './use-currencies';
+import type { BrandsoftConfig, Customer, Product, Invoice, Quotation, Purchase } from '@/types/brandsoft';
 
 const LICENSE_KEY = 'brandsoft_license';
 const CONFIG_KEY = 'brandsoft_config';
 const VALID_SERIAL = 'BRANDSOFT-2024';
-
-const TEST_PERIOD_MINUTES: Record<string, number> = {
-  '1 Month': 10,   // 10 minutes
-  '3 Months': 15,  // 15 minutes
-  '6 Months': 30,  // 30 minutes
-  '1 Year': 45,    // 45 minutes
-};
-const isTestPlanPeriod = (period: string) => period in TEST_PERIOD_MINUTES;
-
-
-export type Customer = {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  address?: string;
-  companyName?: string;
-  companyAddress?: string;
-  vatNumber?: string;
-  associatedProductIds?: string[];
-  customerType?: 'personal' | 'company';
-};
-
-export type Product = {
-  id: string;
-  name: string;
-  description?: string;
-  price: number;
-  type: 'product' | 'service';
-};
-
-export type LineItem = {
-    productId?: string;
-    description: string;
-    quantity: number;
-    price: number;
-};
-
-export interface DesignSettings {
-    logo?: string;
-    backgroundColor?: string;
-    textColor?: string;
-    headerImage?: string;
-    headerImageOpacity?: number;
-    footerImage?: string;
-    footerImageOpacity?: number;
-    backgroundImage?: string;
-    backgroundImageOpacity?: number;
-    watermarkText?: string;
-    watermarkColor?: string;
-    watermarkOpacity?: number;
-    watermarkFontSize?: number;
-    watermarkAngle?: number;
-    headerColor?: string;
-    footerColor?: string;
-    footerContent?: string;
-    // Visibility toggles
-    showLogo?: boolean;
-    showBusinessAddress?: boolean;
-    showInvoiceTitle?: boolean;
-    showBillingAddress?: boolean;
-    showDates?: boolean;
-    showPaymentDetails?: boolean;
-    showNotes?: boolean;
-    showBrandsoftFooter?: boolean;
-    showHeader?: boolean;
-    showFooter?: boolean;
-    paymentDetails?: string;
-}
-
-export type Purchase = {
-    orderId: string;
-    planName: string;
-    planPrice: string;
-    planPeriod: string;
-    paymentMethod: string;
-    status: 'pending' | 'active' | 'declined' | 'inactive';
-    date: string;
-    receipt?: string | 'none';
-    whatsappNumber?: string;
-    declineReason?: string;
-    isAcknowledged?: boolean;
-    expiresAt?: string;
-    remainingTime: {
-        value: number;
-        unit: 'minutes' | 'days';
-    };
-}
-
-
-export type BrandsoftTemplate = {
-  id: string;
-  name: string;
-  description?: string;
-  category: 'invoice' | 'quotation' | 'certificate' | 'id-card' | 'marketing';
-  pages: Page[];
-  previewImage?: string; // data URL
-  createdAt?: string;
-};
-
-
-export type BrandsoftConfig = {
-  brand: {
-    logo: string;
-    primaryColor: string;
-    secondaryColor: string;
-    font: string;
-    businessName: string;
-    brandsoftFooter: boolean;
-    headerImage?: string;
-    footerImage?: string;
-    backgroundImage?: string;
-    watermarkImage?: string;
-    footerContent?: string;
-    showCustomerAddress: boolean;
-    backgroundColor?: string;
-    textColor?: string;
-    // Default visibility
-    showLogo?: boolean;
-    showBusinessAddress?: boolean;
-    showInvoiceTitle?: boolean;
-    showBillingAddress?: boolean;
-    showDates?: boolean;
-    showPaymentDetails?: boolean;
-    showNotes?: boolean;
-    showBrandsoftFooter?: boolean;
-    showHeader?: boolean;
-    showFooter?: boolean;
-    // Button styles
-    buttonPrimaryBg?: string;
-    buttonPrimaryBgHover?: string;
-    buttonPrimaryText?: string;
-    buttonPrimaryTextHover?: string;
-  };
-  profile: {
-    address: string;
-    phone: string;
-    email: string;
-    website: string;
-    taxNumber: string;
-    defaultCurrency: string;
-    paymentDetails?: string;
-    invoicePrefix?: string;
-    invoiceStartNumber?: number;
-    quotationPrefix?: string;
-    quotationStartNumber?: number;
-    defaultInvoiceTemplate?: DesignSettings | string;
-    defaultQuotationTemplate?: DesignSettings | string;
-  };
-  modules: {
-    invoice: boolean;
-    certificate: boolean;
-    idCard: boolean;
-    quotation: boolean;
-    marketing: boolean;
-  };
-  customers: Customer[];
-  products: Product[];
-  invoices: Invoice[];
-  quotations: Quotation[];
-  templates: BrandsoftTemplate[];
-  currencies: string[];
-  purchases?: Purchase[];
-};
-
-export type Invoice = {
-    invoiceId: string;
-    customer: string;
-    customerId?: string;
-    date: string;
-    dueDate: string;
-    amount: number;
-    status: 'Draft' | 'Pending' | 'Paid' | 'Overdue' | 'Canceled';
-    subtotal?: number;
-    discount?: number;
-    discountType?: 'percentage' | 'flat';
-    discountValue?: number;
-    tax?: number;
-    taxName?: string;
-    taxType?: 'percentage' | 'flat';
-    taxValue?: number;
-    shipping?: number;
-    notes?: string;
-    lineItems: LineItem[];
-    partialPayment?: number;
-    partialPaymentType?: 'percentage' | 'flat';
-    partialPaymentValue?: number;
-    currency?: string;
-    design?: DesignSettings;
-};
-
-export type Quotation = {
-    quotationId: string;
-    customer: string;
-    customerId?: string;
-    date: string;
-    validUntil: string;
-    amount: number;
-    status: 'Draft' | 'Sent' | 'Accepted' | 'Declined';
-    subtotal?: number;
-    discount?: number;
-    discountType?: 'percentage' | 'flat';
-    discountValue?: number;
-    tax?: number;
-    taxName?: string;
-    taxType?: 'percentage' | 'flat';
-    taxValue?: number;
-    shipping?: number;
-    notes?: string;
-    lineItems: LineItem[];
-    partialPayment?: number;
-    partialPaymentType?: 'percentage' | 'flat';
-    partialPaymentValue?: number;
-    currency?: string;
-    design?: DesignSettings;
-};
-
-
-interface NumberingOptions {
-  prefix?: string;
-  startNumber?: number;
-}
 
 interface BrandsoftContextType {
   isActivated: boolean | null;
@@ -239,25 +23,31 @@ interface BrandsoftContextType {
   activate: (serial: string) => boolean;
   saveConfig: (newConfig: BrandsoftConfig, options?: { redirect?: boolean; revalidate?: boolean }) => void;
   logout: () => void;
+  // Customer methods
   addCustomer: (customer: Omit<Customer, 'id'>) => Customer;
   updateCustomer: (customerId: string, data: Partial<Omit<Customer, 'id'>>) => void;
   deleteCustomer: (customerId: string) => void;
+  // Product methods
   addProduct: (product: Omit<Product, 'id'>) => Product;
   updateProduct: (productId: string, data: Partial<Omit<Product, 'id'>>) => void;
   deleteProduct: (productId: string) => void;
-  addInvoice: (invoice: Omit<Invoice, 'invoiceId'>, numbering?: NumberingOptions) => Invoice;
+  // Invoice methods
+  addInvoice: (invoice: Omit<Invoice, 'invoiceId'>, numbering?: { prefix?: string; startNumber?: number; }) => Invoice;
   updateInvoice: (invoiceId: string, data: Partial<Omit<Invoice, 'invoiceId'>>) => void;
   deleteInvoice: (invoiceId: string) => void;
-  addQuotation: (quotation: Omit<Quotation, 'quotationId'>, numbering?: NumberingOptions) => Quotation;
+  // Quotation methods
+  addQuotation: (quotation: Omit<Quotation, 'quotationId'>, numbering?: { prefix?: string; startNumber?: number; }) => Quotation;
   updateQuotation: (quotationId: string, data: Partial<Omit<Quotation, 'quotationId'>>) => void;
   deleteQuotation: (quotationId: string) => void;
-  addCurrency: (currency: string) => void;
+  // Purchase methods
   addPurchaseOrder: (order: Omit<Purchase, 'remainingTime'>) => Purchase;
   getPurchaseOrder: (orderId: string) => Purchase | null;
   activatePurchaseOrder: (orderId: string) => void;
   declinePurchaseOrder: (orderId: string, reason: string) => void;
   acknowledgeDeclinedPurchase: (orderId: string) => void;
   updatePurchaseStatus: () => void;
+  // Currency methods
+  addCurrency: (currency: string) => void;
 }
 
 const BrandsoftContext = createContext<BrandsoftContextType | undefined>(undefined);
@@ -352,235 +142,13 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       router.push('/dashboard');
     }
   };
-  
-  const addPurchaseOrder = (orderData: Omit<Purchase, 'remainingTime'>): Purchase => {
-    if (!config) throw new Error("Configuration not loaded.");
-    const newOrder: Purchase = {
-        ...orderData,
-        remainingTime: { value: 0, unit: 'days' }
-    };
-    const allPurchases = [...(config.purchases || []), newOrder];
-    saveConfig({ ...config, purchases: allPurchases }, { redirect: false, revalidate: true });
-    return newOrder;
-  };
 
-  const getPurchaseOrder = (orderId: string): Purchase | null => {
-    return config?.purchases?.find(p => p.orderId === orderId) || null;
-  };
-
-  const activatePurchaseOrder = (orderId: string) => {
-    if (!config || !config.purchases) return;
-
-    const purchaseToActivate = config.purchases.find(p => p.orderId === orderId);
-    if (!purchaseToActivate) return;
-
-    const period = purchaseToActivate.planPeriod;
-    const now = Date.now();
-    const isTestPlan = isTestPlanPeriod(period);
-
-    const newPlanDuration = isTestPlan ? TEST_PERIOD_MINUTES[period] : {
-      '1 Month': 30,
-      '3 Months': 90,
-      '6 Months': 180,
-      '1 Year': 365,
-      'Once OFF': 365*3
-    }[period] ?? 0;
-
-    const unit: 'minutes' | 'days' = isTestPlan ? 'minutes' : 'days';
-    const multiplier = isTestPlan ? 60 * 1000 : 24 * 60 * 60 * 1000; // ms
-
-    const expiresAt = new Date(now + newPlanDuration * multiplier).toISOString();
-
-    const updatedPurchases = config.purchases.map(p => {
-      if (p.orderId === orderId) {
-        return {
-          ...p,
-          status: 'active' as const,
-          date: new Date().toISOString(),
-          remainingTime: { value: newPlanDuration, unit },
-          expiresAt,
-        };
-      }
-      if (p.status === 'active') {
-        return { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: 'days' as const } };
-      }
-      return p;
-    });
-
-    saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: true });
-  };
-  
-  const declinePurchaseOrder = (orderId: string, reason: string) => {
-    if (!config || !config.purchases) return;
-    const updatedPurchases = config.purchases.map(p =>
-      p.orderId === orderId
-        ? {
-            ...p,
-            status: 'declined' as 'declined',
-            declineReason: reason,
-            isAcknowledged: false,
-          }
-        : p
-    );
-    saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: true });
-  };
-  
-  const acknowledgeDeclinedPurchase = (orderId: string) => {
-    if (!config || !config.purchases) return;
-    const updatedPurchases = config.purchases.map(p => 
-      (p.orderId === orderId && p.status === 'declined') ? { ...p, isAcknowledged: true } : p
-    );
-    saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: true });
-  };
-  
-  const updatePurchaseStatus = () => {
-    if (!config?.purchases) return;
-
-    let changed = false;
-    const now = Date.now();
-
-    const updatedPurchases = config.purchases.map(p => {
-      if (p.status === 'active' && p.expiresAt) {
-        const expiryTime = new Date(p.expiresAt).getTime();
-        const remainingMs = expiryTime - now;
-        const isTest = isTestPlanPeriod(p.planPeriod);
-
-        if (remainingMs <= 0) {
-          changed = true;
-          return { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: 'minutes' as const } };
-        }
-
-        const remaining = isTest
-            ? Math.ceil(remainingMs / (1000 * 60)) // minutes
-            : Math.ceil(remainingMs / (1000 * 60 * 60 * 24)); // days
-        const unit: 'minutes' | 'days' = isTest ? 'minutes' : 'days';
-
-        if (p.remainingTime?.value !== remaining || p.remainingTime?.unit !== unit) {
-          changed = true;
-          return { ...p, remainingTime: { value: remaining, unit } };
-        }
-      }
-      return p;
-    });
-
-    if (changed) {
-      saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: false });
-    }
-  };
-
-
-  const addCustomer = (customer: Omit<Customer, 'id'>): Customer => {
-      const newCustomer = { ...customer, id: `CUST-${Date.now()}` };
-      if (config) {
-          const newConfig = { ...config, customers: [...config.customers, newCustomer] };
-          saveConfig(newConfig, { redirect: false, revalidate: false });
-      }
-      return newCustomer;
-  };
-  
-  const updateCustomer = (customerId: string, data: Partial<Omit<Customer, 'id'>>) => {
-      if (config) {
-          const newCustomers = config.customers.map(c => 
-              c.id === customerId ? { ...c, ...data } : c
-          );
-          saveConfig({ ...config, customers: newCustomers }, { redirect: false, revalidate: false });
-      }
-  };
-  
-  const deleteCustomer = (customerId: string) => {
-      if (config) {
-          const newCustomers = config.customers.filter(c => c.id !== customerId);
-          saveConfig({ ...config, customers: newCustomers }, { redirect: false, revalidate: false });
-      }
-  };
-
-   const addProduct = (product: Omit<Product, 'id'>): Product => {
-      const newProduct = { ...product, id: `PROD-${Date.now()}` };
-      if (config) {
-          const newConfig = { ...config, products: [...(config.products || []), newProduct] };
-          saveConfig(newConfig, { redirect: false, revalidate: false });
-      }
-      return newProduct;
-  };
-  
-  const updateProduct = (productId: string, data: Partial<Omit<Product, 'id'>>) => {
-      if (config) {
-          const newProducts = (config.products || []).map(p => 
-              p.id === productId ? { ...p, ...data } : p
-          );
-          saveConfig({ ...config, products: newProducts }, { redirect: false, revalidate: false });
-      }
-  };
-  
-  const deleteProduct = (productId: string) => {
-      if (config) {
-          const newProducts = (config.products || []).filter(p => p.id !== productId);
-          saveConfig({ ...config, products: newProducts }, { redirect: false, revalidate: false });
-      }
-  };
-  
-  const addInvoice = (invoice: Omit<Invoice, 'invoiceId'>, numbering?: NumberingOptions): Invoice => {
-    if (!config) throw new Error("Config not loaded");
-    const startNumber = numbering?.startNumber ?? config.profile.invoiceStartNumber;
-    const prefix = numbering?.prefix ?? config.profile.invoicePrefix;
-    const nextNumber = (Number(startNumber) || 100) + (config.invoices?.length || 0);
-    const generatedId = `${prefix}${nextNumber}`.replace(/\s+/g, '');
-    const newInvoice: Invoice = { ...invoice, invoiceId: generatedId };
-    const newConfig = { ...config, invoices: [...(config.invoices || []), newInvoice] };
-    saveConfig(newConfig, { redirect: false, revalidate: false });
-    return newInvoice;
-  };
-
-  const updateInvoice = (invoiceId: string, data: Partial<Omit<Invoice, 'invoiceId'>>) => {
-      if (config) {
-          const newInvoices = (config.invoices || []).map(i => 
-              i.invoiceId === invoiceId ? { ...i, ...data } : i
-          );
-          saveConfig({ ...config, invoices: newInvoices }, { redirect: false, revalidate: false });
-      }
-  };
-  
-  const deleteInvoice = (invoiceId: string) => {
-      if (config) {
-          const newInvoices = (config.invoices || []).filter(i => i.invoiceId !== invoiceId);
-          saveConfig({ ...config, invoices: newInvoices }, { redirect: false, revalidate: false });
-      }
-  };
-  
-   const addQuotation = (quotation: Omit<Quotation, 'quotationId'>, numbering?: NumberingOptions): Quotation => {
-    if (!config) throw new Error("Config not loaded");
-    const startNumber = numbering?.startNumber ?? config.profile.quotationStartNumber;
-    const prefix = numbering?.prefix ?? config.profile.quotationPrefix;
-    const nextNumber = (Number(startNumber) || 100) + (config.quotations?.length || 0);
-    const generatedId = `${prefix}${nextNumber}`.replace(/\s+/g, '');
-    const newQuotation: Quotation = { ...quotation, quotationId: generatedId };
-    const newConfig = { ...config, quotations: [...(config.quotations || []), newQuotation] };
-    saveConfig(newConfig, { redirect: false, revalidate: false });
-    return newQuotation;
-  };
-
-  const updateQuotation = (quotationId: string, data: Partial<Omit<Quotation, 'quotationId'>>) => {
-      if (config) {
-          const newQuotations = (config.quotations || []).map(q => 
-              q.quotationId === quotationId ? { ...q, ...data } : q
-          );
-          saveConfig({ ...config, quotations: newQuotations }, { redirect: false, revalidate: false });
-      }
-  };
-  
-  const deleteQuotation = (quotationId: string) => {
-      if (config) {
-          const newQuotations = (config.quotations || []).filter(q => q.quotationId !== quotationId);
-          saveConfig({ ...config, quotations: newQuotations }, { redirect: false, revalidate: false });
-      }
-  };
-  
-  const addCurrency = (currency: string) => {
-      if (config && !config.currencies.includes(currency)) {
-          const newConfig = { ...config, currencies: [...config.currencies, currency] };
-          saveConfig(newConfig, { redirect: false, revalidate: false });
-      }
-  };
+  const customerMethods = useCustomers(config, saveConfig);
+  const productMethods = useProducts(config, saveConfig);
+  const invoiceMethods = useInvoices(config, saveConfig);
+  const quotationMethods = useQuotations(config, saveConfig);
+  const purchaseMethods = usePurchases(config, saveConfig);
+  const currencyMethods = useCurrencies(config, saveConfig);
 
   const value: BrandsoftContextType = {
     isActivated,
@@ -589,25 +157,12 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     activate,
     saveConfig,
     logout,
-    addCustomer,
-    updateCustomer,
-    deleteCustomer,
-    addProduct,
-    updateProduct,
-    deleteProduct,
-    addInvoice,
-    updateInvoice,
-    deleteInvoice,
-    addQuotation,
-    updateQuotation,
-    deleteQuotation,
-    addCurrency,
-    addPurchaseOrder,
-    getPurchaseOrder,
-    activatePurchaseOrder,
-    declinePurchaseOrder,
-    acknowledgeDeclinedPurchase,
-    updatePurchaseStatus,
+    ...customerMethods,
+    ...productMethods,
+    ...invoiceMethods,
+    ...quotationMethods,
+    ...purchaseMethods,
+    ...currencyMethods,
   };
 
   return <BrandsoftContext.Provider value={value}>{children}</BrandsoftContext.Provider>;

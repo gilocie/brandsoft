@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { BrandsoftConfig, Customer, Invoice, LineItem, DesignSettings } from '@/hooks/use-brandsoft';
+import { BrandsoftConfig, Customer, Invoice, LineItem, DesignSettings } from '@/types/brandsoft';
 import { format, parseISO, isValid } from "date-fns";
 import { cn } from '@/lib/utils';
 import jsPDF from 'jspdf';
