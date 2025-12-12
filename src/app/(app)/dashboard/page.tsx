@@ -35,37 +35,37 @@ const StatCard = ({ title, value, icon: Icon, description, formatAsCurrency = fa
     </Card>
 );
 
-const PlanStatusCard = () => {
-    const { config, updatePurchaseStatus } = useBrandsoft();
+const PlanStatusCard = ({ purchase }: { purchase: Purchase | null }) => {
+    const { updatePurchaseStatus } = useBrandsoft();
     const [remainingDays, setRemainingDays] = useState(0);
-
-    const activePurchase = useMemo(() => config?.purchases?.find(p => p.status === 'active'), [config?.purchases]);
+    const activePurchase = purchase && purchase.status === 'active' ? purchase : null;
 
     useEffect(() => {
         if (!activePurchase?.expiresAt) {
-            // No active plan or it doesn't have an expiry date
-            if (activePurchase) updatePurchaseStatus(); // Check if it *should* have expired
+            if (activePurchase) updatePurchaseStatus();
             return;
         }
 
         const testDurations: { [key: string]: number } = {
-            '1 Month': 10 * 60 * 1000,      // 10 minutes
-            '3 Months': 15 * 60 * 1000,     // 15 minutes
-            '6 Months': 30 * 60 * 1000,     // 30 minutes
-            '1 Year': 35 * 60 * 1000,       // 35 minutes
+            '1 Month': 10 * 60 * 1000,
+            '3 Months': 15 * 60 * 1000,
+            '6 Months': 30 * 60 * 1000,
+            '1 Year': 35 * 60 * 1000,
         };
-        const testDuration = testDurations[activePurchase.planPeriod];
+        const testDuration = activePurchase.planPeriod ? testDurations[activePurchase.planPeriod] : undefined;
         const isTestMode = !!testDuration;
         
         const calculateRemaining = () => {
             const now = new Date().getTime();
             let expiryTime;
 
-            if (isTestMode) {
+            if (isTestMode && activePurchase.date) {
                 const activationTime = new Date(activePurchase.date).getTime();
                 expiryTime = activationTime + testDuration;
+            } else if(activePurchase.expiresAt) {
+                expiryTime = new Date(activePurchase.expiresAt).getTime();
             } else {
-                expiryTime = new Date(activePurchase.expiresAt!).getTime();
+                return;
             }
 
             const remainingMs = Math.max(0, expiryTime - now);
@@ -78,25 +78,12 @@ const PlanStatusCard = () => {
         };
 
         calculateRemaining();
-        const interval = setInterval(calculateRemaining, isTestMode ? 1000 : 60000); // Check every minute for real dates
+        const interval = setInterval(calculateRemaining, isTestMode ? 1000 : 60000);
 
         return () => clearInterval(interval);
     }, [activePurchase, updatePurchaseStatus]);
     
-    const isTestMode = activePurchase ? !!({
-        '1 Month': true, '3 Months': true, '6 Months': true, '1 Year': true
-    }[activePurchase.planPeriod]) : false;
-    
-    const isExpired = activePurchase ? remainingDays <= 0 : false;
-    
-    const displayUnit = isTestMode ? (Math.ceil(remainingDays) > 1 ? 'Mins' : 'Min') : (Math.ceil(remainingDays) > 1 ? 'Days' : 'Day');
-    const displayValue = isExpired ? '0' : Math.ceil(remainingDays);
-    const displayText = isExpired ? `0 ${displayUnit}` : `${displayValue} ${displayUnit}`;
-    
-    const isExpiringSoon = activePurchase ? remainingDays > 0 && (isTestMode ? remainingDays <= 2 : remainingDays <= 5) : false;
-
-
-    if (!activePurchase) {
+    if (!purchase) {
        return (
             <Card className="bg-green-900 text-white">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -109,31 +96,77 @@ const PlanStatusCard = () => {
                     <ManagePlanDialog isExpiringSoon={false} isExpired={false} />
                 </CardContent>
             </Card>
-       )
+       );
+    }
+    
+    // Logic for active plan
+    if (purchase.status === 'active') {
+        const isTestMode = !!({'1 Month': true, '3 Months': true, '6 Months': true, '1 Year': true}[purchase.planPeriod]);
+        const isExpired = remainingDays <= 0;
+        const isExpiringSoon = !isExpired && (isTestMode ? remainingDays <= 2 : remainingDays <= 5);
+        const displayUnit = isTestMode ? (Math.ceil(remainingDays) > 1 ? 'Mins' : 'Min') : (Math.ceil(remainingDays) > 1 ? 'Days' : 'Day');
+        const displayValue = isExpired ? '0' : Math.ceil(remainingDays);
+        const displayText = isExpired ? `0 ${displayUnit}` : `${displayValue} ${displayUnit}`;
+        
+        return (
+            <Card className={cn(
+                "text-white",
+                isExpired && "bg-gray-500",
+                isExpiringSoon && "bg-destructive",
+                !isExpiringSoon && !isExpired && "bg-green-900",
+            )}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">{purchase.planName}</CardTitle>
+                    {isExpired ? <XCircle className="h-4 w-4 text-white/70" /> : <Crown className="h-4 w-4 text-white/70" />}
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{isExpired ? 'Expired' : displayText}</div>
+                    <p className="text-xs text-white/80">{isExpired ? 'Your plan has expired.' : 'Remaining'}</p>
+                    <ManagePlanDialog isExpiringSoon={isExpiringSoon} isExpired={isExpired} />
+                </CardContent>
+            </Card>
+        );
     }
 
-    return (
-        <Card className={cn(
-            "text-white",
-            isExpired && "bg-gray-500",
-            isExpiringSoon && !isExpired && "bg-destructive",
-            !isExpiringSoon && !isExpired && "bg-green-900",
-        )}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{activePurchase.planName}</CardTitle>
-                {isExpired ? <XCircle className="h-4 w-4 text-white/70" /> : <Crown className="h-4 w-4 text-white/70" />}
-            </CardHeader>
-            <CardContent>
-                <div className="text-2xl font-bold">
-                    {isExpired ? 'Expired' : displayText}
-                </div>
-                <p className="text-xs text-white/80">
-                    {isExpired ? 'Your plan has expired.' : 'Remaining'}
-                </p>
-                <ManagePlanDialog isExpiringSoon={isExpiringSoon} isExpired={isExpired} />
-            </CardContent>
-        </Card>
-    );
+    // Logic for pending plan
+    if (purchase.status === 'pending') {
+        return (
+            <Card className="bg-amber-500 text-white">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Purchase Pending</CardTitle>
+                    <Clock className="h-4 w-4 text-white/70" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-xl font-bold capitalize">{purchase.status}</div>
+                    <p className="text-xs text-white/80">{purchase.planName} Plan</p>
+                    <Button asChild variant="secondary" size="sm" className="mt-4">
+                        <Link href={`/verify-purchase?orderId=${purchase.orderId}`}>View</Link>
+                    </Button>
+                </CardContent>
+            </Card>
+        );
+    }
+    
+    // Logic for declined plan
+    if (purchase.status === 'declined') {
+        return (
+             <Card className="bg-destructive text-white">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Purchase Declined</CardTitle>
+                    <XCircle className="h-4 w-4 text-white/70" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-xl font-bold capitalize">{purchase.status}</div>
+                    <p className="text-xs text-white/80">{purchase.planName} Plan</p>
+                    <Button asChild variant="secondary" size="sm" className="mt-4">
+                        <Link href={`/verify-purchase?orderId=${purchase.orderId}`}>View Details</Link>
+                    </Button>
+                </CardContent>
+            </Card>
+        );
+    }
+
+    return null; // Fallback for 'inactive' or other statuses
 };
 
 
@@ -183,25 +216,21 @@ export default function DashboardPage() {
     }
   }, [config]);
 
-   const purchaseToShow = useMemo((): Purchase | undefined => {
-      if (!config?.purchases) return undefined;
+   const purchaseToShow = useMemo((): Purchase | null => {
+      if (!config?.purchases || config.purchases.length === 0) return null;
       
       const purchases = [...config.purchases].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       
       const active = purchases.find(p => p.status === 'active');
-      if (active) {
-        // If there's an active plan, we don't need to show pending/declined cards.
-        return undefined;
-      }
+      if (active) return active;
       
       const pending = purchases.find(p => p.status === 'pending');
-      const latestDeclined = purchases.find(p => p.status === 'declined' && !p.isAcknowledged);
-      
-      // If there is a pending order, it should take precedence over an older declined one.
       if (pending) return pending;
+
+      const latestDeclined = purchases.find(p => p.status === 'declined' && !p.isAcknowledged);
       if (latestDeclined) return latestDeclined;
       
-      return undefined;
+      return null;
 
   }, [config?.purchases]);
 
@@ -275,38 +304,7 @@ export default function DashboardPage() {
           <StatCard title="Paid Invoices" value={stats.paidCount} icon={CheckCircle} description="Total completed payments" />
           <StatCard title="Unpaid Invoices" value={stats.unpaidCount + stats.overdueCount} icon={FileClock} description="Pending or overdue invoices" />
           <StatCard title="Quotations Sent" value={stats.quotationsSent} icon={FileBarChart2} description="Total quotations issued" />
-          
-            {purchaseToShow?.status === 'pending' ? (
-                <Card className="bg-amber-500 text-white">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Purchase Pending</CardTitle>
-                        <Clock className="h-4 w-4 text-white/70" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-xl font-bold">Purchase Pending</div>
-                        <p className="text-xs text-white/80">{purchaseToShow.planName} Plan</p>
-                        <Button asChild variant="secondary" size="sm" className="mt-4">
-                            <Link href={`/verify-purchase?orderId=${purchaseToShow.orderId}`}>View</Link>
-                        </Button>
-                    </CardContent>
-                </Card>
-            ) : purchaseToShow?.status === 'declined' ? (
-                 <Card className="bg-destructive text-white">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Purchase Declined</CardTitle>
-                        <XCircle className="h-4 w-4 text-white/70" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-xl font-bold">Purchase Declined</div>
-                        <p className="text-xs text-white/80">{purchaseToShow.planName} Plan</p>
-                        <Button asChild variant="secondary" size="sm" className="mt-4">
-                            <Link href={`/verify-purchase?orderId=${purchaseToShow.orderId}`}>View Details</Link>
-                        </Button>
-                    </CardContent>
-                </Card>
-            ) : (
-                <PlanStatusCard />
-            )}
+          <PlanStatusCard purchase={purchaseToShow} />
       </div>
       
       <div>
