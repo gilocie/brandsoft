@@ -66,11 +66,9 @@ function VerifyPurchaseContent() {
             }, 150);
 
             let cleanOrderId = orderIdWithPin;
-            let isUserViewing = true;
 
             if (orderIdWithPin.endsWith(ADMIN_PIN_SUFFIX)) {
                 setIsAdminMode(true);
-                isUserViewing = false; 
                 cleanOrderId = orderIdWithPin.replace(ADMIN_PIN_SUFFIX, '');
             } else {
                 setIsAdminMode(false);
@@ -331,5 +329,3 @@ export default function VerifyPurchasePage() {
         </div>
     )
 }
-
-    
