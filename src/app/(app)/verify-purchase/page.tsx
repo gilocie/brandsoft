@@ -50,19 +50,22 @@ function VerifyPurchaseContent() {
         defaultValues: { orderId: orderIdFromUrl || '' },
     });
     
-     const handleSearch = useCallback(async (orderIdWithPin: string) => {
+     const handleSearch = useCallback(async (orderIdWithPin: string, silent = false) => {
         if (!orderIdWithPin) {
             setIsLoading(false);
             setOrder(null);
             return;
         }
 
-        setIsLoading(true);
-        setProgress(0);
-        
-        const progressInterval = setInterval(() => {
-            setProgress(prev => (prev >= 90 ? 90 : prev + 10));
-        }, 150);
+        if (!silent) {
+            setIsLoading(true);
+            setProgress(0);
+            const progressInterval = setInterval(() => {
+                setProgress(prev => (prev >= 90 ? 90 : prev + 10));
+            }, 150);
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            clearInterval(progressInterval);
+        }
 
         let cleanOrderId = orderIdWithPin;
         let admin = false;
@@ -70,20 +73,18 @@ function VerifyPurchaseContent() {
         if (orderIdWithPin.endsWith(ADMIN_PIN_SUFFIX)) {
             admin = true;
             cleanOrderId = orderIdWithPin.replace(ADMIN_PIN_SUFFIX, '');
-        } 
+        }
         
         setIsAdminMode(admin);
-
-        await new Promise(resolve => setTimeout(resolve, 1500)); 
-
-        const foundOrder = getPurchaseOrder(cleanOrderId);
         
+        const foundOrder = getPurchaseOrder(cleanOrderId);
         setOrder(foundOrder);
         
-        clearInterval(progressInterval);
-        setProgress(100);
-        setIsLoading(false);
-    }, [getPurchaseOrder, config]);
+        if (!silent) {
+            setProgress(100);
+            setIsLoading(false);
+        }
+    }, [getPurchaseOrder]);
 
 
     useEffect(() => {
@@ -94,20 +95,19 @@ function VerifyPurchaseContent() {
              setOrder(null);
              setIsLoading(false);
         }
-    }, [orderIdFromUrl, handleSearch, form]);
+    }, [orderIdFromUrl, form]);
 
      useEffect(() => {
-        // Stop polling for stable states to prevent loops
-        if (!isAdminMode && (order?.status === 'declined' && !order.isAcknowledged)) {
-          return;
-        }
-        if (!isAdminMode && order?.status === 'active') {
-            return;
+        if (
+          (!isAdminMode && order?.status === 'declined' && !order.isAcknowledged) ||
+          (!isAdminMode && order?.status === 'active')
+        ) {
+          return; // Stop polling for stable non-admin states
         }
 
         const forceRefresh = () => {
              if (orderIdFromUrl) {
-                handleSearch(orderIdFromUrl);
+                handleSearch(orderIdFromUrl, true); // Perform a silent refresh
              }
         };
 
