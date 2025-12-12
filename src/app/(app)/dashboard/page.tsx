@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -150,8 +151,10 @@ const PlanStatusCard = ({ purchase }: { purchase: Purchase | null }) => {
       if (isTestMode && purchase.date) {
         const activationTime = new Date(purchase.date).getTime();
         expiryTime = activationTime + testDuration;
-      } else {
+      } else if (purchase.expiresAt) {
         expiryTime = new Date(purchase.expiresAt).getTime();
+      } else {
+        return;
       }
 
       const remainingMs = Math.max(0, expiryTime - now);
@@ -258,37 +261,33 @@ const PlanStatusCard = ({ purchase }: { purchase: Purchase | null }) => {
 
 export default function DashboardPage() {
   const { config, updatePurchaseStatus } = useBrandsoft();
-  
-  // Add a force refresh counter to trigger re-renders
   const [refreshKey, setRefreshKey] = useState(0);
   
-  // Memoized refresh function that forces a re-render
   const forceRefresh = useCallback(() => {
     setRefreshKey(prev => prev + 1);
     updatePurchaseStatus();
   }, [updatePurchaseStatus]);
 
-  // ✅ FIX: Proper real-time synchronization
+  // ✅ SINGLE consolidated useEffect for all real-time sync
   useEffect(() => {
-    // 1. Initial check on mount
+    // Initial check
     updatePurchaseStatus();
 
-    // 2. Storage event listener for cross-tab updates
+    // Storage event listener (cross-tab updates)
     const handleStorageChange = (e: StorageEvent) => {
-      // Only react to brandsoft-config changes
       if (e.key === 'brandsoft-config' || e.key === null) {
         console.log('Storage changed, refreshing dashboard...');
         forceRefresh();
       }
     };
 
-    // 3. Custom event listener for same-tab updates
-    const handleCustomUpdate = (e: Event) => {
+    // Custom event listener (same-tab updates)
+    const handleCustomUpdate = () => {
       console.log('Custom update event received');
       forceRefresh();
     };
 
-    // 4. Visibility change listener (when user returns to tab)
+    // Visibility change listener
     const handleVisibilityChange = () => {
       if (!document.hidden) {
         console.log('Tab became visible, refreshing...');
@@ -296,13 +295,13 @@ export default function DashboardPage() {
       }
     };
 
-    // 5. Focus listener (when window gains focus)
+    // Focus listener
     const handleFocus = () => {
       console.log('Window focused, refreshing...');
       forceRefresh();
     };
 
-    // 6. Polling as backup (every 3 seconds)
+    // Polling as backup (every 3 seconds)
     const pollInterval = setInterval(() => {
       forceRefresh();
     }, 3000);
@@ -323,7 +322,6 @@ export default function DashboardPage() {
     };
   }, [forceRefresh, updatePurchaseStatus]);
 
-  // ✅ FIX: Add refreshKey as dependency to force recalculation
   const stats = useMemo(() => {
     if (!config) {
       return {
@@ -369,9 +367,8 @@ export default function DashboardPage() {
       ).length,
       receiptsIssued: paidInvoices.length,
     };
-  }, [config, refreshKey]); // ← Added refreshKey dependency
+  }, [config, refreshKey]);
 
-  // ✅ FIX: Add refreshKey dependency to force recalculation
   const purchaseToShow = useMemo((): Purchase | null => {
     if (!config?.purchases || config.purchases.length === 0) return null;
 
@@ -393,7 +390,7 @@ export default function DashboardPage() {
     if (active) return active;
 
     return null;
-  }, [config?.purchases, refreshKey]); // ← Added refreshKey dependency
+  }, [config?.purchases, refreshKey]);
 
   if (!config) {
     return (
