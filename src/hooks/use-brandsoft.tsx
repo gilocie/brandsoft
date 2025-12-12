@@ -316,20 +316,34 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     router.push('/activation');
   };
 
+  // ✅ FIXED: Proper saveConfig with event dispatching
   const saveConfig = (newConfig: BrandsoftConfig, options: { redirect?: boolean; revalidate?: boolean } = {}) => {
     const { redirect = true, revalidate = false } = options;
+    
+    // Update state first
     setConfig(newConfig);
+    
+    // Save to localStorage
     localStorage.setItem(CONFIG_KEY, JSON.stringify(newConfig));
     setIsConfigured(true);
 
+    // ✅ Dispatch events AFTER localStorage is updated
     if (revalidate) {
-        // This is a bit of a hack to force a re-render of consuming components
-        // A better solution would involve a more robust state management library
-        window.dispatchEvent(new Event('storage'));
+      // Dispatch custom event for same-tab updates
+      window.dispatchEvent(new Event('brandsoft-update'));
+      
+      // Dispatch storage event for cross-tab updates
+      // Note: This won't trigger in the same tab by default, but we handle it with custom event
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: CONFIG_KEY,
+        newValue: JSON.stringify(newConfig),
+        url: window.location.href,
+        storageArea: localStorage
+      }));
     }
 
-    if(redirect) {
-        router.push('/dashboard');
+    if (redirect) {
+      router.push('/dashboard');
     }
   };
   
@@ -345,30 +359,30 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
   };
 
   const activatePurchaseOrder = (orderId: string) => {
-      if (!config || !config.purchases) return;
+    if (!config || !config.purchases) return;
 
-      const purchase = config.purchases.find(p => p.orderId === orderId);
-      if (!purchase) return;
+    const purchase = config.purchases.find(p => p.orderId === orderId);
+    if (!purchase) return;
 
-      const periodMap: { [key: string]: number } = {
-          '1 Month': 30, '3 Months': 90, '6 Months': 180, '1 Year': 365,
-          'Once OFF': 365 * 3,
-      };
-      const durationDays = periodMap[purchase.planPeriod] || 30;
-      const expiresAt = new Date(new Date().getTime() + durationDays * 24 * 60 * 60 * 1000).toISOString();
+    const periodMap: { [key: string]: number } = {
+      '1 Month': 30, '3 Months': 90, '6 Months': 180, '1 Year': 365,
+      'Once OFF': 365 * 3,
+    };
+    const durationDays = periodMap[purchase.planPeriod] || 30;
+    const expiresAt = new Date(new Date().getTime() + durationDays * 24 * 60 * 60 * 1000).toISOString();
 
-      const updatedPurchases = config.purchases.map(p => {
-          if (p.orderId === orderId) {
-              return { ...p, status: 'active' as 'active', expiresAt };
-          }
-          // Deactivate any other active plan
-          if (p.status === 'active') {
-              return { ...p, status: 'inactive' as 'inactive' };
-          }
-          return p;
-      });
+    const updatedPurchases = config.purchases.map(p => {
+      if (p.orderId === orderId) {
+        return { ...p, status: 'active' as 'active', expiresAt };
+      }
+      // Deactivate any other active plan
+      if (p.status === 'active') {
+        return { ...p, status: 'inactive' as 'inactive' };
+      }
+      return p;
+    });
 
-      saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: true });
+    saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: true });
   };
   
   const declinePurchaseOrder = (orderId: string, reason: string) => {
