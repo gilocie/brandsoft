@@ -319,18 +319,14 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
   const saveConfig = (newConfig: BrandsoftConfig, options: { redirect?: boolean; revalidate?: boolean } = {}) => {
     const { redirect = true, revalidate = false } = options;
     
-    // Update state first
     setConfig(newConfig);
     
-    // Save to localStorage
     localStorage.setItem(CONFIG_KEY, JSON.stringify(newConfig));
     setIsConfigured(true);
 
     if (revalidate) {
-      // Dispatch custom event for same-tab updates
       window.dispatchEvent(new Event('brandsoft-update'));
       
-      // Dispatch storage event for cross-tab updates
       window.dispatchEvent(new StorageEvent('storage', {
         key: CONFIG_KEY,
         newValue: JSON.stringify(newConfig),
@@ -385,8 +381,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       '1 Year': 35 * 60 * 1000,
     };
     
-    // Check if any plan is a test plan to decide which map to use
-    const isTestMode = config.purchases.some(p => Object.keys(testPeriodMsMap).includes(p.planPeriod));
+    const isTestMode = Object.keys(testPeriodMsMap).includes(purchaseToActivate.planPeriod);
     const durationMap = isTestMode ? testPeriodMsMap : periodMsMap;
 
     const newPlanDurationMs = durationMap[purchaseToActivate.planPeriod] || 0;
@@ -394,11 +389,9 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     const newExpiresAt = new Date(new Date().getTime() + totalDurationMs).toISOString();
 
     const updatedPurchases = config.purchases.map(p => {
-      // Activate the new plan
       if (p.orderId === orderId) {
         return { ...p, status: 'active' as 'active', expiresAt: newExpiresAt, date: new Date().toISOString() };
       }
-      // Deactivate the currently active plan
       if (p.orderId === currentlyActivePurchase?.orderId) {
         return { ...p, status: 'inactive' as 'inactive' };
       }
@@ -437,7 +430,6 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     let configChanged = false;
     const now = new Date().getTime();
     
-    // We get the fresh config directly from localStorage here
     const storedConfig = localStorage.getItem(CONFIG_KEY);
     const freshConfig = storedConfig ? JSON.parse(storedConfig) : config;
 
@@ -455,7 +447,6 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     if (configChanged || JSON.stringify(config.purchases) !== JSON.stringify(updatedPurchases)) {
       saveConfig({ ...freshConfig, purchases: updatedPurchases }, { redirect: false, revalidate: false });
     } else {
-        // If nothing changed but the hook's state is stale, update it
         if(JSON.stringify(config) !== JSON.stringify(freshConfig)) {
             setConfig(freshConfig);
         }
