@@ -127,7 +127,6 @@ const PlanStatusCard = ({ purchase }: { purchase: Purchase | null }) => {
   const router = useRouter();
 
   const handleViewDeclined = (orderId: string) => {
-    // We do not acknowledge here. Acknowledgement happens on the verify page.
     router.push(`/verify-purchase?orderId=${orderId}`);
   };
 
@@ -341,22 +340,28 @@ export default function DashboardPage() {
 
   const purchaseToShow = useMemo((): Purchase | null => {
     if (!config?.purchases || config.purchases.length === 0) return null;
-    
+  
+    // 1. Sort purchases by date (Newest first)
     const purchases = [...config.purchases].sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
+    
+    // Get the very latest purchase attempt
+    const mostRecentPurchase = purchases[0];
   
-    // 1. Pending – most important
+    // 2. Priority: Check for any Pending purchase first (Always show pending)
     const pending = purchases.find((p) => p.status === 'pending');
     if (pending) return pending;
   
-    // 2. Declined (unacknowledged) – user needs to see this
-    const latestDeclined = purchases.find(
-      (p) => p.status === 'declined' && !p.isAcknowledged
-    );
-    if (latestDeclined) return latestDeclined;
+    // 3. Priority: Check if the MOST RECENT purchase was Declined and not acknowledged
+    if (
+      mostRecentPurchase.status === 'declined' && 
+      !mostRecentPurchase.isAcknowledged
+    ) {
+      return mostRecentPurchase;
+    }
   
-    // 3. Active – fallback
+    // 4. Priority: Fallback to the latest Active plan
     const active = purchases.find((p) => p.status === 'active');
     if (active) return active;
   

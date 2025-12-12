@@ -66,11 +66,9 @@ function VerifyPurchaseContent() {
             }, 150);
 
             let cleanOrderId = orderIdWithPin;
-            let isUserViewing = true;
 
             if (orderIdWithPin.endsWith(ADMIN_PIN_SUFFIX)) {
                 setIsAdminMode(true);
-                isUserViewing = false;
                 cleanOrderId = orderIdWithPin.replace(ADMIN_PIN_SUFFIX, '');
             } else {
                 setIsAdminMode(false);
@@ -128,7 +126,9 @@ function VerifyPurchaseContent() {
     const handleAcknowledgeAndRedirect = () => {
       if (order) {
         acknowledgeDeclinedPurchase(order.orderId);
-        window.location.href = '/dashboard';
+        setTimeout(() => {
+            window.location.href = '/dashboard';
+        }, 100);
       }
     };
 
@@ -320,8 +320,7 @@ function VerifyPurchaseContent() {
             <CardContent>
                 {renderContent()}
             </CardContent>
-            <CardFooter>
-            </CardFooter>
+            {/* Footer has been removed as requested */}
         </Card>
     );
 }
