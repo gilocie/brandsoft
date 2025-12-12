@@ -216,23 +216,29 @@ export default function DashboardPage() {
     }
   }, [config]);
 
+   // --- FIXED LOGIC HERE ---
    const purchaseToShow = useMemo((): Purchase | null => {
       if (!config?.purchases || config.purchases.length === 0) return null;
       
+      // Sort by date descending (Newest first)
       const purchases = [...config.purchases].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       
-      const active = purchases.find(p => p.status === 'active');
-      if (active) return active;
-      
+      // 1. Priority: Pending (Show this first so user knows order is processing)
       const pending = purchases.find(p => p.status === 'pending');
       if (pending) return pending;
 
+      // 2. Priority: Active (Show this if no pending orders exist)
+      const active = purchases.find(p => p.status === 'active');
+      if (active) return active;
+
+      // 3. Priority: Declined (Only if unacknowledged)
       const latestDeclined = purchases.find(p => p.status === 'declined' && !p.isAcknowledged);
       if (latestDeclined) return latestDeclined;
       
       return null;
 
   }, [config?.purchases]);
+  // ------------------------
 
 
   if (!config) {
