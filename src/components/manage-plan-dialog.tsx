@@ -74,7 +74,7 @@ const planBasePrices = {
 };
 
 export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon?: boolean, isExpired?: boolean }) {
-    const { config } = useBrandsoft();
+    const { config, downgradeToTrial } = useBrandsoft();
     const router = useRouter();
     const currencyCode = config?.profile.defaultCurrency || 'K';
     const [selectedPeriod, setSelectedPeriod] = useState('1');
@@ -121,6 +121,11 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
       setIsManagePlanOpen(false); // Close the manage plan dialog
       router.push('/dashboard'); // Navigate to dashboard
     };
+    
+    const handleDowngrade = () => {
+        downgradeToTrial();
+        setIsManagePlanOpen(false);
+    };
 
     return (
         <>
@@ -162,8 +167,8 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
                             price={`${currencyCode}0`}
                             features={["Up to 10 invoices", "Up to 10 customers", "Basic templates"]}
                             isCurrent={!activePurchase}
-                            cta="Current Plan"
-                            onBuyClick={() => {}}
+                            cta={activePurchase ? "Downgrade to Trial" : "Current Plan"}
+                            onBuyClick={activePurchase ? handleDowngrade : () => {}}
                         />
 
                         <PlanCard 

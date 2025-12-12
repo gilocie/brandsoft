@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
@@ -46,6 +47,7 @@ interface BrandsoftContextType {
   declinePurchaseOrder: (orderId: string, reason: string) => void;
   acknowledgeDeclinedPurchase: (orderId: string) => void;
   updatePurchaseStatus: () => void;
+  downgradeToTrial: () => void;
   // Currency methods
   addCurrency: (currency: string) => void;
 }

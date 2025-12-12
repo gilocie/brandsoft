@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import type { BrandsoftConfig, Purchase } from '@/types/brandsoft';
@@ -75,7 +76,6 @@ export function usePurchases(
 
     saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: true });
 };
-
   
   const declinePurchaseOrder = (orderId: string, reason: string) => {
     if (!config || !config.purchases) return;
@@ -135,6 +135,15 @@ export function usePurchases(
     }
 };
 
+  const downgradeToTrial = () => {
+    if (!config) return;
+
+    // Remove all existing purchases
+    const updatedPurchases: Purchase[] = [];
+
+    saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: true });
+  };
+
   return {
     addPurchaseOrder,
     getPurchaseOrder,
@@ -142,5 +151,6 @@ export function usePurchases(
     declinePurchaseOrder,
     acknowledgeDeclinedPurchase,
     updatePurchaseStatus,
+    downgradeToTrial,
   };
 }
