@@ -327,10 +327,10 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     setIsConfigured(true);
 
     if (revalidate) {
-      // For same-tab updates
+      // Dispatch custom event for same-tab updates
       window.dispatchEvent(new Event('brandsoft-update'));
       
-      // For cross-tab updates (with proper structure)
+      // Dispatch storage event for cross-tab updates
       window.dispatchEvent(new StorageEvent('storage', {
         key: CONFIG_KEY,
         newValue: JSON.stringify(newConfig),
@@ -358,22 +358,48 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
   const activatePurchaseOrder = (orderId: string) => {
     if (!config || !config.purchases) return;
 
-    const purchase = config.purchases.find(p => p.orderId === orderId);
-    if (!purchase) return;
+    const purchaseToActivate = config.purchases.find(p => p.orderId === orderId);
+    if (!purchaseToActivate) return;
+    
+    const currentlyActivePurchase = config.purchases.find(p => p.status === 'active');
 
-    const periodMap: { [key: string]: number } = {
-      '1 Month': 30, '3 Months': 90, '6 Months': 180, '1 Year': 365,
-      'Once OFF': 365 * 3,
+    let remainingMs = 0;
+    if (currentlyActivePurchase && currentlyActivePurchase.expiresAt) {
+        const now = new Date().getTime();
+        const expiryTime = new Date(currentlyActivePurchase.expiresAt).getTime();
+        remainingMs = Math.max(0, expiryTime - now);
+    }
+    
+    const periodMsMap: { [key: string]: number } = {
+        '1 Month': 30 * 24 * 60 * 60 * 1000,
+        '3 Months': 90 * 24 * 60 * 60 * 1000,
+        '6 Months': 180 * 24 * 60 * 60 * 1000,
+        '1 Year': 365 * 24 * 60 * 60 * 1000,
+        'Once OFF': 365 * 3 * 24 * 60 * 60 * 1000,
     };
-    const durationDays = periodMap[purchase.planPeriod] || 30;
-    const expiresAt = new Date(new Date().getTime() + durationDays * 24 * 60 * 60 * 1000).toISOString();
+
+    const testPeriodMsMap: { [key: string]: number } = {
+      '1 Month': 10 * 60 * 1000,
+      '3 Months': 15 * 60 * 1000,
+      '6 Months': 30 * 60 * 1000,
+      '1 Year': 35 * 60 * 1000,
+    };
+    
+    // Check if any plan is a test plan to decide which map to use
+    const isTestMode = config.purchases.some(p => Object.keys(testPeriodMsMap).includes(p.planPeriod));
+    const durationMap = isTestMode ? testPeriodMsMap : periodMsMap;
+
+    const newPlanDurationMs = durationMap[purchaseToActivate.planPeriod] || 0;
+    const totalDurationMs = remainingMs + newPlanDurationMs;
+    const newExpiresAt = new Date(new Date().getTime() + totalDurationMs).toISOString();
 
     const updatedPurchases = config.purchases.map(p => {
+      // Activate the new plan
       if (p.orderId === orderId) {
-        return { ...p, status: 'active' as 'active', expiresAt };
+        return { ...p, status: 'active' as 'active', expiresAt: newExpiresAt, date: new Date().toISOString() };
       }
-      // Deactivate any other active plan
-      if (p.status === 'active') {
+      // Deactivate the currently active plan
+      if (p.orderId === currentlyActivePurchase?.orderId) {
         return { ...p, status: 'inactive' as 'inactive' };
       }
       return p;
