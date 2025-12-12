@@ -239,7 +239,7 @@ interface BrandsoftContextType {
   updateQuotation: (quotationId: string, data: Partial<Omit<Quotation, 'quotationId'>>) => void;
   deleteQuotation: (quotationId: string) => void;
   addCurrency: (currency: string) => void;
-  addPurchaseOrder: (order: Purchase) => void;
+  addPurchaseOrder: (order: Omit<Purchase, 'orderId' | 'status' | 'date' | 'isAcknowledged'>) => Purchase;
   getPurchaseOrder: (orderId: string) => Purchase | null;
   activatePurchaseOrder: (orderId: string) => void;
   declinePurchaseOrder: (orderId: string, reason: string) => void;
@@ -323,12 +323,21 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
         router.push('/dashboard');
     }
   };
+  
+  const addPurchaseOrder = (orderData: Omit<Purchase, 'orderId' | 'status' | 'date' | 'isAcknowledged'>): Purchase => {
+    if (!config) throw new Error("Configuration not loaded.");
 
-  const addPurchaseOrder = (order: Purchase) => {
-    if (config) {
-      const allPurchases = [...(config.purchases || []), order];
-      saveConfig({ ...config, purchases: allPurchases }, { redirect: false });
-    }
+    const newOrder: Purchase = {
+        ...orderData,
+        orderId: `BSO-${Date.now()}`,
+        status: 'pending',
+        date: new Date().toISOString(),
+        isAcknowledged: false,
+    };
+    
+    const allPurchases = [...(config.purchases || []), newOrder];
+    saveConfig({ ...config, purchases: allPurchases }, { redirect: false });
+    return newOrder;
   };
 
   const getPurchaseOrder = (orderId: string): Purchase | null => {
@@ -342,16 +351,21 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       if (!purchase) return;
 
       const periodMap: { [key: string]: number } = {
-          '1 Month': 10, '3 Months': 20, '6 Months': 30, '1 Year': 60,
-          'Once OFF': 60 * 24 * 365 * 3, // ~3 years
+          '1 Month': 30, '3 Months': 90, '6 Months': 180, '1 Year': 365,
+          'Once OFF': 365 * 3,
       };
-      const durationMinutes = periodMap[purchase.planPeriod] || 0;
-      const expiresAt = new Date(new Date().getTime() + durationMinutes * 60 * 1000).toISOString();
+      const durationDays = periodMap[purchase.planPeriod] || 30;
+      const expiresAt = new Date(new Date().getTime() + durationDays * 24 * 60 * 60 * 1000).toISOString();
 
-      const updatedPurchases = config.purchases.map(p => 
-          p.orderId === orderId ? { ...p, status: 'active', expiresAt } : 
-          (p.status === 'active' ? { ...p, status: 'pending', expiresAt: undefined } : p)
-      );
+      const updatedPurchases = config.purchases.map(p => {
+          if (p.orderId === orderId) {
+              return { ...p, status: 'active' as 'active', expiresAt };
+          }
+          if (p.status === 'active') {
+              return { ...p, status: 'pending' as 'pending', expiresAt: undefined };
+          }
+          return p;
+      });
 
       saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false });
   };

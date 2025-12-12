@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useBrandsoft, type Invoice, type Quotation } from "@/hooks/use-brandsoft";
+import { useBrandsoft, type Invoice, type Quotation, type Purchase } from "@/hooks/use-brandsoft";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileText, Award, CreditCard, FileBarChart2, Brush, ArrowRight, Library, Users, Package, CheckCircle, XCircle, Clock, AlertTriangle, DollarSign, FileClock, FileX, Receipt, Lock, Crown, Check } from "lucide-react";
@@ -37,7 +37,7 @@ const StatCard = ({ title, value, icon: Icon, description, formatAsCurrency = fa
 
 const PlanStatusCard = () => {
     const { config } = useBrandsoft();
-    const [remainingTime, setRemainingTime] = useState(0);
+    const [remainingDays, setRemainingDays] = useState(0);
 
     const activePurchase = useMemo(() => config?.purchases?.find(p => p.status === 'active'), [config?.purchases]);
 
@@ -47,31 +47,30 @@ const PlanStatusCard = () => {
         const calculateRemaining = () => {
             const now = new Date().getTime();
             const expiry = new Date(activePurchase!.expiresAt!).getTime();
-            const remainingMinutes = Math.max(0, Math.ceil((expiry - now) / (1000 * 60)));
-            setRemainingTime(remainingMinutes);
+            const remaining = Math.max(0, Math.ceil((expiry - now) / (1000 * 60 * 60 * 24)));
+            setRemainingDays(remaining);
         };
 
         calculateRemaining();
-        const interval = setInterval(calculateRemaining, 60000); // Update every minute
+        const interval = setInterval(calculateRemaining, 60000 * 60); // Update every hour
 
         return () => clearInterval(interval);
     }, [activePurchase]);
     
-    const isExpiringSoon = remainingTime > 0 && remainingTime <= 5;
-    const isExpired = remainingTime <= 0;
+    const isExpiringSoon = remainingDays > 0 && remainingDays <= 5;
+    const isExpired = activePurchase ? remainingDays <= 0 : false;
 
     if (!activePurchase) {
-       // Default card if no active purchase
        return (
             <Card className="bg-green-900 text-white">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Trial</CardTitle>
+                    <CardTitle className="text-sm font-medium">Free Trial</CardTitle>
                     <Crown className="h-4 w-4 text-white/70" />
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold">Active</div>
                     <p className="text-xs text-white/80">&nbsp;</p>
-                    <ManagePlanDialog isExpiringSoon={isExpiringSoon} isExpired={isExpired} />
+                    <ManagePlanDialog isExpiringSoon={false} isExpired={false} />
                 </CardContent>
             </Card>
        )
@@ -90,7 +89,7 @@ const PlanStatusCard = () => {
             </CardHeader>
             <CardContent>
                 <div className="text-2xl font-bold">
-                    {isExpired ? 'Expired' : `${remainingTime} Days`}
+                    {isExpired ? 'Expired' : `${remainingDays} Days`}
                 </div>
                 <p className="text-xs text-white/80">
                     {isExpired ? 'Your plan has expired.' : 'Remaining'}
@@ -148,6 +147,19 @@ export default function DashboardPage() {
     }
   }, [config]);
 
+  const purchaseToShow = useMemo((): Purchase | undefined => {
+      if (!config?.purchases) return undefined;
+      const purchases = [...config.purchases].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      
+      const active = purchases.find(p => p.status === 'active');
+      if (active) return undefined; // Handled by PlanStatusCard
+
+      const pending = purchases.find(p => p.status === 'pending');
+      const declined = purchases.find(p => p.status === 'declined' && !p.isAcknowledged);
+      
+      return declined || pending;
+  }, [config?.purchases]);
+
 
   if (!config) {
     return (
@@ -196,10 +208,6 @@ export default function DashboardPage() {
   const invoiceModule = enabledModules.find(m => m.title === 'Invoice Designer');
   const quotationModule = enabledModules.find(m => m.title === 'Quotation Designer');
   const certificateModule = enabledModules.find(m => m.title === 'Certificate Designer');
-  
-  const pendingPurchase = config.purchases?.find(p => p.status === 'pending');
-  const declinedPurchase = config.purchases?.find(p => p.status === 'declined' && !p.isAcknowledged);
-
 
   return (
     <div className="space-y-6">
@@ -223,21 +231,21 @@ export default function DashboardPage() {
           <StatCard title="Unpaid Invoices" value={stats.unpaidCount + stats.overdueCount} icon={FileClock} description="Pending or overdue invoices" />
           <StatCard title="Quotations Sent" value={stats.quotationsSent} icon={FileBarChart2} description="Total quotations issued" />
           
-            {pendingPurchase ? (
+            {purchaseToShow?.status === 'pending' ? (
                 <Card className="bg-amber-500 text-white">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Your Plan</CardTitle>
+                        <CardTitle className="text-sm font-medium">Purchase Pending</CardTitle>
                         <Clock className="h-4 w-4 text-white/70" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-xl font-bold">Purchase Pending</div>
-                        <p className="text-xs text-white/80">{pendingPurchase.planName} Plan</p>
+                        <p className="text-xs text-white/80">{purchaseToShow.planName} Plan</p>
                         <Button asChild variant="secondary" size="sm" className="mt-4">
-                            <Link href={`/verify-purchase?orderId=${pendingPurchase.orderId}`}>View</Link>
+                            <Link href={`/verify-purchase?orderId=${purchaseToShow.orderId}`}>View</Link>
                         </Button>
                     </CardContent>
                 </Card>
-            ) : declinedPurchase ? (
+            ) : purchaseToShow?.status === 'declined' ? (
                  <Card className="bg-destructive text-white">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Purchase Declined</CardTitle>
@@ -245,9 +253,9 @@ export default function DashboardPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-xl font-bold">Purchase Declined</div>
-                        <p className="text-xs text-white/80">{declinedPurchase.planName} Plan</p>
+                        <p className="text-xs text-white/80">{purchaseToShow.planName} Plan</p>
                         <Button asChild variant="secondary" size="sm" className="mt-4">
-                            <Link href={`/verify-purchase?orderId=${declinedPurchase.orderId}`}>View Details</Link>
+                            <Link href={`/verify-purchase?orderId=${purchaseToShow.orderId}`}>View Details</Link>
                         </Button>
                     </CardContent>
                 </Card>
