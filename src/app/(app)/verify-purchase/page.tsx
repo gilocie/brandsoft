@@ -66,9 +66,11 @@ function VerifyPurchaseContent() {
             }, 150);
 
             let cleanOrderId = orderIdWithPin;
+            let isUserViewing = true;
 
             if (orderIdWithPin.endsWith(ADMIN_PIN_SUFFIX)) {
                 setIsAdminMode(true);
+                isUserViewing = false;
                 cleanOrderId = orderIdWithPin.replace(ADMIN_PIN_SUFFIX, '');
             } else {
                 setIsAdminMode(false);
@@ -112,6 +114,7 @@ function VerifyPurchaseContent() {
             declinePurchaseOrder(order.orderId, declineReason);
             toast({ title: "Order Declined", description: `Order ${order.orderId} has been declined.` });
             setOrder({ ...order, status: 'declined', declineReason: declineReason });
+            setDeclineDialogOpen(false);
         } else if (!declineReason) {
             toast({ variant: 'destructive', title: "Reason Required", description: "Please provide a reason for declining." });
         }
@@ -230,7 +233,7 @@ function VerifyPurchaseContent() {
                                             />
                                             <AlertDialogFooter>
                                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => { handleDecline(); setDeclineDialogOpen(false); }} disabled={!declineReason}>
+                                                <AlertDialogAction onClick={handleDecline} disabled={!declineReason}>
                                                     Confirm Decline
                                                 </AlertDialogAction>
                                             </AlertDialogFooter>
@@ -245,19 +248,26 @@ function VerifyPurchaseContent() {
                     </div>
                      {order.status === 'declined' && order.declineReason && (
                          <Alert variant="destructive" className="mt-4">
-                            <XCircle className="h-4 w-4" />
-                            <AlertTitle>Order Declined</AlertTitle>
-                            <AlertDescription>
-                                <p>{order.declineReason}</p>
-                                <p className="mt-2 text-xs">
-                                    If you believe this is a mistake, please contact us on +265 991 972 336.
-                                </p>
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <AlertTitle className="flex items-center gap-2"><XCircle className="h-4 w-4" />Order Declined</AlertTitle>
+                                    <AlertDescription>
+                                        <p>{order.declineReason}</p>
+                                        <p className="mt-2 text-xs">
+                                            If you believe this is a mistake, please contact us on +265 991 972 336.
+                                        </p>
+                                    </AlertDescription>
+                                </div>
                                 {!isAdminMode && !order.isAcknowledged && (
-                                    <div className="mt-4 flex justify-end">
-                                        <Button variant="secondary" onClick={handleAcknowledgeAndRedirect}>Understood, Go to Dashboard</Button>
-                                    </div>
+                                    <Button
+                                        variant="outline"
+                                        className="border-current text-current hover:bg-destructive/10 hover:text-current"
+                                        onClick={handleAcknowledgeAndRedirect}
+                                    >
+                                        Understood
+                                    </Button>
                                 )}
-                            </AlertDescription>
+                            </div>
                         </Alert>
                     )}
                 </div>
@@ -311,9 +321,6 @@ function VerifyPurchaseContent() {
                 {renderContent()}
             </CardContent>
             <CardFooter>
-              <Button variant="link" asChild className="mx-auto">
-                <Link href="/dashboard">Return to Dashboard</Link>
-              </Button>
             </CardFooter>
         </Card>
     );
@@ -329,3 +336,5 @@ export default function VerifyPurchasePage() {
         </div>
     )
 }
+
+    
