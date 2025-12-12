@@ -224,7 +224,7 @@ interface BrandsoftContextType {
   isConfigured: boolean | null;
   config: BrandsoftConfig | null;
   activate: (serial: string) => boolean;
-  saveConfig: (newConfig: BrandsoftConfig, options?: { redirect: boolean }) => void;
+  saveConfig: (newConfig: BrandsoftConfig, options?: { redirect?: boolean; revalidate?: boolean }) => void;
   logout: () => void;
   addCustomer: (customer: Omit<Customer, 'id'>) => Customer;
   updateCustomer: (customerId: string, data: Partial<Omit<Customer, 'id'>>) => void;
@@ -316,10 +316,17 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     router.push('/activation');
   };
 
-  const saveConfig = (newConfig: BrandsoftConfig, options = { redirect: true }) => {
+  const saveConfig = (newConfig: BrandsoftConfig, options = { redirect: true, revalidate: false }) => {
     setConfig(newConfig);
     localStorage.setItem(CONFIG_KEY, JSON.stringify(newConfig));
     setIsConfigured(true);
+
+    if (options.revalidate) {
+        // This is a bit of a hack to force a re-render of consuming components
+        // A better solution would involve a more robust state management library
+        window.dispatchEvent(new Event('storage'));
+    }
+
     if(options.redirect) {
         router.push('/dashboard');
     }
@@ -328,7 +335,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
   const addPurchaseOrder = (orderData: Purchase): Purchase => {
     if (!config) throw new Error("Configuration not loaded.");
     const allPurchases = [...(config.purchases || []), orderData];
-    saveConfig({ ...config, purchases: allPurchases }, { redirect: false });
+    saveConfig({ ...config, purchases: allPurchases }, { redirect: false, revalidate: true });
     return orderData;
   };
 
@@ -360,7 +367,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
           return p;
       });
 
-      saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false });
+      saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: true });
   };
   
   const declinePurchaseOrder = (orderId: string, reason: string) => {
@@ -375,7 +382,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
           }
         : p
     );
-    saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false });
+    saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: true });
   };
   
   const acknowledgeDeclinedPurchase = (orderId: string) => {
@@ -383,7 +390,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     const updatedPurchases = config.purchases.map(p => 
       (p.orderId === orderId && p.status === 'declined') ? { ...p, isAcknowledged: true } : p
     );
-    saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false });
+    saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: true });
   };
   
   const updatePurchaseStatus = () => {
@@ -404,7 +411,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     });
 
     if (configChanged) {
-      saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false });
+      saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: true });
     }
   };
 

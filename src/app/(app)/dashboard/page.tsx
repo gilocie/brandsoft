@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -38,6 +39,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { AnalyticsChart } from '@/components/analytics-chart';
 import { ManagePlanDialog } from '@/components/manage-plan-dialog';
+import { useRouter } from 'next/navigation';
 
 const modules = [
   {
@@ -120,14 +122,17 @@ const StatCard = ({
 );
 
 const PlanStatusCard = ({ purchase }: { purchase: Purchase | null }) => {
-  const { updatePurchaseStatus } = useBrandsoft();
+  const { acknowledgeDeclinedPurchase } = useBrandsoft();
   const [remainingDays, setRemainingDays] = useState(0);
-  const activePurchase =
-    purchase && purchase.status === 'active' ? purchase : null;
+  const router = useRouter();
+
+  const handleViewDeclined = (orderId: string) => {
+    acknowledgeDeclinedPurchase(orderId);
+    router.push(`/verify-purchase?orderId=${orderId}`);
+  };
 
   useEffect(() => {
-    if (!activePurchase?.expiresAt) {
-      if (activePurchase) updatePurchaseStatus();
+    if (!purchase || purchase.status !== 'active' || !purchase.expiresAt) {
       return;
     }
 
@@ -137,22 +142,18 @@ const PlanStatusCard = ({ purchase }: { purchase: Purchase | null }) => {
       '6 Months': 30 * 60 * 1000,
       '1 Year': 35 * 60 * 1000,
     };
-    const testDuration = activePurchase.planPeriod
-      ? testDurations[activePurchase.planPeriod]
-      : undefined;
+    const testDuration = purchase.planPeriod ? testDurations[purchase.planPeriod] : undefined;
     const isTestMode = !!testDuration;
 
     const calculateRemaining = () => {
       const now = new Date().getTime();
       let expiryTime;
 
-      if (isTestMode && activePurchase.date) {
-        const activationTime = new Date(activePurchase.date).getTime();
+      if (isTestMode && purchase.date) {
+        const activationTime = new Date(purchase.date).getTime();
         expiryTime = activationTime + testDuration;
-      } else if (activePurchase.expiresAt) {
-        expiryTime = new Date(activePurchase.expiresAt).getTime();
       } else {
-        return;
+        expiryTime = new Date(purchase.expiresAt).getTime();
       }
 
       const remainingMs = Math.max(0, expiryTime - now);
@@ -160,17 +161,13 @@ const PlanStatusCard = ({ purchase }: { purchase: Purchase | null }) => {
         ? remainingMs / (1000 * 60)
         : Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
       setRemainingDays(remaining);
-
-      if (now >= expiryTime) {
-        updatePurchaseStatus();
-      }
     };
 
     calculateRemaining();
     const interval = setInterval(calculateRemaining, isTestMode ? 1000 : 60000);
 
     return () => clearInterval(interval);
-  }, [activePurchase, updatePurchaseStatus]);
+  }, [purchase]);
 
   if (!purchase) {
     return (
@@ -270,10 +267,8 @@ const PlanStatusCard = ({ purchase }: { purchase: Purchase | null }) => {
         <CardContent>
           <div className="text-xl font-bold capitalize">{purchase.status}</div>
           <p className="text-xs text-white/80">{purchase.planName} Plan</p>
-          <Button asChild variant="secondary" size="sm" className="mt-4">
-            <Link href={`/verify-purchase?orderId=${purchase.orderId}`}>
+          <Button variant="secondary" size="sm" className="mt-4" onClick={() => handleViewDeclined(purchase.orderId)}>
               View Details
-            </Link>
           </Button>
         </CardContent>
       </Card>
@@ -284,7 +279,12 @@ const PlanStatusCard = ({ purchase }: { purchase: Purchase | null }) => {
 };
 
 export default function DashboardPage() {
-  const { config } = useBrandsoft();
+  const { config, updatePurchaseStatus } = useBrandsoft();
+
+  // Re-check statuses on dashboard load
+  useEffect(() => {
+    updatePurchaseStatus();
+  }, []);
 
   const stats = useMemo(() => {
     if (!config) {
