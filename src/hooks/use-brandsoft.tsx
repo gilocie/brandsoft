@@ -362,35 +362,32 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     return config?.purchases?.find(p => p.orderId === orderId) || null;
   };
 
- const activatePurchaseOrder = (orderId: string) => {
+  const activatePurchaseOrder = (orderId: string) => {
     if (!config || !config.purchases) return;
 
     const purchaseToActivate = config.purchases.find(p => p.orderId === orderId);
     if (!purchaseToActivate) return;
-
-    const period = purchaseToActivate.planPeriod;
-    const now = Date.now();
-    const isTestPlan = isTestPlanPeriod(period);
-
+    
     const currentlyActivePlan = config.purchases.find(p => p.status === 'active');
     const remainingDaysFromOldPlan = currentlyActivePlan ? (currentlyActivePlan.remainingDays || 0) : 0;
     
-    let newPlanDuration = 0;
+    const period = purchaseToActivate.planPeriod;
+    const isTestPlan = isTestPlanPeriod(period);
 
+    let newPlanDuration = 0;
     if (isTestPlan) {
         newPlanDuration = TEST_PERIOD_MINUTES[period] || 0;
-        console.log(`ACTIVATION (Test Mode): New plan duration: ${newPlanDuration} minutes.`);
     } else {
         const realPeriodMap: Record<string, number> = {
             '1 Month': 30, '3 Months': 90, '6 Months': 180, '1 Year': 365, 'Once OFF': 365 * 3,
         };
         newPlanDuration = realPeriodMap[period] ?? 0;
-        console.log(`ACTIVATION (Real Mode): New plan duration: ${newPlanDuration} days.`);
     }
     
     const totalRemaining = remainingDaysFromOldPlan + newPlanDuration;
-    console.log(`ACTIVATION: Old Remaining: ${remainingDaysFromOldPlan}, New Duration: ${newPlanDuration}, Total to store: ${totalRemaining}`);
-    
+    console.log(`ACTIVATING: Old plan had ${remainingDaysFromOldPlan} days/mins. New plan adds ${newPlanDuration}. Total is now ${totalRemaining}.`);
+
+    const now = Date.now();
     const msMultiplier = isTestPlan ? 60 * 1000 : 24 * 60 * 60 * 1000;
     const durationMs = totalRemaining * msMultiplier;
     const newExpiresAt = new Date(now + durationMs).toISOString();
@@ -460,11 +457,9 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
 
         let remaining;
         if (isTestMode) {
-            // Count remaining MINUTES only
-            remaining = Math.floor(remainingMs / 60000); // 60000ms = 1 minute
+            remaining = Math.floor(remainingMs / 60000); // minutes
         } else {
-            // Count remaining DAYS
-            remaining = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
+            remaining = Math.ceil(remainingMs / (1000 * 60 * 60 * 24)); // days
         }
 
         if (remaining !== p.remainingDays) {
