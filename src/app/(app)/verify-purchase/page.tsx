@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -47,46 +47,97 @@ function VerifyPurchaseContent() {
     
     const form = useForm<FormData>({
         resolver: zodResolver(formSchema),
-        defaultValues: { orderId: '' },
+        defaultValues: { orderId: orderIdFromUrl || '' },
     });
     
-    useEffect(() => {
-        if (!orderIdFromUrl) {
+     const handleSearch = useCallback(async (orderIdWithPin: string) => {
+        if (!orderIdWithPin) {
             setIsLoading(false);
+            setOrder(null);
             return;
         }
 
-        const handleSearch = async (orderIdWithPin: string) => {
-            setIsLoading(true);
-            setProgress(0);
-            setOrder(null);
-            
-            const progressInterval = setInterval(() => {
-                setProgress(prev => (prev >= 90 ? 90 : prev + 10));
-            }, 150);
+        setIsLoading(true);
+        setProgress(0);
+        
+        const progressInterval = setInterval(() => {
+            setProgress(prev => (prev >= 90 ? 90 : prev + 10));
+        }, 150);
 
-            let cleanOrderId = orderIdWithPin;
+        let cleanOrderId = orderIdWithPin;
+        let admin = false;
 
-            if (orderIdWithPin.endsWith(ADMIN_PIN_SUFFIX)) {
-                setIsAdminMode(true);
-                cleanOrderId = orderIdWithPin.replace(ADMIN_PIN_SUFFIX, '');
-            } else {
-                setIsAdminMode(false);
-            }
+        if (orderIdWithPin.endsWith(ADMIN_PIN_SUFFIX)) {
+            admin = true;
+            cleanOrderId = orderIdWithPin.replace(ADMIN_PIN_SUFFIX, '');
+        } 
+        
+        setIsAdminMode(admin);
 
-            await new Promise(resolve => setTimeout(resolve, 1500)); 
+        await new Promise(resolve => setTimeout(resolve, 1500)); 
 
-            const foundOrder = getPurchaseOrder(cleanOrderId);
-            
-            setOrder(foundOrder);
-            
-            clearInterval(progressInterval);
-            setProgress(100);
-            setIsLoading(false);
+        const foundOrder = getPurchaseOrder(cleanOrderId);
+        
+        setOrder(foundOrder);
+        
+        clearInterval(progressInterval);
+        setProgress(100);
+        setIsLoading(false);
+    }, [getPurchaseOrder, config]);
+
+
+    useEffect(() => {
+        if (orderIdFromUrl) {
+            form.setValue('orderId', orderIdFromUrl);
+            handleSearch(orderIdFromUrl);
+        } else {
+             setOrder(null);
+             setIsLoading(false);
+        }
+    }, [orderIdFromUrl, handleSearch, form]);
+
+     useEffect(() => {
+        const forceRefresh = () => {
+             if (orderIdFromUrl) {
+                handleSearch(orderIdFromUrl);
+             }
         };
 
-        handleSearch(orderIdFromUrl);
-    }, [orderIdFromUrl, getPurchaseOrder, config]);
+        const handleStorageChange = (e: StorageEvent) => {
+          if (e.key === 'brandsoft-config' || e.key === null) {
+            forceRefresh();
+          }
+        };
+
+        const handleCustomUpdate = () => {
+          forceRefresh();
+        };
+
+        const handleVisibilityChange = () => {
+          if (!document.hidden) {
+            forceRefresh();
+          }
+        };
+
+        const handleFocus = () => {
+          forceRefresh();
+        };
+
+        const pollInterval = setInterval(forceRefresh, 2000); // Poll every 2 seconds
+
+        window.addEventListener('storage', handleStorageChange);
+        window.addEventListener('brandsoft-update', handleCustomUpdate);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('focus', handleFocus);
+
+        return () => {
+          clearInterval(pollInterval);
+          window.removeEventListener('storage', handleStorageChange);
+          window.removeEventListener('brandsoft-update', handleCustomUpdate);
+          document.removeEventListener('visibilitychange', handleVisibilityChange);
+          window.removeEventListener('focus', handleFocus);
+        };
+      }, [orderIdFromUrl, handleSearch]);
 
 
     const handleDownloadReceipt = () => {
@@ -119,7 +170,6 @@ function VerifyPurchaseContent() {
     };
     
     const onFormSubmit = (data: FormData) => {
-        setIsLoading(true); 
         router.push(`/verify-purchase?orderId=${data.orderId}`);
     };
     
@@ -274,32 +324,28 @@ function VerifyPurchaseContent() {
             );
         }
         
-        if (!orderIdFromUrl) {
-            return (
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onFormSubmit)} className="flex items-end gap-2">
-                        <FormField
-                            control={form.control}
-                            name="orderId"
-                            render={({ field }) => (
-                                <FormItem className="flex-grow">
-                                    <FormLabel>Order ID</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="BSO-..." {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <Button type="submit" disabled={isLoading}>
-                            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Verify'}
-                        </Button>
-                    </form>
-                </Form>
-            );
-        }
-
-        return null;
+        return (
+            <Form {...form}>
+                <form onSubmit={form.handleSubmit(onFormSubmit)} className="flex items-end gap-2">
+                    <FormField
+                        control={form.control}
+                        name="orderId"
+                        render={({ field }) => (
+                            <FormItem className="flex-grow">
+                                <FormLabel>Order ID</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="BSO-..." {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <Button type="submit" disabled={isLoading}>
+                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Verify'}
+                    </Button>
+                </form>
+            </Form>
+        );
     }
 
 
@@ -320,7 +366,6 @@ function VerifyPurchaseContent() {
             <CardContent>
                 {renderContent()}
             </CardContent>
-            {/* Footer has been removed as requested */}
         </Card>
     );
 }
@@ -329,9 +374,11 @@ function VerifyPurchaseContent() {
 export default function VerifyPurchasePage() {
     return (
         <div className="flex min-h-screen items-center justify-center bg-muted p-4">
-           <Suspense fallback={<div>Loading...</div>}>
+           <Suspense fallback={<div className="flex items-center justify-center h-full"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>}>
                 <VerifyPurchaseContent />
            </Suspense>
         </div>
     )
 }
+
+    
