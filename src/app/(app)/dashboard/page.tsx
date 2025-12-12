@@ -342,25 +342,13 @@ export default function DashboardPage() {
   const purchaseToShow = useMemo((): Purchase | null => {
     if (!config?.purchases || config.purchases.length === 0) return null;
 
+    // Sort newest first
     const purchases = [...config.purchases].sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
 
-    // 1. Pending – most important
-    const pending = purchases.find((p) => p.status === 'pending');
-    if (pending) return pending;
-
-    // 2. Declined (unacknowledged) – user needs to see this before anything else
-    const latestDeclined = purchases.find(
-      (p) => p.status === 'declined' && !p.isAcknowledged
-    );
-    if (latestDeclined) return latestDeclined;
-
-    // 3. Active – fallback when nothing pending/declined
-    const active = purchases.find((p) => p.status === 'active');
-    if (active) return active;
-
-    return null;
+    // Always show the latest purchase, regardless of status
+    return purchases[0];
   }, [config?.purchases]);
 
   if (!config) {
