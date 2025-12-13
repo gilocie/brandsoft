@@ -81,34 +81,32 @@ export function SupplierPicker({ allBusinesses, initialSelection, onSelectionCha
             </div>
         </div>
         <ScrollArea className="flex-1">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
                 {filteredBusinesses.map(biz => (
                     <Card
                         key={biz.id}
-                        className="h-full flex flex-col transition-all hover:shadow-md cursor-pointer relative"
+                        className="flex flex-row items-center p-3 gap-3 cursor-pointer transition-all hover:shadow-md"
                         onClick={() => handleSelect(biz.id)}
                     >
-                        <Checkbox
-                            checked={selectedIds.includes(biz.id)}
-                            className="absolute top-2 right-2 h-5 w-5 z-10"
-                        />
-                        <CardHeader className="items-center text-center">
-                            <Avatar className="h-16 w-16 mb-2">
-                                <AvatarImage src={biz.logo} />
-                                <AvatarFallback><Building/></AvatarFallback>
-                            </Avatar>
-                            <CardTitle className="text-sm">{biz.companyName}</CardTitle>
-                        </CardHeader>
-                        <CardContent className="text-center text-xs space-y-1 flex-grow">
-                            <div className="flex items-center justify-center gap-1.5 text-muted-foreground">
+                       <Avatar className="h-12 w-12">
+                           <AvatarImage src={biz.logo} />
+                           <AvatarFallback><Building/></AvatarFallback>
+                       </Avatar>
+                        <div className="flex-grow">
+                           <p className="font-semibold text-sm truncate">{biz.companyName}</p>
+                           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                 <Building className="h-3 w-3" />
                                 <span>{biz.industry || 'Not specified'}</span>
                             </div>
-                            <div className="flex items-center justify-center gap-1.5 text-muted-foreground">
+                             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                 <MapPin className="h-3 w-3" />
                                 <span>{biz.town || 'Not specified'}</span>
                             </div>
-                        </CardContent>
+                       </div>
+                        <Checkbox
+                            checked={selectedIds.includes(biz.id)}
+                            className="h-5 w-5 ml-auto flex-shrink-0"
+                        />
                     </Card>
                 ))}
             </div>
