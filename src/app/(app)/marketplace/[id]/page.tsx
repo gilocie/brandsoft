@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Building, MapPin, Globe, Phone, Mail, FileBarChart2, ArrowLeft, Info } from 'lucide-react';
+import { Building, MapPin, Globe, Phone, Mail, FileBarChart2, ArrowLeft, Info, Package } from 'lucide-react';
 import Link from 'next/link';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
@@ -31,7 +31,7 @@ export default function VirtualShopPage() {
 
   const myCustomerId = useMemo(() => {
     if (!config) return null;
-    const myBusinessAsCustomer = config.customers.find(c => c.name === config.brand.businessName);
+    const myBusinessAsCustomer = config.customers.find(c => c.companyName === config.brand.businessName);
     return myBusinessAsCustomer?.id || null;
   }, [config]);
 
@@ -95,32 +95,39 @@ export default function VirtualShopPage() {
 
         <Card>
             <CardContent className="p-0">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="w-[50px]"></TableHead>
-                            <TableHead>Item</TableHead>
-                            <TableHead>Description</TableHead>
-                            <TableHead className="text-right">Price</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {products.map(product => (
-                            <TableRow key={product.id}>
-                                <TableCell>
-                                    <Checkbox
-                                        checked={selectedProductIds.includes(product.id)}
-                                        onCheckedChange={() => handleSelectProduct(product.id)}
-                                    />
-                                </TableCell>
-                                <TableCell className="font-medium">{product.name}</TableCell>
-                                <TableCell className="text-muted-foreground max-w-sm truncate">{product.description || 'N/A'}</TableCell>
-                                <TableCell className="text-right">{currencyCode}{product.price.toLocaleString()}</TableCell>
+                 {products.length > 0 ? (
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="w-[50px]"></TableHead>
+                                <TableHead>Item</TableHead>
+                                <TableHead>Description</TableHead>
+                                <TableHead className="text-right">Price</TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-                {products.length === 0 && <p className="p-10 text-center text-muted-foreground">This business hasn't listed any products yet.</p>}
+                        </TableHeader>
+                        <TableBody>
+                            {products.map(product => (
+                                <TableRow key={product.id}>
+                                    <TableCell>
+                                        <Checkbox
+                                            checked={selectedProductIds.includes(product.id)}
+                                            onCheckedChange={() => handleSelectProduct(product.id)}
+                                        />
+                                    </TableCell>
+                                    <TableCell className="font-medium">{product.name}</TableCell>
+                                    <TableCell className="text-muted-foreground max-w-sm truncate">{product.description || 'N/A'}</TableCell>
+                                    <TableCell className="text-right">{currencyCode}{product.price.toLocaleString()}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                ) : (
+                    <div className="flex flex-col items-center justify-center p-10 text-center text-muted-foreground">
+                        <Package className="h-12 w-12 mb-4 text-gray-300" />
+                        <h3 className="font-semibold">No Products Yet</h3>
+                        <p className="text-sm">This business hasn't listed any products or services in the marketplace.</p>
+                    </div>
+                )}
             </CardContent>
         </Card>
         
