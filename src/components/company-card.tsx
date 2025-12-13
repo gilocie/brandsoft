@@ -65,9 +65,9 @@ export function CompanyCard({ company, onSelectAction }: { company: Company, onS
                     ))}
                 </div>
 
-                <div className="mt-4 px-6 pb-2">
+                <div className="mt-4 px-2 pb-2">
                      <Button variant="default" size="sm" className="w-full" onClick={(e) => { e.stopPropagation(); onSelectAction('view'); }}>
-                        View Profile
+                        View Catalogue
                     </Button>
                 </div>
             </CardContent>
