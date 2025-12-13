@@ -1,4 +1,5 @@
 
+
 import { Page } from '@/stores/canvas-store';
 
 export type Customer = {
@@ -97,6 +98,7 @@ export type BrandsoftConfig = {
     secondaryColor: string;
     font: string;
     businessName: string;
+    description: string;
     brandsoftFooter: boolean;
     headerImage?: string;
     footerImage?: string;
@@ -125,6 +127,8 @@ export type BrandsoftConfig = {
   };
   profile: {
     address: string;
+    town: string;
+    industry: string;
     phone: string;
     email: string;
     website: string;

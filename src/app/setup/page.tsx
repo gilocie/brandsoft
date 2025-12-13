@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Loader2, ArrowLeft, ArrowRight, PartyPopper, UploadCloud, BriefcaseBusiness, FileText, FileBarChart2, Award, CreditCard, Brush } from 'lucide-react';
@@ -25,6 +26,7 @@ const TOTAL_STEPS = 4;
 
 const step1Schema = z.object({
   businessName: z.string().min(2, "Business name is required"),
+  description: z.string().optional(),
   logo: z.string().optional(),
   primaryColor: z.string().optional(),
   secondaryColor: z.string().optional(),
@@ -34,6 +36,8 @@ const step1Schema = z.object({
 
 const step2Schema = z.object({
   address: z.string().min(5, "Address is required"),
+  town: z.string().optional(),
+  industry: z.string().optional(),
   phone: z.string().min(5, "Phone number is required"),
   email: z.string().email("Invalid email address"),
   website: z.string().url("Invalid URL").optional().or(z.literal('')),
@@ -204,12 +208,15 @@ export default function SetupPage() {
     mode: "onTouched",
     defaultValues: {
       businessName: '',
+      description: '',
       logo: '',
       primaryColor: '#9400D3',
       secondaryColor: '#D87093',
       font: 'Poppins',
       brandsoftFooter: true,
       address: '',
+      town: '',
+      industry: '',
       phone: '',
       email: '',
       website: '',
@@ -247,6 +254,7 @@ export default function SetupPage() {
     const config: BrandsoftConfig = {
       brand: {
         businessName: data.businessName,
+        description: data.description || '',
         logo: data.logo || '',
         primaryColor: data.primaryColor || '#9400D3',
         secondaryColor: data.secondaryColor || '#D87093',
@@ -260,6 +268,8 @@ export default function SetupPage() {
       },
       profile: {
         address: data.address,
+        town: data.town || '',
+        industry: data.industry || '',
         phone: data.phone,
         email: data.email,
         website: data.website || '',
@@ -291,8 +301,8 @@ export default function SetupPage() {
 
   const nextStep = async () => {
     let fieldsToValidate: (keyof FormData)[] = [];
-    if (step === 1) fieldsToValidate = ['businessName'];
-    if (step === 2) fieldsToValidate = ['address', 'phone', 'email', 'website'];
+    if (step === 1) fieldsToValidate = ['businessName', 'description'];
+    if (step === 2) fieldsToValidate = ['address', 'phone', 'email', 'website', 'town', 'industry'];
     
     const isValid = fieldsToValidate.length > 0 ? await form.trigger(fieldsToValidate) : true;
     
@@ -438,6 +448,19 @@ function Step1BrandIdentity({ control, form }: { control: Control<FormData>, for
           />
           <FormField
             control={control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Company Description (Optional)</FormLabel>
+                <FormControl>
+                  <Textarea placeholder="A brief description of what your business does." {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={control}
             name="logo"
             render={() => (
               <FormItem>
@@ -553,6 +576,14 @@ function Step1BrandIdentity({ control, form }: { control: Control<FormData>, for
 
 function Step2BusinessProfile({ control }: { control: Control<FormData> }) {
   return <div className="space-y-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FormField control={control} name="industry" render={({ field }) => (
+            <FormItem><FormLabel>Industry (Optional)</FormLabel><FormControl><Input placeholder="e.g., Graphic Design, Retail" {...field} /></FormControl><FormMessage /></FormItem>
+        )} />
+        <FormField control={control} name="town" render={({ field }) => (
+            <FormItem><FormLabel>Town/Area (Optional)</FormLabel><FormControl><Input placeholder="e.g., Blantyre, Lilongwe" {...field} /></FormControl><FormMessage /></FormItem>
+        )} />
+    </div>
     <FormField control={control} name="address" render={({ field }) => (
       <FormItem><FormLabel>Business Address</FormLabel><FormControl><Input placeholder="P.O. Box 303, Blantyre, Malawi" {...field} /></FormControl><FormMessage /></FormItem>
     )} />
