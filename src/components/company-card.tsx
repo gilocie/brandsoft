@@ -62,7 +62,6 @@ export function CompanyCard({ company, onSelectAction }: { company: Company, onS
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-                <p className="text-xs text-muted-foreground truncate">{company.name} - {company.email}</p>
             </CardHeader>
             <CardContent className="p-4 pt-0 flex-grow">
                 <div className="text-sm space-y-2">
