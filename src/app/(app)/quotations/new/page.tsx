@@ -58,6 +58,7 @@ const formSchema = z.object({
   partialPaymentType: z.enum(['percentage', 'flat']).default('percentage'),
   partialPaymentValue: z.coerce.number().optional(),
   isRequest: z.boolean().optional(),
+  senderId: z.string().optional(),
 });
 
 type QuotationFormData = z.infer<typeof formSchema>;
@@ -120,6 +121,7 @@ export default function NewQuotationPage() {
     const designData = designFormState.getFormData();
     const productIdsParam = searchParams.get('products');
     const customerIdParam = searchParams.get('customerId');
+    const senderIdParam = searchParams.get('senderId');
     const isRequest = !!customerIdParam; // It's a request if a customerId is passed
 
     let defaultValuesApplied = false;
@@ -143,6 +145,7 @@ export default function NewQuotationPage() {
         form.reset({
             ...form.getValues(),
             customerId: customerIdParam || '',
+            senderId: senderIdParam || '',
             quotationDate: today,
             validUntil: validUntil,
             notes: '',
@@ -173,6 +176,7 @@ export default function NewQuotationPage() {
         form.reset({
             ...form.getValues(),
             customerId: customerIdParam || '',
+            senderId: senderIdParam || '',
             quotationDate: today,
             validUntil: validUntil,
             notes: '',
@@ -202,7 +206,7 @@ export default function NewQuotationPage() {
   }, [form, setFormData, isInitialized]);
 
 
-  const newCustomerForm = useForm<NewCustomerFormData>({
+  const newCustomerForm = useForm<NewCustomerFormSchema>({
     resolver: zodResolver(NewCustomerFormSchema),
     defaultValues: { name: "", email: "", phone: "" },
   });
@@ -266,6 +270,7 @@ export default function NewQuotationPage() {
     const newQuotation: Omit<Quotation, 'quotationId'> = {
         customer: customer.name,
         customerId: customer.id,
+        senderId: data.senderId,
         date: format(data.quotationDate, 'yyyy-MM-dd'),
         validUntil: format(data.validUntil, 'yyyy-MM-dd'),
         amount: total,

@@ -193,7 +193,8 @@ export type Invoice = {
 export type Quotation = {
     quotationId: string;
     customer: string;
-    customerId?: string;
+    customerId: string;
+    senderId?: string; // ID of the customer who sent the request
     date: string;
     validUntil: string;
     amount: number;

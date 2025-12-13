@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -137,7 +136,7 @@ const QuotationList = ({quotations, layout, onSelectAction, currencyCode}: {quot
                 : "flex flex-col"
           )}>
             {quotations.map((quotation) => {
-              const customer = config?.customers.find(c => c.name === quotation.customer);
+              const customer = config?.customers.find(c => c.id === quotation.customerId);
               const customerName = customer?.companyName || customer?.name || quotation.customer;
               
               return (
@@ -193,14 +192,25 @@ export default function QuotationsPage() {
   const quotations = config?.quotations || [];
   const currencyCode = config?.profile.defaultCurrency || '';
   
-  const filteredQuotations = useMemo(() => ({
-    all: quotations.filter(q => !q.isRequest),
-    draft: quotations.filter(q => q.status === 'Draft' && !q.isRequest),
-    sent: quotations.filter(q => q.status === 'Sent' && !q.isRequest),
-    accepted: quotations.filter(q => q.status === 'Accepted' && !q.isRequest),
-    declined: quotations.filter(q => q.status === 'Declined' && !q.isRequest),
-    requests: quotations.filter(q => q.isRequest),
-  }), [quotations]);
+  const myCustomerId = useMemo(() => {
+    return config?.customers.find(c => c.name === config.brand.businessName)?.id;
+  }, [config]);
+
+
+  const filteredQuotations = useMemo(() => {
+      const myRequests = quotations.filter(q => q.senderId && q.senderId !== myCustomerId);
+      const theirRequests = quotations.filter(q => q.isRequest && q.senderId === myCustomerId);
+      
+      return {
+        all: quotations.filter(q => !q.isRequest),
+        draft: quotations.filter(q => q.status === 'Draft' && !q.isRequest),
+        sent: quotations.filter(q => q.status === 'Sent' && !q.isRequest),
+        accepted: quotations.filter(q => q.status === 'Accepted' && !q.isRequest),
+        declined: quotations.filter(q => q.status === 'Declined' && !q.isRequest),
+        requestsIncoming: theirRequests,
+        requestsOutgoing: myRequests,
+    }
+  }, [quotations, myCustomerId]);
 
 
   const handleSelectAction = async (action: 'view' | 'edit' | 'delete' | 'download' | 'send' | 'accept' | 'decline', quotation: Quotation) => {
@@ -286,7 +296,7 @@ export default function QuotationsPage() {
   };
 
   const currentPreviewQuotation = config?.quotations.find(q => q.quotationId === selectedQuotation?.quotationId);
-  const selectedCustomer = config?.customers.find(c => c.name === currentPreviewQuotation?.customer) || null;
+  const selectedCustomer = config?.customers.find(c => c.id === currentPreviewQuotation?.customerId) || null;
 
   return (
     <div className="container mx-auto space-y-6">
@@ -327,7 +337,18 @@ export default function QuotationsPage() {
           <QuotationList quotations={filteredQuotations.all} layout={layout} onSelectAction={handleSelectAction} currencyCode={currencyCode} />
         </TabsContent>
         <TabsContent value="requests">
-          <QuotationList quotations={filteredQuotations.requests} layout={layout} onSelectAction={handleSelectAction} currencyCode={currencyCode} />
+          <Tabs defaultValue="incoming">
+            <TabsList>
+                <TabsTrigger value="incoming">Incoming ({filteredQuotations.requestsIncoming.length})</TabsTrigger>
+                <TabsTrigger value="outgoing">Outgoing ({filteredQuotations.requestsOutgoing.length})</TabsTrigger>
+            </TabsList>
+            <TabsContent value="incoming" className="pt-4">
+                 <QuotationList quotations={filteredQuotations.requestsIncoming} layout={layout} onSelectAction={handleSelectAction} currencyCode={currencyCode} />
+            </TabsContent>
+             <TabsContent value="outgoing" className="pt-4">
+                 <QuotationList quotations={filteredQuotations.requestsOutgoing} layout={layout} onSelectAction={handleSelectAction} currencyCode={currencyCode} />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
         <TabsContent value="draft">
            <QuotationList quotations={filteredQuotations.draft} layout={layout} onSelectAction={handleSelectAction} currencyCode={currencyCode} />
@@ -351,7 +372,7 @@ export default function QuotationsPage() {
             <DialogTitle>Quotation Preview</DialogTitle>
           </DialogHeader>
           <div className="h-full overflow-y-auto">
-            {currentPreviewQuotation && (
+            {currentPreviewQuotation && selectedCustomer && (
               <QuotationPreview
                 config={config}
                 customer={selectedCustomer}

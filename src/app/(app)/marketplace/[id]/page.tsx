@@ -29,6 +29,12 @@ export default function VirtualShopPage() {
     return config?.products || [];
   }, [config?.products]);
 
+  const myCustomerId = useMemo(() => {
+    if (!config) return null;
+    const myBusinessAsCustomer = config.customers.find(c => c.name === config.brand.businessName);
+    return myBusinessAsCustomer?.id || null;
+  }, [config]);
+
   if (!business) {
     return <div className="text-center py-10">Business not found.</div>;
   }
@@ -42,9 +48,9 @@ export default function VirtualShopPage() {
   };
   
   const handleRequestQuotation = () => {
-    if (selectedProductIds.length > 0) {
+    if (selectedProductIds.length > 0 && myCustomerId) {
       const productQuery = selectedProductIds.join(',');
-      router.push(`/quotations/new?products=${productQuery}&customerId=${business.id}`);
+      router.push(`/quotations/new?products=${productQuery}&customerId=${business.id}&senderId=${myCustomerId}`);
     }
   };
   
@@ -120,7 +126,7 @@ export default function VirtualShopPage() {
         
          {selectedProductIds.length > 0 && (
             <div className="sticky bottom-6 flex justify-center">
-                <Button size="lg" className="shadow-lg animate-in fade-in zoom-in-95" onClick={handleRequestQuotation}>
+                <Button size="lg" className="shadow-lg animate-in fade-in zoom-in-95" onClick={handleRequestQuotation} disabled={!myCustomerId}>
                     <FileBarChart2 className="mr-2 h-4 w-4" />
                     Request Quotation for {selectedProductIds.length} Item(s)
                 </Button>
