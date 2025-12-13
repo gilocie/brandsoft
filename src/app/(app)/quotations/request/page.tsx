@@ -192,7 +192,7 @@ export default function RequestQuotationPage() {
                                         Select Suppliers from Marketplace
                                     </Button>
                                 </DialogTrigger>
-                                <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
+                                <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
                                     <DialogHeader>
                                         <DialogTitle>Select Suppliers</DialogTitle>
                                     </DialogHeader>
