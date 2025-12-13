@@ -89,13 +89,8 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     setIsConfigured(true);
 
     if (shouldRevalidate) {
-      window.dispatchEvent(
-        new StorageEvent("storage", {
-          key: CONFIG_KEY,
-          newValue: JSON.stringify(newConfig),
-          storageArea: localStorage,
-        })
-      );
+      // Dispatch a custom event that can be listened to globally
+      window.dispatchEvent(new CustomEvent('brandsoft-update'));
     }
 
     if (redirect) {
@@ -136,6 +131,26 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       setIsConfigured(false);
     }
   }, []);
+  
+  // This effect listens for storage changes across tabs and custom update events
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === CONFIG_KEY) {
+        revalidate();
+      }
+    };
+    const handleCustomUpdate = () => {
+      revalidate();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('brandsoft-update', handleCustomUpdate);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('brandsoft-update', handleCustomUpdate);
+    };
+  }, [revalidate]);
 
   useEffect(() => {
     if (config?.brand.primaryColor) {
