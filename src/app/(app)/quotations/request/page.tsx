@@ -83,7 +83,7 @@ export default function RequestQuotationPage() {
       title: 'Quotation Request Sent!',
       description: 'Your request has been submitted.',
     });
-    router.push('/quotations?tab=requests');
+    router.push('/quotations?tab=requests&subtab=outgoing');
   };
   
   const businesses = config?.customers.filter(c => c.companyName && c.id !== config?.customers.find(me => me.name === config.brand.businessName)?.id) || [];

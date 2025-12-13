@@ -1,9 +1,9 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Card,
   CardContent,
@@ -182,8 +182,11 @@ export default function QuotationsPage() {
   const [layout, setLayout] = useState<'grid' | 'list'>('grid');
   const { config, deleteQuotation, updateQuotation, addInvoice } = useBrandsoft();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
 
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'all');
+  const [activeSubTab, setActiveSubTab] = useState(searchParams.get('subtab') || 'incoming');
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isAcceptOpen, setIsAcceptOpen] = useState(false);
@@ -325,7 +328,7 @@ export default function QuotationsPage() {
         </div>
       </div>
       
-       <Tabs defaultValue="all" className="space-y-4">
+       <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="space-y-4">
         
             <TabsList>
               <TabsTrigger value="all">All</TabsTrigger>
@@ -340,7 +343,7 @@ export default function QuotationsPage() {
           <QuotationList quotations={filteredQuotations.all} layout={layout} onSelectAction={handleSelectAction} currencyCode={currencyCode} />
         </TabsContent>
         <TabsContent value="requests">
-          <Tabs defaultValue="incoming">
+          <Tabs defaultValue={activeSubTab} onValueChange={setActiveSubTab}>
              <div className="flex items-center justify-between">
                 <TabsList>
                     <TabsTrigger value="incoming">Incoming ({filteredQuotations.requestsIncoming.length})</TabsTrigger>
