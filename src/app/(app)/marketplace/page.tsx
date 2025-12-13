@@ -8,12 +8,13 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, Building, MapPin } from 'lucide-react';
 import Link from 'next/link';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useRouter } from 'next/navigation';
 import { CompanyCard } from '@/components/company-card';
 
 
 export default function MarketplacePage() {
   const { config } = useBrandsoft();
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [industryFilter, setIndustryFilter] = useState('all');
   const [townFilter, setTownFilter] = useState('all');
@@ -36,13 +37,17 @@ export default function MarketplacePage() {
 
   const industries = useMemo(() => {
     if (!businesses) return [];
-    return [...new Set(businesses.map(b => b.industry).filter(Boolean))];
+    return [...new Set(businesses.map(b => b.industry).filter((i): i is string => !!i))];
   }, [businesses]);
 
   const towns = useMemo(() => {
     if (!businesses) return [];
-    return [...new Set(businesses.map(b => b.town).filter(Boolean))];
+    return [...new Set(businesses.map(b => b.town).filter((t): t is string => !!t))];
   }, [businesses]);
+
+  const handleCardClick = (companyId: string) => {
+    router.push(`/marketplace/${companyId}`);
+  };
 
 
   return (
@@ -88,11 +93,16 @@ export default function MarketplacePage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {filteredBusinesses.map(biz => (
-          <CompanyCard key={biz.id} company={biz} onSelectAction={() => {}} />
+            <div key={biz.id} onClick={() => handleCardClick(biz.id)} className="cursor-pointer">
+                <CompanyCard company={biz} onSelectAction={(action) => {
+                    if (action === 'view') handleCardClick(biz.id);
+                    // Handle other actions if necessary, e.g., open a dialog
+                }} />
+            </div>
         ))}
       </div>
        {filteredBusinesses.length === 0 && (
-         <div className="text-center py-16 text-muted-foreground">
+         <div className="text-center py-16 text-muted-foreground col-span-full">
             <p>No businesses found matching your criteria.</p>
          </div>
        )}
