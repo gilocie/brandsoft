@@ -91,8 +91,6 @@ export default function VirtualShopPage() {
   };
   
   const handleRatingSubmit = (rating: number, comment: string) => {
-    console.log("Attempting to submit review..."); // Debug log
-
     if (!config) {
       console.error("No config found");
       return;
@@ -105,7 +103,7 @@ export default function VirtualShopPage() {
     
     const newReview: Omit<Review, 'id'> = {
       businessId: business.id,
-      reviewerId: currentUserId, // Use the new robust ID
+      reviewerId: currentUserId,
       reviewerName: config.brand.businessName || "Anonymous",
       rating,
       comment,
@@ -113,7 +111,6 @@ export default function VirtualShopPage() {
     };
   
     addReview(newReview);
-    console.log("Review submitted:", newReview); // Debug log
     setIsRatingOpen(false);
   };
   
