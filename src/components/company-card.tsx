@@ -19,8 +19,10 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { MoreHorizontal, Eye, FilePenLine, Trash2, Phone, Building2 } from 'lucide-react';
 import type { Company } from '@/hooks/use-brandsoft';
+import { useRouter } from 'next/navigation';
 
-const CompanyActions = ({ onSelectAction }: { onSelectAction: (action: 'view' | 'edit' | 'delete') => void; }) => {
+
+const CompanyActions = ({ onSelectAction, onCardClick }: { onSelectAction: (action: 'view' | 'edit' | 'delete') => void; onCardClick: () => void; }) => {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -30,16 +32,16 @@ const CompanyActions = ({ onSelectAction }: { onSelectAction: (action: 'view' | 
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => onSelectAction('view')}>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSelectAction('view'); }}>
                     <Eye className="mr-2 h-4 w-4" />
                     View Details
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onSelectAction('edit')}>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSelectAction('edit'); }}>
                     <FilePenLine className="mr-2 h-4 w-4" />
                     Edit Company
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => onSelectAction('delete')} className="text-destructive focus:bg-destructive focus:text-destructive-foreground">
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSelectAction('delete'); }} className="text-destructive focus:bg-destructive focus:text-destructive-foreground">
                     <Trash2 className="mr-2 h-4 w-4" />
                     Delete Company
                 </DropdownMenuItem>
@@ -49,8 +51,17 @@ const CompanyActions = ({ onSelectAction }: { onSelectAction: (action: 'view' | 
 };
 
 export function CompanyCard({ company, onSelectAction }: { company: Company, onSelectAction: (action: 'view' | 'edit' | 'delete') => void }) {
+    const router = useRouter();
+    const handleCardClick = () => {
+        router.push(`/marketplace/${company.id}`);
+    };
+
     return (
-        <Card key={company.id} className="flex flex-col">
+        <Card 
+            key={company.id} 
+            className="flex flex-col cursor-pointer"
+            onClick={handleCardClick}
+        >
             <CardHeader className="p-4">
                 <TooltipProvider>
                   <Tooltip>
@@ -80,7 +91,7 @@ export function CompanyCard({ company, onSelectAction }: { company: Company, onS
                 </div>
             </CardContent>
             <CardFooter className="p-4 pt-0 flex justify-end">
-                <CompanyActions onSelectAction={onSelectAction} />
+                <CompanyActions onSelectAction={onSelectAction} onCardClick={handleCardClick} />
             </CardFooter>
         </Card>
     );

@@ -3,21 +3,33 @@
 
 import { useMemo, useState } from 'react';
 import { useBrandsoft, type Company } from '@/hooks/use-brandsoft';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Building, MapPin } from 'lucide-react';
-import Link from 'next/link';
+import { Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { CompanyCard } from '@/components/company-card';
 
 
 export default function MarketplacePage() {
-  const { config } = useBrandsoft();
+  const { config, deleteCompany } = useBrandsoft();
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [industryFilter, setIndustryFilter] = useState('all');
   const [townFilter, setTownFilter] = useState('all');
+
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
 
   const businesses = useMemo(() => {
     if (!config || !config.companies) return [];
@@ -47,6 +59,25 @@ export default function MarketplacePage() {
 
   const handleCardClick = (companyId: string) => {
     router.push(`/marketplace/${companyId}`);
+  };
+
+  const handleSelectAction = (action: 'view' | 'edit' | 'delete', company: Company) => {
+    setSelectedCompany(company);
+    if (action === 'view') {
+        handleCardClick(company.id);
+    }
+    if (action === 'delete') {
+        setIsDeleteOpen(true);
+    }
+    // Edit action can be handled here if needed in the future
+  };
+
+  const handleDelete = () => {
+    if (selectedCompany) {
+        deleteCompany(selectedCompany.id);
+        setIsDeleteOpen(false);
+        setSelectedCompany(null);
+    }
   };
 
 
@@ -93,12 +124,11 @@ export default function MarketplacePage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {filteredBusinesses.map(biz => (
-            <div key={biz.id} onClick={() => handleCardClick(biz.id)} className="cursor-pointer">
-                <CompanyCard company={biz} onSelectAction={(action) => {
-                    if (action === 'view') handleCardClick(biz.id);
-                    // Handle other actions if necessary, e.g., open a dialog
-                }} />
-            </div>
+            <CompanyCard 
+                key={biz.id} 
+                company={biz} 
+                onSelectAction={(action) => handleSelectAction(action, biz)} 
+            />
         ))}
       </div>
        {filteredBusinesses.length === 0 && (
@@ -106,6 +136,19 @@ export default function MarketplacePage() {
             <p>No businesses found matching your criteria.</p>
          </div>
        )}
+
+        <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>This action cannot be undone. This will permanently delete the company "{selectedCompany?.companyName}".</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     </div>
   );
 }
