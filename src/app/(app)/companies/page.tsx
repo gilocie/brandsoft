@@ -246,7 +246,7 @@ export default function CompaniesPage() {
                         company={company} 
                         averageRating={company.averageRating}
                         reviewCount={company.reviewCount}
-                        onSelectAction={(action) => handleSelectAction(action, company)} 
+                        onSelectAction={(action) => handleSelectAction(action as 'view' | 'edit' | 'delete', company)} 
                         showActionsMenu={true}
                     />
                 ))}

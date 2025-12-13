@@ -56,7 +56,10 @@ const ActionsMenu = ({ onSelectAction }: { onSelectAction: (action: 'edit' | 'de
 export function CompanyCard({ company, averageRating, reviewCount, onSelectAction, showActionsMenu = false }: CompanyCardProps) {
     const router = useRouter();
     const handleCardClick = () => {
-        router.push(`/marketplace/${company.id}`);
+        // Prevent navigation if an action menu is shown, as actions are handled separately.
+        if (!showActionsMenu) {
+             router.push(`/marketplace/${company.id}`);
+        }
     };
 
     return (
