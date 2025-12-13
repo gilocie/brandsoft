@@ -187,6 +187,7 @@ export type Invoice = {
     partialPaymentValue?: number;
     currency?: string;
     design?: DesignSettings;
+    origin?: 'quotation' | 'manual';
 };
 
 export type Quotation = {

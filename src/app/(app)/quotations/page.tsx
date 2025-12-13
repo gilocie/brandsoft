@@ -262,7 +262,8 @@ export default function QuotationsPage() {
         notes: `Based on Quotation #${selectedQuotation.quotationId}\n${selectedQuotation.notes || ''}`,
         lineItems: selectedQuotation.lineItems,
         currency: selectedQuotation.currency,
-        design: selectedQuotation.design
+        design: selectedQuotation.design,
+        origin: 'quotation' as 'quotation',
       };
       const newInvoice = addInvoice(newInvoiceData);
       

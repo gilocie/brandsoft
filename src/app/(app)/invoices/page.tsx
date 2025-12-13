@@ -190,6 +190,7 @@ export default function InvoicesPage() {
     paid: invoices.filter(inv => inv.status === 'Paid'),
     canceled: invoices.filter(inv => inv.status === 'Canceled'),
     draft: invoices.filter(inv => inv.status === 'Draft'),
+    generated: invoices.filter(inv => inv.origin === 'quotation'),
   }), [invoices]);
 
 
@@ -276,6 +277,7 @@ export default function InvoicesPage() {
           <TabsTrigger value="pending">Pending</TabsTrigger>
           <TabsTrigger value="overdue">Overdue</TabsTrigger>
           <TabsTrigger value="paid">Paid</TabsTrigger>
+          <TabsTrigger value="generated">Generated</TabsTrigger>
           <TabsTrigger value="canceled">Canceled</TabsTrigger>
         </TabsList>
         <TabsContent value="all">
@@ -292,6 +294,9 @@ export default function InvoicesPage() {
         </TabsContent>
         <TabsContent value="paid">
             <InvoiceList invoices={filteredInvoices.paid} layout={layout} onSelectAction={handleSelectAction} currencyCode={currencyCode} />
+        </TabsContent>
+        <TabsContent value="generated">
+            <InvoiceList invoices={filteredInvoices.generated} layout={layout} onSelectAction={handleSelectAction} currencyCode={currencyCode} />
         </TabsContent>
         <TabsContent value="canceled">
            <InvoiceList invoices={filteredInvoices.canceled} layout={layout} onSelectAction={handleSelectAction} currencyCode={currencyCode} />

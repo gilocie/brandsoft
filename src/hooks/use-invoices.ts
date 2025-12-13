@@ -18,7 +18,7 @@ export function useInvoices(
     const prefix = numbering?.prefix ?? config.profile.invoicePrefix;
     const nextNumber = (Number(startNumber) || 100) + (config.invoices?.length || 0);
     const generatedId = `${prefix}${nextNumber}`.replace(/\s+/g, '');
-    const newInvoice: Invoice = { ...invoice, invoiceId: generatedId };
+    const newInvoice: Invoice = { ...invoice, origin: invoice.origin || 'manual', invoiceId: generatedId };
     const newConfig = { ...config, invoices: [...(config.invoices || []), newInvoice] };
     saveConfig(newConfig, { redirect: false, revalidate: false });
     return newInvoice;
