@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, ChangeEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -57,10 +57,63 @@ const formSchema = z.object({
 
 type CompanyFormData = z.infer<typeof formSchema>;
 
+const ImageUploadField = ({
+  form,
+  name,
+  label,
+  currentValue,
+}: {
+  form: any;
+  name: keyof CompanyFormData;
+  label: string;
+  currentValue?: string;
+}) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [preview, setPreview] = useState<string | undefined>(currentValue);
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = reader.result as string;
+        setPreview(dataUrl);
+        form.setValue(name, dataUrl, { shouldDirty: true });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  return (
+    <FormItem>
+      <FormLabel>{label}</FormLabel>
+      <div className="flex items-center gap-4">
+        {preview && (
+          <img src={preview} alt={`${label} preview`} className="h-16 w-16 rounded-md object-cover border" />
+        )}
+        <div className="flex-grow">
+          <Input
+            type="file"
+            accept="image/*"
+            ref={inputRef}
+            onChange={handleFileChange}
+            className="hidden"
+          />
+          <Button type="button" variant="outline" onClick={() => inputRef.current?.click()} className="w-full">
+            <UploadCloud className="mr-2 h-4 w-4" />
+            {preview ? 'Change Image' : 'Upload Image'}
+          </Button>
+        </div>
+      </div>
+      <FormMessage />
+    </FormItem>
+  );
+};
+
 const ITEMS_PER_PAGE = 20;
 
 export default function CompaniesPage() {
-  const { config, addCompany, updateCompany, deleteCompany, saveConfig } = useBrandsoft();
+  const { config, addCompany, updateCompany, deleteCompany } = useBrandsoft();
   const { toast } = useToast();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -218,11 +271,11 @@ export default function CompaniesPage() {
                     <Separator />
                     
                     <div className="space-y-4">
-                        <h3 className="text-sm font-medium text-muted-foreground">Visuals</h3>
-                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <FormField control={form.control} name="logo" render={({ field }) => ( <FormItem><FormLabel>Logo URL</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
-                            <FormField control={form.control} name="coverImage" render={({ field }) => ( <FormItem><FormLabel>Cover Image URL</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
-                        </div>
+                      <h3 className="text-sm font-medium text-muted-foreground">Visuals</h3>
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                         <ImageUploadField form={form} name="logo" label="Company Logo" currentValue={form.getValues('logo')} />
+                         <ImageUploadField form={form} name="coverImage" label="Cover Image" currentValue={form.getValues('coverImage')} />
+                      </div>
                     </div>
 
                     <Separator />
@@ -270,5 +323,3 @@ export default function CompaniesPage() {
     </div>
   );
 }
-
-    
