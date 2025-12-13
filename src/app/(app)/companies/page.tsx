@@ -5,7 +5,7 @@ import { useState, useMemo, useRef, ChangeEvent, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useBrandsoft, type Company } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Company, type Review } from '@/hooks/use-brandsoft';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -34,15 +34,12 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { PlusCircle, Trash2, UploadCloud, Download, Search, MoreHorizontal, Eye, FilePenLine } from 'lucide-react';
+import { PlusCircle, Trash2, UploadCloud, Download, Search } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
-import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Phone, Building2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { CompanyCard } from '@/components/company-card';
 
 const formSchema = z.object({
   id: z.string().optional(),
@@ -121,30 +118,6 @@ const ImageUploadField = ({
   );
 };
 
-const CompanyCardActions = ({ onSelectAction }: { onSelectAction: (action: 'edit' | 'delete') => void }) => {
-    return (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button variant="default" size="icon" className="h-8 w-8">
-                    <MoreHorizontal className="h-4 w-4" />
-                    <span className="sr-only">Actions</span>
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSelectAction('edit'); }}>
-                    <FilePenLine className="mr-2 h-4 w-4" />
-                    Edit Company
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSelectAction('delete'); }} className="text-destructive focus:bg-destructive focus:text-destructive-foreground">
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete Company
-                </DropdownMenuItem>
-            </DropdownMenuContent>
-        </DropdownMenu>
-    );
-};
-
 export default function CompaniesPage() {
   const { config, addCompany, updateCompany, deleteCompany } = useBrandsoft();
   const { toast } = useToast();
@@ -164,8 +137,23 @@ export default function CompaniesPage() {
     },
   });
 
+   const companiesWithRatings = useMemo(() => {
+    if (!config || !config.companies) return [];
+
+    return config.companies.map(biz => {
+      const companyReviews = config.reviews?.filter((r: Review) => r.businessId === biz.id) || [];
+      const reviewCount = companyReviews.length;
+      const averageRating = reviewCount > 0
+        ? companyReviews.reduce((acc, r) => acc + r.rating, 0) / reviewCount
+        : 0;
+      
+      return { ...biz, averageRating, reviewCount };
+    });
+  }, [config]);
+
+
   const filteredCompanies = useMemo(() => {
-    let companies = config?.companies || [];
+    let companies = companiesWithRatings;
     
     if (searchTerm) {
       companies = companies.filter(c => 
@@ -175,7 +163,7 @@ export default function CompaniesPage() {
       );
     }
     return companies;
-  }, [config?.companies, searchTerm]);
+  }, [companiesWithRatings, searchTerm]);
 
   const paginatedCompanies = useMemo(() => {
     const startIndex = currentPage * ITEMS_PER_PAGE;
@@ -197,10 +185,11 @@ export default function CompaniesPage() {
     setIsFormOpen(true);
   };
   
-  const handleSelectAction = (action: 'edit' | 'delete', company: Company) => {
+  const handleSelectAction = (action: 'view' | 'edit' | 'delete', company: Company) => {
       setSelectedCompany(company);
       if (action === 'edit') handleOpenForm(company);
       if (action === 'delete') setIsDeleteOpen(true);
+      if (action === 'view') router.push(`/marketplace/${company.id}`);
   };
 
   const onSubmit = (data: CompanyFormData) => {
@@ -252,42 +241,14 @@ export default function CompaniesPage() {
         {paginatedCompanies.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {paginatedCompanies.map((company) => (
-                   <Card 
+                    <CompanyCard 
                         key={company.id} 
-                        className="flex flex-col"
-                    >
-                        <CardHeader className="p-4">
-                            <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                <CardTitle className="text-base font-semibold truncate cursor-pointer" onClick={() => router.push(`/marketplace/${company.id}`)}>{company.companyName}</CardTitle>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                <p>{company.companyName}</p>
-                                </TooltipContent>
-                            </Tooltip>
-                            </TooltipProvider>
-                        </CardHeader>
-                        <CardContent className="p-4 pt-0 flex-grow">
-                            <div className="text-sm space-y-2">
-                                {company.phone && (
-                                <div className="flex items-center gap-2">
-                                    <Phone className="h-4 w-4 text-muted-foreground" />
-                                    <p className="text-muted-foreground">{company.phone}</p>
-                                </div>
-                                )}
-                                {company.industry && (
-                                <div className="flex items-center gap-2">
-                                    <Building2 className="h-4 w-4 text-muted-foreground" />
-                                    <p className="font-medium">{company.industry}</p>
-                                </div>
-                                )}
-                            </div>
-                        </CardContent>
-                        <CardFooter className="p-4 pt-0 flex justify-end">
-                             <CompanyCardActions onSelectAction={(action) => handleSelectAction(action, company)} />
-                        </CardFooter>
-                    </Card>
+                        company={company} 
+                        averageRating={company.averageRating}
+                        reviewCount={company.reviewCount}
+                        onSelectAction={(action) => handleSelectAction(action, company)} 
+                        showActionsMenu={true}
+                    />
                 ))}
             </div>
         ) : (

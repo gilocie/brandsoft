@@ -6,7 +6,14 @@ import {
   CardContent,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Eye, Phone, Building2, MapPin, Plus, Star } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { MoreHorizontal, Plus, Star, Building2, FilePenLine, Trash2, Eye } from 'lucide-react';
 import type { Company } from '@/hooks/use-brandsoft';
 import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
@@ -19,9 +26,34 @@ interface CompanyCardProps {
     averageRating: number;
     reviewCount: number;
     onSelectAction: (action: 'view' | 'edit' | 'delete') => void;
+    showActionsMenu?: boolean;
 }
 
-export function CompanyCard({ company, averageRating, reviewCount, onSelectAction }: CompanyCardProps) {
+const ActionsMenu = ({ onSelectAction }: { onSelectAction: (action: 'edit' | 'delete') => void }) => {
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="secondary" size="icon" className="absolute top-3 right-3 h-8 w-8 rounded-full shadow-md" onClick={(e) => e.stopPropagation()}>
+                    <MoreHorizontal className="h-4 w-4" />
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                <DropdownMenuItem onClick={() => onSelectAction('edit')}>
+                    <FilePenLine className="mr-2 h-4 w-4" />
+                    Edit
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => onSelectAction('delete')} className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
+};
+
+
+export function CompanyCard({ company, averageRating, reviewCount, onSelectAction, showActionsMenu = false }: CompanyCardProps) {
     const router = useRouter();
     const handleCardClick = () => {
         router.push(`/marketplace/${company.id}`);
@@ -29,7 +61,7 @@ export function CompanyCard({ company, averageRating, reviewCount, onSelectActio
 
     return (
         <Card 
-            className="w-full max-w-xs mx-auto rounded-xl overflow-hidden shadow-lg transform transition-all hover:-translate-y-1 hover:shadow-2xl"
+            className="w-full max-w-sm mx-auto rounded-xl overflow-hidden shadow-lg transform transition-all hover:-translate-y-1 hover:shadow-2xl cursor-pointer"
             onClick={handleCardClick}
         >
             <div className="relative">
@@ -45,10 +77,14 @@ export function CompanyCard({ company, averageRating, reviewCount, onSelectActio
                     />
                 </div>
 
-                {/* Follow Button */}
-                <Button variant="secondary" size="icon" className="absolute top-3 right-3 h-8 w-8 rounded-full shadow-md" onClick={(e) => { e.stopPropagation(); alert('Follow functionality to be added!'); }}>
-                    <Plus className="h-4 w-4" />
-                </Button>
+                {/* Actions Menu or Follow Button */}
+                {showActionsMenu ? (
+                    <ActionsMenu onSelectAction={(action) => onSelectAction(action)} />
+                ) : (
+                    <Button variant="secondary" size="icon" className="absolute top-3 right-3 h-8 w-8 rounded-full shadow-md" onClick={(e) => { e.stopPropagation(); alert('Follow functionality to be added!'); }}>
+                        <Plus className="h-4 w-4" />
+                    </Button>
+                )}
                 
                 {/* Avatar */}
                 <div className="absolute -bottom-10 left-1/2 -translate-x-1/2">
@@ -78,7 +114,7 @@ export function CompanyCard({ company, averageRating, reviewCount, onSelectActio
 
                 <div className="mt-4 px-2 pb-2">
                      <Button variant="default" className="w-full" onClick={(e) => { e.stopPropagation(); onSelectAction('view'); }}>
-                        View
+                        <Eye className="mr-2 h-4 w-4"/> View Profile
                     </Button>
                 </div>
             </CardContent>
