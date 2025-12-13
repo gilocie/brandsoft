@@ -11,7 +11,7 @@ import { useQuotations } from './use-quotations';
 import { useQuotationRequests } from './use-quotation-requests';
 import { usePurchases } from './use-purchases';
 import { useCurrencies } from './use-currencies';
-import type { BrandsoftConfig, Customer, Product, Invoice, Quotation, Purchase, QuotationRequest } from '@/types/brandsoft';
+import type { BrandsoftConfig, Customer, Product, Invoice, Quotation, QuotationRequest } from '@/types/brandsoft';
 
 export * from '@/types/brandsoft';
 
@@ -86,6 +86,41 @@ const initialQuotationRequests: QuotationRequest[] = [
     },
 ];
 
+const initialIncomingQuotationRequests: Quotation[] = [
+    {
+        quotationId: 'IN-REQ-001',
+        customer: 'My Business Inc.', // This will be replaced by the user's business name
+        customerId: 'CUST-DEMO-ME', // This will be replaced by the user's business ID
+        senderId: 'CUST-1625243512000', // From Olivia Smith / Smith Designs
+        date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+        validUntil: new Date(Date.now() + 28 * 24 * 60 * 60 * 1000).toISOString(),
+        amount: 850.00,
+        status: 'Sent',
+        subtotal: 850,
+        lineItems: [{ description: 'New Office Signage', quantity: 1, price: 850 }],
+        currency: 'USD',
+        isRequest: true,
+        notes: 'Request for new exterior and interior office signage.'
+    },
+    {
+        quotationId: 'IN-REQ-002',
+        customer: 'My Business Inc.',
+        customerId: 'CUST-DEMO-ME',
+        senderId: 'CUST-1625243514000', // From Emma Brown / Brown & Co.
+        date: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+        validUntil: new Date(Date.now() + 26 * 24 * 60 * 60 * 1000).toISOString(),
+        amount: 2500.00,
+        status: 'Sent',
+        subtotal: 2500,
+        lineItems: [
+            { description: 'Social Media Marketing Campaign - Q1', quantity: 1, price: 1500 },
+            { description: 'Content Creation (10 posts)', quantity: 1, price: 1000 }
+        ],
+        currency: 'USD',
+        isRequest: true,
+    }
+];
+
 export function BrandsoftProvider({ children }: { children: ReactNode }) {
   const [isActivated, setIsActivated] = useState<boolean | null>(null);
   const [isConfigured, setIsConfigured] = useState<boolean | null>(null);
@@ -112,13 +147,35 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       setIsConfigured(!!storedConfig);
       if (storedConfig) {
         const parsedConfig = JSON.parse(storedConfig);
-        // Inject demo data if it doesn't exist
+        
+        let shouldUpdateStorage = false;
+        
+        // Inject outgoing demo data if it doesn't exist
         if (!parsedConfig.quotationRequests?.some((r: QuotationRequest) => r.id.startsWith('QR-DEMO'))) {
             const meId = parsedConfig.customers.find((c: Customer) => c.name === parsedConfig.brand.businessName)?.id || 'CUST-DEMO-ME';
             const demoRequests = initialQuotationRequests.map(r => ({...r, requesterId: meId, requesterName: parsedConfig.brand.businessName}));
             parsedConfig.quotationRequests = [...(parsedConfig.quotationRequests || []), ...demoRequests];
-            localStorage.setItem(CONFIG_KEY, JSON.stringify(parsedConfig));
+            shouldUpdateStorage = true;
         }
+
+        // Inject incoming demo data if it doesn't exist
+        if (!parsedConfig.quotations?.some((q: Quotation) => q.quotationId.startsWith('IN-REQ'))) {
+            const me = parsedConfig.customers.find((c: Customer) => c.name === parsedConfig.brand.businessName);
+            if (me) {
+                 const demoIncoming = initialIncomingQuotationRequests.map(q => ({
+                    ...q, 
+                    customerId: me.id,
+                    customer: me.name
+                }));
+                parsedConfig.quotations = [...(parsedConfig.quotations || []), ...demoIncoming];
+                shouldUpdateStorage = true;
+            }
+        }
+        
+        if (shouldUpdateStorage) {
+             localStorage.setItem(CONFIG_KEY, JSON.stringify(parsedConfig));
+        }
+
         setConfig(parsedConfig);
       }
     } catch (error) {
