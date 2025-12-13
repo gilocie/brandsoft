@@ -9,7 +9,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Star } from 'lucide-react';
@@ -82,14 +81,14 @@ export function RatingDialog({ isOpen, onClose, onSubmit, businessName }: Rating
             />
           </div>
         </div>
-        <DialogFooter>
+        <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
           <Button type="button" onClick={handleSubmit} disabled={rating === 0}>
             Submit Review
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );
