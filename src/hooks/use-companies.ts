@@ -3,60 +3,7 @@
 
 import type { BrandsoftConfig, Company } from '@/types/brandsoft';
 
-const initialCompanies: Company[] = [
-    { 
-        id: 'CUST-1625243511000', 
-        name: 'John Banda', 
-        email: 'john.banda@creativeprints.mw', 
-        phone: '0999888777', 
-        companyName: 'Creative Prints',
-        description: 'High-quality digital and offset printing services.',
-        industry: 'Printing Services',
-        town: 'Blantyre',
-        customerType: 'company',
-        logo: 'https://picsum.photos/seed/biz1/200',
-        website: 'https://creativeprints.mw',
-    },
-    { 
-        id: 'CUST-1625243512000', 
-        name: 'Jane Chirwa', 
-        email: 'jane.chirwa@bytesolutions.mw', 
-        phone: '0888777666', 
-        companyName: 'Byte Solutions',
-        description: 'Custom software development and IT consulting.',
-        industry: 'IT & Software',
-        town: 'Lilongwe',
-        customerType: 'company',
-        logo: 'https://picsum.photos/seed/biz2/200',
-        website: 'https://bytesolutions.mw',
-    },
-    { 
-        id: 'CUST-1625243513000', 
-        name: 'Mike Phiri', 
-        email: 'mike.phiri@maketsupplies.mw', 
-        phone: '0991234567', 
-        companyName: 'Makete Supplies',
-        description: 'Leading supplier of office and school stationery.',
-        industry: 'Office Supplies',
-        town: 'Mzuzu',
-        customerType: 'company',
-        logo: 'https://picsum.photos/seed/biz3/200',
-        website: 'https://maketesupplies.mw',
-    },
-    { 
-        id: 'CUST-1625243514000', 
-        name: 'Grace Moyo', 
-        email: 'grace.moyo@buildright.mw', 
-        phone: '0884567890', 
-        companyName: 'BuildRight Hardware',
-        description: 'Your one-stop shop for building materials and hardware.',
-        industry: 'Hardware & Construction',
-        town: 'Zomba',
-        customerType: 'company',
-        logo: 'https://picsum.photos/seed/biz4/200',
-        website: 'https://buildright.mw',
-    },
-];
+const initialCompanies: Company[] = [];
 
 export function useCompanies(
   config: BrandsoftConfig | null,
