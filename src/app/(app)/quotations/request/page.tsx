@@ -13,10 +13,13 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
-import { PlusCircle, Send, Trash2, Search } from 'lucide-react';
+import { PlusCircle, Send, Trash2, Search, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { SupplierPicker } from '@/components/supplier-picker';
+import { Badge } from '@/components/ui/badge';
 
 const requestItemSchema = z.object({
   productName: z.string().min(1, 'Product name is required'),
@@ -38,6 +41,7 @@ export default function RequestQuotationPage() {
   const { config, addQuotationRequest } = useBrandsoft();
   const { toast } = useToast();
   const router = useRouter();
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -54,6 +58,7 @@ export default function RequestQuotationPage() {
   });
 
   const isPublic = form.watch('isPublic');
+  const selectedCompanyIds = form.watch('companyIds') || [];
 
   const onSubmit = (data: FormData) => {
     if (!config?.profile.email) {
@@ -82,6 +87,15 @@ export default function RequestQuotationPage() {
   };
   
   const businesses = config?.customers.filter(c => c.companyName && c.id !== config?.customers.find(me => me.name === config.brand.businessName)?.id) || [];
+  
+  const handlePickerSelect = (selectedIds: string[]) => {
+    form.setValue('companyIds', selectedIds);
+    setIsPickerOpen(false);
+  };
+  
+  const removeCompany = (idToRemove: string) => {
+    form.setValue('companyIds', selectedCompanyIds.filter(id => id !== idToRemove));
+  }
 
   return (
     <div className="container mx-auto max-w-4xl space-y-6">
@@ -154,37 +168,41 @@ export default function RequestQuotationPage() {
 
                     {!isPublic && (
                         <div className="space-y-4">
-                            <h3 className="text-sm font-medium">Select Companies</h3>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                                {businesses.map(biz => (
-                                    <FormField key={biz.id} control={form.control} name="companyIds" render={({ field }) => (
-                                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                                            <FormControl>
-                                                <Checkbox
-                                                    checked={field.value?.includes(biz.id)}
-                                                    onCheckedChange={(checked) => {
-                                                        return checked
-                                                        ? field.onChange([...(field.value || []), biz.id])
-                                                        : field.onChange(field.value?.filter(id => id !== biz.id))
-                                                    }}
-                                                />
-                                            </FormControl>
-                                            <FormLabel className="font-normal">{biz.companyName}</FormLabel>
-                                        </FormItem>
-                                    )} />
-                                ))}
-                            </div>
-                            {businesses.length === 0 ? (
-                                <p className="text-sm text-muted-foreground">No other businesses found in your customer list.</p>
-                            ) : null}
-                            <div className="pt-2">
-                                <Button asChild variant="outline" className="w-full">
-                                    <Link href="/marketplace">
+                            <h3 className="text-sm font-medium">Select Companies ({selectedCompanyIds.length})</h3>
+                            {selectedCompanyIds.length > 0 && (
+                                <div className="p-3 bg-muted rounded-md flex flex-wrap gap-2">
+                                    {selectedCompanyIds.map(id => {
+                                        const biz = businesses.find(b => b.id === id);
+                                        return biz ? (
+                                            <Badge key={id} variant="secondary" className="pl-3 pr-1 py-1 text-sm">
+                                                {biz.companyName}
+                                                <button type="button" onClick={() => removeCompany(id)} className="ml-1 rounded-full p-0.5 hover:bg-background">
+                                                    <X className="h-3 w-3"/>
+                                                </button>
+                                            </Badge>
+                                        ) : null;
+                                    })}
+                                </div>
+                            )}
+
+                             <Dialog open={isPickerOpen} onOpenChange={setIsPickerOpen}>
+                                <DialogTrigger asChild>
+                                     <Button variant="outline" className="w-full">
                                         <Search className="mr-2 h-4 w-4" />
-                                        Find More Suppliers
-                                    </Link>
-                                </Button>
-                            </div>
+                                        Select Suppliers from Marketplace
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
+                                    <DialogHeader>
+                                        <DialogTitle>Select Suppliers</DialogTitle>
+                                    </DialogHeader>
+                                    <SupplierPicker
+                                        allBusinesses={businesses}
+                                        initialSelection={selectedCompanyIds}
+                                        onSelectionChange={handlePickerSelect}
+                                    />
+                                </DialogContent>
+                            </Dialog>
                         </div>
                     )}
                  </CardContent>
