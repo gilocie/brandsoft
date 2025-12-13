@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, createContext, useContext, ReactNode, useCallback } from 'react';
@@ -9,9 +8,10 @@ import { useCustomers } from './use-customers';
 import { useProducts } from './use-products';
 import { useInvoices } from './use-invoices';
 import { useQuotations } from './use-quotations';
+import { useQuotationRequests } from './use-quotation-requests';
 import { usePurchases } from './use-purchases';
 import { useCurrencies } from './use-currencies';
-import type { BrandsoftConfig, Customer, Product, Invoice, Quotation, Purchase } from '@/types/brandsoft';
+import type { BrandsoftConfig, Customer, Product, Invoice, Quotation, Purchase, QuotationRequest } from '@/types/brandsoft';
 
 export * from '@/types/brandsoft';
 
@@ -43,6 +43,8 @@ interface BrandsoftContextType {
   addQuotation: (quotation: Omit<Quotation, 'quotationId'>, numbering?: { prefix?: string; startNumber?: number; }) => Quotation;
   updateQuotation: (quotationId: string, data: Partial<Omit<Quotation, 'quotationId'>>) => void;
   deleteQuotation: (quotationId: string) => void;
+  // Quotation Request methods
+  addQuotationRequest: (request: QuotationRequest) => QuotationRequest;
   // Purchase methods
   addPurchaseOrder: (order: Omit<Purchase, 'remainingTime'>) => Purchase;
   getPurchaseOrder: (orderId: string) => Purchase | null;
@@ -164,6 +166,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
   const productMethods = useProducts(config, saveConfig);
   const invoiceMethods = useInvoices(config, saveConfig);
   const quotationMethods = useQuotations(config, saveConfig);
+  const quotationRequestMethods = useQuotationRequests(config, saveConfig);
   const purchaseMethods = usePurchases(config, saveConfig);
   const currencyMethods = useCurrencies(config, saveConfig);
 
@@ -179,6 +182,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     ...productMethods,
     ...invoiceMethods,
     ...quotationMethods,
+    ...quotationRequestMethods,
     ...purchaseMethods,
     ...currencyMethods,
   };

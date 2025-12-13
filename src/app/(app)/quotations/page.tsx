@@ -49,6 +49,7 @@ import {
   CheckCircle2,
   FileCheck2,
   XCircle,
+  MessageSquareQuote,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -325,14 +326,21 @@ export default function QuotationsPage() {
       </div>
       
        <Tabs defaultValue="all" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="all">All</TabsTrigger>
-          <TabsTrigger value="requests">Requests</TabsTrigger>
-          <TabsTrigger value="draft">Draft</TabsTrigger>
-          <TabsTrigger value="sent">Sent</TabsTrigger>
-          <TabsTrigger value="accepted">Accepted</TabsTrigger>
-          <TabsTrigger value="declined">Declined</TabsTrigger>
-        </TabsList>
+        <div className="flex items-center justify-between">
+            <TabsList>
+              <TabsTrigger value="all">All</TabsTrigger>
+              <TabsTrigger value="requests">Requests</TabsTrigger>
+              <TabsTrigger value="draft">Draft</TabsTrigger>
+              <TabsTrigger value="sent">Sent</TabsTrigger>
+              <TabsTrigger value="accepted">Accepted</TabsTrigger>
+              <TabsTrigger value="declined">Declined</TabsTrigger>
+            </TabsList>
+            <Button asChild variant="outline">
+              <Link href="/quotations/request">
+                <MessageSquareQuote className="mr-2 h-4 w-4" /> Request a Quotation
+              </Link>
+            </Button>
+        </div>
         <TabsContent value="all">
           <QuotationList quotations={filteredQuotations.all} layout={layout} onSelectAction={handleSelectAction} currencyCode={currencyCode} />
         </TabsContent>

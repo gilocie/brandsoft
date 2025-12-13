@@ -1,5 +1,4 @@
 
-
 import { Page } from '@/stores/canvas-store';
 
 export type Customer = {
@@ -96,6 +95,25 @@ export type BrandsoftTemplate = {
   createdAt?: string;
 };
 
+export type QuotationRequestItem = {
+  productName: string;
+  description?: string;
+  quantity: number;
+};
+
+export type QuotationRequest = {
+  id: string;
+  title: string;
+  description?: string;
+  requesterId: string;
+  requesterName: string;
+  date: string;
+  isPublic: boolean;
+  companyIds?: string[];
+  items: QuotationRequestItem[];
+  status: 'open' | 'closed';
+};
+
 export type BrandsoftConfig = {
   brand: {
     logo: string;
@@ -158,6 +176,7 @@ export type BrandsoftConfig = {
   products: Product[];
   invoices: Invoice[];
   quotations: Quotation[];
+  quotationRequests?: QuotationRequest[];
   templates: BrandsoftTemplate[];
   currencies: string[];
   purchases?: Purchase[];
