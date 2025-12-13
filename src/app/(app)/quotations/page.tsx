@@ -237,7 +237,7 @@ export default function QuotationsPage() {
   const { config, deleteQuotation, updateQuotation, addInvoice } = useBrandsoft();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { toast } = useToast();
+  const { toast } } from useToast();
 
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'all');
   const [activeSubTab, setActiveSubTab] = useState(searchParams.get('subtab') || 'incoming');
@@ -251,14 +251,15 @@ export default function QuotationsPage() {
   const quotationRequests = config?.quotationRequests || [];
   const currencyCode = config?.profile.defaultCurrency || '';
   
-  const myCustomerId = useMemo(() => {
-    return config?.customers.find(c => c.name === config.brand.businessName)?.id;
+  const myBusinessAsCustomer = useMemo(() => {
+    if (!config) return null;
+    return config.customers.find(c => c.name === config.brand.businessName) || null;
   }, [config]);
 
 
   const filteredQuotations = useMemo(() => {
-      const myRequests = quotationRequests.filter(q => q.requesterId === myCustomerId);
-      const theirRequests = quotations.filter(q => q.isRequest && q.senderId === myCustomerId);
+      const myRequests = quotationRequests.filter(q => q.requesterId === myBusinessAsCustomer?.id);
+      const theirRequests = quotations.filter(q => q.isRequest && q.customerId === myBusinessAsCustomer?.id);
       
       return {
         all: quotations.filter(q => !q.isRequest),
@@ -269,7 +270,7 @@ export default function QuotationsPage() {
         requestsIncoming: theirRequests,
         requestsOutgoing: myRequests,
     }
-  }, [quotations, quotationRequests, myCustomerId]);
+  }, [quotations, quotationRequests, myBusinessAsCustomer]);
 
 
   const handleSelectAction = async (action: 'view' | 'edit' | 'delete' | 'download' | 'send' | 'accept' | 'decline', quotation: Quotation) => {
@@ -509,3 +510,5 @@ export default function QuotationsPage() {
     </div>
   );
 }
+
+    
