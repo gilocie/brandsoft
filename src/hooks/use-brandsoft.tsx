@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, createContext, useContext, ReactNode, useCallback } from 'react';
@@ -136,11 +137,12 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
         
         if (!parsedConfig.quotationRequests || parsedConfig.quotationRequests.length === 0) {
             const me = parsedConfig.customers.find((c: Customer) => c.name === parsedConfig.brand.businessName);
+            const meId = me?.id || `CUST-DEMO-ME-${Date.now()}`;
             if (me) {
                  const demoRequests = initialQuotationRequests.map((r, i) => ({
                      ...r,
                      id: `QR-DEMO-${i+1}`,
-                     requesterId: me.id,
+                     requesterId: meId,
                      requesterName: me.name,
                      date: new Date(Date.now() - (i+1) * 24 * 60 * 60 * 1000).toISOString(),
                      status: 'open' as const,
@@ -150,7 +152,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
             }
         }
         
-        if (!parsedConfig.quotations.some((q: Quotation) => q.quotationId.startsWith('IN-REQ'))) {
+        if (!parsedConfig.quotations.some((q: Quotation) => q.isRequest === true)) {
             const me = parsedConfig.customers.find((c: Customer) => c.name === parsedConfig.brand.businessName);
              if (me) {
                  const demoIncoming = initialIncomingQuotationRequests.map((q, i) => ({
