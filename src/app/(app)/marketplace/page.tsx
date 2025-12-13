@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, Building, MapPin } from 'lucide-react';
 import Link from 'next/link';
-import { CompanyCard } from '@/components/company-card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 
@@ -19,12 +18,13 @@ export default function MarketplacePage() {
   const [townFilter, setTownFilter] = useState('all');
 
   const businesses = useMemo(() => {
-    // We filter out the user's own company from the marketplace view
     if (!config || !config.companies) return [];
-    return config.companies.filter(c => c.companyName !== config.brand.businessName) || [];
+    // We filter out the user's own company from the marketplace view
+    return config.companies.filter(c => c.companyName !== config.brand.businessName);
   }, [config]);
 
   const filteredBusinesses = useMemo(() => {
+    if (!businesses) return [];
     return businesses.filter(biz => {
       const nameMatch = biz.companyName?.toLowerCase().includes(searchTerm.toLowerCase());
       const industryMatch = industryFilter === 'all' || biz.industry === industryFilter;
