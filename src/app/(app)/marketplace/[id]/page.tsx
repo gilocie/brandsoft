@@ -204,7 +204,7 @@ export default function VirtualShopPage() {
           <Card>
             <CardContent className="p-0">
               <div className="divide-y">
-                {reviews.map((review, index) => (
+                {reviews.map((review) => (
                   <div key={review.id} className="p-6">
                     <div className="flex items-start gap-4">
                         <Avatar>
