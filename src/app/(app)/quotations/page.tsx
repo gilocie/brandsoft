@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -63,13 +64,16 @@ export default function QuotationsPage() {
   const currencyCode = config?.profile.defaultCurrency || '';
   
   const myBusinessAsCustomer = useMemo(() => {
-    if (!config) return null;
-    return config.customers.find(c => c.name === config.brand.businessName);
+    if (!config || !config.customers || !config.brand) return null;
+    // This is the reliable way to find the user's own business profile
+    return config.customers.find(c => c.companyName === config.brand.businessName);
   }, [config]);
 
 
   const filteredQuotations = useMemo(() => {
+      // Find quotation requests where your business ID is the requester
       const myRequests = config?.quotationRequests?.filter(q => q.requesterId === myBusinessAsCustomer?.id) || [];
+      // Find quotations that are flagged as requests and are addressed to you
       const theirRequests = quotations.filter(q => q.isRequest && q.customerId === myBusinessAsCustomer?.id);
       
       return {

@@ -57,18 +57,19 @@ const formSchema = step1Schema.merge(step2Schema).merge(step3Schema);
 type FormData = z.infer<typeof formSchema>;
 
 const initialCustomers: Customer[] = [
-    { id: 'CUST-1625243511000', name: 'Liam Johnson', email: 'liam@example.com', address: '123 Main St, Anytown, USA' },
-    { id: 'CUST-1625243512000', name: 'Olivia Smith', email: 'olivia@example.com', companyName: 'Smith Designs', companyAddress: '456 Oak Ave, Anytown, USA' },
-    { id: 'CUST-1625243513000', name: 'Noah Williams', email: 'noah@example.com', address: '789 Pine Ln, Anytown, USA' },
-    { id: 'CUST-1625243514000', name: 'Emma Brown', email: 'emma@example.com', companyName: 'Brown & Co.', companyAddress: '321 Elm Rd, Anytown, USA' },
-    { id: 'CUST-1625243515000', name: 'James Jones', email: 'james@example.com', address: '654 Maple Dr, Anytown, USA' },
-    { id: 'CUST-1625243516000', name: 'Sophia Garcia', email: 'sophia@example.com', address: '987 Birch Ct, Anytown, USA' },
+    { id: 'CUST-1625243511000', name: 'Liam Johnson', email: 'liam@example.com', address: '123 Main St, Anytown, USA', customerType: 'personal' },
+    { id: 'CUST-1625243512000', name: 'Olivia Smith', email: 'olivia@example.com', companyName: 'Smith Designs', address: '456 Oak Ave, Anytown, USA', customerType: 'company' },
+    { id: 'CUST-1625243513000', name: 'Noah Williams', email: 'noah@example.com', address: '789 Pine Ln, Anytown, USA', customerType: 'personal' },
+    { id: 'CUST-1625243514000', name: 'Emma Brown', email: 'emma@example.com', companyName: 'Brown & Co.', address: '321 Elm Rd, Anytown, USA', customerType: 'company' },
+    { id: 'CUST-1625243515000', name: 'James Jones', email: 'james@example.com', address: '654 Maple Dr, Anytown, USA', customerType: 'personal' },
+    { id: 'CUST-1625243516000', name: 'Sophia Garcia', email: 'sophia@example.com', address: '987 Birch Ct, Anytown, USA', customerType: 'personal' },
 ];
 
 const initialInvoices: Invoice[] = [
   {
     invoiceId: 'INV001',
     customer: 'Liam Johnson',
+    customerId: 'CUST-1625243511000',
     date: '2023-06-23',
     dueDate: '2023-07-23',
     amount: 250.0,
@@ -82,6 +83,7 @@ const initialInvoices: Invoice[] = [
   {
     invoiceId: 'INV002',
     customer: 'Olivia Smith',
+    customerId: 'CUST-1625243512000',
     date: '2023-07-15',
     dueDate: '2023-08-15',
     amount: 150.0,
@@ -95,6 +97,7 @@ const initialInvoices: Invoice[] = [
   {
     invoiceId: 'INV003',
     customer: 'Noah Williams',
+    customerId: 'CUST-1625243513000',
     date: '2023-08-01',
     dueDate: '2023-09-01',
     amount: 350.0,
@@ -108,6 +111,7 @@ const initialInvoices: Invoice[] = [
   {
     invoiceId: 'INV004',
     customer: 'Emma Brown',
+    customerId: 'CUST-1625243514000',
     date: '2023-09-10',
     dueDate: '2023-10-10',
     amount: 450.0,
@@ -121,6 +125,7 @@ const initialInvoices: Invoice[] = [
   {
     invoiceId: 'INV005',
     customer: 'James Jones',
+    customerId: 'CUST-1625243515000',
     date: '2023-10-20',
     dueDate: '2023-11-20',
     amount: 550.0,
@@ -134,6 +139,7 @@ const initialInvoices: Invoice[] = [
    {
     invoiceId: 'INV006',
     customer: 'Sophia Garcia',
+    customerId: 'CUST-1625243516000',
     date: '2023-10-22',
     dueDate: '2023-11-22',
     amount: 300.0,
@@ -194,36 +200,36 @@ const initialQuotations: Quotation[] = [
         subtotal: 800,
         lineItems: [{ description: 'Mobile App UI/UX Design', quantity: 1, price: 800 }],
         currency: 'USD',
+    },
+    {
+        quotationId: 'QUO-100',
+        customer: 'Your Business Name',
+        customerId: 'CUST-DEMO-ME',
+        senderId: 'CUST-1625243512000',
+        date: '2023-11-20',
+        validUntil: '2023-12-20',
+        amount: 1800.0,
+        status: 'Sent',
+        subtotal: 1800,
+        lineItems: [{ description: 'Full Brand Identity Package', quantity: 1, price: 1800 }],
+        currency: 'USD',
+        isRequest: true,
+    },
+    {
+        quotationId: 'QUO-101',
+        customer: 'Your Business Name',
+        customerId: 'CUST-DEMO-ME',
+        senderId: 'CUST-1625243514000',
+        date: '2023-11-21',
+        validUntil: '2023-12-21',
+        amount: 250.0,
+        status: 'Sent',
+        subtotal: 250,
+        lineItems: [{ description: 'Business Card Printing (1000 units)', quantity: 1, price: 250 }],
+        currency: 'USD',
+        isRequest: true,
     }
 ];
-
-const initialQuotationRequests: QuotationRequest[] = [
-    {
-        id: 'QR-1625243511000',
-        title: 'Office Stationery Supply',
-        requesterId: 'CUST-1625243513000', // Noah Williams
-        requesterName: 'Noah Williams',
-        date: '2023-11-15T10:00:00Z',
-        isPublic: true,
-        items: [
-            { productName: 'A4 Reams', quantity: 20 },
-            { productName: 'Blue Pens', quantity: 100 },
-        ],
-        status: 'open',
-    },
-    {
-        id: 'QR-1625243512000',
-        title: 'Website Development for a new project',
-        requesterId: 'CUST-1625243513000', // Noah Williams
-        requesterName: 'Noah Williams',
-        date: '2023-11-20T14:30:00Z',
-        isPublic: false,
-        companyIds: ['CUST-1625243512000', 'CUST-1625243514000'],
-        items: [{ productName: 'Corporate Website', description: '5-page website with a CMS.', quantity: 1 }],
-        status: 'open',
-    },
-];
-
 
 export default function SetupPage() {
   const { saveConfig } = useBrandsoft();
@@ -280,12 +286,12 @@ export default function SetupPage() {
   async function processSubmit(data: FormData) {
     const myBusinessCustomer: Customer = {
         id: `CUST-${Date.now()}-ME`,
-        name: data.businessName,
+        name: data.businessName, // The contact person's name
         email: data.email,
         phone: data.phone,
         address: data.address,
-        companyName: data.businessName,
-        customerType: 'company',
+        companyName: data.businessName, // The name of the business
+        customerType: 'company', // This is key for identifying it as a business
         industry: data.industry,
         town: data.town,
         description: data.description,
@@ -294,12 +300,9 @@ export default function SetupPage() {
     };
 
     const finalCustomers = [...initialCustomers, myBusinessCustomer];
-    const finalRequests = initialQuotationRequests.map(req => {
-        if (req.requesterId === 'CUST-1625243513000') {
-             return { ...req, requesterId: myBusinessCustomer.id, requesterName: data.businessName };
-        }
-        return req;
-    });
+    const finalQuotations = initialQuotations.map(q => 
+        q.customerId === 'CUST-DEMO-ME' ? { ...q, customer: data.businessName, customerId: myBusinessCustomer.id } : q
+    );
 
     const config: BrandsoftConfig = {
       brand: {
@@ -340,8 +343,8 @@ export default function SetupPage() {
       customers: finalCustomers,
       products: [],
       invoices: initialInvoices,
-      quotations: initialQuotations,
-      quotationRequests: finalRequests,
+      quotations: finalQuotations,
+      quotationRequests: [],
       templates: [],
       currencies: ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD'],
     };
@@ -700,5 +703,3 @@ function Step3ModuleSelection({ control }: { control: Control<FormData> }) {
         </div>
     );
 }
-
-    
