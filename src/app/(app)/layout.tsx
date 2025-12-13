@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -52,8 +51,8 @@ const mainNavItems = [
   { href: '/invoices', icon: FileText, label: 'Invoices', enabledKey: 'invoice' },
   { href: '/quotations', icon: FileBarChart2, label: 'Quotations', enabledKey: 'quotation' },
   { href: '/products', icon: Package, label: 'Products', enabledKey: 'invoice' },
-  { href: '/customers', icon: Users, label: 'Customers', enabledKey: 'invoice' },
-  { href: '/marketplace', icon: Store, label: 'Marketplace', enabledKey: 'invoice' },
+  { href: '/companies', icon: Users, label: 'Companies', enabledKey: null },
+  { href: '/marketplace', icon: Store, label: 'Marketplace', enabledKey: null },
 ];
 
 const upcomingNavItems = [

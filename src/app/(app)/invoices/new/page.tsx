@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { CalendarIcon, PlusCircle, Trash2, Save, Send, Eye, UserPlus, Palette } from 'lucide-react';
 import { format } from "date-fns";
 import Link from 'next/link';
-import { useBrandsoft, type Customer, type Invoice, type Product, type DesignSettings } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Company, type Invoice, type Product, type DesignSettings } from '@/hooks/use-brandsoft';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -36,7 +36,7 @@ const lineItemSchema = z.object({
 });
 
 const formSchema = z.object({
-  customerId: z.string().min(1, 'Customer is required.'),
+  customerId: z.string().min(1, 'Company is required.'),
   invoiceDate: z.date({
     required_error: "An invoice date is required.",
   }),
@@ -64,21 +64,21 @@ const formSchema = z.object({
 
 type InvoiceFormData = z.infer<typeof formSchema>;
 
-const NewCustomerFormSchema = z.object({
+const NewCompanyFormSchema = z.object({
   name: z.string().min(2, "Name is required"),
   email: z.string().email("Invalid email"),
   phone: z.string().optional(),
 });
-type NewCustomerFormData = z.infer<typeof NewCustomerFormSchema>;
+type NewCompanyFormData = z.infer<typeof NewCompanyFormSchema>;
 
 export default function NewInvoicePage() {
-  const { config, addCustomer, addInvoice, saveConfig } = useBrandsoft();
+  const { config, addCompany, addInvoice, saveConfig } = useBrandsoft();
   const { setFormData, getFormData } = useFormState('newDocumentData');
   const designFormState = useFormState('designFormData');
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
+  const [isAddCompanyOpen, setIsAddCompanyOpen] = useState(false);
   const [useManualEntry, setUseManualEntry] = useState<boolean[]>([]);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -194,16 +194,16 @@ export default function NewInvoicePage() {
     return () => subscription.unsubscribe();
   }, [form, setFormData, isInitialized]);
 
-  const newCustomerForm = useForm<NewCustomerFormData>({
-    resolver: zodResolver(NewCustomerFormSchema),
+  const newCompanyForm = useForm<NewCompanyFormData>({
+    resolver: zodResolver(NewCompanyFormSchema),
     defaultValues: { name: "", email: "", phone: "" },
   });
 
-  function onAddNewCustomer(data: NewCustomerFormData) {
-    const newCustomer = addCustomer(data);
-    form.setValue('customerId', newCustomer.id, { shouldValidate: true });
-    setIsAddCustomerOpen(false);
-    newCustomerForm.reset();
+  function onAddNewCompany(data: NewCompanyFormData) {
+    const newCompany = addCompany({ ...data, companyName: data.name }); // Use name as companyName for simplicity
+    form.setValue('customerId', newCompany.id, { shouldValidate: true });
+    setIsAddCompanyOpen(false);
+    newCompanyForm.reset();
   }
 
   const handleFormSubmit = (status: Invoice['status']) => {
@@ -219,8 +219,8 @@ export default function NewInvoicePage() {
       saveConfig(newConfig, { redirect: false });
     }
 
-    const customer = config.customers.find(c => c.id === data.customerId);
-    if (!customer) return;
+    const company = config.companies.find(c => c.id === data.customerId);
+    if (!company) return;
     
     const subtotal = data.lineItems.reduce((acc, item) => acc + (item.quantity * item.price), 0);
 
@@ -256,8 +256,8 @@ export default function NewInvoicePage() {
     }
 
     const newInvoice: Omit<Invoice, 'invoiceId'> = {
-        customer: customer.name,
-        customerId: customer.id,
+        customer: company.name,
+        customerId: company.id,
         date: format(data.invoiceDate, 'yyyy-MM-dd'),
         dueDate: format(data.dueDate, 'yyyy-MM-dd'),
         amount: total,
@@ -289,7 +289,7 @@ export default function NewInvoicePage() {
     
     toast({
         title: "Invoice Saved!",
-        description: `Invoice ${savedInvoice.invoiceId} for ${customer.name} has been saved as a ${data.status.toLowerCase()}.`
+        description: `Invoice ${savedInvoice.invoiceId} for ${company.name} has been saved as a ${data.status.toLowerCase()}.`
     });
 
     setFormData(null); // Clear stored form data
@@ -394,7 +394,7 @@ export default function NewInvoicePage() {
         <form onSubmit={e => e.preventDefault()} className="space-y-8">
           <Card>
             <CardHeader>
-              <CardTitle>Customer Details</CardTitle>
+              <CardTitle>Company Details</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4">
               <FormField
@@ -402,21 +402,21 @@ export default function NewInvoicePage() {
                 name="customerId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Customer</FormLabel>
+                    <FormLabel>Company</FormLabel>
                     <div className="flex gap-2">
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select a customer" />
+                            <SelectValue placeholder="Select a company" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {config?.customers?.map((c: Customer) => (
-                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                          {config?.companies?.map((c: Company) => (
+                            <SelectItem key={c.id} value={c.id}>{c.companyName}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
-                      <Button type="button" variant="outline" size="icon" onClick={() => setIsAddCustomerOpen(true)}>
+                      <Button type="button" variant="outline" size="icon" onClick={() => setIsAddCompanyOpen(true)}>
                         <UserPlus className="h-4 w-4" />
                       </Button>
                     </div>
@@ -884,26 +884,26 @@ export default function NewInvoicePage() {
         </form>
       </Form>
       
-      <Dialog open={isAddCustomerOpen} onOpenChange={setIsAddCustomerOpen}>
+      <Dialog open={isAddCompanyOpen} onOpenChange={setIsAddCompanyOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add New Customer</DialogTitle>
-            <DialogDescription>Enter the details for the new customer.</DialogDescription>
+            <DialogTitle>Add New Company</DialogTitle>
+            <DialogDescription>Enter the details for the new company.</DialogDescription>
           </DialogHeader>
-          <Form {...newCustomerForm}>
-            <form onSubmit={newCustomerForm.handleSubmit(onAddNewCustomer)} className="space-y-4">
-              <FormField control={newCustomerForm.control} name="name" render={({ field }) => (
+          <Form {...newCompanyForm}>
+            <form onSubmit={newCompanyForm.handleSubmit(onAddNewCompany)} className="space-y-4">
+              <FormField control={newCompanyForm.control} name="name" render={({ field }) => (
                 <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
               )} />
-              <FormField control={newCustomerForm.control} name="email" render={({ field }) => (
+              <FormField control={newCompanyForm.control} name="email" render={({ field }) => (
                 <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
               )} />
-              <FormField control={newCustomerForm.control} name="phone" render={({ field }) => (
+              <FormField control={newCompanyForm.control} name="phone" render={({ field }) => (
                 <FormItem><FormLabel>Phone (Optional)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
               )} />
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsAddCustomerOpen(false)}>Cancel</Button>
-                <Button type="submit">Save Customer</Button>
+                <Button type="button" variant="outline" onClick={() => setIsAddCompanyOpen(false)}>Cancel</Button>
+                <Button type="submit">Save Company</Button>
               </DialogFooter>
             </form>
           </Form>
@@ -918,7 +918,7 @@ export default function NewInvoicePage() {
           <div className="h-full overflow-y-auto">
             <InvoicePreview
                 config={config}
-                customer={config?.customers.find(c => c.id === watchedValues.customerId) || null}
+                customer={config?.companies.find(c => c.id === watchedValues.customerId) || null}
                 invoiceData={{
                     ...watchedValues,
                     invoiceDate: watchedValues.invoiceDate ? format(watchedValues.invoiceDate, 'yyyy-MM-dd') : '',
@@ -936,5 +936,3 @@ export default function NewInvoicePage() {
     </div>
   );
 }
-
-    

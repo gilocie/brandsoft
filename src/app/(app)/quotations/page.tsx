@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -63,18 +62,15 @@ export default function QuotationsPage() {
   const quotations = config?.quotations || [];
   const currencyCode = config?.profile.defaultCurrency || '';
   
-  const myBusinessAsCustomer = useMemo(() => {
-    if (!config || !config.customers || !config.brand) return null;
-    // This is the reliable way to find the user's own business profile
-    return config.customers.find(c => c.companyName === config.brand.businessName);
+  const myBusinessAsCompany = useMemo(() => {
+    if (!config || !config.companies || !config.brand) return null;
+    return config.companies.find(c => c.companyName === config.brand.businessName);
   }, [config]);
 
 
   const filteredQuotations = useMemo(() => {
-      // Find quotation requests where your business ID is the requester
-      const myRequests = config?.quotationRequests?.filter(q => q.requesterId === myBusinessAsCustomer?.id) || [];
-      // Find quotations that are flagged as requests and are addressed to you
-      const theirRequests = quotations.filter(q => q.isRequest && q.customerId === myBusinessAsCustomer?.id);
+      const myRequests = config?.quotationRequests?.filter(q => q.requesterId === myBusinessAsCompany?.id) || [];
+      const theirRequests = quotations.filter(q => q.isRequest && q.customerId === myBusinessAsCompany?.id);
       
       return {
         all: quotations.filter(q => !q.isRequest),
@@ -85,7 +81,7 @@ export default function QuotationsPage() {
         requestsIncoming: theirRequests,
         requestsOutgoing: myRequests,
     }
-  }, [quotations, config?.quotationRequests, myBusinessAsCustomer]);
+  }, [quotations, config?.quotationRequests, myBusinessAsCompany]);
 
 
   const handleSelectAction = async (action: 'view' | 'edit' | 'delete' | 'download' | 'send' | 'accept' | 'decline', quotation: Quotation) => {
@@ -107,9 +103,9 @@ export default function QuotationsPage() {
             setIsDeclineOpen(true);
             break;
         case 'download':
-            const customer = config?.customers.find(c => c.id === quotation.customerId) || null;
-            if (config && customer) {
-                await downloadQuotationAsPdf({ config, customer, quotationData: quotation, quotationId: quotation.quotationId });
+            const company = config?.companies.find(c => c.id === quotation.customerId) || null;
+            if (config && company) {
+                await downloadQuotationAsPdf({ config, customer: company, quotationData: quotation, quotationId: quotation.quotationId });
             } else {
                 console.error("Missing data for PDF generation.");
             }
@@ -171,7 +167,7 @@ export default function QuotationsPage() {
   };
 
   const currentPreviewQuotation = config?.quotations.find(q => q.quotationId === selectedQuotation?.quotationId);
-  const selectedCustomer = config?.customers.find(c => c.id === currentPreviewQuotation?.customerId) || null;
+  const selectedCompany = config?.companies.find(c => c.id === currentPreviewQuotation?.customerId) || null;
 
   return (
     <div className="container mx-auto space-y-6">
@@ -256,10 +252,10 @@ export default function QuotationsPage() {
             <DialogTitle>Quotation Preview</DialogTitle>
           </DialogHeader>
           <div className="h-full overflow-y-auto">
-            {currentPreviewQuotation && selectedCustomer && (
+            {currentPreviewQuotation && selectedCompany && (
               <QuotationPreview
                 config={config}
-                customer={selectedCustomer}
+                customer={selectedCompany}
                 quotationData={currentPreviewQuotation}
                 quotationId={currentPreviewQuotation.quotationId}
               />

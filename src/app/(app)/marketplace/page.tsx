@@ -2,13 +2,15 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useBrandsoft, type Customer } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Company } from '@/hooks/use-brandsoft';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, Building, MapPin } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
+import { CompanyCard } from '@/components/company-card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
 
 export default function MarketplacePage() {
   const { config } = useBrandsoft();
@@ -17,8 +19,9 @@ export default function MarketplacePage() {
   const [townFilter, setTownFilter] = useState('all');
 
   const businesses = useMemo(() => {
-    return config?.customers.filter(c => c.companyName) || [];
-  }, [config?.customers]);
+    // We filter out the user's own company from the marketplace view
+    return config?.companies.filter(c => c.companyName !== config.brand.businessName) || [];
+  }, [config?.companies, config?.brand.businessName]);
 
   const filteredBusinesses = useMemo(() => {
     return businesses.filter(biz => {

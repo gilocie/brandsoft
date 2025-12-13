@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -283,7 +282,7 @@ export default function DashboardPage() {
         unpaidCount: 0,
         overdueCount: 0,
         canceledCount: 0,
-        totalCustomers: 0,
+        totalCompanies: 0,
         totalProducts: 0,
         paidAmount: 0,
         unpaidAmount: 0,
@@ -311,7 +310,7 @@ export default function DashboardPage() {
       unpaidCount: invoices.filter((inv) => inv.status === 'Pending').length,
       overdueCount: invoices.filter((inv) => inv.status === 'Overdue').length,
       canceledCount: canceledInvoices.length,
-      totalCustomers: config.customers?.length || 0,
+      totalCompanies: config.companies?.length || 0,
       totalProducts: config.products?.length || 0,
       paidAmount,
       unpaidAmount,

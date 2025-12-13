@@ -1,18 +1,17 @@
 
-
 'use client';
 
 import { useState, useEffect, createContext, useContext, ReactNode, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { hexToHsl } from '@/lib/utils';
-import { useCustomers } from './use-customers';
+import { useCompanies } from './use-companies';
 import { useProducts } from './use-products';
 import { useInvoices } from './use-invoices';
 import { useQuotations } from './use-quotations';
 import { useQuotationRequests } from './use-quotation-requests';
 import { usePurchases } from './use-purchases';
 import { useCurrencies } from './use-currencies';
-import type { BrandsoftConfig, Customer, Product, Invoice, Quotation, QuotationRequest, Purchase } from '@/types/brandsoft';
+import type { BrandsoftConfig, Company, Product, Invoice, Quotation, QuotationRequest, Purchase } from '@/types/brandsoft';
 
 export * from '@/types/brandsoft';
 
@@ -28,10 +27,10 @@ interface BrandsoftContextType {
   activate: (serial: string) => boolean;
   saveConfig: (newConfig: BrandsoftConfig, options?: { redirect?: boolean; revalidate?: boolean }) => void;
   logout: () => void;
-  // Customer methods
-  addCustomer: (customer: Omit<Customer, 'id'>) => Customer;
-  updateCustomer: (customerId: string, data: Partial<Omit<Customer, 'id'>>) => void;
-  deleteCustomer: (customerId: string) => void;
+  // Company methods
+  addCompany: (company: Omit<Company, 'id'>) => Company;
+  updateCompany: (companyId: string, data: Partial<Omit<Company, 'id'>>) => void;
+  deleteCompany: (companyId: string) => void;
   // Product methods
   addProduct: (product: Omit<Product, 'id'>) => Product;
   updateProduct: (productId: string, data: Partial<Omit<Product, 'id'>>) => void;
@@ -101,7 +100,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const customerMethods = useCustomers(config, saveConfig);
+  const companyMethods = useCompanies(config, saveConfig);
   const productMethods = useProducts(config, saveConfig);
   const invoiceMethods = useInvoices(config, saveConfig);
   const quotationMethods = useQuotations(config, saveConfig);
@@ -188,7 +187,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     activate,
     saveConfig,
     logout,
-    ...customerMethods,
+    ...companyMethods,
     ...productMethods,
     ...invoiceMethods,
     ...quotationMethods,

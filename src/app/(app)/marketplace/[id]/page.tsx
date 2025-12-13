@@ -3,7 +3,7 @@
 
 import { useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useBrandsoft, type Customer, type Product } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Company, type Product } from '@/hooks/use-brandsoft';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,8 +20,8 @@ export default function VirtualShopPage() {
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
 
   const business = useMemo(() => {
-    return config?.customers.find(c => c.id === params.id) || null;
-  }, [config?.customers, params.id]);
+    return config?.companies.find(c => c.id === params.id) || null;
+  }, [config?.companies, params.id]);
 
   const products = useMemo(() => {
     // In a real app, this would filter products by the business ID.
@@ -29,10 +29,10 @@ export default function VirtualShopPage() {
     return config?.products || [];
   }, [config?.products]);
 
-  const myCustomerId = useMemo(() => {
+  const myCompanyId = useMemo(() => {
     if (!config) return null;
-    const myBusinessAsCustomer = config.customers.find(c => c.companyName === config.brand.businessName);
-    return myBusinessAsCustomer?.id || null;
+    const myBusinessAsCompany = config.companies.find(c => c.companyName === config.brand.businessName);
+    return myBusinessAsCompany?.id || null;
   }, [config]);
 
   if (!business) {
@@ -48,9 +48,9 @@ export default function VirtualShopPage() {
   };
   
   const handleRequestQuotation = () => {
-    if (selectedProductIds.length > 0 && myCustomerId) {
+    if (selectedProductIds.length > 0 && myCompanyId) {
       const productQuery = selectedProductIds.join(',');
-      router.push(`/quotations/new?products=${productQuery}&customerId=${business.id}&senderId=${myCustomerId}`);
+      router.push(`/quotations/new?products=${productQuery}&customerId=${business.id}&senderId=${myCompanyId}`);
     }
   };
   
@@ -133,7 +133,7 @@ export default function VirtualShopPage() {
         
          {selectedProductIds.length > 0 && (
             <div className="sticky bottom-6 flex justify-center">
-                <Button size="lg" className="shadow-lg animate-in fade-in zoom-in-95" onClick={handleRequestQuotation} disabled={!myCustomerId}>
+                <Button size="lg" className="shadow-lg animate-in fade-in zoom-in-95" onClick={handleRequestQuotation} disabled={!myCompanyId}>
                     <FileBarChart2 className="mr-2 h-4 w-4" />
                     Request Quotation for {selectedProductIds.length} Item(s)
                 </Button>

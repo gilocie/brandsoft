@@ -1,17 +1,17 @@
 
 import { Page } from '@/stores/canvas-store';
 
-export type Customer = {
+export type Company = {
   id: string;
-  name: string;
+  name: string; // Contact person's name
   email: string;
   phone?: string;
   address?: string;
-  companyName?: string;
+  companyName: string;
   companyAddress?: string;
   vatNumber?: string;
   associatedProductIds?: string[];
-  customerType?: 'personal' | 'company';
+  customerType?: 'personal' | 'company'; // Can be used to differentiate B2B from B2C
   industry?: string;
   town?: string;
   description?: string;
@@ -172,7 +172,7 @@ export type BrandsoftConfig = {
     quotation: boolean;
     marketing: boolean;
   };
-  customers: Customer[];
+  companies: Company[];
   products: Product[];
   invoices: Invoice[];
   quotations: Quotation[];
@@ -213,7 +213,7 @@ export type Quotation = {
     quotationId: string;
     customer: string;
     customerId: string;
-    senderId?: string; // ID of the customer who sent the request
+    senderId?: string; // ID of the company who sent the request
     date: string;
     validUntil: string;
     amount: number;
