@@ -22,7 +22,7 @@ export const QuotationRequestList = ({ requests, layout }: QuotationRequestListP
     if (requests.length === 0) {
         return (
             <div className="flex h-60 items-center justify-center rounded-lg border-2 border-dashed bg-muted/40">
-                <p className="text-muted-foreground">Gift Ilocie</p>
+                <p className="text-muted-foreground">No quotation requests found.</p>
             </div>
         )
     }

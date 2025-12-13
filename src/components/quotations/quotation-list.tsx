@@ -36,7 +36,7 @@ export const QuotationList = ({quotations, layout, onSelectAction, currencyCode}
     if (quotations.length === 0) {
         return (
             <div className="flex h-60 items-center justify-center rounded-lg border-2 border-dashed bg-muted/40">
-                <p className="text-muted-foreground">Gift Ilocie</p>
+                <p className="text-muted-foreground">No quotations found in this category.</p>
             </div>
         )
     }
