@@ -114,7 +114,7 @@ export function CompanyCard({ company, averageRating, reviewCount, onSelectActio
 
                 <div className="mt-4 px-2 pb-2">
                      <Button variant="default" className="w-full" onClick={(e) => { e.stopPropagation(); onSelectAction('view'); }}>
-                        <Eye className="mr-2 h-4 w-4"/> View Profile
+                        <Eye className="mr-2 h-4 w-4"/> View
                     </Button>
                 </div>
             </CardContent>
