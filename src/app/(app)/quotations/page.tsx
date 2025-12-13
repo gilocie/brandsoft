@@ -346,7 +346,7 @@ export default function QuotationsPage() {
                     <TabsTrigger value="incoming">Incoming ({filteredQuotations.requestsIncoming.length})</TabsTrigger>
                     <TabsTrigger value="outgoing">Outgoing ({filteredQuotations.requestsOutgoing.length})</TabsTrigger>
                 </TabsList>
-                 <Button asChild>
+                 <Button asChild variant="secondary" className="bg-accent hover:bg-accent/90">
                   <Link href="/quotations/request">
                     <MessageSquareQuote className="mr-2 h-4 w-4" /> Request a Quotation
                   </Link>
