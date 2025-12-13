@@ -12,6 +12,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Building, MapPin, Globe, Phone, Mail, FileBarChart2, ArrowLeft, Info, Package } from 'lucide-react';
 import Link from 'next/link';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import Image from 'next/image';
+
+const fallBackCover = 'https://picsum.photos/seed/shopcover/1200/400';
+
 
 export default function VirtualShopPage() {
   const params = useParams();
@@ -62,23 +66,35 @@ export default function VirtualShopPage() {
         <Link href="/marketplace"><ArrowLeft className="mr-2 h-4 w-4"/> Back to Marketplace</Link>
       </Button>
 
-      <Card>
-        <CardHeader className="flex flex-col md:flex-row items-start gap-6">
-          <Avatar className="h-24 w-24 border">
-            <AvatarImage src={business.logo} />
-            <AvatarFallback><Building className="h-10 w-10" /></AvatarFallback>
-          </Avatar>
-          <div className="flex-1">
-            <CardTitle className="text-3xl font-headline">{business.companyName}</CardTitle>
-            <CardDescription className="mt-1">{business.description || 'Leading provider in our industry.'}</CardDescription>
-             <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
-                {business.industry && <div className="flex items-center gap-2"><Building className="h-4 w-4" /> {business.industry}</div>}
-                {business.town && <div className="flex items-center gap-2"><MapPin className="h-4 w-4" /> {business.town}</div>}
-                {business.website && <div className="flex items-center gap-2"><Globe className="h-4 w-4" /> <a href={business.website} target="_blank" rel="noreferrer" className="text-primary hover:underline">{business.website}</a></div>}
-                {business.phone && <div className="flex items-center gap-2"><Phone className="h-4 w-4" /> {business.phone}</div>}
-                {business.email && <div className="flex items-center gap-2"><Mail className="h-4 w-4" /> {business.email}</div>}
+      <Card className="overflow-hidden">
+        <CardHeader className="p-0">
+           <div className="relative h-48 w-full">
+                <Image
+                    src={business.coverImage || fallBackCover}
+                    alt={`${business.companyName} cover`}
+                    fill
+                    className="object-cover"
+                    data-ai-hint="office workspace"
+                />
+                <div className="absolute inset-0 bg-black/50" />
+                 <div className="absolute inset-0 p-6 flex flex-col md:flex-row items-start gap-6">
+                    <Avatar className="h-24 w-24 border-4 border-background flex-shrink-0">
+                        <AvatarImage src={business.logo} />
+                        <AvatarFallback><Building className="h-10 w-10" /></AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 text-white pt-2">
+                        <CardTitle className="text-3xl font-headline">{business.companyName}</CardTitle>
+                        <CardDescription className="mt-1 text-gray-300">{business.description || 'Leading provider in our industry.'}</CardDescription>
+                        <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-300">
+                            {business.industry && <div className="flex items-center gap-2"><Building className="h-4 w-4" /> {business.industry}</div>}
+                            {business.town && <div className="flex items-center gap-2"><MapPin className="h-4 w-4" /> {business.town}</div>}
+                            {business.website && <div className="flex items-center gap-2"><Globe className="h-4 w-4" /> <a href={business.website} target="_blank" rel="noreferrer" className="text-primary-foreground hover:underline">{business.website}</a></div>}
+                            {business.phone && <div className="flex items-center gap-2"><Phone className="h-4 w-4" /> {business.phone}</div>}
+                            {business.email && <div className="flex items-center gap-2"><Mail className="h-4 w-4" /> {business.email}</div>}
+                        </div>
+                    </div>
+                </div>
             </div>
-          </div>
         </CardHeader>
       </Card>
       
