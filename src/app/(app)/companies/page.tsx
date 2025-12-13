@@ -58,7 +58,7 @@ type CompanyFormData = z.infer<typeof formSchema>;
 const ITEMS_PER_PAGE = 20;
 
 export default function CompaniesPage() {
-  const { config, addCompany, updateCompany, deleteCompany, saveConfig } from useBrandsoft();
+  const { config, addCompany, updateCompany, deleteCompany, saveConfig } = useBrandsoft();
   const { toast } = useToast();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
