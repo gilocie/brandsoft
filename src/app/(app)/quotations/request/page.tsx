@@ -87,15 +87,23 @@ export default function RequestQuotationPage() {
     }
     
     // --- FIX STARTS HERE ---
-    // 1. Try to find ID by Business Name in Companies list first (primary identity)
-    let myId = config.companies?.find(c => c.companyName === config.brand.businessName)?.id;
+    let myId: string | undefined;
+    const userBusinessNameLower = config.brand.businessName.toLowerCase();
+
+    // 1. Try to find ID in Companies list first (primary identity)
+    const myCompany = config.companies?.find(c => c.companyName.toLowerCase() === userBusinessNameLower);
+    if (myCompany) {
+      myId = myCompany.id;
+    }
 
     // 2. If not found, try to find ID in Customers list
     if (!myId) {
-        myId = config.customers?.find(c => c.name === config.brand.businessName)?.id;
+      const myCustomer = config.customers?.find(c => c.name.toLowerCase() === userBusinessNameLower);
+      if (myCustomer) {
+        myId = myCustomer.id;
+      }
     }
-
-    // 3. This should ideally not be hit anymore, but serves as a safeguard.
+    
     if (!myId) {
         console.error("Could not determine requester ID. Please check app setup.");
          toast({
