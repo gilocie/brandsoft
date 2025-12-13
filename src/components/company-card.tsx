@@ -22,7 +22,7 @@ export function CompanyCard({ company, onSelectAction }: { company: Company, onS
 
     return (
         <Card 
-            className="w-full max-w-sm mx-auto rounded-xl overflow-hidden shadow-lg transform transition-all hover:-translate-y-1 hover:shadow-2xl"
+            className="w-full max-w-md mx-auto rounded-xl overflow-hidden shadow-lg transform transition-all hover:-translate-y-1 hover:shadow-2xl"
             onClick={handleCardClick}
         >
             <div className="relative">
