@@ -326,7 +326,7 @@ export default function QuotationsPage() {
       </div>
       
        <Tabs defaultValue="all" className="space-y-4">
-        <div className="flex items-center justify-between">
+        
             <TabsList>
               <TabsTrigger value="all">All</TabsTrigger>
               <TabsTrigger value="requests">Requests</TabsTrigger>
@@ -335,21 +335,23 @@ export default function QuotationsPage() {
               <TabsTrigger value="accepted">Accepted</TabsTrigger>
               <TabsTrigger value="declined">Declined</TabsTrigger>
             </TabsList>
-            <Button asChild variant="outline">
-              <Link href="/quotations/request">
-                <MessageSquareQuote className="mr-2 h-4 w-4" /> Request a Quotation
-              </Link>
-            </Button>
-        </div>
+            
         <TabsContent value="all">
           <QuotationList quotations={filteredQuotations.all} layout={layout} onSelectAction={handleSelectAction} currencyCode={currencyCode} />
         </TabsContent>
         <TabsContent value="requests">
           <Tabs defaultValue="incoming">
-            <TabsList>
-                <TabsTrigger value="incoming">Incoming ({filteredQuotations.requestsIncoming.length})</TabsTrigger>
-                <TabsTrigger value="outgoing">Outgoing ({filteredQuotations.requestsOutgoing.length})</TabsTrigger>
-            </TabsList>
+             <div className="flex items-center justify-between">
+                <TabsList>
+                    <TabsTrigger value="incoming">Incoming ({filteredQuotations.requestsIncoming.length})</TabsTrigger>
+                    <TabsTrigger value="outgoing">Outgoing ({filteredQuotations.requestsOutgoing.length})</TabsTrigger>
+                </TabsList>
+                 <Button asChild variant="outline">
+                  <Link href="/quotations/request">
+                    <MessageSquareQuote className="mr-2 h-4 w-4" /> Request a Quotation
+                  </Link>
+                </Button>
+            </div>
             <TabsContent value="incoming" className="pt-4">
                  <QuotationList quotations={filteredQuotations.requestsIncoming} layout={layout} onSelectAction={handleSelectAction} currencyCode={currencyCode} />
             </TabsContent>
