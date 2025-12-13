@@ -115,12 +115,12 @@ export default function RequestQuotationPage() {
                  <CardContent className="space-y-4">
                     {fields.map((field, index) => (
                         <div key={field.id} className="grid grid-cols-[1fr_auto] gap-4 items-start border p-4 rounded-md">
-                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                             <FormField control={form.control} name={`items.${index}.productName`} render={({ field }) => (
-                                <FormItem><FormLabel>Product/Service Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormItem className="md:col-span-2"><FormLabel>Product/Service Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                             )} />
                             <FormField control={form.control} name={`items.${index}.description`} render={({ field }) => (
-                                <FormItem><FormLabel>Description</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormItem className="md:col-span-2"><FormLabel>Description</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                             )} />
                             <FormField control={form.control} name={`items.${index}.quantity`} render={({ field }) => (
                                 <FormItem><FormLabel>Quantity</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
