@@ -38,6 +38,7 @@ export function RatingDialog({ isOpen, onClose, onSubmit, businessName }: Rating
   const handleSubmit = () => {
     if (rating > 0) {
       onSubmit(rating, comment);
+      onClose();
     }
   };
 
