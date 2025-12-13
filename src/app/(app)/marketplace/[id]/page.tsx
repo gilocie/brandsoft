@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Building, MapPin, Globe, Phone, Mail, FileBarChart2, ArrowLeft, Info, Package } from 'lucide-react';
+import { Building, MapPin, Globe, Phone, Mail, FileBarChart2, ArrowLeft, Info, Package, Star } from 'lucide-react';
 import Link from 'next/link';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Image from 'next/image';
@@ -99,7 +99,19 @@ export default function VirtualShopPage() {
       </Card>
       
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold font-headline">Product & Service Catalog</h2>
+        <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold font-headline">Product & Service Catalog</h2>
+            <div className="flex items-center gap-4">
+                <div className="flex items-center gap-1">
+                    <Star className="h-5 w-5 text-amber-400 fill-amber-400" />
+                    <Star className="h-5 w-5 text-amber-400 fill-amber-400" />
+                    <Star className="h-5 w-5 text-amber-400 fill-amber-400" />
+                    <Star className="h-5 w-5 text-amber-400 fill-amber-400" />
+                    <Star className="h-5 w-5 text-gray-300" />
+                </div>
+                <Button variant="outline">Rate Business</Button>
+            </div>
+        </div>
 
          <Alert>
             <Info className="h-4 w-4" />
