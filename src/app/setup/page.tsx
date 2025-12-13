@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useForm, Control } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useBrandsoft, type BrandsoftConfig, type Invoice, type Customer, type Quotation } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type BrandsoftConfig, type Invoice, type Customer, type Quotation, type QuotationRequest } from '@/hooks/use-brandsoft';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
@@ -197,6 +197,33 @@ const initialQuotations: Quotation[] = [
     }
 ];
 
+const initialQuotationRequests: QuotationRequest[] = [
+    {
+        id: 'QR-1625243511000',
+        title: 'Office Stationery Supply',
+        requesterId: 'MY-BUSINESS-ID',
+        requesterName: 'My Business Name',
+        date: '2023-11-15T10:00:00Z',
+        isPublic: true,
+        items: [
+            { productName: 'A4 Reams', quantity: 20 },
+            { productName: 'Blue Pens', quantity: 100 },
+        ],
+        status: 'open',
+    },
+    {
+        id: 'QR-1625243512000',
+        title: 'Website Development for a new project',
+        requesterId: 'MY-BUSINESS-ID',
+        requesterName: 'My Business Name',
+        date: '2023-11-20T14:30:00Z',
+        isPublic: false,
+        companyIds: ['CUST-1625243512000', 'CUST-1625243514000'],
+        items: [{ productName: 'Corporate Website', description: '5-page website with a CMS.', quantity: 1 }],
+        status: 'open',
+    },
+];
+
 
 export default function SetupPage() {
   const { saveConfig } = useBrandsoft();
@@ -251,6 +278,28 @@ export default function SetupPage() {
   }, [primaryColor, secondaryColor]);
 
   async function processSubmit(data: FormData) {
+    const myBusinessCustomer: Customer = {
+        id: `CUST-${Date.now()}-ME`,
+        name: data.businessName,
+        email: data.email,
+        phone: data.phone,
+        address: data.address,
+        companyName: data.businessName,
+        customerType: 'company',
+        industry: data.industry,
+        town: data.town,
+        description: data.description,
+        logo: data.logo,
+        website: data.website,
+    };
+
+    const finalCustomers = [...initialCustomers, myBusinessCustomer];
+    const finalRequests = initialQuotationRequests.map(req => ({
+        ...req,
+        requesterId: myBusinessCustomer.id,
+        requesterName: myBusinessCustomer.name,
+    }));
+
     const config: BrandsoftConfig = {
       brand: {
         businessName: data.businessName,
@@ -287,10 +336,11 @@ export default function SetupPage() {
         quotation: data.quotation,
         marketing: data.marketing,
       },
-      customers: initialCustomers,
+      customers: finalCustomers,
       products: [],
       invoices: initialInvoices,
       quotations: initialQuotations,
+      quotationRequests: finalRequests,
       templates: [],
       currencies: ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD'],
     };
