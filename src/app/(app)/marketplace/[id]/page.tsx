@@ -70,6 +70,7 @@ export default function VirtualShopPage() {
   }, [reviews, reviewsPage]);
   const totalReviewPages = Math.ceil(reviews.length / REVIEWS_PER_PAGE);
 
+  const isOwnProfile = business?.id === currentUserId;
 
   if (!business) {
     return <div className="text-center py-10">Business not found.</div>;
@@ -164,7 +165,9 @@ export default function VirtualShopPage() {
                     ))}
                     <span className="text-sm text-muted-foreground ml-2">({reviews.length} reviews)</span>
                 </div>
-                <Button variant="outline" onClick={() => setIsRatingOpen(true)}>Rate Business</Button>
+                {!isOwnProfile && (
+                    <Button variant="outline" onClick={() => setIsRatingOpen(true)}>Rate Business</Button>
+                )}
             </div>
         </div>
 
