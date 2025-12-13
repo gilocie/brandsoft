@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
-import { PlusCircle, Send, Trash2 } from 'lucide-react';
+import { PlusCircle, Send, Trash2, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -123,7 +123,7 @@ export default function RequestQuotationPage() {
                                 <FormItem className="md:col-span-2"><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
                             )} />
                             <FormField control={form.control} name={`items.${index}.quantity`} render={({ field }) => (
-                                <FormItem><FormLabel>Quantity</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormItem className="md:col-span-1"><FormLabel>Quantity</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
                             )} />
                            </div>
                             <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)} className="mt-8">
@@ -174,7 +174,17 @@ export default function RequestQuotationPage() {
                                     )} />
                                 ))}
                             </div>
-                            {businesses.length === 0 && <p className="text-sm text-muted-foreground">No other businesses found in your customer list.</p>}
+                            {businesses.length === 0 ? (
+                                <p className="text-sm text-muted-foreground">No other businesses found in your customer list.</p>
+                            ) : null}
+                            <div className="pt-2">
+                                <Button asChild variant="outline" className="w-full">
+                                    <Link href="/marketplace">
+                                        <Search className="mr-2 h-4 w-4" />
+                                        Find More Suppliers
+                                    </Link>
+                                </Button>
+                            </div>
                         </div>
                     )}
                  </CardContent>
