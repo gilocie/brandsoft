@@ -126,6 +126,16 @@ export type QuotationRequest = {
   status: 'open' | 'closed';
 };
 
+export type Review = {
+  id: string;
+  businessId: string;
+  reviewerId: string;
+  reviewerName: string;
+  rating: number;
+  comment: string;
+  date: string;
+};
+
 export type BrandsoftConfig = {
   brand: {
     logo: string;
@@ -193,6 +203,7 @@ export type BrandsoftConfig = {
   templates: BrandsoftTemplate[];
   currencies: string[];
   purchases?: Purchase[];
+  reviews?: Review[];
 };
 
 export type Invoice = {

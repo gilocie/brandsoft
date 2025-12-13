@@ -3,7 +3,7 @@
 
 import { useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useBrandsoft, type Company, type Product } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Company, type Product, type Review } from '@/hooks/use-brandsoft';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import { Building, MapPin, Globe, Phone, Mail, FileBarChart2, ArrowLeft, Info, P
 import Link from 'next/link';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Image from 'next/image';
+import { RatingDialog } from '@/components/rating-dialog';
 
 const fallBackCover = 'https://picsum.photos/seed/shopcover/1200/400';
 
@@ -20,8 +21,9 @@ const fallBackCover = 'https://picsum.photos/seed/shopcover/1200/400';
 export default function VirtualShopPage() {
   const params = useParams();
   const router = useRouter();
-  const { config } = useBrandsoft();
+  const { config, addReview } = useBrandsoft();
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
+  const [isRatingOpen, setIsRatingOpen] = useState(false);
 
   const business = useMemo(() => {
     return config?.companies.find(c => c.id === params.id) || null;
@@ -38,6 +40,18 @@ export default function VirtualShopPage() {
     const myBusinessAsCompany = config.companies.find(c => c.companyName === config.brand.businessName);
     return myBusinessAsCompany?.id || null;
   }, [config]);
+  
+  const reviews = useMemo(() => {
+    if (!config?.reviews || !business) return [];
+    return config.reviews.filter(r => r.businessId === business.id);
+  }, [config?.reviews, business]);
+  
+  const averageRating = useMemo(() => {
+    if (reviews.length === 0) return 0;
+    const total = reviews.reduce((acc, r) => acc + r.rating, 0);
+    return total / reviews.length;
+  }, [reviews]);
+
 
   if (!business) {
     return <div className="text-center py-10">Business not found.</div>;
@@ -56,6 +70,21 @@ export default function VirtualShopPage() {
       const productQuery = selectedProductIds.join(',');
       router.push(`/quotations/new?products=${productQuery}&customerId=${business.id}&senderId=${myCompanyId}`);
     }
+  };
+  
+  const handleRatingSubmit = (rating: number, comment: string) => {
+    if (!config || !myCompanyId) return;
+    
+    const newReview: Omit<Review, 'id'> = {
+      businessId: business.id,
+      reviewerId: myCompanyId,
+      reviewerName: config.brand.businessName,
+      rating,
+      comment,
+      date: new Date().toISOString(),
+    };
+    addReview(newReview);
+    setIsRatingOpen(false);
   };
   
   const currencyCode = config?.profile.defaultCurrency || '';
@@ -103,13 +132,12 @@ export default function VirtualShopPage() {
             <h2 className="text-2xl font-bold font-headline">Product & Service Catalog</h2>
             <div className="flex items-center gap-4">
                 <div className="flex items-center gap-1">
-                    <Star className="h-5 w-5 text-amber-400 fill-amber-400" />
-                    <Star className="h-5 w-5 text-amber-400 fill-amber-400" />
-                    <Star className="h-5 w-5 text-amber-400 fill-amber-400" />
-                    <Star className="h-5 w-5 text-amber-400 fill-amber-400" />
-                    <Star className="h-5 w-5 text-gray-300" />
+                    {[...Array(5)].map((_, i) => (
+                        <Star key={i} className={`h-5 w-5 ${i < Math.round(averageRating) ? 'text-amber-400 fill-amber-400' : 'text-gray-300'}`} />
+                    ))}
+                    <span className="text-sm text-muted-foreground ml-2">({reviews.length} reviews)</span>
                 </div>
-                <Button variant="outline">Rate Business</Button>
+                <Button variant="outline" onClick={() => setIsRatingOpen(true)}>Rate Business</Button>
             </div>
         </div>
 
@@ -169,6 +197,12 @@ export default function VirtualShopPage() {
         )}
       </div>
 
+       <RatingDialog 
+          isOpen={isRatingOpen}
+          onClose={() => setIsRatingOpen(false)}
+          onSubmit={handleRatingSubmit}
+          businessName={business.companyName}
+        />
     </div>
   );
 }

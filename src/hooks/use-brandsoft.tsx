@@ -11,7 +11,7 @@ import { useQuotations } from './use-quotations';
 import { useQuotationRequests } from './use-quotation-requests';
 import { usePurchases } from './use-purchases';
 import { useCurrencies } from './use-currencies';
-import type { BrandsoftConfig, Company, Product, Invoice, Quotation, QuotationRequest, Purchase, Customer } from '@/types/brandsoft';
+import type { BrandsoftConfig, Company, Product, Invoice, Quotation, QuotationRequest, Purchase, Customer, Review } from '@/types/brandsoft';
 
 export * from '@/types/brandsoft';
 
@@ -57,6 +57,8 @@ interface BrandsoftContextType {
   downgradeToTrial: () => void;
   // Currency methods
   addCurrency: (currency: string) => void;
+  // Review methods
+  addReview: (review: Omit<Review, 'id'>) => void;
 }
 
 const BrandsoftContext = createContext<BrandsoftContextType | undefined>(undefined);
@@ -190,6 +192,16 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       return newCustomer;
     };
 
+    const addReview = (review: Omit<Review, 'id'>) => {
+      if (!config) return;
+      const newReview = { ...review, id: `REV-${Date.now()}` };
+      const newConfig = {
+        ...config,
+        reviews: [...(config.reviews || []), newReview],
+      };
+      saveConfig(newConfig, { redirect: false, revalidate: true });
+    };
+
 
   const value: BrandsoftContextType = {
     isActivated,
@@ -207,6 +219,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     ...quotationRequestMethods,
     ...purchaseMethods,
     ...currencyMethods,
+    addReview,
   };
 
   return <BrandsoftContext.Provider value={value}>{children}</BrandsoftContext.Provider>;
