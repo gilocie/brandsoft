@@ -4,42 +4,15 @@
 import {
   Card,
   CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle as ShadcnCardTitle
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { MoreHorizontal, Eye, FilePenLine, Trash2, Phone, Building2 } from 'lucide-react';
+import { MoreHorizontal, Eye, Phone, Building2, MapPin, Plus } from 'lucide-react';
 import type { Company } from '@/hooks/use-brandsoft';
 import { useRouter } from 'next/navigation';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import Image from 'next/image';
 
-
-const CompanyActions = ({ onSelectAction }: { onSelectAction: (action: 'view' | 'edit' | 'delete') => void; }) => {
-    return (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button variant="default" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                    <MoreHorizontal className="h-4 w-4" />
-                    <span className="sr-only">Actions</span>
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSelectAction('view'); }}>
-                    <Eye className="mr-2 h-4 w-4" />
-                    View Details
-                </DropdownMenuItem>
-            </DropdownMenuContent>
-        </DropdownMenu>
-    );
-};
+const fallBackCover = 'https://picsum.photos/seed/companycover/600/200';
 
 export function CompanyCard({ company, onSelectAction }: { company: Company, onSelectAction: (action: 'view' | 'edit' | 'delete') => void }) {
     const router = useRouter();
@@ -49,41 +22,60 @@ export function CompanyCard({ company, onSelectAction }: { company: Company, onS
 
     return (
         <Card 
-            key={company.id} 
-            className="flex flex-col cursor-pointer"
+            className="w-full max-w-sm mx-auto rounded-xl overflow-hidden shadow-lg transform transition-all hover:-translate-y-1 hover:shadow-2xl"
             onClick={handleCardClick}
         >
-            <CardHeader className="p-4">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <ShadcnCardTitle className="text-base font-semibold truncate cursor-pointer">{company.companyName}</ShadcnCardTitle>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{company.companyName}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-            </CardHeader>
-            <CardContent className="p-4 pt-0 flex-grow">
-                <div className="text-sm space-y-2">
-                    {company.phone && (
-                      <div className="flex items-center gap-2">
-                        <Phone className="h-4 w-4 text-muted-foreground" />
-                        <p className="text-muted-foreground">{company.phone}</p>
-                      </div>
-                    )}
-                    {company.industry && (
-                      <div className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4 text-muted-foreground" />
-                        <p className="font-medium">{company.industry}</p>
-                      </div>
-                    )}
+            <div className="relative">
+                {/* Cover Image */}
+                <div className="h-28 bg-gray-200">
+                     <Image
+                        src={company.coverImage || fallBackCover}
+                        alt={`${company.companyName} cover`}
+                        width={600}
+                        height={200}
+                        className="w-full h-full object-cover"
+                        data-ai-hint="office workspace"
+                    />
+                </div>
+
+                {/* Follow Button */}
+                <Button variant="secondary" size="icon" className="absolute top-3 right-3 h-8 w-8 rounded-full shadow-md" onClick={(e) => { e.stopPropagation(); alert('Follow functionality to be added!'); }}>
+                    <Plus className="h-4 w-4" />
+                </Button>
+                
+                {/* Avatar */}
+                <div className="absolute -bottom-10 left-1/2 -translate-x-1/2">
+                    <Avatar className="h-20 w-20 border-4 border-background ring-1 ring-border">
+                        <AvatarImage src={company.logo} alt={company.companyName} />
+                        <AvatarFallback>
+                           <Building2 className="h-8 w-8" />
+                        </AvatarFallback>
+                    </Avatar>
+                </div>
+            </div>
+
+            {/* Card Content */}
+            <CardContent className="pt-14 text-center">
+                <h3 className="text-xl font-bold font-headline">{company.companyName}</h3>
+                <p className="text-sm text-muted-foreground mt-1">{company.industry || 'Business'}</p>
+                
+                <div className="mt-4 flex justify-around border-t pt-4">
+                    <div className="text-center">
+                        <p className="text-sm font-semibold text-muted-foreground">Town</p>
+                        <p className="font-bold text-lg">{company.town || 'N/A'}</p>
+                    </div>
+                    <div className="text-center">
+                         <p className="text-sm font-semibold text-muted-foreground">Phone</p>
+                         <p className="font-bold text-lg">{company.phone ? 'Available' : 'N/A'}</p>
+                    </div>
+                     <div className="text-center">
+                        <p className="text-sm font-semibold text-muted-foreground">Action</p>
+                         <Button variant="default" size="sm" className="mt-1" onClick={(e) => { e.stopPropagation(); onSelectAction('view'); }}>
+                            View
+                        </Button>
+                    </div>
                 </div>
             </CardContent>
-            <CardFooter className="p-4 pt-0 flex justify-end">
-                <CompanyActions onSelectAction={onSelectAction} />
-            </CardFooter>
         </Card>
     );
 }
