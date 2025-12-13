@@ -139,7 +139,7 @@ export default function RequestQuotationPage() {
     }, 100);
   };
   
-  const businesses = config?.customers?.filter(c => c.companyName && c.id !== config?.customers.find(me => me.name === config.brand.businessName)?.id) || [];
+  const businesses = config?.companies?.filter(c => c.companyName !== config.brand.businessName) || [];
   
   const handlePickerSelect = (selectedIds: string[]) => {
     form.setValue('companyIds', selectedIds);

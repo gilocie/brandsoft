@@ -2,7 +2,7 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
-import { useBrandsoft, type Customer } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Company } from '@/hooks/use-brandsoft';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, Building, MapPin } from 'lucide-react';
@@ -14,7 +14,7 @@ import { Button } from './ui/button';
 import { DialogFooter } from './ui/dialog';
 
 interface SupplierPickerProps {
-    allBusinesses: Customer[];
+    allBusinesses: Company[];
     initialSelection: string[];
     onSelectionChange: (selectedIds: string[]) => void;
 }
