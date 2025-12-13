@@ -237,7 +237,7 @@ export default function QuotationsPage() {
   const { config, deleteQuotation, updateQuotation, addInvoice } = useBrandsoft();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { toast } } from useToast();
+  const { toast } = useToast();
 
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'all');
   const [activeSubTab, setActiveSubTab] = useState(searchParams.get('subtab') || 'incoming');
@@ -510,5 +510,3 @@ export default function QuotationsPage() {
     </div>
   );
 }
-
-    
