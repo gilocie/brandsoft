@@ -21,17 +21,13 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState, useRef } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { UploadCloud, Paintbrush, Cog, CreditCard, SlidersHorizontal, Image as ImageIcon, FileImage, Layers, Stamp, Trash2, LayoutTemplate, Wallet, Hash, Coins } from 'lucide-react';
+import { UploadCloud, Paintbrush, SlidersHorizontal } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -57,22 +53,13 @@ const settingsSchema = z.object({
   buttonPrimaryBgHover: z.string().optional(),
   buttonPrimaryText: z.string().optional(),
   buttonPrimaryTextHover: z.string().optional(),
-  // Payments
-  paymentDetails: z.string().optional(),
-  // Regional
-  defaultCurrency: z.string().min(1, "Default currency is required"),
-  // Numbering
-  invoicePrefix: z.string().optional(),
-  invoiceStartNumber: z.coerce.number().optional(),
-  quotationPrefix: z.string().optional(),
-  quotationStartNumber: z.coerce.number().optional(),
 });
 
 type SettingsFormData = z.infer<typeof settingsSchema>;
 
 
 export default function SettingsPage() {
-  const { config, saveConfig, addCurrency } = useBrandsoft();
+  const { config, saveConfig } = useBrandsoft();
   const { toast } = useToast();
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   
@@ -86,8 +73,6 @@ export default function SettingsPage() {
       primaryColor: '#9400D3',
       secondaryColor: '#D87093',
       font: 'Poppins',
-      defaultCurrency: 'USD',
-      paymentDetails: '',
       buttonPrimaryBg: '#9400D3',
       buttonPrimaryBgHover: '#8A2BE2',
       buttonPrimaryText: '#FFFFFF',
@@ -103,8 +88,6 @@ export default function SettingsPage() {
             primaryColor: config.brand.primaryColor,
             secondaryColor: config.brand.secondaryColor,
             font: config.brand.font,
-            defaultCurrency: config.profile.defaultCurrency,
-            paymentDetails: config.profile.paymentDetails,
             buttonPrimaryBg: config.brand.buttonPrimaryBg,
             buttonPrimaryBgHover: config.brand.buttonPrimaryBgHover,
             buttonPrimaryText: config.brand.buttonPrimaryText,
@@ -117,10 +100,6 @@ export default function SettingsPage() {
             email: config.profile.email,
             website: config.profile.website,
             taxNumber: config.profile.taxNumber,
-            invoicePrefix: config.profile.invoicePrefix,
-            invoiceStartNumber: config.profile.invoiceStartNumber,
-            quotationPrefix: config.profile.quotationPrefix,
-            quotationStartNumber: config.profile.quotationStartNumber,
         });
         setLogoPreview(config.brand.logo);
     }
@@ -166,12 +145,6 @@ export default function SettingsPage() {
           email: data.email,
           website: data.website || '',
           taxNumber: data.taxNumber || '',
-          defaultCurrency: data.defaultCurrency,
-          paymentDetails: data.paymentDetails,
-          invoicePrefix: data.invoicePrefix,
-          invoiceStartNumber: data.invoiceStartNumber,
-          quotationPrefix: data.quotationPrefix,
-          quotationStartNumber: data.quotationStartNumber,
         },
       };
       saveConfig(newConfig, { redirect: false });
@@ -198,10 +171,8 @@ export default function SettingsPage() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             <Tabs defaultValue="branding" className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="branding"><Paintbrush className="mr-2 h-4 w-4" />Branding & Profile</TabsTrigger>
-                    <TabsTrigger value="payments"><Wallet className="mr-2 h-4 w-4" />Payments</TabsTrigger>
-                    <TabsTrigger value="numbering"><Hash className="mr-2 h-4 w-4" />Numbering</TabsTrigger>
                     <TabsTrigger value="modules"><SlidersHorizontal className="mr-2 h-4 w-4" />Modules</TabsTrigger>
                 </TabsList>
                 
@@ -349,74 +320,6 @@ export default function SettingsPage() {
                                     </Button>
                                </div>
                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-                
-                 <TabsContent value="payments" className="space-y-6">
-                     <Card>
-                        <CardHeader>
-                            <CardTitle>Regional Settings</CardTitle>
-                            <CardDescription>Set your default currency.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <FormField control={form.control} name="defaultCurrency" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Default Currency</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="USD" {...field} onBlur={() => { field.onBlur(); if(field.value) addCurrency(field.value.toUpperCase()); }} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )} />
-                        </CardContent>
-                    </Card>
-                     <Card>
-                        <CardHeader>
-                            <CardTitle>Default Payment Details</CardTitle>
-                            <CardDescription>This information will appear on new documents.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <FormField control={form.control} name="paymentDetails" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Payment Instructions</FormLabel>
-                                    <FormControl>
-                                        <Textarea placeholder="e.g., Bank Name, Account Number..." {...field} rows={4} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )} />
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                 <TabsContent value="numbering" className="space-y-6">
-                     <Card>
-                        <CardHeader>
-                            <CardTitle>Invoice Numbering</CardTitle>
-                            <CardDescription>Customize the format of your invoice IDs.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="grid grid-cols-2 gap-4">
-                            <FormField control={form.control} name="invoicePrefix" render={({ field }) => (
-                                <FormItem><FormLabel>Prefix</FormLabel><FormControl><Input placeholder="INV-" {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
-                             <FormField control={form.control} name="invoiceStartNumber" render={({ field }) => (
-                                <FormItem><FormLabel>Next Number</FormLabel><FormControl><Input type="number" placeholder="101" {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
-                        </CardContent>
-                    </Card>
-                     <Card>
-                        <CardHeader>
-                            <CardTitle>Quotation Numbering</CardTitle>
-                            <CardDescription>Customize the format of your quotation IDs.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="grid grid-cols-2 gap-4">
-                             <FormField control={form.control} name="quotationPrefix" render={({ field }) => (
-                                <FormItem><FormLabel>Prefix</FormLabel><FormControl><Input placeholder="QUO-" {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
-                             <FormField control={form.control} name="quotationStartNumber" render={({ field }) => (
-                                <FormItem><FormLabel>Next Number</FormLabel><FormControl><Input type="number" placeholder="101" {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
                         </CardContent>
                     </Card>
                 </TabsContent>
