@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useRef, ChangeEvent } from 'react';
+import { useState, useMemo, useRef, ChangeEvent, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -91,7 +91,7 @@ const ImageUploadField = ({
   };
   
   // Update preview if currentValue changes from form reset
-  React.useEffect(() => {
+  useEffect(() => {
     setPreview(currentValue);
   }, [currentValue]);
 
