@@ -86,15 +86,27 @@ export default function RequestQuotationPage() {
       return;
     }
     
-    const myCustomerProfile = config.customers.find(
-      c => c.name === config.brand.businessName
-    );
+    // --- FIX STARTS HERE ---
+    // 1. Try to find ID by Business Name in Customers list
+    let myId = config.customers.find(c => c.name === config.brand.businessName)?.id;
+
+    // 2. If not found, try to find ID in Companies list
+    if (!myId) {
+        myId = config.companies?.find(c => c.companyName === config.brand.businessName)?.id;
+    }
+
+    // 3. CRITICAL FALLBACK: If still not found, use the default demo ID.
+    // This ensures the request is linked to your "session".
+    if (!myId) {
+        myId = 'CUST-DEMO-ME';
+    }
+    // --- FIX ENDS HERE ---
 
     addQuotationRequest({
       id: `QR-${Date.now()}`,
       title: data.title,
       description: data.description,
-      requesterId: myCustomerProfile?.id || '',
+      requesterId: myId, // <--- Use the robust ID variable
       requesterName: config.brand.businessName,
       date: new Date().toISOString(),
       isPublic: data.isPublic,
@@ -103,13 +115,17 @@ export default function RequestQuotationPage() {
       status: 'open',
     });
     
-    setFormData(null); // Clear stored form data on successful submission
+    setFormData(null); 
 
     toast({
       title: 'Quotation Request Sent!',
       description: 'Your request has been submitted.',
     });
-    router.push('/quotations?tab=requests&subtab=outgoing');
+    
+    // Small timeout to allow state to update before navigation
+    setTimeout(() => {
+        router.push('/quotations?tab=requests&subtab=outgoing');
+    }, 100);
   };
   
   const businesses = config?.customers.filter(c => c.companyName && c.id !== config?.customers.find(me => me.name === config.brand.businessName)?.id) || [];
