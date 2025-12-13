@@ -14,7 +14,14 @@ import Image from 'next/image';
 
 const fallBackCover = 'https://picsum.photos/seed/companycover/600/200';
 
-export function CompanyCard({ company, onSelectAction }: { company: Company, onSelectAction: (action: 'view' | 'edit' | 'delete') => void }) {
+interface CompanyCardProps {
+    company: Company;
+    averageRating: number;
+    reviewCount: number;
+    onSelectAction: (action: 'view' | 'edit' | 'delete') => void;
+}
+
+export function CompanyCard({ company, averageRating, reviewCount, onSelectAction }: CompanyCardProps) {
     const router = useRouter();
     const handleCardClick = () => {
         router.push(`/marketplace/${company.id}`);
@@ -59,10 +66,14 @@ export function CompanyCard({ company, onSelectAction }: { company: Company, onS
                 <h3 className="text-xl font-bold font-headline">{company.companyName}</h3>
                 <p className="text-sm text-muted-foreground mt-1">{company.industry || 'Business'}</p>
                 
-                 <div className="mt-4 flex justify-center items-center gap-1">
+                <div className="mt-4 flex justify-center items-center gap-1">
                     {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="h-5 w-5 text-amber-400 fill-amber-400" />
+                        <Star
+                            key={i}
+                            className={`h-5 w-5 ${i < Math.round(averageRating) ? 'text-amber-400 fill-amber-400' : 'text-gray-300'}`}
+                        />
                     ))}
+                    <span className="text-xs text-muted-foreground ml-1">({reviewCount})</span>
                 </div>
 
                 <div className="mt-4 px-2 pb-2">

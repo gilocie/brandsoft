@@ -2,7 +2,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useBrandsoft, type Company } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Company, type Review } from '@/hooks/use-brandsoft';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -13,7 +13,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search } from 'lucide-react';
@@ -37,15 +37,31 @@ export default function MarketplacePage() {
     return config.companies.filter(c => c.companyName !== config.brand.businessName);
   }, [config]);
 
+  const businessesWithRatings = useMemo(() => {
+    if (!businesses || !config?.reviews) {
+      return businesses.map(biz => ({ ...biz, averageRating: 0, reviewCount: 0 }));
+    }
+
+    return businesses.map(biz => {
+      const companyReviews = config.reviews!.filter(r => r.businessId === biz.id);
+      const reviewCount = companyReviews.length;
+      const averageRating = reviewCount > 0
+        ? companyReviews.reduce((acc, r) => acc + r.rating, 0) / reviewCount
+        : 0;
+      
+      return { ...biz, averageRating, reviewCount };
+    });
+  }, [businesses, config?.reviews]);
+
+
   const filteredBusinesses = useMemo(() => {
-    if (!businesses) return [];
-    return businesses.filter(biz => {
+    return businessesWithRatings.filter(biz => {
       const nameMatch = biz.companyName?.toLowerCase().includes(searchTerm.toLowerCase());
       const industryMatch = industryFilter === 'all' || biz.industry === industryFilter;
       const townMatch = townFilter === 'all' || biz.town === townFilter;
       return nameMatch && industryMatch && townMatch;
     });
-  }, [businesses, searchTerm, industryFilter, townFilter]);
+  }, [businessesWithRatings, searchTerm, industryFilter, townFilter]);
 
   const industries = useMemo(() => {
     if (!businesses) return [];
@@ -113,6 +129,8 @@ export default function MarketplacePage() {
             <CompanyCard 
                 key={biz.id} 
                 company={biz} 
+                averageRating={biz.averageRating}
+                reviewCount={biz.reviewCount}
                 onSelectAction={(action) => handleSelectAction(action, biz)} 
             />
         ))}
