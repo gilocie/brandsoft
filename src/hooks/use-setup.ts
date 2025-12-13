@@ -154,6 +154,7 @@ export function useSetup(
       templates: [],
       currencies: ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD'],
       purchases: [],
+      reviews: [],
     };
     
     await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate saving

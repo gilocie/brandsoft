@@ -92,7 +92,7 @@ export default function RequestQuotationPage() {
 
     // 2. If not found, try to find ID in Customers list
     if (!myId) {
-        myId = config.customers.find(c => c.name === config.brand.businessName)?.id;
+        myId = config.customers?.find(c => c.name === config.brand.businessName)?.id;
     }
 
     // 3. This should ideally not be hit anymore, but serves as a safeguard.
@@ -133,7 +133,7 @@ export default function RequestQuotationPage() {
     }, 100);
   };
   
-  const businesses = config?.customers.filter(c => c.companyName && c.id !== config?.customers.find(me => me.name === config.brand.businessName)?.id) || [];
+  const businesses = config?.customers?.filter(c => c.companyName && c.id !== config?.customers.find(me => me.name === config.brand.businessName)?.id) || [];
   
   const handlePickerSelect = (selectedIds: string[]) => {
     form.setValue('companyIds', selectedIds);
