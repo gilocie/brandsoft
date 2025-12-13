@@ -22,11 +22,11 @@ import type { Company } from '@/hooks/use-brandsoft';
 import { useRouter } from 'next/navigation';
 
 
-const CompanyActions = ({ onSelectAction, onCardClick }: { onSelectAction: (action: 'view' | 'edit' | 'delete') => void; onCardClick: () => void; }) => {
+const CompanyActions = ({ onSelectAction }: { onSelectAction: (action: 'view' | 'edit' | 'delete') => void; }) => {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="default" size="icon" className="h-8 w-8">
+                <Button variant="default" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
                     <MoreHorizontal className="h-4 w-4" />
                     <span className="sr-only">Actions</span>
                 </Button>
@@ -35,15 +35,6 @@ const CompanyActions = ({ onSelectAction, onCardClick }: { onSelectAction: (acti
                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSelectAction('view'); }}>
                     <Eye className="mr-2 h-4 w-4" />
                     View Details
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSelectAction('edit'); }}>
-                    <FilePenLine className="mr-2 h-4 w-4" />
-                    Edit Company
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSelectAction('delete'); }} className="text-destructive focus:bg-destructive focus:text-destructive-foreground">
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete Company
                 </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
@@ -91,7 +82,7 @@ export function CompanyCard({ company, onSelectAction }: { company: Company, onS
                 </div>
             </CardContent>
             <CardFooter className="p-4 pt-0 flex justify-end">
-                <CompanyActions onSelectAction={onSelectAction} onCardClick={handleCardClick} />
+                <CompanyActions onSelectAction={onSelectAction} />
             </CardFooter>
         </Card>
     );

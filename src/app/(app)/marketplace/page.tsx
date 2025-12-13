@@ -62,24 +62,10 @@ export default function MarketplacePage() {
   };
 
   const handleSelectAction = (action: 'view' | 'edit' | 'delete', company: Company) => {
-    setSelectedCompany(company);
     if (action === 'view') {
         handleCardClick(company.id);
     }
-    if (action === 'delete') {
-        setIsDeleteOpen(true);
-    }
-    // Edit action can be handled here if needed in the future
   };
-
-  const handleDelete = () => {
-    if (selectedCompany) {
-        deleteCompany(selectedCompany.id);
-        setIsDeleteOpen(false);
-        setSelectedCompany(null);
-    }
-  };
-
 
   return (
     <div className="container mx-auto space-y-6">
@@ -136,19 +122,6 @@ export default function MarketplacePage() {
             <p>No businesses found matching your criteria.</p>
          </div>
        )}
-
-        <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                    <AlertDialogDescription>This action cannot be undone. This will permanently delete the company "{selectedCompany?.companyName}".</AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
     </div>
   );
 }
