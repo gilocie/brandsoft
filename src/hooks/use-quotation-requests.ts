@@ -30,12 +30,12 @@ export function useQuotationRequests(
     const newQuotationRequests = [...(config.quotationRequests || []), request];
     const newConfig = { ...config, quotationRequests: newQuotationRequests };
     
-    saveConfig(newConfig, { redirect: false, revalidate: false });
+    saveConfig(newConfig, { redirect: false, revalidate: true });
     return request;
   };
   
   const initializeDemoQuotationRequests = (currentConfig: BrandsoftConfig): BrandsoftConfig | null => {
-    if (!currentConfig || currentConfig.quotationRequests?.length > 0) {
+    if (!currentConfig || (currentConfig.quotationRequests && currentConfig.quotationRequests.every(r => r.id))) {
       return null;
     }
 
@@ -45,14 +45,17 @@ export function useQuotationRequests(
       return null;
     }
 
-    const demoRequests = initialQuotationRequests.map((r, i) => ({
-      ...r,
-      id: `QR-DEMO-${i+1}`,
-      requesterId: meAsCustomer.id,
-      requesterName: meAsCustomer.name,
-      date: new Date(Date.now() - (i + 1) * 3 * 24 * 60 * 60 * 1000).toISOString(),
-      status: 'open' as const,
-    }));
+    const demoRequests = (currentConfig.quotationRequests || []).map((r, i) => {
+      if (r.id) return r; // Already has an ID, skip it
+      return {
+        ...r,
+        id: `QR-DEMO-${i+1}`,
+        requesterId: meAsCustomer.id,
+        requesterName: meAsCustomer.name,
+        date: new Date(Date.now() - (i + 1) * 3 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'open' as const,
+      };
+    });
     
     const newConfig = { ...currentConfig, quotationRequests: demoRequests };
     return newConfig;
