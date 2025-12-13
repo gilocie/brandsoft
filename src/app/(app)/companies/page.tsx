@@ -337,44 +337,46 @@ export default function CompaniesPage() {
       </Dialog>
 
       <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
-        <DialogContent className="max-w-2xl p-0">
+        <DialogContent className="max-w-2xl p-0 flex flex-col max-h-[90vh]">
           {currentViewedCompany && (
-            <div className="flex flex-col">
-              <div className="relative h-40">
-                <Image src={currentViewedCompany.coverImage || fallBackCover} alt={`${currentViewedCompany.companyName} cover`} layout="fill" objectFit="cover" className="rounded-t-lg" data-ai-hint="office workspace" />
-                 <div className="absolute inset-0 bg-black/50" />
-              </div>
-              <div className="relative p-6 flex flex-col items-center -mt-16">
-                 <Avatar className="h-28 w-28 border-4 border-background bg-background">
-                  <AvatarImage src={currentViewedCompany.logo} />
-                  <AvatarFallback><Building className="h-12 w-12" /></AvatarFallback>
-                </Avatar>
-                <DialogHeader className="text-center mt-4">
-                  <DialogTitle className="text-2xl font-headline">{currentViewedCompany.companyName}</DialogTitle>
-                  <DialogDescription>{currentViewedCompany.industry}</DialogDescription>
-                </DialogHeader>
-                 <div className="mt-2 flex justify-center items-center gap-1">
-                    {[...Array(5)].map((_, i) => (
-                        <Star
-                            key={i}
-                            className={`h-5 w-5 ${i < Math.round(currentViewedCompany.averageRating) ? 'text-amber-400 fill-amber-400' : 'text-gray-300'}`}
-                        />
-                    ))}
-                    <span className="text-xs text-muted-foreground ml-1">({currentViewedCompany.reviewCount} reviews)</span>
+            <>
+              <div className="flex-grow overflow-y-auto">
+                <div className="relative h-40">
+                  <Image src={currentViewedCompany.coverImage || fallBackCover} alt={`${currentViewedCompany.companyName} cover`} layout="fill" objectFit="cover" className="rounded-t-lg" data-ai-hint="office workspace" />
+                   <div className="absolute inset-0 bg-black/50" />
                 </div>
-                 <p className="mt-4 text-sm text-center text-muted-foreground">{currentViewedCompany.description}</p>
-                 <Separator className="my-6" />
-                 <div className="w-full space-y-3 text-sm">
-                    {currentViewedCompany.email && <div className="flex items-center gap-3"><Mail className="h-4 w-4 text-muted-foreground" /> <span>{currentViewedCompany.email}</span></div>}
-                    {currentViewedCompany.phone && <div className="flex items-center gap-3"><Phone className="h-4 w-4 text-muted-foreground" /> <span>{currentViewedCompany.phone}</span></div>}
-                    {currentViewedCompany.website && <div className="flex items-center gap-3"><Globe className="h-4 w-4 text-muted-foreground" /> <a href={currentViewedCompany.website} target="_blank" rel="noreferrer" className="text-primary hover:underline">{currentViewedCompany.website}</a></div>}
-                    {currentViewedCompany.address && <div className="flex items-start gap-3"><MapPin className="h-4 w-4 text-muted-foreground mt-1" /> <span>{currentViewedCompany.address}</span></div>}
-                 </div>
+                <div className="relative p-6 flex flex-col items-center -mt-16">
+                   <Avatar className="h-28 w-28 border-4 border-background bg-background">
+                    <AvatarImage src={currentViewedCompany.logo} />
+                    <AvatarFallback><Building className="h-12 w-12" /></AvatarFallback>
+                  </Avatar>
+                  <DialogHeader className="text-center mt-4">
+                    <DialogTitle className="text-2xl font-headline">{currentViewedCompany.companyName}</DialogTitle>
+                    <DialogDescription>{currentViewedCompany.industry}</DialogDescription>
+                  </DialogHeader>
+                   <div className="mt-2 flex justify-center items-center gap-1">
+                      {[...Array(5)].map((_, i) => (
+                          <Star
+                              key={i}
+                              className={`h-5 w-5 ${i < Math.round(currentViewedCompany.averageRating) ? 'text-amber-400 fill-amber-400' : 'text-gray-300'}`}
+                          />
+                      ))}
+                      <span className="text-xs text-muted-foreground ml-1">({currentViewedCompany.reviewCount} reviews)</span>
+                  </div>
+                   <p className="mt-4 text-sm text-center text-muted-foreground">{currentViewedCompany.description}</p>
+                   <Separator className="my-6" />
+                   <div className="w-full space-y-3 text-sm">
+                      {currentViewedCompany.email && <div className="flex items-center gap-3"><Mail className="h-4 w-4 text-muted-foreground" /> <span>{currentViewedCompany.email}</span></div>}
+                      {currentViewedCompany.phone && <div className="flex items-center gap-3"><Phone className="h-4 w-4 text-muted-foreground" /> <span>{currentViewedCompany.phone}</span></div>}
+                      {currentViewedCompany.website && <div className="flex items-center gap-3"><Globe className="h-4 w-4 text-muted-foreground" /> <a href={currentViewedCompany.website} target="_blank" rel="noreferrer" className="text-primary hover:underline">{currentViewedCompany.website}</a></div>}
+                      {currentViewedCompany.address && <div className="flex items-start gap-3"><MapPin className="h-4 w-4 text-muted-foreground mt-1" /> <span>{currentViewedCompany.address}</span></div>}
+                   </div>
+                </div>
               </div>
-              <DialogFooter className="p-4 border-t bg-muted rounded-b-lg">
+              <DialogFooter className="p-4 border-t bg-muted rounded-b-lg flex-shrink-0">
                 <Button onClick={() => setIsViewOpen(false)}>Close</Button>
               </DialogFooter>
-            </div>
+            </>
           )}
         </DialogContent>
       </Dialog>
