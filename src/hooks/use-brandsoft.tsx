@@ -11,7 +11,7 @@ import { useQuotations } from './use-quotations';
 import { useQuotationRequests } from './use-quotation-requests';
 import { usePurchases } from './use-purchases';
 import { useCurrencies } from './use-currencies';
-import type { BrandsoftConfig, Customer, Product, Invoice, Quotation, QuotationRequest } from '@/types/brandsoft';
+import type { BrandsoftConfig, Customer, Product, Invoice, Quotation, QuotationRequest, Purchase } from '@/types/brandsoft';
 
 export * from '@/types/brandsoft';
 
@@ -289,3 +289,5 @@ export function useBrandsoft() {
   }
   return context;
 }
+
+    
