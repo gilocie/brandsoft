@@ -194,11 +194,12 @@ export default function QuotationsPage() {
   const currencyCode = config?.profile.defaultCurrency || '';
   
   const filteredQuotations = useMemo(() => ({
-    all: quotations,
-    draft: quotations.filter(q => q.status === 'Draft'),
-    sent: quotations.filter(q => q.status === 'Sent'),
-    accepted: quotations.filter(q => q.status === 'Accepted'),
-    declined: quotations.filter(q => q.status === 'Declined'),
+    all: quotations.filter(q => !q.isRequest),
+    draft: quotations.filter(q => q.status === 'Draft' && !q.isRequest),
+    sent: quotations.filter(q => q.status === 'Sent' && !q.isRequest),
+    accepted: quotations.filter(q => q.status === 'Accepted' && !q.isRequest),
+    declined: quotations.filter(q => q.status === 'Declined' && !q.isRequest),
+    requests: quotations.filter(q => q.isRequest),
   }), [quotations]);
 
 
@@ -315,6 +316,7 @@ export default function QuotationsPage() {
        <Tabs defaultValue="all" className="space-y-4">
         <TabsList>
           <TabsTrigger value="all">All</TabsTrigger>
+          <TabsTrigger value="requests">Requests</TabsTrigger>
           <TabsTrigger value="draft">Draft</TabsTrigger>
           <TabsTrigger value="sent">Sent</TabsTrigger>
           <TabsTrigger value="accepted">Accepted</TabsTrigger>
@@ -322,6 +324,9 @@ export default function QuotationsPage() {
         </TabsList>
         <TabsContent value="all">
           <QuotationList quotations={filteredQuotations.all} layout={layout} onSelectAction={handleSelectAction} currencyCode={currencyCode} />
+        </TabsContent>
+        <TabsContent value="requests">
+          <QuotationList quotations={filteredQuotations.requests} layout={layout} onSelectAction={handleSelectAction} currencyCode={currencyCode} />
         </TabsContent>
         <TabsContent value="draft">
            <QuotationList quotations={filteredQuotations.draft} layout={layout} onSelectAction={handleSelectAction} currencyCode={currencyCode} />

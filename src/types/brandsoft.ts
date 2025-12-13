@@ -13,6 +13,11 @@ export type Customer = {
   vatNumber?: string;
   associatedProductIds?: string[];
   customerType?: 'personal' | 'company';
+  industry?: string;
+  town?: string;
+  description?: string;
+  logo?: string;
+  website?: string;
 };
 
 export type Product = {
@@ -208,4 +213,5 @@ export type Quotation = {
     partialPaymentValue?: number;
     currency?: string;
     design?: DesignSettings;
+    isRequest?: boolean;
 };

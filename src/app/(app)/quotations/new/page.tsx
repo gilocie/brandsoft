@@ -57,6 +57,7 @@ const formSchema = z.object({
   applyPartialPayment: z.boolean().default(false),
   partialPaymentType: z.enum(['percentage', 'flat']).default('percentage'),
   partialPaymentValue: z.coerce.number().optional(),
+  isRequest: z.boolean().optional(),
 });
 
 type QuotationFormData = z.infer<typeof formSchema>;
@@ -101,6 +102,7 @@ export default function NewQuotationPage() {
       applyPartialPayment: false,
       partialPaymentType: 'percentage',
       partialPaymentValue: 0,
+      isRequest: false,
     },
   });
 
@@ -118,6 +120,7 @@ export default function NewQuotationPage() {
     const designData = designFormState.getFormData();
     const productIdsParam = searchParams.get('products');
     const customerIdParam = searchParams.get('customerId');
+    const isRequest = !!customerIdParam; // It's a request if a customerId is passed
 
     let defaultValuesApplied = false;
 
@@ -144,7 +147,8 @@ export default function NewQuotationPage() {
             validUntil: validUntil,
             notes: '',
             currency: config.profile.defaultCurrency,
-            lineItems: lineItemsFromProducts.length > 0 ? lineItemsFromProducts : [{ description: '', quantity: 1, price: 0 }]
+            lineItems: lineItemsFromProducts.length > 0 ? lineItemsFromProducts : [{ description: '', quantity: 1, price: 0 }],
+            isRequest: isRequest,
         });
         
         setUseManualEntry(lineItemsFromProducts.length > 0 ? lineItemsFromProducts.map(() => false) : [true]);
@@ -173,7 +177,8 @@ export default function NewQuotationPage() {
             validUntil: validUntil,
             notes: '',
             currency: config.profile.defaultCurrency || 'USD',
-            lineItems: [{ description: '', quantity: 1, price: 0 }]
+            lineItems: [{ description: '', quantity: 1, price: 0 }],
+            isRequest: isRequest,
         });
         setUseManualEntry([true]);
         defaultValuesApplied = true;
@@ -280,6 +285,7 @@ export default function NewQuotationPage() {
         partialPaymentType: data.partialPaymentType,
         partialPaymentValue: data.partialPaymentValue,
         currency: data.currency,
+        isRequest: data.isRequest,
     };
     
     const designData = designFormState.getFormData();
