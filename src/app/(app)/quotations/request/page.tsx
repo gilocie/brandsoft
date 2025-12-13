@@ -87,18 +87,23 @@ export default function RequestQuotationPage() {
     }
     
     // --- FIX STARTS HERE ---
-    // 1. Try to find ID by Business Name in Customers list
-    let myId = config.customers.find(c => c.name === config.brand.businessName)?.id;
+    // 1. Try to find ID by Business Name in Companies list first (primary identity)
+    let myId = config.companies?.find(c => c.companyName === config.brand.businessName)?.id;
 
-    // 2. If not found, try to find ID in Companies list
+    // 2. If not found, try to find ID in Customers list
     if (!myId) {
-        myId = config.companies?.find(c => c.companyName === config.brand.businessName)?.id;
+        myId = config.customers.find(c => c.name === config.brand.businessName)?.id;
     }
 
-    // 3. CRITICAL FALLBACK: If still not found, use the default demo ID.
-    // This ensures the request is linked to your "session".
+    // 3. This should ideally not be hit anymore, but serves as a safeguard.
     if (!myId) {
-        myId = 'CUST-DEMO-ME';
+        console.error("Could not determine requester ID. Please check app setup.");
+         toast({
+            variant: 'destructive',
+            title: 'User Identity Error',
+            description: 'Could not identify your user profile. Cannot create request.',
+        });
+        return;
     }
     // --- FIX ENDS HERE ---
 
