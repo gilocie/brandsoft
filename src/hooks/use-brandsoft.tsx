@@ -44,7 +44,7 @@ interface BrandsoftContextType {
   updateQuotation: (quotationId: string, data: Partial<Omit<Quotation, 'quotationId'>>) => void;
   deleteQuotation: (quotationId: string) => void;
   // Quotation Request methods
-  addQuotationRequest: (request: QuotationRequest) => QuotationRequest;
+  addQuotationRequest: (request: Omit<QuotationRequest, 'id' | 'date' | 'status'>) => QuotationRequest;
   // Purchase methods
   addPurchaseOrder: (order: Omit<Purchase, 'remainingTime'>) => Purchase;
   getPurchaseOrder: (orderId: string) => Purchase | null;
@@ -59,38 +59,25 @@ interface BrandsoftContextType {
 
 const BrandsoftContext = createContext<BrandsoftContextType | undefined>(undefined);
 
-const initialQuotationRequests: QuotationRequest[] = [
+const initialQuotationRequests: Omit<QuotationRequest, 'id' | 'date' | 'status' | 'requesterId' | 'requesterName'>[] = [
     {
-        id: 'QR-DEMO-1',
         title: 'Office Stationery Supply for Q4',
-        requesterId: 'CUST-DEMO-ME',
-        requesterName: 'My Business Inc.',
-        date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
         isPublic: true,
         items: [
             { productName: 'A4 Reams (box)', quantity: 20 },
             { productName: 'Blue Ballpoint Pens (box of 100)', quantity: 5 },
         ],
-        status: 'open',
     },
     {
-        id: 'QR-DEMO-2',
         title: 'Website Redesign Project',
-        requesterId: 'CUST-DEMO-ME',
-        requesterName: 'My Business Inc.',
-        date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
         isPublic: false,
         companyIds: ['CUST-1625243512000', 'CUST-1625243514000'],
         items: [{ productName: 'Corporate Website', description: 'New 5-page responsive website with a blog and CMS integration.', quantity: 1 }],
-        status: 'open',
     },
 ];
 
-const initialIncomingQuotationRequests: Quotation[] = [
+const initialIncomingQuotationRequests: Omit<Quotation, 'quotationId' | 'customer' | 'customerId'>[] = [
     {
-        quotationId: 'IN-REQ-001',
-        customer: 'My Business Inc.', // This will be replaced by the user's business name
-        customerId: 'CUST-DEMO-ME', // This will be replaced by the user's business ID
         senderId: 'CUST-1625243512000', // From Olivia Smith / Smith Designs
         date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
         validUntil: new Date(Date.now() + 28 * 24 * 60 * 60 * 1000).toISOString(),
@@ -103,9 +90,6 @@ const initialIncomingQuotationRequests: Quotation[] = [
         notes: 'Request for new exterior and interior office signage.'
     },
     {
-        quotationId: 'IN-REQ-002',
-        customer: 'My Business Inc.',
-        customerId: 'CUST-DEMO-ME',
         senderId: 'CUST-1625243514000', // From Emma Brown / Brown & Co.
         date: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
         validUntil: new Date(Date.now() + 26 * 24 * 60 * 60 * 1000).toISOString(),
@@ -150,20 +134,28 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
         
         let shouldUpdateStorage = false;
         
-        // Inject outgoing demo data if it doesn't exist
-        if (!parsedConfig.quotationRequests?.some((r: QuotationRequest) => r.id.startsWith('QR-DEMO'))) {
-            const meId = parsedConfig.customers.find((c: Customer) => c.name === parsedConfig.brand.businessName)?.id || 'CUST-DEMO-ME';
-            const demoRequests = initialQuotationRequests.map(r => ({...r, requesterId: meId, requesterName: parsedConfig.brand.businessName}));
-            parsedConfig.quotationRequests = [...(parsedConfig.quotationRequests || []), ...demoRequests];
-            shouldUpdateStorage = true;
-        }
-
-        // Inject incoming demo data if it doesn't exist
-        if (!parsedConfig.quotations?.some((q: Quotation) => q.quotationId.startsWith('IN-REQ'))) {
+        if (!parsedConfig.quotationRequests || parsedConfig.quotationRequests.length === 0) {
             const me = parsedConfig.customers.find((c: Customer) => c.name === parsedConfig.brand.businessName);
             if (me) {
-                 const demoIncoming = initialIncomingQuotationRequests.map(q => ({
+                 const demoRequests = initialQuotationRequests.map((r, i) => ({
+                     ...r,
+                     id: `QR-DEMO-${i+1}`,
+                     requesterId: me.id,
+                     requesterName: me.name,
+                     date: new Date(Date.now() - (i+1) * 24 * 60 * 60 * 1000).toISOString(),
+                     status: 'open' as const,
+                 }));
+                 parsedConfig.quotationRequests = demoRequests;
+                 shouldUpdateStorage = true;
+            }
+        }
+        
+        if (!parsedConfig.quotations.some((q: Quotation) => q.quotationId.startsWith('IN-REQ'))) {
+            const me = parsedConfig.customers.find((c: Customer) => c.name === parsedConfig.brand.businessName);
+             if (me) {
+                 const demoIncoming = initialIncomingQuotationRequests.map((q, i) => ({
                     ...q, 
+                    quotationId: `IN-REQ-00${i+1}`,
                     customerId: me.id,
                     customer: me.name
                 }));

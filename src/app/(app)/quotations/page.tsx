@@ -64,7 +64,7 @@ export default function QuotationsPage() {
   
   const myBusinessAsCustomer = useMemo(() => {
     if (!config) return null;
-    return config.customers.find(c => c.name === config.brand.businessName) || null;
+    return config.customers.find(c => c.name === config.brand.businessName);
   }, [config]);
 
 
