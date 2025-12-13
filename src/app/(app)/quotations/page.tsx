@@ -59,6 +59,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useBrandsoft, type Quotation } from '@/hooks/use-brandsoft';
 import { QuotationPreview, downloadQuotationAsPdf } from '@/components/quotation-preview';
+import { useToast } from '@/hooks/use-toast';
 
 const statusVariantMap: {
   [key: string]: 'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'accent' | 'primary';
@@ -179,8 +180,9 @@ const QuotationList = ({quotations, layout, onSelectAction, currencyCode}: {quot
 
 export default function QuotationsPage() {
   const [layout, setLayout] = useState<'grid' | 'list'>('grid');
-  const { config, deleteQuotation, updateQuotation } = useBrandsoft();
+  const { config, deleteQuotation, updateQuotation, addInvoice } = useBrandsoft();
   const router = useRouter();
+  const { toast } = useToast();
 
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -243,6 +245,31 @@ export default function QuotationsPage() {
   const handleAccept = () => {
     if (selectedQuotation) {
       updateQuotation(selectedQuotation.quotationId, { status: 'Accepted' });
+
+      // Convert to invoice
+      const newInvoiceData = {
+        customer: selectedQuotation.customer,
+        customerId: selectedQuotation.customerId,
+        date: new Date().toISOString().split('T')[0],
+        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        amount: selectedQuotation.amount,
+        status: 'Pending' as 'Pending',
+        subtotal: selectedQuotation.subtotal,
+        discount: selectedQuotation.discount,
+        tax: selectedQuotation.tax,
+        shipping: selectedQuotation.shipping,
+        notes: `Based on Quotation #${selectedQuotation.quotationId}\n${selectedQuotation.notes || ''}`,
+        lineItems: selectedQuotation.lineItems,
+        currency: selectedQuotation.currency,
+        design: selectedQuotation.design
+      };
+      const newInvoice = addInvoice(newInvoiceData);
+      
+      toast({
+        title: "Quotation Accepted!",
+        description: `Invoice ${newInvoice.invoiceId} has been created.`,
+      });
+
       setIsAcceptOpen(false);
       setSelectedQuotation(null);
     }
@@ -355,13 +382,13 @@ export default function QuotationsPage() {
             <AlertDialogHeader>
                 <AlertDialogTitle>Confirm Acceptance</AlertDialogTitle>
                 <AlertDialogDescription>
-                    Are you sure you want to mark quotation "{selectedQuotation?.quotationId}" as accepted?
+                    Are you sure you want to mark quotation "{selectedQuotation?.quotationId}" as accepted? This will automatically generate a new invoice.
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction onClick={handleAccept}>
-                    Mark as Accepted
+                    Accept & Create Invoice
                 </AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>

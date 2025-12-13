@@ -37,6 +37,7 @@ import {
   ChevronDown,
   KeyRound,
   User,
+  Store,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -52,6 +53,7 @@ const mainNavItems = [
   { href: '/quotations', icon: FileBarChart2, label: 'Quotations', enabledKey: 'quotation' },
   { href: '/products', icon: Package, label: 'Products', enabledKey: 'invoice' },
   { href: '/customers', icon: Users, label: 'Customers', enabledKey: 'invoice' },
+  { href: '/marketplace', icon: Store, label: 'Marketplace', enabledKey: 'invoice' },
 ];
 
 const upcomingNavItems = [
@@ -61,11 +63,7 @@ const upcomingNavItems = [
   { href: '/templates', icon: Library, label: 'Templates', enabledKey: null },
 ];
 
-const adminNavItems = [
-    { href: '/verify-purchase', icon: KeyRound, label: 'Verify Purchase', enabledKey: null },
-];
-
-const navItems = [...mainNavItems, ...upcomingNavItems, ...adminNavItems];
+const navItems = [...mainNavItems, ...upcomingNavItems];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -116,6 +117,9 @@ export default function NewQuotationPage() {
     const storedData = getFormData();
     const designData = designFormState.getFormData();
     const productIdsParam = searchParams.get('products');
+    const customerIdParam = searchParams.get('customerId');
+
+    let defaultValuesApplied = false;
 
     if (productIdsParam) {
         const productIds = productIdsParam.split(',');
@@ -135,6 +139,7 @@ export default function NewQuotationPage() {
         
         form.reset({
             ...form.getValues(),
+            customerId: customerIdParam || '',
             quotationDate: today,
             validUntil: validUntil,
             notes: '',
@@ -145,6 +150,7 @@ export default function NewQuotationPage() {
         setUseManualEntry(lineItemsFromProducts.length > 0 ? lineItemsFromProducts.map(() => false) : [true]);
         
         setFormData(null);
+        defaultValuesApplied = true;
     } else if (storedData && Object.keys(storedData).length > 0) {
         const restoredData: any = { ...storedData };
         if (restoredData.quotationDate) restoredData.quotationDate = new Date(restoredData.quotationDate);
@@ -154,6 +160,7 @@ export default function NewQuotationPage() {
         if (restoredData.lineItems) {
             setUseManualEntry(restoredData.lineItems.map((item: any) => !item.productId));
         }
+        defaultValuesApplied = true;
     } else {
         const today = new Date();
         const validUntil = new Date();
@@ -161,6 +168,7 @@ export default function NewQuotationPage() {
         
         form.reset({
             ...form.getValues(),
+            customerId: customerIdParam || '',
             quotationDate: today,
             validUntil: validUntil,
             notes: '',
@@ -168,6 +176,7 @@ export default function NewQuotationPage() {
             lineItems: [{ description: '', quantity: 1, price: 0 }]
         });
         setUseManualEntry([true]);
+        defaultValuesApplied = true;
     }
 
     if (designData?.defaultCurrency) {
@@ -938,5 +947,3 @@ export default function NewQuotationPage() {
     </div>
   );
 }
-
-    
