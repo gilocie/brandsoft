@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -30,6 +29,7 @@ import { UploadCloud, Paintbrush, SlidersHorizontal } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Label } from '@/components/ui/label';
 
 
 const settingsSchema = z.object({
@@ -304,8 +304,8 @@ export default function SettingsPage() {
                                 </div>
                            </div>
                            <div className="pt-4">
-                               <Label>Preview</Label>
-                               <div className="p-4 rounded-md border flex justify-center">
+                                <Label>Preview</Label>
+                                <div className="p-4 rounded-md border flex justify-center">
                                     <Button 
                                         type="button" 
                                         className="btn-primary-custom"
@@ -346,3 +346,5 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+    
