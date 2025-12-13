@@ -17,6 +17,7 @@ import { RatingDialog } from '@/components/rating-dialog';
 import { Separator } from '@/components/ui/separator';
 
 const fallBackCover = 'https://picsum.photos/seed/shopcover/1200/400';
+const REVIEWS_PER_PAGE = 10;
 
 
 export default function VirtualShopPage() {
@@ -25,6 +26,7 @@ export default function VirtualShopPage() {
   const { config, addReview } = useBrandsoft();
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [isRatingOpen, setIsRatingOpen] = useState(false);
+  const [reviewsPage, setReviewsPage] = useState(0);
 
   const business = useMemo(() => {
     return config?.companies.find(c => c.id === params.id) || null;
@@ -61,6 +63,12 @@ export default function VirtualShopPage() {
     const total = reviews.reduce((acc, r) => acc + r.rating, 0);
     return total / reviews.length;
   }, [reviews]);
+  
+  const paginatedReviews = useMemo(() => {
+    const startIndex = reviewsPage * REVIEWS_PER_PAGE;
+    return reviews.slice(startIndex, startIndex + REVIEWS_PER_PAGE);
+  }, [reviews, reviewsPage]);
+  const totalReviewPages = Math.ceil(reviews.length / REVIEWS_PER_PAGE);
 
 
   if (!business) {
@@ -225,31 +233,47 @@ export default function VirtualShopPage() {
           <Card>
             <CardContent className="p-0">
               <div className="divide-y">
-                {reviews.map((review) => (
-                  <div key={review.id} className="p-6">
-                    <div className="flex items-start gap-4">
-                        <Avatar>
-                            <AvatarFallback>{review.reviewerName.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                             <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="font-semibold">{review.reviewerName}</p>
-                                    <p className="text-xs text-muted-foreground">{new Date(review.date).toLocaleDateString()}</p>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                    {[...Array(5)].map((_, i) => (
-                                        <Star key={i} className={`h-4 w-4 ${i < review.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-300'}`} />
-                                    ))}
-                                </div>
-                             </div>
-                             <p className="mt-3 text-sm text-muted-foreground">{review.comment}</p>
+                {paginatedReviews.map((review) => {
+                  const reviewer = config?.companies.find(c => c.id === review.reviewerId);
+                  const reviewerLogo = reviewer?.logo;
+                  return (
+                      <div key={review.id} className="p-6">
+                        <div className="flex items-start gap-4">
+                            <Avatar>
+                                <AvatarImage src={reviewerLogo} />
+                                <AvatarFallback>{review.reviewerName.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1">
+                                 <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="font-semibold">{review.reviewerName}</p>
+                                        <p className="text-xs text-muted-foreground">{new Date(review.date).toLocaleDateString()}</p>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        {[...Array(5)].map((_, i) => (
+                                            <Star key={i} className={`h-4 w-4 ${i < review.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-300'}`} />
+                                        ))}
+                                    </div>
+                                 </div>
+                                 <p className="mt-3 text-sm text-muted-foreground">{review.comment}</p>
+                            </div>
                         </div>
-                    </div>
-                  </div>
-                ))}
+                      </div>
+                  );
+                })}
               </div>
             </CardContent>
+            {totalReviewPages > 1 && (
+                <CardContent className="p-4 border-t">
+                    <div className="flex items-center justify-between">
+                         <span className="text-sm text-muted-foreground">Page {reviewsPage + 1} of {totalReviewPages}</span>
+                        <div className="flex gap-2">
+                            <Button variant="outline" size="sm" onClick={() => setReviewsPage(p => p - 1)} disabled={reviewsPage === 0}>Previous</Button>
+                            <Button variant="outline" size="sm" onClick={() => setReviewsPage(p => p + 1)} disabled={reviewsPage >= totalReviewPages - 1}>Next</Button>
+                        </div>
+                    </div>
+                </CardContent>
+            )}
           </Card>
         ) : (
           <div className="flex flex-col items-center justify-center p-10 text-center text-muted-foreground border-2 border-dashed rounded-lg">
