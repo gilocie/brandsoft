@@ -67,11 +67,10 @@ export function CompanyCard({ company, onSelectAction }: { company: Company, onS
 
                 <div className="mt-4 px-2 pb-2">
                      <Button variant="default" className="w-full" onClick={(e) => { e.stopPropagation(); onSelectAction('view'); }}>
-                        View Catalogue
+                        View
                     </Button>
                 </div>
             </CardContent>
         </Card>
     );
 }
-
