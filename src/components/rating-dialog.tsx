@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -26,6 +26,15 @@ export function RatingDialog({ isOpen, onClose, onSubmit, businessName }: Rating
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState('');
+
+  useEffect(() => {
+    // Reset state when dialog opens
+    if (isOpen) {
+      setRating(0);
+      setHoverRating(0);
+      setComment('');
+    }
+  }, [isOpen]);
 
   const handleSubmit = () => {
     if (rating > 0) {
@@ -77,7 +86,7 @@ export function RatingDialog({ isOpen, onClose, onSubmit, businessName }: Rating
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={rating === 0}>
+          <Button type="button" onClick={handleSubmit} disabled={rating === 0}>
             Submit Review
           </Button>
         </DialogFooter>
