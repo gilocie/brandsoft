@@ -36,10 +36,19 @@ export default function VirtualShopPage() {
     return config?.products || [];
   }, [config?.products]);
 
-  const myCompanyId = useMemo(() => {
+  const currentUserId = useMemo(() => {
     if (!config) return null;
-    const myBusinessAsCompany = config.companies.find(c => c.companyName === config.brand.businessName);
-    return myBusinessAsCompany?.id || null;
+    
+    // 1. Try to find if I am listed as a Company
+    const asCompany = config.companies.find(c => c.companyName === config.brand.businessName);
+    if (asCompany) return asCompany.id;
+  
+    // 2. Try to find if I am listed as a Customer (Standard User Profile)
+    const asCustomer = config.customers.find(c => c.name === config.brand.businessName);
+    if (asCustomer) return asCustomer.id;
+  
+    // 3. Fallback for testing/demo purposes
+    return 'CUST-DEMO-ME'; 
   }, [config]);
   
   const reviews = useMemo(() => {
@@ -67,24 +76,36 @@ export default function VirtualShopPage() {
   };
   
   const handleRequestQuotation = () => {
-    if (selectedProductIds.length > 0 && myCompanyId) {
+    if (selectedProductIds.length > 0 && currentUserId) {
       const productQuery = selectedProductIds.join(',');
-      router.push(`/quotations/new?products=${productQuery}&customerId=${business.id}&senderId=${myCompanyId}`);
+      router.push(`/quotations/new?products=${productQuery}&customerId=${business.id}&senderId=${currentUserId}`);
     }
   };
   
   const handleRatingSubmit = (rating: number, comment: string) => {
-    if (!config || !myCompanyId) return;
+    console.log("Attempting to submit review..."); // Debug log
+
+    if (!config) {
+      console.error("No config found");
+      return;
+    }
+    
+    if (!currentUserId) {
+      console.error("No user ID found");
+      return;
+    }
     
     const newReview: Omit<Review, 'id'> = {
       businessId: business.id,
-      reviewerId: myCompanyId,
-      reviewerName: config.brand.businessName,
+      reviewerId: currentUserId, // Use the new robust ID
+      reviewerName: config.brand.businessName || "Anonymous",
       rating,
       comment,
       date: new Date().toISOString(),
     };
+  
     addReview(newReview);
+    console.log("Review submitted:", newReview); // Debug log
     setIsRatingOpen(false);
   };
   
@@ -190,7 +211,7 @@ export default function VirtualShopPage() {
         
          {selectedProductIds.length > 0 && (
             <div className="sticky bottom-6 flex justify-center">
-                <Button size="lg" className="shadow-lg animate-in fade-in zoom-in-95" onClick={handleRequestQuotation} disabled={!myCompanyId}>
+                <Button size="lg" className="shadow-lg animate-in fade-in zoom-in-95" onClick={handleRequestQuotation} disabled={!currentUserId}>
                     <FileBarChart2 className="mr-2 h-4 w-4" />
                     Request Quotation for {selectedProductIds.length} Item(s)
                 </Button>
