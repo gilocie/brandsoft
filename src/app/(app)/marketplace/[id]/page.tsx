@@ -231,8 +231,16 @@ export default function VirtualShopPage() {
             <CardContent className="p-0">
               <div className="divide-y">
                 {paginatedReviews.map((review) => {
-                  const reviewer = config?.companies.find(c => c.id === review.reviewerId);
-                  const reviewerLogo = reviewer?.logo;
+                  let reviewerLogo: string | undefined = undefined;
+                  // Check if the reviewer is the current user
+                  if (review.reviewerId === currentUserId) {
+                      reviewerLogo = config?.brand.logo;
+                  } else {
+                      // Find reviewer in companies list
+                      const reviewer = config?.companies.find(c => c.id === review.reviewerId);
+                      reviewerLogo = reviewer?.logo;
+                  }
+                  
                   return (
                       <div key={review.id} className="p-6">
                         <div className="flex items-start gap-4">
