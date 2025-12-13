@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -20,6 +20,7 @@ import Link from 'next/link';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { SupplierPicker } from '@/components/supplier-picker';
 import { Badge } from '@/components/ui/badge';
+import { useFormState } from '@/hooks/use-form-state';
 
 const requestItemSchema = z.object({
   productName: z.string().min(1, 'Product name is required'),
@@ -42,6 +43,7 @@ export default function RequestQuotationPage() {
   const { toast } = useToast();
   const router = useRouter();
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const { setFormData, getFormData } = useFormState('newQuotationRequestData');
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -51,6 +53,20 @@ export default function RequestQuotationPage() {
       companyIds: [],
     },
   });
+  
+  useEffect(() => {
+    const storedData = getFormData();
+    if (storedData && Object.keys(storedData).length > 0) {
+        form.reset(storedData);
+    }
+  }, []);
+
+  useEffect(() => {
+    const subscription = form.watch((value) => {
+        setFormData(value);
+    });
+    return () => subscription.unsubscribe();
+  }, [form, setFormData]);
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -78,6 +94,8 @@ export default function RequestQuotationPage() {
         date: new Date().toISOString(),
         status: 'open',
     })
+    
+    setFormData(null); // Clear stored form data on successful submission
 
     toast({
       title: 'Quotation Request Sent!',
