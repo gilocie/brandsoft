@@ -34,12 +34,14 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { PlusCircle, Trash2, UploadCloud, Download, Search } from 'lucide-react';
+import { PlusCircle, Trash2, UploadCloud, Download, Search, Building, MapPin, Globe, Phone, Mail, Star } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { useRouter } from 'next/navigation';
 import { CompanyCard } from '@/components/company-card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import Image from 'next/image';
 
 const formSchema = z.object({
   id: z.string().optional(),
@@ -59,6 +61,7 @@ const formSchema = z.object({
 type CompanyFormData = z.infer<typeof formSchema>;
 
 const ITEMS_PER_PAGE = 20;
+const fallBackCover = 'https://picsum.photos/seed/shopcover/1200/400';
 
 const ImageUploadField = ({
   form,
@@ -123,6 +126,7 @@ export default function CompaniesPage() {
   const { toast } = useToast();
   const router = useRouter();
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isViewOpen, setIsViewOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -189,7 +193,7 @@ export default function CompaniesPage() {
       setSelectedCompany(company);
       if (action === 'edit') handleOpenForm(company);
       if (action === 'delete') setIsDeleteOpen(true);
-      if (action === 'view') router.push(`/marketplace/${company.id}`);
+      if (action === 'view') setIsViewOpen(true);
   };
 
   const onSubmit = (data: CompanyFormData) => {
@@ -218,6 +222,9 @@ export default function CompaniesPage() {
   const handleExportAll = () => {
     // Implementation for exporting all companies
   };
+  
+  const currentViewedCompany = companiesWithRatings.find(c => c.id === selectedCompany?.id);
+
 
   return (
     <div className="container mx-auto space-y-6 max-w-[100vw] overflow-hidden">
@@ -327,6 +334,49 @@ export default function CompaniesPage() {
                 </Form>
             </div>
           </DialogContent>
+      </Dialog>
+
+      <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
+        <DialogContent className="max-w-2xl p-0">
+          {currentViewedCompany && (
+            <div className="flex flex-col">
+              <div className="relative h-40">
+                <Image src={currentViewedCompany.coverImage || fallBackCover} alt={`${currentViewedCompany.companyName} cover`} layout="fill" objectFit="cover" className="rounded-t-lg" data-ai-hint="office workspace" />
+                 <div className="absolute inset-0 bg-black/50" />
+              </div>
+              <div className="relative p-6 flex flex-col items-center -mt-16">
+                 <Avatar className="h-28 w-28 border-4 border-background bg-background">
+                  <AvatarImage src={currentViewedCompany.logo} />
+                  <AvatarFallback><Building className="h-12 w-12" /></AvatarFallback>
+                </Avatar>
+                <DialogHeader className="text-center mt-4">
+                  <DialogTitle className="text-2xl font-headline">{currentViewedCompany.companyName}</DialogTitle>
+                  <DialogDescription>{currentViewedCompany.industry}</DialogDescription>
+                </DialogHeader>
+                 <div className="mt-2 flex justify-center items-center gap-1">
+                    {[...Array(5)].map((_, i) => (
+                        <Star
+                            key={i}
+                            className={`h-5 w-5 ${i < Math.round(currentViewedCompany.averageRating) ? 'text-amber-400 fill-amber-400' : 'text-gray-300'}`}
+                        />
+                    ))}
+                    <span className="text-xs text-muted-foreground ml-1">({currentViewedCompany.reviewCount} reviews)</span>
+                </div>
+                 <p className="mt-4 text-sm text-center text-muted-foreground">{currentViewedCompany.description}</p>
+                 <Separator className="my-6" />
+                 <div className="w-full space-y-3 text-sm">
+                    {currentViewedCompany.email && <div className="flex items-center gap-3"><Mail className="h-4 w-4 text-muted-foreground" /> <span>{currentViewedCompany.email}</span></div>}
+                    {currentViewedCompany.phone && <div className="flex items-center gap-3"><Phone className="h-4 w-4 text-muted-foreground" /> <span>{currentViewedCompany.phone}</span></div>}
+                    {currentViewedCompany.website && <div className="flex items-center gap-3"><Globe className="h-4 w-4 text-muted-foreground" /> <a href={currentViewedCompany.website} target="_blank" rel="noreferrer" className="text-primary hover:underline">{currentViewedCompany.website}</a></div>}
+                    {currentViewedCompany.address && <div className="flex items-start gap-3"><MapPin className="h-4 w-4 text-muted-foreground mt-1" /> <span>{currentViewedCompany.address}</span></div>}
+                 </div>
+              </div>
+              <DialogFooter className="p-4 border-t bg-muted rounded-b-lg">
+                <Button onClick={() => setIsViewOpen(false)}>Close</Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
       </Dialog>
       
       <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
