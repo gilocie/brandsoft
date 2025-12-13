@@ -45,6 +45,7 @@ interface BrandsoftContextType {
   updateQuotation: (quotationId: string, data: Partial<Omit<Quotation, 'quotationId'>>) => void;
   deleteQuotation: (quotationId: string) => void;
   // Quotation Request methods
+  initializeDemoQuotationRequests: (config: BrandsoftConfig) => BrandsoftConfig | null;
   addQuotationRequest: (request: QuotationRequest) => QuotationRequest;
   // Purchase methods
   addPurchaseOrder: (order: Omit<Purchase, 'remainingTime'>) => Purchase;
@@ -60,58 +61,12 @@ interface BrandsoftContextType {
 
 const BrandsoftContext = createContext<BrandsoftContextType | undefined>(undefined);
 
-const initialQuotationRequests: Omit<QuotationRequest, 'id' | 'date' | 'status' | 'requesterId' | 'requesterName'>[] = [
-    {
-        title: 'Office Stationery Supply for Q4',
-        isPublic: true,
-        items: [
-            { productName: 'A4 Reams (box)', quantity: 20 },
-            { productName: 'Blue Ballpoint Pens (box of 100)', quantity: 5 },
-        ],
-    },
-    {
-        title: 'Website Redesign Project',
-        isPublic: false,
-        companyIds: ['CUST-1625243512000', 'CUST-1625243514000'],
-        items: [{ productName: 'Corporate Website', description: 'New 5-page responsive website with a blog and CMS integration.', quantity: 1 }],
-    },
-];
-
-const initialIncomingQuotationRequests: Omit<Quotation, 'quotationId' | 'customer' | 'customerId'>[] = [
-    {
-        senderId: 'CUST-1625243512000', // From Olivia Smith / Smith Designs
-        date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-        validUntil: new Date(Date.now() + 28 * 24 * 60 * 60 * 1000).toISOString(),
-        amount: 850.00,
-        status: 'Sent',
-        subtotal: 850,
-        lineItems: [{ description: 'New Office Signage', quantity: 1, price: 850 }],
-        currency: 'USD',
-        isRequest: true,
-        notes: 'Request for new exterior and interior office signage.'
-    },
-    {
-        senderId: 'CUST-1625243514000', // From Emma Brown / Brown & Co.
-        date: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-        validUntil: new Date(Date.now() + 26 * 24 * 60 * 60 * 1000).toISOString(),
-        amount: 2500.00,
-        status: 'Sent',
-        subtotal: 2500,
-        lineItems: [
-            { description: 'Social Media Marketing Campaign - Q1', quantity: 1, price: 1500 },
-            { description: 'Content Creation (10 posts)', quantity: 1, price: 1000 }
-        ],
-        currency: 'USD',
-        isRequest: true,
-    }
-];
-
 export function BrandsoftProvider({ children }: { children: ReactNode }) {
   const [isActivated, setIsActivated] = useState<boolean | null>(null);
   const [isConfigured, setIsConfigured] = useState<boolean | null>(null);
   const [config, setConfig] = useState<BrandsoftConfig | null>(null);
   const router = useRouter();
-
+  
   const revalidate = useCallback(() => {
     try {
       const storedConfig = localStorage.getItem(CONFIG_KEY);
@@ -123,6 +78,37 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const saveConfig = (newConfig: BrandsoftConfig, options: { redirect?: boolean; revalidate?: boolean } = {}) => {
+    const { redirect = true, revalidate: shouldRevalidate = false } = options;
+    
+    setConfig(newConfig);
+    
+    localStorage.setItem(CONFIG_KEY, JSON.stringify(newConfig));
+    setIsConfigured(true);
+
+    if (shouldRevalidate) {
+      window.dispatchEvent(
+        new StorageEvent("storage", {
+          key: CONFIG_KEY,
+          newValue: JSON.stringify(newConfig),
+          storageArea: localStorage,
+        })
+      );
+    }
+
+    if (redirect) {
+      router.push('/dashboard');
+    }
+  };
+
+  const customerMethods = useCustomers(config, saveConfig);
+  const productMethods = useProducts(config, saveConfig);
+  const invoiceMethods = useInvoices(config, saveConfig);
+  const quotationMethods = useQuotations(config, saveConfig);
+  const quotationRequestMethods = useQuotationRequests(config, saveConfig);
+  const purchaseMethods = usePurchases(config, saveConfig);
+  const currencyMethods = useCurrencies(config, saveConfig);
+
 
   useEffect(() => {
     try {
@@ -131,43 +117,13 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       setIsActivated(!!license);
       setIsConfigured(!!storedConfig);
       if (storedConfig) {
-        const parsedConfig = JSON.parse(storedConfig);
+        let parsedConfig = JSON.parse(storedConfig);
         
-        let shouldUpdateStorage = false;
+        const updatedConfigWithRequests = quotationRequestMethods.initializeDemoQuotationRequests(parsedConfig);
         
-        if (!parsedConfig.quotationRequests || parsedConfig.quotationRequests.length === 0) {
-            const me = parsedConfig.customers.find((c: Customer) => c.name === parsedConfig.brand.businessName);
-            const meId = me?.id || `CUST-DEMO-ME-${Date.now()}`;
-            if (me) {
-                 const demoRequests = initialQuotationRequests.map((r, i) => ({
-                     ...r,
-                     id: `QR-DEMO-${i+1}`,
-                     requesterId: meId,
-                     requesterName: me.name,
-                     date: new Date(Date.now() - (i+1) * 24 * 60 * 60 * 1000).toISOString(),
-                     status: 'open' as const,
-                 }));
-                 parsedConfig.quotationRequests = demoRequests;
-                 shouldUpdateStorage = true;
-            }
-        }
-        
-        if (!parsedConfig.quotations.some((q: Quotation) => q.isRequest === true)) {
-            const me = parsedConfig.customers.find((c: Customer) => c.name === parsedConfig.brand.businessName);
-             if (me) {
-                 const demoIncoming = initialIncomingQuotationRequests.map((q, i) => ({
-                    ...q, 
-                    quotationId: `IN-REQ-00${i+1}`,
-                    customerId: me.id,
-                    customer: me.name
-                }));
-                parsedConfig.quotations = [...(parsedConfig.quotations || []), ...demoIncoming];
-                shouldUpdateStorage = true;
-            }
-        }
-        
-        if (shouldUpdateStorage) {
-             localStorage.setItem(CONFIG_KEY, JSON.stringify(parsedConfig));
+        if (updatedConfigWithRequests) {
+          parsedConfig = updatedConfigWithRequests;
+          localStorage.setItem(CONFIG_KEY, JSON.stringify(parsedConfig));
         }
 
         setConfig(parsedConfig);
@@ -223,38 +179,6 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     setIsConfigured(false);
     router.push('/activation');
   };
-
-  const saveConfig = (newConfig: BrandsoftConfig, options: { redirect?: boolean; revalidate?: boolean } = {}) => {
-    const { redirect = true, revalidate: shouldRevalidate = false } = options;
-    
-    setConfig(newConfig);
-    
-    localStorage.setItem(CONFIG_KEY, JSON.stringify(newConfig));
-    setIsConfigured(true);
-
-    if (shouldRevalidate) {
-      // Dispatch a storage event to notify other tabs
-      window.dispatchEvent(
-        new StorageEvent("storage", {
-          key: CONFIG_KEY,
-          newValue: JSON.stringify(newConfig),
-          storageArea: localStorage,
-        })
-      );
-    }
-
-    if (redirect) {
-      router.push('/dashboard');
-    }
-  };
-
-  const customerMethods = useCustomers(config, saveConfig);
-  const productMethods = useProducts(config, saveConfig);
-  const invoiceMethods = useInvoices(config, saveConfig);
-  const quotationMethods = useQuotations(config, saveConfig);
-  const quotationRequestMethods = useQuotationRequests(config, saveConfig);
-  const purchaseMethods = usePurchases(config, saveConfig);
-  const currencyMethods = useCurrencies(config, saveConfig);
 
   const value: BrandsoftContextType = {
     isActivated,
