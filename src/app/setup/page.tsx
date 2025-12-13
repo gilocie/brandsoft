@@ -201,8 +201,8 @@ const initialQuotationRequests: QuotationRequest[] = [
     {
         id: 'QR-1625243511000',
         title: 'Office Stationery Supply',
-        requesterId: 'MY-BUSINESS-ID',
-        requesterName: 'My Business Name',
+        requesterId: 'CUST-1625243513000', // Noah Williams
+        requesterName: 'Noah Williams',
         date: '2023-11-15T10:00:00Z',
         isPublic: true,
         items: [
@@ -214,8 +214,8 @@ const initialQuotationRequests: QuotationRequest[] = [
     {
         id: 'QR-1625243512000',
         title: 'Website Development for a new project',
-        requesterId: 'MY-BUSINESS-ID',
-        requesterName: 'My Business Name',
+        requesterId: 'CUST-1625243513000', // Noah Williams
+        requesterName: 'Noah Williams',
         date: '2023-11-20T14:30:00Z',
         isPublic: false,
         companyIds: ['CUST-1625243512000', 'CUST-1625243514000'],
@@ -294,11 +294,12 @@ export default function SetupPage() {
     };
 
     const finalCustomers = [...initialCustomers, myBusinessCustomer];
-    const finalRequests = initialQuotationRequests.map(req => ({
-        ...req,
-        requesterId: myBusinessCustomer.id,
-        requesterName: myBusinessCustomer.name,
-    }));
+    const finalRequests = initialQuotationRequests.map(req => {
+        if (req.requesterId === 'CUST-1625243513000') {
+             return { ...req, requesterId: myBusinessCustomer.id, requesterName: data.businessName };
+        }
+        return req;
+    });
 
     const config: BrandsoftConfig = {
       brand: {
@@ -699,3 +700,5 @@ function Step3ModuleSelection({ control }: { control: Control<FormData> }) {
         </div>
     );
 }
+
+    
