@@ -50,6 +50,8 @@ import {
   FileCheck2,
   XCircle,
   MessageSquareQuote,
+  Users,
+  Globe,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -57,7 +59,7 @@ import {
   ToggleGroupItem,
 } from "@/components/ui/toggle-group"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useBrandsoft, type Quotation } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Quotation, type QuotationRequest } from '@/hooks/use-brandsoft';
 import { QuotationPreview, downloadQuotationAsPdf } from '@/components/quotation-preview';
 import { useToast } from '@/hooks/use-toast';
 
@@ -176,6 +178,58 @@ const QuotationList = ({quotations, layout, onSelectAction, currencyCode}: {quot
             )})}
           </div>
     )
+};
+
+const QuotationRequestList = ({ requests, layout }: { requests: QuotationRequest[], layout: 'grid' | 'list' }) => {
+    if (requests.length === 0) {
+        return (
+            <div className="flex h-60 items-center justify-center rounded-lg border-2 border-dashed bg-muted/40">
+                <p className="text-muted-foreground">No quotation requests found.</p>
+            </div>
+        )
+    }
+
+    return (
+        <div className={cn(
+            "gap-6",
+            layout === 'grid' 
+                ? "grid md:grid-cols-2 lg:grid-cols-3" 
+                : "flex flex-col"
+          )}>
+            {requests.map((request) => {
+              const visibility = request.isPublic 
+                ? { text: "Public Request", icon: Globe, className: "text-blue-500" } 
+                : { text: `${request.companyIds?.length || 0} Suppliers`, icon: Users, className: "text-muted-foreground" };
+
+              return (
+              <Card key={request.id} className={cn(
+                "flex flex-col",
+                layout === 'list' && "flex-row items-center p-4 gap-4"
+              )}>
+                <div className="flex-grow">
+                    <CardHeader className={cn(layout === 'list' ? 'p-0' : 'p-6 pb-2')}>
+                        <CardTitle className="text-base font-semibold truncate">{request.title}</CardTitle>
+                        <CardDescription className="text-xs">{new Date(request.date).toLocaleDateString()}</CardDescription>
+                    </CardHeader>
+                    <CardContent className={cn("flex-grow", layout === 'list' ? 'p-0 pt-2' : 'p-6 pt-4')}>
+                      <div className="flex items-center gap-2 text-xs">
+                        <visibility.icon className={cn("h-4 w-4", visibility.className)} />
+                        <span className={cn(visibility.className)}>{visibility.text}</span>
+                      </div>
+                    </CardContent>
+                </div>
+                {layout === 'grid' && (
+                    <div className="p-6 pt-0">
+                         <Button variant="outline" size="sm" className="w-full">View Details</Button>
+                    </div>
+                )}
+                {layout === 'list' && (
+                    <Button variant="outline" size="sm">View Details</Button>
+                )}
+              </Card>
+            )})}
+        </div>
+    )
 }
 
 export default function QuotationsPage() {
@@ -194,6 +248,7 @@ export default function QuotationsPage() {
   const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null);
 
   const quotations = config?.quotations || [];
+  const quotationRequests = config?.quotationRequests || [];
   const currencyCode = config?.profile.defaultCurrency || '';
   
   const myCustomerId = useMemo(() => {
@@ -202,7 +257,7 @@ export default function QuotationsPage() {
 
 
   const filteredQuotations = useMemo(() => {
-      const myRequests = quotations.filter(q => q.senderId && q.senderId !== myCustomerId);
+      const myRequests = quotationRequests.filter(q => q.requesterId === myCustomerId);
       const theirRequests = quotations.filter(q => q.isRequest && q.senderId === myCustomerId);
       
       return {
@@ -214,7 +269,7 @@ export default function QuotationsPage() {
         requestsIncoming: theirRequests,
         requestsOutgoing: myRequests,
     }
-  }, [quotations, myCustomerId]);
+  }, [quotations, quotationRequests, myCustomerId]);
 
 
   const handleSelectAction = async (action: 'view' | 'edit' | 'delete' | 'download' | 'send' | 'accept' | 'decline', quotation: Quotation) => {
@@ -359,7 +414,7 @@ export default function QuotationsPage() {
                  <QuotationList quotations={filteredQuotations.requestsIncoming} layout={layout} onSelectAction={handleSelectAction} currencyCode={currencyCode} />
             </TabsContent>
              <TabsContent value="outgoing" className="pt-4">
-                 <QuotationList quotations={filteredQuotations.requestsOutgoing} layout={layout} onSelectAction={handleSelectAction} currencyCode={currencyCode} />
+                 <QuotationRequestList requests={filteredQuotations.requestsOutgoing} layout={layout} />
             </TabsContent>
           </Tabs>
         </TabsContent>
