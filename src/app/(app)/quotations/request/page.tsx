@@ -91,11 +91,15 @@ export default function RequestQuotationPage() {
     );
 
     addQuotationRequest({
-        ...data,
         id: `QR-${Date.now()}`,
+        title: data.title,
+        description: data.description,
         requesterId: myCustomerProfile?.id || '',
         requesterName: config.brand.businessName,
         date: new Date().toISOString(),
+        isPublic: data.isPublic,
+        companyIds: data.companyIds,
+        items: data.items,
         status: 'open',
     })
     

@@ -44,7 +44,7 @@ interface BrandsoftContextType {
   updateQuotation: (quotationId: string, data: Partial<Omit<Quotation, 'quotationId'>>) => void;
   deleteQuotation: (quotationId: string) => void;
   // Quotation Request methods
-  addQuotationRequest: (request: Omit<QuotationRequest, 'id' | 'date' | 'status'>) => QuotationRequest;
+  addQuotationRequest: (request: QuotationRequest) => QuotationRequest;
   // Purchase methods
   addPurchaseOrder: (order: Omit<Purchase, 'remainingTime'>) => Purchase;
   getPurchaseOrder: (orderId: string) => Purchase | null;
