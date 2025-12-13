@@ -86,10 +86,14 @@ export default function RequestQuotationPage() {
       return;
     }
     
+    const myCustomerProfile = config.customers.find(
+      c => c.name === config.brand.businessName
+    );
+
     addQuotationRequest({
         ...data,
         id: `QR-${Date.now()}`,
-        requesterId: config.customers.find(c => c.name === config.brand.businessName)?.id || '',
+        requesterId: myCustomerProfile?.id || '',
         requesterName: config.brand.businessName,
         date: new Date().toISOString(),
         status: 'open',
