@@ -46,7 +46,7 @@ import { QuotationRequestList } from '@/components/quotations/quotation-request-
 
 export default function QuotationsPage() {
   const [layout, setLayout] = useState<'grid' | 'list'>('grid');
-  const { config, deleteQuotation, updateQuotation, addInvoice } = useBrandsoft();
+  const { config, deleteQuotation, updateQuotation, addInvoice, updateQuotationRequest, deleteQuotationRequest } = useBrandsoft();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -58,42 +58,33 @@ export default function QuotationsPage() {
   const [isAcceptOpen, setIsAcceptOpen] = useState(false);
   const [isDeclineOpen, setIsDeclineOpen] = useState(false);
   const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null);
+  
+  // State for request actions
+  const [isRequestDeleteOpen, setIsRequestDeleteOpen] = useState(false);
+  const [isRequestCloseOpen, setIsRequestCloseOpen] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<QuotationRequest | null>(null);
 
   const quotations = config?.quotations || [];
   const currencyCode = config?.profile.defaultCurrency || '';
   
-  // --- PASTE THIS INTO src/app/(app)/quotations/page.tsx ---
-
-  // 1. DETERMINE YOUR IDENTITY
-  // This logic ensures we find the ID "CUST-DEMO-ME" that matches your screenshot
   const currentUserId = useMemo(() => {
     if (!config || !config.brand) return 'CUST-DEMO-ME';
     
-    const businessName = config.brand.businessName; // "Go Save Site"
+    const businessName = config.brand.businessName;
     
-    // A. Check if you exist as a Company
     const asCompany = config.companies?.find(c => c.companyName === businessName);
     if (asCompany) return asCompany.id;
 
-    // B. Check if you exist as a Customer
     const asCustomer = config.customers?.find(c => c.name === businessName);
     if (asCustomer) return asCustomer.id;
 
-    // C. FINAL FALLBACK (This is what matches your screenshot data)
     return 'CUST-DEMO-ME';
   }, [config]);
 
 
-  // 2. FILTER THE LISTS
   const filteredQuotations = useMemo(() => {
-      // OUTGOING: Requests where requesterId matches YOUR ID ("CUST-DEMO-ME")
       const myRequests = (config?.quotationRequests || []).filter(q => q.requesterId === currentUserId);
-      
-      // INCOMING: Requests sent TO YOU (where you are in the companyIds list) OR traditional quotations sent to you
-      // Note: Traditional quotations use 'customerId'. New Requests use 'companyIds'.
       const theirRequests = quotations.filter(q => q.isRequest && q.customerId === currentUserId);
-      
-      // Also check for modern requests where your ID is inside the companyIds array
       const modernIncomingRequests = (config?.quotationRequests || []).filter(
         q => q.companyIds && q.companyIds.includes(currentUserId)
       );
@@ -104,8 +95,8 @@ export default function QuotationsPage() {
         sent: quotations.filter(q => q.status === 'Sent' && !q.isRequest),
         accepted: quotations.filter(q => q.status === 'Accepted' && !q.isRequest),
         declined: quotations.filter(q => q.status === 'Declined' && !q.isRequest),
-        requestsIncoming: [...theirRequests, ...modernIncomingRequests], // Combine both types
-        requestsOutgoing: myRequests, // <--- This will now contain your "Snacks" request
+        requestsIncoming: [...theirRequests, ...modernIncomingRequests],
+        requestsOutgoing: myRequests,
     }
   }, [quotations, config?.quotationRequests, currentUserId]);
 
@@ -141,6 +132,26 @@ export default function QuotationsPage() {
             break;
     }
   };
+  
+  const handleRequestAction = (action: 'view' | 'edit' | 'delete' | 'close', request: QuotationRequest) => {
+    setSelectedRequest(request);
+    switch (action) {
+        case 'view':
+            // Implement view logic, e.g., open a dialog
+            alert(`Viewing request: ${request.title}`);
+            break;
+        case 'edit':
+            // Navigate to an edit page
+            router.push(`/quotations/request/${request.id}/edit`);
+            break;
+        case 'delete':
+            setIsRequestDeleteOpen(true);
+            break;
+        case 'close':
+            setIsRequestCloseOpen(true);
+            break;
+    }
+  };
 
   const handleDelete = () => {
     if (selectedQuotation) {
@@ -154,7 +165,6 @@ export default function QuotationsPage() {
     if (selectedQuotation) {
       updateQuotation(selectedQuotation.quotationId, { status: 'Accepted' });
 
-      // Convert to invoice
       const newInvoiceData = {
         customer: selectedQuotation.customer,
         customerId: selectedQuotation.customerId,
@@ -189,6 +199,22 @@ export default function QuotationsPage() {
       updateQuotation(selectedQuotation.quotationId, { status: 'Declined' });
       setIsDeclineOpen(false);
       setSelectedQuotation(null);
+    }
+  };
+
+  const handleCloseRequest = () => {
+    if (selectedRequest) {
+      updateQuotationRequest(selectedRequest.id, { status: 'closed' });
+      setIsRequestCloseOpen(false);
+      setSelectedRequest(null);
+    }
+  };
+
+  const handleDeleteRequest = () => {
+    if (selectedRequest) {
+      deleteQuotationRequest(selectedRequest.id);
+      setIsRequestDeleteOpen(false);
+      setSelectedRequest(null);
     }
   };
 
@@ -252,7 +278,7 @@ export default function QuotationsPage() {
                  <QuotationList quotations={filteredQuotations.requestsIncoming} layout={layout} onSelectAction={handleSelectAction} currencyCode={currencyCode} />
             </TabsContent>
              <TabsContent value="outgoing" className="pt-4">
-                 <QuotationRequestList requests={filteredQuotations.requestsOutgoing} layout={layout} />
+                 <QuotationRequestList requests={filteredQuotations.requestsOutgoing} layout={layout} onSelectAction={handleRequestAction} />
             </TabsContent>
           </Tabs>
         </TabsContent>
@@ -344,6 +370,43 @@ export default function QuotationsPage() {
             </AlertDialogFooter>
         </AlertDialogContent>
     </AlertDialog>
+
+    {/* Request Delete Confirmation Dialog */}
+    <AlertDialog open={isRequestDeleteOpen} onOpenChange={setIsRequestDeleteOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Delete Quotation Request?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This will permanently delete the request "{selectedRequest?.title}". This action cannot be undone.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteRequest} className="bg-destructive hover:bg-destructive/90">
+                    Delete
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+
+    {/* Request Close Confirmation Dialog */}
+    <AlertDialog open={isRequestCloseOpen} onOpenChange={setIsRequestCloseOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Close Quotation Request?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Marking this request as closed will prevent new suppliers from responding.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleCloseRequest}>
+                    Mark as Closed
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+
     </div>
   );
 }

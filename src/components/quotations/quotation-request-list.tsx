@@ -12,13 +12,15 @@ import { Button } from '@/components/ui/button';
 import { Users, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { QuotationRequest } from '@/hooks/use-brandsoft';
+import { QuotationRequestActions } from './quotation-request-actions';
 
 interface QuotationRequestListProps {
     requests: QuotationRequest[];
     layout: 'grid' | 'list';
+    onSelectAction: (action: 'view' | 'edit' | 'delete' | 'close', request: QuotationRequest) => void;
 }
 
-export const QuotationRequestList = ({ requests, layout }: QuotationRequestListProps) => {
+export const QuotationRequestList = ({ requests, layout, onSelectAction }: QuotationRequestListProps) => {
     if (requests.length === 0) {
         return (
             <div className="flex h-60 items-center justify-center rounded-lg border-2 border-dashed bg-muted/40">
@@ -50,20 +52,20 @@ export const QuotationRequestList = ({ requests, layout }: QuotationRequestListP
                         <CardDescription className="text-xs">{new Date(request.date).toLocaleDateString()}</CardDescription>
                     </CardHeader>
                     <CardContent className={cn("flex-grow", layout === 'list' ? 'p-0 pt-2' : 'p-6 pt-4')}>
-                      <div className="flex items-center gap-2 text-xs">
-                        <visibility.icon className={cn("h-4 w-4", visibility.className)} />
-                        <span className={cn(visibility.className)}>{visibility.text}</span>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-xs">
+                          <visibility.icon className={cn("h-4 w-4", visibility.className)} />
+                          <span className={cn(visibility.className)}>{visibility.text}</span>
+                        </div>
+                        <div className={cn(layout === 'grid' ? "flex" : "hidden")}>
+                            <QuotationRequestActions request={request} onSelectAction={onSelectAction} />
+                        </div>
                       </div>
                     </CardContent>
                 </div>
-                {layout === 'grid' && (
-                    <div className="p-6 pt-0">
-                         <Button variant="outline" size="sm" className="w-full">View Details</Button>
-                    </div>
-                )}
-                {layout === 'list' && (
-                    <Button variant="outline" size="sm">View Details</Button>
-                )}
+                <div className={cn(layout === 'list' ? "flex items-center" : "hidden")}>
+                    <QuotationRequestActions request={request} onSelectAction={onSelectAction} />
+                </div>
               </Card>
             )})}
         </div>

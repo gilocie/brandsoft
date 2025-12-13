@@ -47,6 +47,8 @@ interface BrandsoftContextType {
   // Quotation Request methods
   initializeDemoQuotationRequests: (config: BrandsoftConfig) => BrandsoftConfig | null;
   addQuotationRequest: (request: QuotationRequest) => QuotationRequest;
+  updateQuotationRequest: (requestId: string, data: Partial<Omit<QuotationRequest, 'id'>>) => void;
+  deleteQuotationRequest: (requestId: string) => void;
   // Purchase methods
   addPurchaseOrder: (order: Omit<Purchase, 'remainingTime'>) => Purchase;
   getPurchaseOrder: (orderId: string) => Purchase | null;

@@ -61,8 +61,26 @@ export function useQuotationRequests(
     return newConfig;
   };
 
+  const updateQuotationRequest = (requestId: string, data: Partial<Omit<QuotationRequest, 'id'>>) => {
+      if (config) {
+          const newRequests = (config.quotationRequests || []).map(r => 
+              r.id === requestId ? { ...r, ...data } : r
+          );
+          saveConfig({ ...config, quotationRequests: newRequests }, { redirect: false, revalidate: true });
+      }
+  };
+
+  const deleteQuotationRequest = (requestId: string) => {
+      if (config) {
+          const newRequests = (config.quotationRequests || []).filter(r => r.id !== requestId);
+          saveConfig({ ...config, quotationRequests: newRequests }, { redirect: false, revalidate: true });
+      }
+  };
+
   return {
     addQuotationRequest,
     initializeDemoQuotationRequests,
+    updateQuotationRequest,
+    deleteQuotationRequest,
   };
 }
