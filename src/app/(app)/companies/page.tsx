@@ -38,6 +38,7 @@ import { PlusCircle, Trash2, UploadCloud, Download, Search } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { CompanyCard } from '@/components/company-card';
+import { Separator } from '@/components/ui/separator';
 
 const formSchema = z.object({
   id: z.string().optional(),
@@ -50,6 +51,7 @@ const formSchema = z.object({
   industry: z.string().optional(),
   description: z.string().optional(),
   logo: z.string().optional(),
+  coverImage: z.string().optional(),
   website: z.string().url("Invalid URL").optional().or(z.literal('')),
 });
 
@@ -103,7 +105,7 @@ export default function CompaniesPage() {
     } else {
       form.reset({
         id: undefined, name: '', companyName: '', email: '', phone: '',
-        address: '', town: '', industry: '', description: '', logo: '', website: ''
+        address: '', town: '', industry: '', description: '', logo: '', coverImage: '', website: ''
       });
     }
     setIsFormOpen(true);
@@ -196,28 +198,52 @@ export default function CompaniesPage() {
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
           <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
             <DialogHeader>
-                <DialogTitle>{selectedCompany ? 'Edit' : 'Add New'} Company</DialogTitle>
-                <DialogDescription>Enter the details of the business.</DialogDescription>
+                <DialogTitle>{selectedCompany ? 'Edit' : 'Add New'} Company Profile</DialogTitle>
+                <DialogDescription>This information will appear on the marketplace and documents.</DialogDescription>
             </DialogHeader>
             <div className="flex-grow overflow-y-auto pr-6 -mr-6">
                 <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
+                    
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-medium text-muted-foreground">Company Information</h3>
                         <FormField control={form.control} name="companyName" render={({ field }) => ( <FormItem><FormLabel>Company Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
-                        <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>Contact Person</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                        <FormField control={form.control} name="description" render={({ field }) => ( <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField control={form.control} name="industry" render={({ field }) => ( <FormItem><FormLabel>Industry</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                            <FormField control={form.control} name="website" render={({ field }) => ( <FormItem><FormLabel>Website</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                        </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField control={form.control} name="email" render={({ field }) => ( <FormItem><FormLabel>Contact Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem> )}/>
-                        <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem><FormLabel>Phone</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
+
+                    <Separator />
+                    
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-medium text-muted-foreground">Visuals</h3>
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField control={form.control} name="logo" render={({ field }) => ( <FormItem><FormLabel>Logo URL</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                            <FormField control={form.control} name="coverImage" render={({ field }) => ( <FormItem><FormLabel>Cover Image URL</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                        </div>
                     </div>
-                    <FormField control={form.control} name="address" render={({ field }) => ( <FormItem><FormLabel>Address</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem> )}/>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                    <Separator />
+
+                     <div className="space-y-4">
+                        <h3 className="text-sm font-medium text-muted-foreground">Contact Details</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField control={form.control} name="name" render={({ field }) => ( <FormItem><FormLabel>Contact Person</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                            <FormField control={form.control} name="email" render={({ field }) => ( <FormItem><FormLabel>Contact Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                        </div>
+                         <FormField control={form.control} name="phone" render={({ field }) => ( <FormItem><FormLabel>Phone</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                    </div>
+
+                    <Separator />
+                    
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-medium text-muted-foreground">Location</h3>
+                        <FormField control={form.control} name="address" render={({ field }) => ( <FormItem><FormLabel>Address</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem> )}/>
                         <FormField control={form.control} name="town" render={({ field }) => ( <FormItem><FormLabel>Town</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
-                        <FormField control={form.control} name="industry" render={({ field }) => ( <FormItem><FormLabel>Industry</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
                     </div>
-                    <FormField control={form.control} name="website" render={({ field }) => ( <FormItem><FormLabel>Website</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
-                     <FormField control={form.control} name="logo" render={({ field }) => ( <FormItem><FormLabel>Logo URL</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
-                    <FormField control={form.control} name="description" render={({ field }) => ( <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem> )}/>
+
 
                     <DialogFooter className="pt-4 sticky bottom-0 bg-background pb-0 -mb-6">
                         <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>Cancel</Button>
@@ -244,3 +270,5 @@ export default function CompaniesPage() {
     </div>
   );
 }
+
+    

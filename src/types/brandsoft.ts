@@ -16,6 +16,7 @@ export type Company = {
   town?: string;
   description?: string;
   logo?: string;
+  coverImage?: string;
   website?: string;
 };
 
@@ -236,3 +237,5 @@ export type Quotation = {
     design?: DesignSettings;
     isRequest?: boolean;
 };
+
+    
