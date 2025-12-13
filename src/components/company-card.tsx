@@ -55,7 +55,7 @@ export function CompanyCard({ company, onSelectAction }: { company: Company, onS
             </div>
 
             {/* Card Content */}
-            <CardContent className="pt-14 text-center">
+            <CardContent className="pt-12 text-center">
                 <h3 className="text-xl font-bold font-headline">{company.companyName}</h3>
                 <p className="text-sm text-muted-foreground mt-1">{company.industry || 'Business'}</p>
                 
@@ -74,3 +74,4 @@ export function CompanyCard({ company, onSelectAction }: { company: Company, onS
         </Card>
     );
 }
+
