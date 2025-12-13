@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -12,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Palette, Trash2, Pencil, Eye, FileJson } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { useBrandsoft, type BrandsoftTemplate, type Invoice, type Customer } from '@/hooks/use-brandsoft';
+import { useBrandsoft } from '@/hooks/use-brandsoft';
 import { getBackgroundCSS, getBackgroundStyle, Page, CanvasElement } from '@/stores/canvas-store';
 import { cn } from '@/lib/utils';
 import { useCanvasStore } from '@/stores/canvas-store';
@@ -21,6 +22,7 @@ import { useState, useMemo } from 'react';
 import { Separator } from '@/components/ui/separator';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
+import type { BrandsoftTemplate, Invoice, Customer } from '@/types/brandsoft';
 
 
 const templateCategories = [
@@ -143,7 +145,7 @@ const TemplateCard = ({ template }: { template: BrandsoftTemplate }) => {
     const [previewInvoice, setPreviewInvoice] = useState<Invoice | null>(null);
 
     const invoices = useMemo(() => {
-        if (!config || template.category !== 'invoice') return {};
+        if (!config || template.category !== 'invoice' || !config.invoices) return {};
         return {
             Pending: config.invoices.filter(inv => inv.status === 'Pending'),
             Paid: config.invoices.filter(inv => inv.status === 'Paid'),
@@ -153,7 +155,7 @@ const TemplateCard = ({ template }: { template: BrandsoftTemplate }) => {
     }, [config, template.category]);
     
     const previewCustomer = useMemo(() => {
-        if (!config || !previewInvoice) return null;
+        if (!config || !previewInvoice || !config.customers) return null;
         return config.customers.find(c => c.name === previewInvoice.customer) || null;
     }, [config, previewInvoice]);
 

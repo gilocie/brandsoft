@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useRef } from 'react';
@@ -54,7 +55,7 @@ import {
   ToggleGroupItem,
 } from "@/components/ui/toggle-group"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useBrandsoft, type Company, type Invoice } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Company, type Customer, type Invoice } from '@/hooks/use-brandsoft';
 import { InvoicePreview, downloadInvoiceAsPdf } from '@/components/invoice-preview';
 
 const statusVariantMap: {
@@ -128,8 +129,8 @@ const InvoiceList = ({invoices, layout, onSelectAction, currencyCode}: {invoices
                 : "flex flex-col"
           )}>
             {invoices.map((invoice) => {
-              const company = config?.companies.find(c => c.name === invoice.customer);
-              const companyName = company?.companyName || company?.name || invoice.customer;
+              const customer = config?.customers?.find(c => c.id === invoice.customerId) || null;
+              const customerName = customer?.companyName || customer?.name || invoice.customer;
               
               return (
               <Card key={invoice.invoiceId} className={cn(
@@ -138,7 +139,7 @@ const InvoiceList = ({invoices, layout, onSelectAction, currencyCode}: {invoices
               )}>
                 <div className={cn("flex-grow", layout === 'list' && "w-full")}>
                     <CardHeader className={cn(layout === 'list' ? "p-4" : "p-6")}>
-                        <CardTitle className={cn("truncate", layout === 'list' && "text-base font-semibold")}>{companyName}</CardTitle>
+                        <CardTitle className={cn("truncate", layout === 'list' && "text-base font-semibold")}>{customerName}</CardTitle>
                         <CardDescription className={cn(layout === 'list' && "text-xs")}>{invoice.invoiceId}</CardDescription>
                     </CardHeader>
                     <CardContent className={cn("flex-grow space-y-2", layout === 'list' ? "p-4 pt-0 md:flex md:items-center md:justify-between md:space-y-0" : "p-6 pt-0")}>
@@ -209,9 +210,9 @@ export default function InvoicesPage() {
             setIsMarkPaidOpen(true);
             break;
         case 'download':
-            const company = config?.companies.find(c => c.name === invoice.customer) || null;
-            if (config && company) {
-                await downloadInvoiceAsPdf({ config, customer: company, invoiceData: invoice, invoiceId: invoice.invoiceId });
+            const customer = config?.customers?.find(c => c.id === invoice.customerId) || null;
+            if (config && customer) {
+                await downloadInvoiceAsPdf({ config, customer, invoiceData: invoice, invoiceId: invoice.invoiceId });
             } else {
                 console.error("Missing data for PDF generation.");
             }
@@ -240,7 +241,7 @@ export default function InvoicesPage() {
   };
 
   const currentPreviewInvoice = config?.invoices.find(inv => inv.invoiceId === selectedInvoice?.invoiceId);
-  const selectedCompany = config?.companies.find(c => c.name === currentPreviewInvoice?.customer) || null;
+  const selectedCustomer = config?.customers?.find(c => c.id === currentPreviewInvoice?.customerId) || null;
 
 
   return (
@@ -313,7 +314,7 @@ export default function InvoicesPage() {
             {currentPreviewInvoice && (
               <InvoicePreview
                 config={config}
-                customer={selectedCompany}
+                customer={selectedCustomer}
                 invoiceData={currentPreviewInvoice}
                 invoiceId={currentPreviewInvoice.invoiceId}
               />

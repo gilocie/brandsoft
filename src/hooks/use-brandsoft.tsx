@@ -11,7 +11,7 @@ import { useQuotations } from './use-quotations';
 import { useQuotationRequests } from './use-quotation-requests';
 import { usePurchases } from './use-purchases';
 import { useCurrencies } from './use-currencies';
-import type { BrandsoftConfig, Company, Product, Invoice, Quotation, QuotationRequest, Purchase } from '@/types/brandsoft';
+import type { BrandsoftConfig, Company, Product, Invoice, Quotation, QuotationRequest, Purchase, Customer } from '@/types/brandsoft';
 
 export * from '@/types/brandsoft';
 
@@ -31,6 +31,7 @@ interface BrandsoftContextType {
   addCompany: (company: Omit<Company, 'id'>) => Company;
   updateCompany: (companyId: string, data: Partial<Omit<Company, 'id'>>) => void;
   deleteCompany: (companyId: string) => void;
+  addCustomer: (customer: Omit<Customer, 'id'>) => Customer;
   // Product methods
   addProduct: (product: Omit<Product, 'id'>) => Product;
   updateProduct: (productId: string, data: Partial<Omit<Product, 'id'>>) => void;
@@ -178,6 +179,17 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     setIsConfigured(false);
     router.push('/activation');
   };
+  
+    const addCustomer = (customer: Omit<Customer, 'id'>): Customer => {
+      const newCustomer: Customer = { ...customer, id: `CUST-${Date.now()}` };
+      if (config) {
+          const customers = config.customers || [];
+          const newConfig = { ...config, customers: [...customers, newCustomer] };
+          saveConfig(newConfig, { redirect: false, revalidate: false });
+      }
+      return newCustomer;
+    };
+
 
   const value: BrandsoftContextType = {
     isActivated,
@@ -188,6 +200,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     saveConfig,
     logout,
     ...companyMethods,
+    addCustomer,
     ...productMethods,
     ...invoiceMethods,
     ...quotationMethods,

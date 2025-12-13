@@ -20,6 +20,17 @@ export type Company = {
   website?: string;
 };
 
+export type Customer = {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  companyName?: string;
+  companyAddress?: string;
+  vatNumber?: string;
+};
+
 export type Product = {
   id: string;
   name: string;
@@ -174,6 +185,7 @@ export type BrandsoftConfig = {
     marketing: boolean;
   };
   companies: Company[];
+  customers: Customer[];
   products: Product[];
   invoices: Invoice[];
   quotations: Quotation[];
@@ -237,5 +249,3 @@ export type Quotation = {
     design?: DesignSettings;
     isRequest?: boolean;
 };
-
-    

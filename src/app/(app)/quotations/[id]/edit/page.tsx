@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -110,7 +111,7 @@ export default function EditQuotationPage() {
     } else {
       const quotationToEdit = config.quotations.find(q => q.quotationId?.toLowerCase() === quotationId?.toLowerCase());
       if (quotationToEdit) {
-        const customer = config.customers.find(c => c.id === quotationToEdit.customerId) || config.customers.find(c => c.name === quotationToEdit.customer);
+        const customer = config.customers?.find(c => c.id === quotationToEdit.customerId) || config.customers?.find(c => c.name === quotationToEdit.customer);
         if (customer) {
             const lineItems = quotationToEdit.lineItems || (quotationToEdit.subtotal ? [{
                 description: 'Original Items',
@@ -141,7 +142,7 @@ export default function EditQuotationPage() {
               lineItems: lineItems
             });
             setUseManualEntry(lineItems.map(item => !item.productId));
-        } else {
+        } else if (config.customers) {
              toast({ title: "Error", description: "Customer for this quotation not found.", variant: 'destructive'});
              router.push('/quotations');
         }

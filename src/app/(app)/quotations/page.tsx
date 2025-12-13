@@ -103,9 +103,9 @@ export default function QuotationsPage() {
             setIsDeclineOpen(true);
             break;
         case 'download':
-            const company = config?.companies.find(c => c.id === quotation.customerId) || null;
-            if (config && company) {
-                await downloadQuotationAsPdf({ config, customer: company, quotationData: quotation, quotationId: quotation.quotationId });
+            const customer = config?.customers.find(c => c.id === quotation.customerId) || null;
+            if (config && customer) {
+                await downloadQuotationAsPdf({ config, customer, quotationData: quotation, quotationId: quotation.quotationId });
             } else {
                 console.error("Missing data for PDF generation.");
             }
@@ -167,7 +167,7 @@ export default function QuotationsPage() {
   };
 
   const currentPreviewQuotation = config?.quotations.find(q => q.quotationId === selectedQuotation?.quotationId);
-  const selectedCompany = config?.companies.find(c => c.id === currentPreviewQuotation?.customerId) || null;
+  const selectedCompany = config?.customers.find(c => c.id === currentPreviewQuotation?.customerId) || null;
 
   return (
     <div className="container mx-auto space-y-6">
