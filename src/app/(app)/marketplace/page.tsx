@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Search, Building, MapPin } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { CompanyCard } from '@/components/company-card';
 
 
 export default function MarketplacePage() {
@@ -87,27 +88,7 @@ export default function MarketplacePage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {filteredBusinesses.map(biz => (
-          <Link key={biz.id} href={`/marketplace/${biz.id}`} passHref>
-             <Card className="h-full flex flex-col transition-all hover:shadow-lg hover:-translate-y-1">
-                <CardHeader className="items-center text-center">
-                    <Avatar className="h-16 w-16 mb-2">
-                        <AvatarImage src={biz.logo} />
-                        <AvatarFallback><Building/></AvatarFallback>
-                    </Avatar>
-                    <CardTitle className="text-base">{biz.companyName}</CardTitle>
-                </CardHeader>
-                <CardContent className="text-center text-xs space-y-1 flex-grow">
-                    <div className="flex items-center justify-center gap-1.5 text-muted-foreground">
-                        <Building className="h-3 w-3" />
-                        <span>{biz.industry || 'Not specified'}</span>
-                    </div>
-                     <div className="flex items-center justify-center gap-1.5 text-muted-foreground">
-                        <MapPin className="h-3 w-3" />
-                        <span>{biz.town || 'Not specified'}</span>
-                    </div>
-                </CardContent>
-             </Card>
-          </Link>
+          <CompanyCard key={biz.id} company={biz} onSelectAction={() => {}} />
         ))}
       </div>
        {filteredBusinesses.length === 0 && (
