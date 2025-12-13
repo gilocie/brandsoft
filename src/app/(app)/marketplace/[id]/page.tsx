@@ -14,6 +14,7 @@ import Link from 'next/link';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Image from 'next/image';
 import { RatingDialog } from '@/components/rating-dialog';
+import { Separator } from '@/components/ui/separator';
 
 const fallBackCover = 'https://picsum.photos/seed/shopcover/1200/400';
 
@@ -43,7 +44,7 @@ export default function VirtualShopPage() {
   
   const reviews = useMemo(() => {
     if (!config?.reviews || !business) return [];
-    return config.reviews.filter(r => r.businessId === business.id);
+    return config.reviews.filter(r => r.businessId === business.id).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [config?.reviews, business]);
   
   const averageRating = useMemo(() => {
@@ -194,6 +195,46 @@ export default function VirtualShopPage() {
                     Request Quotation for {selectedProductIds.length} Item(s)
                 </Button>
             </div>
+        )}
+      </div>
+
+       <div className="space-y-4">
+        <h2 className="text-2xl font-bold font-headline mt-8">Customer Reviews</h2>
+        {reviews.length > 0 ? (
+          <Card>
+            <CardContent className="p-0">
+              <div className="divide-y">
+                {reviews.map((review, index) => (
+                  <div key={review.id} className="p-6">
+                    <div className="flex items-start gap-4">
+                        <Avatar>
+                            <AvatarFallback>{review.reviewerName.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                             <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="font-semibold">{review.reviewerName}</p>
+                                    <p className="text-xs text-muted-foreground">{new Date(review.date).toLocaleDateString()}</p>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    {[...Array(5)].map((_, i) => (
+                                        <Star key={i} className={`h-4 w-4 ${i < review.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-300'}`} />
+                                    ))}
+                                </div>
+                             </div>
+                             <p className="mt-3 text-sm text-muted-foreground">{review.comment}</p>
+                        </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="flex flex-col items-center justify-center p-10 text-center text-muted-foreground border-2 border-dashed rounded-lg">
+            <h3 className="font-semibold">No Reviews Yet</h3>
+            <p className="text-sm mt-1">Be the first one to share your experience.</p>
+          </div>
         )}
       </div>
 
