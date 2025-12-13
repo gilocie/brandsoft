@@ -27,7 +27,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState, useRef } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { UploadCloud, Paintbrush, Cog, CreditCard, SlidersHorizontal, Image as ImageIcon, FileImage, Layers, Stamp, Trash2, LayoutTemplate } from 'lucide-react';
+import { UploadCloud, Paintbrush, Cog, CreditCard, SlidersHorizontal, Image as ImageIcon, FileImage, Layers, Stamp, Trash2, LayoutTemplate, Wallet, Hash, Coins } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -37,24 +37,42 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 
 const settingsSchema = z.object({
+  // Branding
   businessName: z.string().min(2, "Business name is required"),
   logo: z.string().optional(),
   primaryColor: z.string().optional(),
   secondaryColor: z.string().optional(),
   font: z.string().optional(),
-  defaultCurrency: z.string().min(1, "Default currency is required"),
-  paymentDetails: z.string().optional(),
+  // Profile
+  description: z.string().optional(),
+  address: z.string().min(5, "Address is required"),
+  town: z.string().optional(),
+  industry: z.string().optional(),
+  phone: z.string().min(5, "Phone number is required"),
+  email: z.string().email("Invalid email address"),
+  website: z.string().url("Invalid URL").optional().or(z.literal('')),
+  taxNumber: z.string().optional(),
+  // Button
   buttonPrimaryBg: z.string().optional(),
   buttonPrimaryBgHover: z.string().optional(),
   buttonPrimaryText: z.string().optional(),
   buttonPrimaryTextHover: z.string().optional(),
+  // Payments
+  paymentDetails: z.string().optional(),
+  // Regional
+  defaultCurrency: z.string().min(1, "Default currency is required"),
+  // Numbering
+  invoicePrefix: z.string().optional(),
+  invoiceStartNumber: z.coerce.number().optional(),
+  quotationPrefix: z.string().optional(),
+  quotationStartNumber: z.coerce.number().optional(),
 });
 
 type SettingsFormData = z.infer<typeof settingsSchema>;
 
 
 export default function SettingsPage() {
-  const { config, saveConfig } = useBrandsoft();
+  const { config, saveConfig, addCurrency } = useBrandsoft();
   const { toast } = useToast();
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   
@@ -91,6 +109,18 @@ export default function SettingsPage() {
             buttonPrimaryBgHover: config.brand.buttonPrimaryBgHover,
             buttonPrimaryText: config.brand.buttonPrimaryText,
             buttonPrimaryTextHover: config.brand.buttonPrimaryTextHover,
+            description: config.brand.description,
+            address: config.profile.address,
+            town: config.profile.town,
+            industry: config.profile.industry,
+            phone: config.profile.phone,
+            email: config.profile.email,
+            website: config.profile.website,
+            taxNumber: config.profile.taxNumber,
+            invoicePrefix: config.profile.invoicePrefix,
+            invoiceStartNumber: config.profile.invoiceStartNumber,
+            quotationPrefix: config.profile.quotationPrefix,
+            quotationStartNumber: config.profile.quotationStartNumber,
         });
         setLogoPreview(config.brand.logo);
     }
@@ -117,6 +147,7 @@ export default function SettingsPage() {
         brand: {
           ...config.brand,
           businessName: data.businessName,
+          description: data.description || '',
           logo: data.logo || '',
           primaryColor: data.primaryColor || '#9400D3',
           secondaryColor: data.secondaryColor || '#D87093',
@@ -128,11 +159,22 @@ export default function SettingsPage() {
         },
         profile: {
           ...config.profile,
+          address: data.address,
+          town: data.town || '',
+          industry: data.industry || '',
+          phone: data.phone,
+          email: data.email,
+          website: data.website || '',
+          taxNumber: data.taxNumber || '',
           defaultCurrency: data.defaultCurrency,
           paymentDetails: data.paymentDetails,
+          invoicePrefix: data.invoicePrefix,
+          invoiceStartNumber: data.invoiceStartNumber,
+          quotationPrefix: data.quotationPrefix,
+          quotationStartNumber: data.quotationStartNumber,
         },
       };
-      saveConfig(newConfig);
+      saveConfig(newConfig, { redirect: false });
       toast({
         title: "Settings Saved",
         description: "Your new settings have been applied.",
@@ -156,9 +198,11 @@ export default function SettingsPage() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             <Tabs defaultValue="branding" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="branding"><Paintbrush className="mr-2 h-4 w-4" />Branding</TabsTrigger>
-                    <TabsTrigger value="options"><SlidersHorizontal className="mr-2 h-4 w-4" />Modules</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-4">
+                    <TabsTrigger value="branding"><Paintbrush className="mr-2 h-4 w-4" />Branding & Profile</TabsTrigger>
+                    <TabsTrigger value="payments"><Wallet className="mr-2 h-4 w-4" />Payments</TabsTrigger>
+                    <TabsTrigger value="numbering"><Hash className="mr-2 h-4 w-4" />Numbering</TabsTrigger>
+                    <TabsTrigger value="modules"><SlidersHorizontal className="mr-2 h-4 w-4" />Modules</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="branding" className="space-y-6">
@@ -198,6 +242,9 @@ export default function SettingsPage() {
                                     <p className="text-sm text-muted-foreground">Logo Preview</p>
                                 </div>
                             </div>
+                            <FormField control={form.control} name="description" render={({ field }) => (
+                                <FormItem><FormLabel>Company Description</FormLabel><FormControl><Textarea placeholder="A brief description of what your business does." {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
                             <FormField control={form.control} name="font" render={({ field }) => (
                                 <FormItem><FormLabel>Font</FormLabel>
                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
@@ -218,6 +265,42 @@ export default function SettingsPage() {
                                 )} />
                                 <FormField control={form.control} name="secondaryColor" render={({ field }) => (
                                 <FormItem><FormLabel>Accent Color</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>
+                                )} />
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Contact Information</CardTitle>
+                            <CardDescription>How your customers can reach you.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <FormField control={form.control} name="address" render={({ field }) => (
+                                <FormItem><FormLabel>Business Address</FormLabel><FormControl><Input placeholder="P.O. Box 303, Blantyre, Malawi" {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <FormField control={form.control} name="phone" render={({ field }) => (
+                                    <FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input placeholder="+265 999 123 456" {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                                <FormField control={form.control} name="email" render={({ field }) => (
+                                    <FormItem><FormLabel>Contact Email</FormLabel><FormControl><Input placeholder="contact@yourcompany.com" {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <FormField control={form.control} name="website" render={({ field }) => (
+                                    <FormItem><FormLabel>Website (Optional)</FormLabel><FormControl><Input placeholder="https://yourcompany.com" {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                                <FormField control={form.control} name="taxNumber" render={({ field }) => (
+                                    <FormItem><FormLabel>Tax / VAT Number (Optional)</FormLabel><FormControl><Input placeholder="Your Tax ID" {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                            </div>
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <FormField control={form.control} name="industry" render={({ field }) => (
+                                    <FormItem><FormLabel>Industry</FormLabel><FormControl><Input placeholder="e.g., Graphic Design, Retail" {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                                <FormField control={form.control} name="town" render={({ field }) => (
+                                    <FormItem><FormLabel>Town/Area</FormLabel><FormControl><Input placeholder="e.g., Blantyre, Lilongwe" {...field} /></FormControl><FormMessage /></FormItem>
                                 )} />
                             </div>
                         </CardContent>
@@ -269,7 +352,76 @@ export default function SettingsPage() {
                         </CardContent>
                     </Card>
                 </TabsContent>
-                <TabsContent value="options">
+                
+                 <TabsContent value="payments" className="space-y-6">
+                     <Card>
+                        <CardHeader>
+                            <CardTitle>Regional Settings</CardTitle>
+                            <CardDescription>Set your default currency.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <FormField control={form.control} name="defaultCurrency" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Default Currency</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="USD" {...field} onBlur={() => { field.onBlur(); if(field.value) addCurrency(field.value.toUpperCase()); }} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+                        </CardContent>
+                    </Card>
+                     <Card>
+                        <CardHeader>
+                            <CardTitle>Default Payment Details</CardTitle>
+                            <CardDescription>This information will appear on new documents.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <FormField control={form.control} name="paymentDetails" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Payment Instructions</FormLabel>
+                                    <FormControl>
+                                        <Textarea placeholder="e.g., Bank Name, Account Number..." {...field} rows={4} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                 <TabsContent value="numbering" className="space-y-6">
+                     <Card>
+                        <CardHeader>
+                            <CardTitle>Invoice Numbering</CardTitle>
+                            <CardDescription>Customize the format of your invoice IDs.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="grid grid-cols-2 gap-4">
+                            <FormField control={form.control} name="invoicePrefix" render={({ field }) => (
+                                <FormItem><FormLabel>Prefix</FormLabel><FormControl><Input placeholder="INV-" {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                             <FormField control={form.control} name="invoiceStartNumber" render={({ field }) => (
+                                <FormItem><FormLabel>Next Number</FormLabel><FormControl><Input type="number" placeholder="101" {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                        </CardContent>
+                    </Card>
+                     <Card>
+                        <CardHeader>
+                            <CardTitle>Quotation Numbering</CardTitle>
+                            <CardDescription>Customize the format of your quotation IDs.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="grid grid-cols-2 gap-4">
+                             <FormField control={form.control} name="quotationPrefix" render={({ field }) => (
+                                <FormItem><FormLabel>Prefix</FormLabel><FormControl><Input placeholder="QUO-" {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                             <FormField control={form.control} name="quotationStartNumber" render={({ field }) => (
+                                <FormItem><FormLabel>Next Number</FormLabel><FormControl><Input type="number" placeholder="101" {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="modules">
                      <Card>
                         <CardHeader>
                             <CardTitle>Module Options</CardTitle>

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -51,7 +52,6 @@ const mainNavItems = [
   { href: '/quotations', icon: FileBarChart2, label: 'Quotations', enabledKey: 'quotation' },
   { href: '/products', icon: Package, label: 'Products', enabledKey: 'invoice' },
   { href: '/customers', icon: Users, label: 'Customers', enabledKey: 'invoice' },
-  { href: '/profile', icon: User, label: 'My Profile', enabledKey: null },
 ];
 
 const upcomingNavItems = [
