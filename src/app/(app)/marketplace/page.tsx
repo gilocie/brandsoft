@@ -33,8 +33,7 @@ export default function MarketplacePage() {
 
   const businesses = useMemo(() => {
     if (!config || !config.companies) return [];
-    // We filter out the user's own company from the marketplace view
-    return config.companies.filter(c => c.companyName !== config.brand.businessName);
+    return config.companies;
   }, [config]);
 
   const businessesWithRatings = useMemo(() => {
