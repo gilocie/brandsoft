@@ -20,6 +20,7 @@ import { hexToHsl, cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { useCompanies } from '@/hooks/use-companies';
 
 
 const TOTAL_STEPS = 4;
@@ -56,62 +57,11 @@ const formSchema = step1Schema.merge(step2Schema).merge(step3Schema);
 
 type FormData = z.infer<typeof formSchema>;
 
-const initialCompanies: Omit<Company, 'id'>[] = [
-    { 
-        name: 'John Banda', 
-        email: 'john.banda@creativeprints.mw', 
-        phone: '0999888777', 
-        companyName: 'Creative Prints',
-        description: 'High-quality digital and offset printing services.',
-        industry: 'Printing Services',
-        town: 'Blantyre',
-        customerType: 'company',
-        logo: 'https://picsum.photos/seed/biz1/200',
-        website: 'https://creativeprints.mw',
-    },
-    { 
-        name: 'Jane Chirwa', 
-        email: 'jane.chirwa@bytesolutions.mw', 
-        phone: '0888777666', 
-        companyName: 'Byte Solutions',
-        description: 'Custom software development and IT consulting.',
-        industry: 'IT & Software',
-        town: 'Lilongwe',
-        customerType: 'company',
-        logo: 'https://picsum.photos/seed/biz2/200',
-        website: 'https://bytesolutions.mw',
-    },
-    { 
-        name: 'Mike Phiri', 
-        email: 'mike.phiri@maketsupplies.mw', 
-        phone: '0991234567', 
-        companyName: 'Makete Supplies',
-        description: 'Leading supplier of office and school stationery.',
-        industry: 'Office Supplies',
-        town: 'Mzuzu',
-        customerType: 'company',
-        logo: 'https://picsum.photos/seed/biz3/200',
-        website: 'https://maketesupplies.mw',
-    },
-    { 
-        name: 'Grace Moyo', 
-        email: 'grace.moyo@buildright.mw', 
-        phone: '0884567890', 
-        companyName: 'BuildRight Hardware',
-        description: 'Your one-stop shop for building materials and hardware.',
-        industry: 'Hardware & Construction',
-        town: 'Zomba',
-        customerType: 'company',
-        logo: 'https://picsum.photos/seed/biz4/200',
-        website: 'https://buildright.mw',
-    },
-];
-
 const initialInvoices: Invoice[] = [
   {
     invoiceId: 'INV001',
     customer: 'Creative Prints',
-    customerId: 'CUST-1625243511000',
+    customerId: 'COMP-DEMO-0',
     date: '2023-06-23',
     dueDate: '2023-07-23',
     amount: 250.0,
@@ -125,7 +75,7 @@ const initialInvoices: Invoice[] = [
   {
     invoiceId: 'INV002',
     customer: 'Byte Solutions',
-    customerId: 'CUST-1625243512000',
+    customerId: 'COMP-DEMO-1',
     date: '2023-07-15',
     dueDate: '2023-08-15',
     amount: 150.0,
@@ -142,7 +92,7 @@ const initialQuotations: Quotation[] = [
     {
         quotationId: 'QUO-001',
         customer: 'BuildRight Hardware',
-        customerId: 'CUST-1625243514000',
+        customerId: 'COMP-DEMO-3',
         date: '2023-11-01',
         validUntil: '2023-11-30',
         amount: 500.0,
@@ -154,7 +104,7 @@ const initialQuotations: Quotation[] = [
     {
         quotationId: 'QUO-002',
         customer: 'Makete Supplies',
-        customerId: 'CUST-1625243513000',
+        customerId: 'COMP-DEMO-2',
         date: '2023-11-05',
         validUntil: '2023-12-05',
         amount: 1200.0,
@@ -167,6 +117,7 @@ const initialQuotations: Quotation[] = [
 
 export default function SetupPage() {
   const { saveConfig } = useBrandsoft();
+  const { getInitialCompanies } = useCompanies(null, () => {});
   const [step, setStep] = useState(1);
   const [isFinishing, setIsFinishing] = useState(false);
 
@@ -233,8 +184,9 @@ export default function SetupPage() {
         website: data.website,
     };
 
+    const initialCompaniesList = getInitialCompanies();
     const finalCompanies = [
-        ...initialCompanies.map((c, i) => ({...c, id: `COMP-DEMO-${i}`})),
+        ...initialCompaniesList.map((c, i) => ({...c, id: `COMP-DEMO-${i}`})),
         userAsCompany
     ];
     
@@ -281,6 +233,7 @@ export default function SetupPage() {
       quotationRequests: [],
       templates: [],
       currencies: ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD'],
+      purchases: [],
     };
     setIsFinishing(true);
     await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate saving
