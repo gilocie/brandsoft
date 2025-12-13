@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useForm, Control } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useBrandsoft, type BrandsoftConfig, type Invoice, type Customer, type Quotation, type QuotationRequest } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type BrandsoftConfig, type Invoice, type Company, type Quotation, type QuotationRequest } from '@/hooks/use-brandsoft';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
@@ -56,9 +56,8 @@ const formSchema = step1Schema.merge(step2Schema).merge(step3Schema);
 
 type FormData = z.infer<typeof formSchema>;
 
-const initialCustomers: Customer[] = [
+const initialCompanies: Omit<Company, 'id'>[] = [
     { 
-        id: 'CUST-1625243511000', 
         name: 'John Banda', 
         email: 'john.banda@creativeprints.mw', 
         phone: '0999888777', 
@@ -71,7 +70,6 @@ const initialCustomers: Customer[] = [
         website: 'https://creativeprints.mw',
     },
     { 
-        id: 'CUST-1625243512000', 
         name: 'Jane Chirwa', 
         email: 'jane.chirwa@bytesolutions.mw', 
         phone: '0888777666', 
@@ -84,7 +82,6 @@ const initialCustomers: Customer[] = [
         website: 'https://bytesolutions.mw',
     },
     { 
-        id: 'CUST-1625243513000', 
         name: 'Mike Phiri', 
         email: 'mike.phiri@maketsupplies.mw', 
         phone: '0991234567', 
@@ -97,7 +94,6 @@ const initialCustomers: Customer[] = [
         website: 'https://maketesupplies.mw',
     },
     { 
-        id: 'CUST-1625243514000', 
         name: 'Grace Moyo', 
         email: 'grace.moyo@buildright.mw', 
         phone: '0884567890', 
@@ -222,9 +218,9 @@ export default function SetupPage() {
   }, [primaryColor, secondaryColor]);
 
   async function processSubmit(data: FormData) {
-    const myBusinessCustomer: Customer = {
-        id: `CUST-${Date.now()}-ME`,
-        name: data.businessName, // Represents the user of the software
+    const userAsCompany: Company = {
+        id: `COMP-ME-${Date.now()}`,
+        name: data.businessName,
         companyName: data.businessName,
         customerType: 'company',
         email: data.email,
@@ -237,11 +233,11 @@ export default function SetupPage() {
         website: data.website,
     };
 
-    const finalCustomers = [...initialCustomers, myBusinessCustomer];
-    const finalQuotations = initialQuotations.map(q => 
-        q.customerId === 'CUST-DEMO-ME' ? { ...q, customer: data.businessName, customerId: myBusinessCustomer.id } : q
-    );
-
+    const finalCompanies = [
+        ...initialCompanies.map((c, i) => ({...c, id: `COMP-DEMO-${i}`})),
+        userAsCompany
+    ];
+    
     const config: BrandsoftConfig = {
       brand: {
         businessName: data.businessName,
@@ -278,10 +274,10 @@ export default function SetupPage() {
         quotation: data.quotation,
         marketing: data.marketing,
       },
-      customers: finalCustomers,
+      companies: finalCompanies,
       products: [],
       invoices: initialInvoices,
-      quotations: finalQuotations,
+      quotations: initialQuotations,
       quotationRequests: [],
       templates: [],
       currencies: ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD'],
