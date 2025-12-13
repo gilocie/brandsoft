@@ -62,26 +62,52 @@ export default function QuotationsPage() {
   const quotations = config?.quotations || [];
   const currencyCode = config?.profile.defaultCurrency || '';
   
-  const myBusinessAsCompany = useMemo(() => {
-    if (!config || !config.companies || !config.brand) return null;
-    return config.companies.find(c => c.companyName === config.brand.businessName);
+  // --- PASTE THIS INTO src/app/(app)/quotations/page.tsx ---
+
+  // 1. DETERMINE YOUR IDENTITY
+  // This logic ensures we find the ID "CUST-DEMO-ME" that matches your screenshot
+  const currentUserId = useMemo(() => {
+    if (!config || !config.brand) return 'CUST-DEMO-ME';
+    
+    const businessName = config.brand.businessName; // "Go Save Site"
+    
+    // A. Check if you exist as a Company
+    const asCompany = config.companies?.find(c => c.companyName === businessName);
+    if (asCompany) return asCompany.id;
+
+    // B. Check if you exist as a Customer
+    const asCustomer = config.customers?.find(c => c.name === businessName);
+    if (asCustomer) return asCustomer.id;
+
+    // C. FINAL FALLBACK (This is what matches your screenshot data)
+    return 'CUST-DEMO-ME';
   }, [config]);
 
 
+  // 2. FILTER THE LISTS
   const filteredQuotations = useMemo(() => {
-      const myRequests = config?.quotationRequests?.filter(q => q.requesterId === myBusinessAsCompany?.id) || [];
-      const theirRequests = quotations.filter(q => q.isRequest && q.customerId === myBusinessAsCompany?.id);
+      // OUTGOING: Requests where requesterId matches YOUR ID ("CUST-DEMO-ME")
+      const myRequests = (config?.quotationRequests || []).filter(q => q.requesterId === currentUserId);
       
+      // INCOMING: Requests sent TO YOU (where you are in the companyIds list) OR traditional quotations sent to you
+      // Note: Traditional quotations use 'customerId'. New Requests use 'companyIds'.
+      const theirRequests = quotations.filter(q => q.isRequest && q.customerId === currentUserId);
+      
+      // Also check for modern requests where your ID is inside the companyIds array
+      const modernIncomingRequests = (config?.quotationRequests || []).filter(
+        q => q.companyIds && q.companyIds.includes(currentUserId)
+      );
+
       return {
         all: quotations.filter(q => !q.isRequest),
         draft: quotations.filter(q => q.status === 'Draft' && !q.isRequest),
         sent: quotations.filter(q => q.status === 'Sent' && !q.isRequest),
         accepted: quotations.filter(q => q.status === 'Accepted' && !q.isRequest),
         declined: quotations.filter(q => q.status === 'Declined' && !q.isRequest),
-        requestsIncoming: theirRequests,
-        requestsOutgoing: myRequests,
+        requestsIncoming: [...theirRequests, ...modernIncomingRequests], // Combine both types
+        requestsOutgoing: myRequests, // <--- This will now contain your "Snacks" request
     }
-  }, [quotations, config?.quotationRequests, myBusinessAsCompany]);
+  }, [quotations, config?.quotationRequests, currentUserId]);
 
 
   const handleSelectAction = async (action: 'view' | 'edit' | 'delete' | 'download' | 'send' | 'accept' | 'decline', quotation: Quotation) => {
