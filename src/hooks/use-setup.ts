@@ -80,7 +80,7 @@ export function useSetup(
     {
         title: 'Website Redesign Project',
         isPublic: false,
-        companyIds: ['CUST-1625243512000', 'CUST-1625243514000'],
+        companyIds: ['COMP-DEMO-1', 'COMP-DEMO-0'],
         items: [{ productName: 'Corporate Website', description: 'New 5-page responsive website with a blog and CMS integration.', quantity: 1 }],
     },
 ];
@@ -111,7 +111,7 @@ export function useSetup(
     };
 
     const userAsCustomer: Customer = {
-        id: userCompanyId, // Use the same ID for consistency
+        id: 'CUST-DEMO-ME', // Use a consistent ID for the user's customer profile
         name: data.businessName,
         email: data.email,
         phone: data.phone,
@@ -127,10 +127,10 @@ export function useSetup(
     
     const finalCustomers = [...initialCustomers, userAsCustomer];
 
-    const finalQuotationRequests = initialQuotationRequests.map((req, i) => ({
+    const finalQuotationRequests: QuotationRequest[] = initialQuotationRequests.map((req, i) => ({
       ...req,
-      id: `QR-DEMO-${i+1}`,
-      requesterId: userAsCustomer.id,
+      id: `QR-DEMO-${i+1}`, // Assign a consistent, unique ID
+      requesterId: userAsCustomer.id, // Use the consistent customer ID
       requesterName: data.businessName,
       requesterLogo: data.logo,
       date: new Date(Date.now() - (i + 1) * 3 * 24 * 60 * 60 * 1000).toISOString(),

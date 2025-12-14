@@ -1,9 +1,10 @@
 
+
 'use client';
 
 import type { BrandsoftConfig, QuotationRequest, Customer } from '@/types/brandsoft';
 
-const initialQuotationRequests: Omit<QuotationRequest, 'id' | 'date' | 'status' | 'requesterId' | 'requesterName'>[] = [
+const initialQuotationRequests: Omit<QuotationRequest, 'id' | 'date' | 'status' | 'requesterId' | 'requesterName' | 'requesterLogo' | 'dueDate'>[] = [
     {
         title: 'Office Stationery Supply for Q4',
         isPublic: true,
@@ -15,7 +16,7 @@ const initialQuotationRequests: Omit<QuotationRequest, 'id' | 'date' | 'status' 
     {
         title: 'Website Redesign Project',
         isPublic: false,
-        companyIds: ['CUST-1625243512000', 'CUST-1625243514000'],
+        companyIds: ['COMP-DEMO-1', 'COMP-DEMO-0'],
         items: [{ productName: 'Corporate Website', description: 'New 5-page responsive website with a blog and CMS integration.', quantity: 1 }],
     },
 ];
@@ -41,32 +42,10 @@ export function useQuotationRequests(
   };
   
   const initializeDemoQuotationRequests = (currentConfig: BrandsoftConfig): BrandsoftConfig | null => {
-    if (!currentConfig || (currentConfig.quotationRequests && currentConfig.quotationRequests.every(r => r.id))) {
-      return null;
-    }
-
-    const meAsCustomer = currentConfig.customers.find((c: Customer) => c.name === currentConfig.brand.businessName);
-    
-    if (!meAsCustomer) {
-      return null;
-    }
-
-    const demoRequests = (currentConfig.quotationRequests || []).map((r, i) => {
-      if (r.id) return r; // Already has an ID, skip it
-      return {
-        ...r,
-        id: `QR-DEMO-${i+1}`,
-        requesterId: meAsCustomer.id,
-        requesterName: meAsCustomer.name,
-        requesterLogo: currentConfig.brand.logo, // Add logo here
-        date: new Date(Date.now() - (i + 1) * 3 * 24 * 60 * 60 * 1000).toISOString(),
-        dueDate: new Date(Date.now() + (10 - i) * 24 * 60 * 60 * 1000).toISOString(),
-        status: 'open' as const,
-      };
-    });
-    
-    const newConfig = { ...currentConfig, quotationRequests: demoRequests };
-    return newConfig;
+    // This function is now handled by the main useSetup hook to ensure consistent IDs.
+    // It can be kept here for potential future use or removed.
+    // For now, it will do nothing to avoid conflicts.
+    return null;
   };
 
   const updateQuotationRequest = (requestId: string, data: Partial<Omit<QuotationRequest, 'id'>>) => {
