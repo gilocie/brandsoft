@@ -1,18 +1,12 @@
 
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useBrandsoft, type BrandsoftConfig } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type BrandsoftConfig, type DesignSettings, type Company } from '@/hooks/use-brandsoft';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Form,
   FormControl,
@@ -23,18 +17,15 @@ import {
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import React, { useEffect, useState, useRef, ChangeEvent } from 'react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { UploadCloud, Paintbrush, SlidersHorizontal, User, Building, MapPin, Globe, Phone, Mail, Camera } from 'lucide-react';
+import { UploadCloud, Paintbrush, SlidersHorizontal, User, Building, MapPin, Globe, Phone, Mail } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Label } from '@/components/ui/label';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
 const fallBackCover = 'https://picsum.photos/seed/settingscover/1200/300';
-
 
 const settingsSchema = z.object({
   // Branding
@@ -63,16 +54,20 @@ const settingsSchema = z.object({
 type SettingsFormData = z.infer<typeof settingsSchema>;
 
 const ImageUploadField = ({
-  field,
+  form,
+  name,
   label,
+  currentValue,
   previewClassName = 'h-24 w-24 rounded-full'
 }: {
-  field: any;
+  form: any;
+  name: keyof SettingsFormData;
   label: string;
+  currentValue?: string;
   previewClassName?: string;
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [preview, setPreview] = useState<string | undefined>(field.value);
+  const [preview, setPreview] = useState<string | undefined>(currentValue);
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -81,19 +76,19 @@ const ImageUploadField = ({
       reader.onloadend = () => {
         const dataUrl = reader.result as string;
         setPreview(dataUrl);
-        field.onChange(dataUrl);
+        form.setValue(name, dataUrl, { shouldDirty: true });
       };
       reader.readAsDataURL(file);
     }
   };
 
   useEffect(() => {
-    setPreview(field.value);
-  }, [field.value]);
+    setPreview(currentValue);
+  }, [currentValue]);
 
   return (
     <FormItem>
-      {label && <FormLabel>{label}</FormLabel>}
+      <FormLabel>{label}</FormLabel>
       <div className="flex items-center gap-4">
         {preview && <img src={preview} alt={`${label} preview`} className={`object-cover border bg-muted ${previewClassName}`} />}
         <div className="flex-grow">
@@ -115,7 +110,6 @@ const ImageUploadField = ({
   );
 };
 
-
 export default function SettingsPage() {
   const { config, saveConfig } = useBrandsoft();
   const { toast } = useToast();
@@ -133,6 +127,14 @@ export default function SettingsPage() {
       buttonPrimaryBgHover: '#8A2BE2',
       buttonPrimaryText: '#FFFFFF',
       buttonPrimaryTextHover: '#FFFFFF',
+      description: '',
+      address: '',
+      town: '',
+      industry: '',
+      phone: '',
+      email: '',
+      website: '',
+      taxNumber: '',
     },
   });
   
@@ -163,38 +165,60 @@ export default function SettingsPage() {
 
   const onSubmit = (data: SettingsFormData) => {
     if (config) {
-      const newConfig: BrandsoftConfig = {
-        ...config,
-        brand: {
-          ...config.brand,
-          businessName: data.businessName,
-          description: data.description || '',
-          logo: data.logo || '',
-          coverImage: data.coverImage || '',
-          primaryColor: data.primaryColor || '#9400D3',
-          secondaryColor: data.secondaryColor || '#D87093',
-          font: data.font || 'Poppins',
-          buttonPrimaryBg: data.buttonPrimaryBg,
-          buttonPrimaryBgHover: data.buttonPrimaryBgHover,
-          buttonPrimaryText: data.buttonPrimaryText,
-          buttonPrimaryTextHover: data.buttonPrimaryTextHover,
-        },
-        profile: {
-          ...config.profile,
-          address: data.address,
-          town: data.town || '',
-          industry: data.industry || '',
-          phone: data.phone,
-          email: data.email,
-          website: data.website || '',
-          taxNumber: data.taxNumber || '',
-        },
-      };
-      saveConfig(newConfig, { redirect: false });
-      toast({
-        title: "Settings Saved",
-        description: "Your new settings have been applied.",
-      });
+        const myCompanyIndex = config.companies.findIndex(c => c.companyName === config.brand.businessName);
+
+        const updatedMyCompany: Partial<Company> = {
+            name: data.businessName,
+            companyName: data.businessName,
+            description: data.description,
+            logo: data.logo,
+            coverImage: data.coverImage,
+            website: data.website,
+            phone: data.phone,
+            email: data.email,
+            address: data.address,
+            town: data.town,
+            industry: data.industry,
+        };
+
+        const newCompanies = [...config.companies];
+        if (myCompanyIndex > -1) {
+            newCompanies[myCompanyIndex] = { ...newCompanies[myCompanyIndex], ...updatedMyCompany };
+        }
+
+        const newConfig: BrandsoftConfig = {
+            ...config,
+            brand: {
+            ...config.brand,
+            businessName: data.businessName,
+            description: data.description || '',
+            logo: data.logo || '',
+            coverImage: data.coverImage || '',
+            primaryColor: data.primaryColor || '#9400D3',
+            secondaryColor: data.secondaryColor || '#D87093',
+            font: data.font || 'Poppins',
+            buttonPrimaryBg: data.buttonPrimaryBg,
+            buttonPrimaryBgHover: data.buttonPrimaryBgHover,
+            buttonPrimaryText: data.buttonPrimaryText,
+            buttonPrimaryTextHover: data.buttonPrimaryTextHover,
+            },
+            profile: {
+            ...config.profile,
+            address: data.address,
+            town: data.town || '',
+            industry: data.industry || '',
+            phone: data.phone,
+            email: data.email,
+            website: data.website || '',
+            taxNumber: data.taxNumber || '',
+            },
+            companies: newCompanies,
+        };
+        saveConfig(newConfig, { redirect: false });
+        toast({
+            title: "Settings Saved",
+            description: "Your new settings have been applied.",
+        });
     }
   };
 
@@ -206,8 +230,7 @@ export default function SettingsPage() {
 
   return (
     <div className="container mx-auto space-y-6">
-      <Form {...form}>
-        <Card className="overflow-hidden -mx-6 -mt-6">
+        <Card className="overflow-hidden">
           <div className="relative h-48 w-full">
               <Image
                   src={watchedValues.coverImage || fallBackCover}
@@ -217,10 +240,8 @@ export default function SettingsPage() {
                   data-ai-hint="office workspace"
               />
               <div className="absolute inset-0 bg-black/60" />
-              <div className="absolute top-4 right-4 z-10">
-                  <FormField control={form.control} name="coverImage" render={({ field }) => (
-                      <ImageUploadField field={field} label="" previewClassName="hidden" />
-                  )} />
+               <div className="absolute top-4 right-4 z-10">
+                  <ImageUploadField form={form} name="coverImage" label="" currentValue={form.getValues('coverImage')} previewClassName="hidden" />
               </div>
 
                <div className="absolute inset-0 p-6 flex flex-col md:flex-row items-end gap-6">
@@ -230,9 +251,7 @@ export default function SettingsPage() {
                           <AvatarFallback><Building className="h-10 w-10" /></AvatarFallback>
                       </Avatar>
                        <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover/avatar:opacity-100 flex items-center justify-center transition-opacity">
-                            <FormField control={form.control} name="logo" render={({ field }) => (
-                                <ImageUploadField field={field} label="" previewClassName="hidden" />
-                            )} />
+                            <ImageUploadField form={form} name="logo" label="" currentValue={form.getValues('logo')} previewClassName="hidden" />
                       </div>
                   </div>
 
@@ -250,14 +269,15 @@ export default function SettingsPage() {
               </div>
           </div>
         </Card>
-        
-        <div>
-          <h1 className="text-3xl font-bold font-headline">Settings</h1>
-          <p className="text-muted-foreground">
-            Manage your application-wide settings here.
-          </p>
-        </div>
 
+      <div>
+        <h1 className="text-3xl font-bold font-headline">Settings</h1>
+        <p className="text-muted-foreground">
+          Manage your application-wide settings here.
+        </p>
+      </div>
+
+      <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               <Tabs defaultValue="profile" className="w-full">
                   <TabsList className="grid w-full grid-cols-3">
@@ -266,29 +286,16 @@ export default function SettingsPage() {
                       <TabsTrigger value="modules"><SlidersHorizontal className="mr-2 h-4 w-4" />Modules</TabsTrigger>
                   </TabsList>
 
-                  <TabsContent value="profile" className="space-y-6">
+                  <TabsContent value="profile" className="pt-6">
                       <Card>
-                          <CardHeader>
-                              <CardTitle>Business Identity</CardTitle>
-                              <CardDescription>Update your company's core details and branding assets.</CardDescription>
-                          </CardHeader>
-                          <CardContent className="space-y-4">
+                          <CardContent className="space-y-4 pt-6">
                               <FormField control={form.control} name="businessName" render={({ field }) => (
                                   <FormItem><FormLabel>Business Name</FormLabel><FormControl><Input placeholder="Your Company LLC" {...field} /></FormControl><FormMessage /></FormItem>
                               )} />
                               <FormField control={form.control} name="description" render={({ field }) => (
                                   <FormItem><FormLabel>Company Description</FormLabel><FormControl><Textarea placeholder="A brief description of what your business does." {...field} /></FormControl><FormMessage /></FormItem>
                               )} />
-                          </CardContent>
-                      </Card>
-
-                      <Card>
-                          <CardHeader>
-                              <CardTitle>Contact Information</CardTitle>
-                              <CardDescription>This information will appear on your documents and your public profile.</CardDescription>
-                          </CardHeader>
-                          <CardContent className="space-y-4">
-                              <FormField control={form.control} name="address" render={({ field }) => (
+                               <FormField control={form.control} name="address" render={({ field }) => (
                                   <FormItem><FormLabel>Business Address</FormLabel><FormControl><Input placeholder="P.O. Box 303, Blantyre, Malawi" {...field} /></FormControl><FormMessage /></FormItem>
                               )} />
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -319,92 +326,13 @@ export default function SettingsPage() {
                       </Card>
                   </TabsContent>
                   
-                  <TabsContent value="branding" className="space-y-6">
-                      <Card>
-                          <CardHeader>
-                              <CardTitle>Color & Font</CardTitle>
-                              <CardDescription>Customize the visual style of the application and documents.</CardDescription>
-                          </CardHeader>
-                          <CardContent className="space-y-4">
-                              <FormField control={form.control} name="font" render={({ field }) => (
-                                  <FormItem><FormLabel>Font</FormLabel>
-                                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                      <FormControl><SelectTrigger><SelectValue placeholder="Select a font" /></SelectTrigger></FormControl>
-                                      <SelectContent>
-                                          <SelectItem value="Poppins">Poppins</SelectItem>
-                                          <SelectItem value="Belleza">Belleza</SelectItem>
-                                          <SelectItem value="Source Code Pro">Source Code Pro</SelectItem>
-                                          <SelectItem value="Arial">Arial</SelectItem>
-                                          <SelectItem value="Verdana">Verdana</SelectItem>
-                                      </SelectContent>
-                                  </Select>
-                                  <FormMessage /></FormItem>
-                              )} />
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  <FormField control={form.control} name="primaryColor" render={({ field }) => (
-                                  <FormItem><FormLabel>Primary Color</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>
-                                  )} />
-                                  <FormField control={form.control} name="secondaryColor" render={({ field }) => (
-                                  <FormItem><FormLabel>Accent Color</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>
-                                  )} />
-                              </div>
-                          </CardContent>
-                      </Card>
-
-                      <Card>
-                          <CardHeader>
-                              <CardTitle>Button Customization</CardTitle>
-                              <CardDescription>Define the look of your primary buttons.</CardDescription>
-                          </CardHeader>
-                          <CardContent className="space-y-4">
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                  <div className="space-y-4">
-                                      <h4 className="text-sm font-medium">Normal State</h4>
-                                      <FormField control={form.control} name="buttonPrimaryBg" render={({ field }) => (
-                                          <FormItem><FormLabel>Background</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>
-                                      )} />
-                                      <FormField control={form.control} name="buttonPrimaryText" render={({ field }) => (
-                                          <FormItem><FormLabel>Text Color</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>
-                                      )} />
-                                  </div>
-                                  <div className="space-y-4">
-                                      <h4 className="text-sm font-medium">Hover State</h4>
-                                      <FormField control={form.control} name="buttonPrimaryBgHover" render={({ field }) => (
-                                          <FormItem><FormLabel>Background</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>
-                                      )} />
-                                      <FormField control={form.control} name="buttonPrimaryTextHover" render={({ field }) => (
-                                          <FormItem><FormLabel>Text Color</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>
-                                      )} />
-                                  </div>
-                             </div>
-                             <div className="pt-4">
-                                  <Label>Preview</Label>
-                                  <div className="p-4 rounded-md border flex justify-center">
-                                      <Button 
-                                          type="button" 
-                                          className="btn-primary-custom"
-                                          style={{
-                                              '--btn-primary-bg': form.watch('buttonPrimaryBg'),
-                                              '--btn-primary-text': form.watch('buttonPrimaryText'),
-                                              '--btn-primary-bg-hover': form.watch('buttonPrimaryBgHover'),
-                                              '--btn-primary-text-hover': form.watch('buttonPrimaryTextHover'),
-                                          } as React.CSSProperties}
-                                      >
-                                          Primary Button
-                                      </Button>
-                                 </div>
-                             </div>
-                          </CardContent>
-                      </Card>
+                  <TabsContent value="branding" className="pt-6">
+                      {/* Content moved to profile/banner */}
                   </TabsContent>
                   
-                  <TabsContent value="modules">
+                  <TabsContent value="modules" className="pt-6">
                        <Card>
-                          <CardHeader>
-                              <CardTitle>Module Options</CardTitle>
-                              <CardDescription>Enable or disable specific application modules.</CardDescription>
-                          </CardHeader>
-                          <CardContent>
+                          <CardContent className="pt-6">
                              <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed bg-muted/40">
                                   <p className="text-muted-foreground">Feature toggles will be available here soon.</p>
                               </div>

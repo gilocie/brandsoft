@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import type { BrandsoftConfig, Company, Customer, Invoice, Quotation, QuotationRequest } from '@/types/brandsoft';
