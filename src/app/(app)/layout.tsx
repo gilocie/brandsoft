@@ -51,7 +51,7 @@ const mainNavItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', enabledKey: null },
   { href: '/invoices', icon: FileText, label: 'Invoices', enabledKey: 'invoice' },
   { href: '/quotations', icon: FileBarChart2, label: 'Quotations', enabledKey: 'quotation' },
-  { href: '/quotation-requests', icon: MessageSquareQuote, label: 'Quotation Requests', enabledKey: 'quotation' },
+  { href: '/quotation-requests', icon: MessageSquareQuote, label: 'Requests', enabledKey: 'quotation' },
   { href: '/products', icon: Package, label: 'Products', enabledKey: 'invoice' },
   { href: '/companies', icon: Users, label: 'Companies', enabledKey: null },
   { href: '/marketplace', icon: Store, label: 'Marketplace', enabledKey: null },
