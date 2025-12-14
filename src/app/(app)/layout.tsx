@@ -221,8 +221,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="icon" asChild className="flex-shrink-0 relative">
               <Link href="/quotation-requests?subtab=incoming">
-                <Bell className="h-5 w-5" />
-                {hasNotifications && <span className="absolute top-2 right-2.5 h-2 w-2 rounded-full bg-destructive" />}
+                <Bell className="h-6 w-6" />
+                {hasNotifications && <span className="absolute top-2 right-2 h-2.5 w-2.5 rounded-full bg-destructive" />}
                 <span className="sr-only">Notifications</span>
               </Link>
             </Button>
