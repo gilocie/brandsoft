@@ -78,7 +78,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return myCompany?.id || null;
   }, [config]);
 
-  const notificationCount = 0;
+  const notificationCount = useMemo(() => {
+    if (!config) return 0;
+    const incomingCount = config.incomingRequests?.length || 0;
+    const responseCount = config.requestResponses?.length || 0;
+    return incomingCount + responseCount;
+  }, [config]);
 
 
   const getVisibleNavItems = (items: typeof mainNavItems) => {
