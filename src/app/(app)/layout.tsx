@@ -38,6 +38,7 @@ import {
   User,
   Store,
   MessageSquareQuote,
+  Bell,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -46,6 +47,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useMemo } from 'react';
 
 const mainNavItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', enabledKey: null },
@@ -69,6 +71,28 @@ const navItems = [...mainNavItems, ...upcomingNavItems];
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { config } = useBrandsoft();
+
+  const currentUserId = useMemo(() => {
+    if (!config || !config.brand) return 'CUST-DEMO-ME';
+    const userBusinessName = config.brand.businessName;
+    const asCompany = config.companies?.find(c => c.companyName === userBusinessName);
+    if (asCompany) return asCompany.id;
+    const asCustomer = config.customers?.find(c => c.name === userBusinessName);
+    if (asCustomer) return asCustomer.id;
+    return 'CUST-DEMO-ME';
+  }, [config]);
+
+  const hasNotifications = useMemo(() => {
+    if (!config?.quotationRequests) return false;
+    
+    return config.quotationRequests.some(
+      q => q.requesterId !== currentUserId && 
+           new Date(q.dueDate) >= new Date() &&
+           q.status === 'open' &&
+           (q.isPublic || (q.companyIds && q.companyIds.includes(currentUserId)))
+    );
+  }, [config?.quotationRequests, currentUserId]);
+
 
   const getVisibleNavItems = (items: typeof mainNavItems) => {
     if (!config) return [];
@@ -194,12 +218,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <h1 className="text-lg font-semibold font-headline flex-1 truncate">
             {pageTitle}
           </h1>
-          <Button variant="ghost" size="icon" asChild className="flex-shrink-0">
-            <Link href="/settings">
-              <Settings className="h-5 w-5" />
-              <span className="sr-only">Settings</span>
-            </Link>
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" asChild className="flex-shrink-0 relative">
+              <Link href="/quotation-requests?subtab=incoming">
+                <Bell className="h-5 w-5" />
+                {hasNotifications && <span className="absolute top-2 right-2.5 h-2 w-2 rounded-full bg-destructive" />}
+                <span className="sr-only">Notifications</span>
+              </Link>
+            </Button>
+            <Button variant="ghost" size="icon" asChild className="flex-shrink-0">
+              <Link href="/settings">
+                <Settings className="h-5 w-5" />
+                <span className="sr-only">Settings</span>
+              </Link>
+            </Button>
+          </div>
         </header>
         <div className="flex-1 flex flex-col overflow-x-hidden min-w-0">
             <main className="flex-1 p-4 md:p-6 overflow-x-auto min-w-0">
