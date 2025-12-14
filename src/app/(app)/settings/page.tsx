@@ -24,6 +24,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { useSetup } from '@/hooks/use-setup';
 
 const fallBackCover = 'https://picsum.photos/seed/settingscover/1200/300';
 
@@ -86,34 +87,35 @@ const ImageUploadField = ({
   };
 
   return (
-    <Controller
+    <FormField
       control={control}
       name={name}
       render={({ field }) => (
         <FormItem>
           {label && <FormLabel>{label}</FormLabel>}
-          <div className="flex items-center gap-4">
-            {preview && <img src={preview} alt={`${label} preview`} className={`object-cover border bg-muted ${previewClassName}`} />}
-            <div className="flex-grow">
-              <Input
-                type="file"
-                accept="image/*"
-                ref={inputRef}
-                onChange={(e) => handleFileChange(e, field.onChange)}
-                className="hidden"
-              />
-               <Button type="button" variant="outline" onClick={() => inputRef.current?.click()} className="w-full">
-                <UploadCloud className="mr-2 h-4 w-4" />
-                {preview ? 'Change Image' : 'Upload Image'}
-              </Button>
+            <div className="flex items-center gap-4">
+                {preview && <img src={preview} alt={`${label} preview`} className={`object-cover border bg-muted ${previewClassName}`} />}
+                <div className="flex-grow">
+                    <Input
+                        type="file"
+                        accept="image/*"
+                        ref={inputRef}
+                        onChange={(e) => handleFileChange(e, field.onChange)}
+                        className="hidden"
+                    />
+                    <Button type="button" variant="outline" onClick={() => inputRef.current?.click()} className="w-full">
+                        <UploadCloud className="mr-2 h-4 w-4" />
+                        {preview ? 'Change Image' : 'Upload Image'}
+                    </Button>
+                </div>
             </div>
-          </div>
           <FormMessage />
         </FormItem>
       )}
     />
   );
 };
+
 
 export default function SettingsPage() {
   const { config, saveConfig } = useBrandsoft();
@@ -337,7 +339,13 @@ export default function SettingsPage() {
                   </TabsContent>
                   
                   <TabsContent value="branding" className="pt-6">
-                       {/* Content moved to profile/banner */}
+                      <Card>
+                        <CardContent className="pt-6">
+                           <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed bg-muted/40">
+                                <p className="text-muted-foreground">Branding controls are now on the profile banner.</p>
+                            </div>
+                        </CardContent>
+                      </Card>
                   </TabsContent>
                   
                   <TabsContent value="modules" className="pt-6">
