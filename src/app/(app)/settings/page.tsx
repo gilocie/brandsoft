@@ -6,7 +6,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useBrandsoft, type BrandsoftConfig, type DesignSettings, type Company } from '@/hooks/use-brandsoft';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+} from '@/components/ui/card';
 import {
   Form,
   FormControl,
@@ -38,7 +41,7 @@ const settingsSchema = z.object({
   secondaryColor: z.string().optional(),
   font: z.string().optional(),
   // Profile
-  description: z.string().max(200, "Description cannot exceed 200 characters.").optional(),
+  description: z.string().max(200, "Description must be 200 characters or less.").optional(),
   address: z.string().min(5, "Address is required"),
   town: z.string().optional(),
   industry: z.string().optional(),
@@ -55,7 +58,6 @@ const settingsSchema = z.object({
 
 type SettingsFormData = z.infer<typeof settingsSchema>;
 
-// Simplified image upload button that doesn't use FormField
 const SimpleImageUploadButton = ({
   value,
   onChange,
@@ -109,9 +111,6 @@ const SimpleImageUploadButton = ({
 
   return (
     <>
-      {showPreview && value && (
-        <img src={value} alt="preview" className={`object-cover border bg-muted ${previewClassName}`} />
-      )}
       <Input
         type="file"
         accept="image/*"
@@ -132,50 +131,6 @@ const SimpleImageUploadButton = ({
     </>
   );
 };
-
-const ImageUploadField = ({
-  control,
-  name,
-  label,
-  previewClassName = 'h-24 w-24 rounded-full'
-}: {
-  control: any;
-  name: keyof SettingsFormData;
-  label: string;
-  previewClassName?: string;
-}) => {
-  return (
-    <FormField
-      control={control}
-      name={name}
-      render={({ field }) => (
-        <FormItem>
-          {label && <FormLabel>{label}</FormLabel>}
-          <FormControl>
-            <div className="flex items-center gap-4">
-              {field.value && (
-                <img 
-                  src={field.value} 
-                  alt={`${label} preview`} 
-                  className={`object-cover border bg-muted ${previewClassName}`} 
-                />
-              )}
-              <div className="flex-grow">
-                <SimpleImageUploadButton
-                  value={field.value}
-                  onChange={field.onChange}
-                  buttonText={field.value ? 'Change Image' : 'Upload Image'}
-                />
-              </div>
-            </div>
-          </FormControl>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
-  );
-};
-
 
 export default function SettingsPage() {
   const { config, saveConfig } = useBrandsoft();
@@ -232,7 +187,8 @@ export default function SettingsPage() {
 
   const onSubmit = (data: SettingsFormData) => {
     if (config) {
-        const myCompanyIndex = config.companies.findIndex(c => c.companyName === config.brand.businessName);
+        const companies = config.companies || [];
+        const myCompanyIndex = companies.findIndex(c => c.companyName === config.brand.businessName);
 
         const updatedMyCompany: Partial<Company> = {
             name: data.businessName,
@@ -248,7 +204,7 @@ export default function SettingsPage() {
             industry: data.industry,
         };
 
-        const newCompanies = [...config.companies];
+        const newCompanies = [...companies];
         if (myCompanyIndex > -1) {
             newCompanies[myCompanyIndex] = { ...newCompanies[myCompanyIndex], ...updatedMyCompany };
         } else {
@@ -373,24 +329,28 @@ export default function SettingsPage() {
                               <FormField control={form.control} name="businessName" render={({ field }) => (
                                   <FormItem><FormLabel>Business Name</FormLabel><FormControl><Input placeholder="Your Company LLC" {...field} /></FormControl><FormMessage /></FormItem>
                               )} />
-                              <FormField control={form.control} name="description" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Company Description</FormLabel>
-                                    <FormControl>
-                                        <Textarea
-                                            placeholder="A brief description of what your business does."
-                                            maxLength={200}
-                                            {...field}
-                                        />
-                                    </FormControl>
-                                    <div className="flex justify-between">
-                                        <FormMessage />
-                                        <div className="text-xs text-muted-foreground">
-                                            {field.value?.length || 0}/200
+                              <FormField
+                                control={form.control}
+                                name="description"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Company Description</FormLabel>
+                                        <FormControl>
+                                            <Textarea
+                                                placeholder="A brief description of what your business does."
+                                                maxLength={200}
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <div className="flex justify-between">
+                                            <FormMessage />
+                                            <div className="text-xs text-muted-foreground">
+                                                {field.value?.length || 0}/200
+                                            </div>
                                         </div>
-                                    </div>
-                                </FormItem>
-                              )} />
+                                    </FormItem>
+                                )}
+                                />
                                <FormField control={form.control} name="address" render={({ field }) => (
                                   <FormItem><FormLabel>Business Address</FormLabel><FormControl><Input placeholder="P.O. Box 303, Blantyre, Malawi" {...field} /></FormControl><FormMessage /></FormItem>
                               )} />
