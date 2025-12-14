@@ -64,7 +64,6 @@ export default function EditQuotationRequestPage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       isPublic: true,
-      items: [{ productName: '', description: '', quantity: 1 }],
       companyIds: [],
       industries: [],
     },
