@@ -73,24 +73,26 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { config } = useBrandsoft();
 
   const currentUserId = useMemo(() => {
-    if (!config || !config.brand) return 'CUST-DEMO-ME';
-    const userBusinessName = config.brand.businessName;
-    const asCompany = config.companies?.find(c => c.companyName === userBusinessName);
-    if (asCompany) return asCompany.id;
-    const asCustomer = config.customers?.find(c => c.name === userBusinessName);
-    if (asCustomer) return asCustomer.id;
-    return 'CUST-DEMO-ME';
+    if (!config || !config.brand) return null;
+    const myCompany = config.companies?.find(c => c.companyName === config.brand.businessName);
+    return myCompany?.id || null;
   }, [config]);
 
   const notificationCount = useMemo(() => {
     if (!config?.quotationRequests || !currentUserId) return 0;
     
-    return config.quotationRequests.filter(
+    // Only count open, non-expired requests that are NOT from the current user
+    const incomingRequests = config.quotationRequests.filter(
       q => q.requesterId !== currentUserId && 
            new Date(q.dueDate) >= new Date() &&
            q.status === 'open' &&
            (q.isPublic || (q.companyIds && q.companyIds.includes(currentUserId)))
     ).length;
+
+    // In the future, you would add logic here to count new responses to your outgoing requests
+    // const responseCount = ...;
+
+    return incomingRequests; // + responseCount;
   }, [config?.quotationRequests, currentUserId]);
 
 
