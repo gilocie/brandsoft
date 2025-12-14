@@ -1,7 +1,8 @@
 
+
 'use client';
 
-import type { BrandsoftConfig, Company, Customer, Invoice, Quotation } from '@/types/brandsoft';
+import type { BrandsoftConfig, Company, Customer, Invoice, Quotation, QuotationRequest } from '@/types/brandsoft';
 import { useCompanies } from './use-companies';
 
 export function useSetup(
@@ -66,6 +67,23 @@ export function useSetup(
           currency: 'USD',
       },
   ];
+
+  const initialQuotationRequests: Omit<QuotationRequest, 'id' | 'date' | 'status' | 'requesterId' | 'requesterName' | 'requesterLogo' | 'dueDate'>[] = [
+    {
+        title: 'Office Stationery Supply for Q4',
+        isPublic: true,
+        items: [
+            { productName: 'A4 Reams (box)', quantity: 20 },
+            { productName: 'Blue Ballpoint Pens (box of 100)', quantity: 5 },
+        ],
+    },
+    {
+        title: 'Website Redesign Project',
+        isPublic: false,
+        companyIds: ['CUST-1625243512000', 'CUST-1625243514000'],
+        items: [{ productName: 'Corporate Website', description: 'New 5-page responsive website with a blog and CMS integration.', quantity: 1 }],
+    },
+];
   
   const initialCustomers: Customer[] = [
       { id: 'COMP-DEMO-0', name: 'John Banda', email: 'john.banda@creativeprints.mw', companyName: 'Creative Prints'},
@@ -108,6 +126,17 @@ export function useSetup(
     ];
     
     const finalCustomers = [...initialCustomers, userAsCustomer];
+
+    const finalQuotationRequests = initialQuotationRequests.map((req, i) => ({
+      ...req,
+      id: `QR-DEMO-${i+1}`,
+      requesterId: userCompanyId,
+      requesterName: data.businessName,
+      requesterLogo: data.logo, // This is the fix
+      date: new Date(Date.now() - (i + 1) * 3 * 24 * 60 * 60 * 1000).toISOString(),
+      dueDate: new Date(Date.now() + (10 - i) * 24 * 60 * 60 * 1000).toISOString(),
+      status: 'open' as const,
+    }))
     
     const config: BrandsoftConfig = {
       brand: {
@@ -150,7 +179,7 @@ export function useSetup(
       products: [],
       invoices: initialInvoices,
       quotations: initialQuotations,
-      quotationRequests: [],
+      quotationRequests: finalQuotationRequests,
       templates: [],
       currencies: ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD'],
       purchases: [],
