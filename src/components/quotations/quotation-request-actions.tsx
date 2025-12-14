@@ -31,25 +31,15 @@ export const QuotationRequestActions = ({ request, onSelectAction }: QuotationRe
             <span className="sr-only">Actions</span>
         </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onSelectAction('view', request)}>
-                <Eye className="mr-2 h-4 w-4" />
-                View Details
-            </DropdownMenuItem>
-             <DropdownMenuItem onClick={() => onSelectAction('edit', request)}>
+        <DropdownMenuContent align="end" side="top">
+            <DropdownMenuItem onClick={() => onSelectAction('edit', request)}>
                 <FilePenLine className="mr-2 h-4 w-4" />
                 Edit Request
             </DropdownMenuItem>
-            {request.status === 'open' && (
-                <DropdownMenuItem onClick={() => onSelectAction('close', request)}>
-                    <CheckCircle2 className="mr-2 h-4 w-4" />
-                    Mark as Closed
-                </DropdownMenuItem>
-            )}
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => onSelectAction('delete', request)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+            <DropdownMenuItem onClick={() => onSelectAction('delete', request)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
                 <Trash2 className="mr-2 h-4 w-4" />
-                Delete
+                Delete Request
             </DropdownMenuItem>
         </DropdownMenuContent>
     </DropdownMenu>
