@@ -46,7 +46,7 @@ interface BrandsoftContextType {
   deleteQuotation: (quotationId: string) => void;
   // Quotation Request methods
   initializeDemoQuotationRequests: (config: BrandsoftConfig) => BrandsoftConfig | null;
-  addQuotationRequest: (request: QuotationRequest) => QuotationRequest;
+  addQuotationRequest: (request: Omit<QuotationRequest, 'id'>) => QuotationRequest;
   updateQuotationRequest: (requestId: string, data: Partial<Omit<QuotationRequest, 'id'>>) => void;
   deleteQuotationRequest: (requestId: string) => void;
   // Purchase methods

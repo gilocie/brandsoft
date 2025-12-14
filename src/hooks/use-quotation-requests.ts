@@ -24,14 +24,20 @@ export function useQuotationRequests(
   config: BrandsoftConfig | null,
   saveConfig: (newConfig: BrandsoftConfig, options?: { redirect?: boolean; revalidate?: boolean }) => void
 ) {
-  const addQuotationRequest = (request: QuotationRequest): QuotationRequest => {
+  const addQuotationRequest = (request: Omit<QuotationRequest, 'id'>): QuotationRequest => {
     if (!config) throw new Error("Config not loaded");
     
-    const newQuotationRequests = [...(config.quotationRequests || []), request];
+    const newRequest: QuotationRequest = {
+      ...request,
+      id: `QR-${Date.now()}`,
+      status: 'open',
+    };
+
+    const newQuotationRequests = [...(config.quotationRequests || []), newRequest];
     const newConfig = { ...config, quotationRequests: newQuotationRequests };
     
     saveConfig(newConfig, { redirect: false, revalidate: true });
-    return request;
+    return newRequest;
   };
   
   const initializeDemoQuotationRequests = (currentConfig: BrandsoftConfig): BrandsoftConfig | null => {
@@ -53,6 +59,7 @@ export function useQuotationRequests(
         requesterId: meAsCustomer.id,
         requesterName: meAsCustomer.name,
         date: new Date(Date.now() - (i + 1) * 3 * 24 * 60 * 60 * 1000).toISOString(),
+        dueDate: new Date(Date.now() + (10 - i) * 24 * 60 * 60 * 1000).toISOString(),
         status: 'open' as const,
       };
     });
