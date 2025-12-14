@@ -31,6 +31,7 @@ import {
   FileX,
   Lock,
   Crown,
+  MessageSquareQuote,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -274,9 +275,15 @@ export default function DashboardPage() {
       window.removeEventListener('focus', handleFocus);
     };
   }, [revalidate, updatePurchaseStatus]);
+  
+  const currentUserId = useMemo(() => {
+    if (!config || !config.brand) return null;
+    const myCompany = config.companies?.find(c => c.companyName === config.brand.businessName);
+    return myCompany?.id || null;
+  }, [config]);
 
   const stats = useMemo(() => {
-    if (!config) {
+    if (!config || !currentUserId) {
       return {
         paidCount: 0,
         unpaidCount: 0,
@@ -288,12 +295,12 @@ export default function DashboardPage() {
         unpaidAmount: 0,
         canceledAmount: 0,
         quotationsSent: 0,
-        receiptsIssued: 0,
+        incomingRequests: 0,
       };
     }
 
     const invoices = config.invoices || [];
-    const quotations = config.quotations || [];
+    const quotationRequests = config.quotationRequests || [];
 
     const paidInvoices = invoices.filter((inv) => inv.status === 'Paid');
     const unpaidInvoices = invoices.filter(
@@ -304,6 +311,13 @@ export default function DashboardPage() {
     const paidAmount = paidInvoices.reduce((sum, inv) => sum + inv.amount, 0);
     const unpaidAmount = unpaidInvoices.reduce((sum, inv) => sum + inv.amount, 0);
     const canceledAmount = canceledInvoices.reduce((sum, inv) => sum + inv.amount, 0);
+    
+    const incomingRequests = quotationRequests.filter(
+      q => q.requesterId !== currentUserId && 
+           new Date(q.dueDate) >= new Date() &&
+           q.status === 'open' &&
+           (q.isPublic || (q.companyIds && q.companyIds.includes(currentUserId)))
+    ).length;
 
     return {
       paidCount: paidInvoices.length,
@@ -315,12 +329,9 @@ export default function DashboardPage() {
       paidAmount,
       unpaidAmount,
       canceledAmount,
-      quotationsSent: quotations.filter(
-        (q) => q.status === 'Sent' || q.status === 'Accepted'
-      ).length,
-      receiptsIssued: paidInvoices.length,
+      incomingRequests,
     };
-  }, [config]);
+  }, [config, currentUserId]);
 
   const purchaseToShow = useMemo((): Purchase | null => {
     if (!config?.purchases || config.purchases.length === 0) return null;
@@ -450,10 +461,10 @@ export default function DashboardPage() {
           currencyCode={currencyCode}
         />
          <StatCard
-          title="Quotations Sent"
-          value={stats.quotationsSent}
-          icon={FileBarChart2}
-          description="Total quotations issued"
+          title="Incoming Requests"
+          value={stats.incomingRequests}
+          icon={MessageSquareQuote}
+          description="Open requests needing a quote"
         />
         <PlanStatusCard purchase={purchaseToShow} />
       </div>
@@ -546,5 +557,7 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
 
     
