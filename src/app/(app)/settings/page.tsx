@@ -39,7 +39,7 @@ const settingsSchema = z.object({
   secondaryColor: z.string().optional(),
   font: z.string().optional(),
   // Profile
-  description: z.string().max(200, "Description must be 200 characters or less.").optional(),
+  description: z.string().max(180, "Description must be 180 characters or less.").optional(),
   address: z.string().min(5, "Address is required"),
   town: z.string().optional(),
   industry: z.string().optional(),
@@ -339,14 +339,14 @@ export default function SettingsPage() {
                                         <FormControl>
                                             <Textarea
                                                 placeholder="A brief description of what your business does."
-                                                maxLength={200}
+                                                maxLength={180}
                                                 {...field}
                                             />
                                         </FormControl>
                                         <div className="flex justify-between">
                                             <FormMessage />
                                             <div className="text-xs text-muted-foreground">
-                                                {field.value?.length || 0}/200
+                                                {field.value?.length || 0}/180
                                             </div>
                                         </div>
                                     </FormItem>
