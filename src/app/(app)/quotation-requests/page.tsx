@@ -152,7 +152,7 @@ export default function QuotationRequestsPage() {
     <div className="container mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold font-headline">Quotation Requests</h1>
+          <h1 className="text-3xl font-bold font-headline">Requests</h1>
           <p className="text-muted-foreground">
             Manage incoming and outgoing quotation requests.
           </p>
@@ -170,12 +170,36 @@ export default function QuotationRequestsPage() {
             <TabsList>
                 <TabsTrigger value="incoming">Incoming ({filteredRequests.incoming.length})</TabsTrigger>
                 <TabsTrigger value="outgoing">Outgoing ({filteredRequests.outgoing.length})</TabsTrigger>
+                <TabsTrigger value="response">Response</TabsTrigger>
+                <TabsTrigger value="sorted">Sorted</TabsTrigger>
+                <TabsTrigger value="expired">Expired</TabsTrigger>
+                <TabsTrigger value="favourites">Favourites</TabsTrigger>
             </TabsList>
             <TabsContent value="incoming" className="pt-4">
                  <PublicQuotationRequestList searchTerm="" industryFilter="all" townFilter="all" currentUserId={currentUserId} />
             </TabsContent>
              <TabsContent value="outgoing" className="pt-4">
                  <QuotationRequestList requests={filteredRequests.outgoing} onSelectAction={handleRequestAction} />
+            </TabsContent>
+            <TabsContent value="response" className="pt-4">
+                <div className="flex h-60 items-center justify-center rounded-lg border-2 border-dashed bg-muted/40">
+                    <p className="text-muted-foreground">Responses to your requests will appear here.</p>
+                </div>
+            </TabsContent>
+            <TabsContent value="sorted" className="pt-4">
+                <div className="flex h-60 items-center justify-center rounded-lg border-2 border-dashed bg-muted/40">
+                    <p className="text-muted-foreground">Requests you've marked as "sorted" will appear here.</p>
+                </div>
+            </TabsContent>
+            <TabsContent value="expired" className="pt-4">
+                <div className="flex h-60 items-center justify-center rounded-lg border-2 border-dashed bg-muted/40">
+                    <p className="text-muted-foreground">Expired requests will appear here.</p>
+                </div>
+            </TabsContent>
+            <TabsContent value="favourites" className="pt-4">
+                <div className="flex h-60 items-center justify-center rounded-lg border-2 border-dashed bg-muted/40">
+                    <p className="text-muted-foreground">Your favourite requests will appear here.</p>
+                </div>
             </TabsContent>
         </Tabs>
 
