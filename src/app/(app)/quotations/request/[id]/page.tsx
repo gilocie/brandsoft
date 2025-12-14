@@ -64,6 +64,12 @@ export default function QuotationRequestDetailsPage() {
     
     return null;
   }, [config, request]);
+  
+  const currentUserId = useMemo(() => {
+    if (!config) return null;
+    const myCompany = config.companies?.find(c => c.companyName === config.brand.businessName);
+    return myCompany?.id || null;
+  }, [config]);
 
   // Show loading state
   if (!config) {
@@ -109,6 +115,8 @@ export default function QuotationRequestDetailsPage() {
     : { text: `Sent to ${request.companyIds?.length || 0} supplier(s)`, icon: Users, className: "text-muted-foreground" };
 
   const VisibilityIcon = visibility.icon;
+  const isMyRequest = request.requesterId === currentUserId;
+
 
   return (
     <div className="container mx-auto py-8 space-y-6">
@@ -204,11 +212,13 @@ export default function QuotationRequestDetailsPage() {
             </div>
           )}
 
-          <div className="pt-4 border-t">
-            <Button asChild className="w-full" size="lg">
-              <Link href={`/quotations/request/${request.id}/respond`}>Respond to Request</Link>
-            </Button>
-          </div>
+          {!isMyRequest && (
+              <div className="pt-4 border-t">
+                <Button asChild className="w-full" size="lg">
+                  <Link href={`/quotations/request/respond/${request.id}`}>Respond to Request</Link>
+                </Button>
+              </div>
+          )}
         </CardContent>
       </Card>
     </div>
