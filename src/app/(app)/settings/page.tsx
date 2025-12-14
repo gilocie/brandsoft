@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useForm, useWatch, Controller } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useBrandsoft, type BrandsoftConfig, type DesignSettings, type Company } from '@/hooks/use-brandsoft';
