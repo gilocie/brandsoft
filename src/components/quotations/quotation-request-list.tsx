@@ -10,10 +10,17 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, Globe, Clock, Layers, Trash2, FilePenLine, Eye, CheckCircle2 } from 'lucide-react';
+import { Users, Globe, Clock, Layers, Trash2, FilePenLine, Eye, CheckCircle2, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { QuotationRequest } from '@/hooks/use-brandsoft';
 import { format } from 'date-fns';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface QuotationRequestListProps {
     requests: QuotationRequest[];
@@ -44,12 +51,30 @@ export const QuotationRequestList = ({ requests, onSelectAction }: QuotationRequ
                             <CardTitle className="text-base font-semibold truncate pr-2">{request.title}</CardTitle>
                             <CardDescription className="text-xs">{new Date(request.date).toLocaleDateString()}</CardDescription>
                         </div>
-                        {request.status === 'open' && (
-                            <Button size="sm" onClick={() => onSelectAction('close', request)} className="h-8">
-                                <CheckCircle2 className="h-4 w-4 mr-2" />
-                                Mark as Sorted
-                            </Button>
-                        )}
+                         <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                {request.status === 'open' && (
+                                    <DropdownMenuItem onClick={() => onSelectAction('close', request)}>
+                                        <CheckCircle2 className="mr-2 h-4 w-4" />
+                                        Mark as Sorted
+                                    </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem onClick={() => onSelectAction('edit', request)}>
+                                    <FilePenLine className="mr-2 h-4 w-4" />
+                                    Edit Request
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => onSelectAction('delete', request)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete Request
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                 </CardHeader>
                 <CardContent className="flex-grow flex flex-col justify-between p-4 pt-0">
@@ -70,14 +95,8 @@ export const QuotationRequestList = ({ requests, onSelectAction }: QuotationRequ
                         </div>
                     </div>
                     <div className="flex items-center gap-2 mt-4">
-                        <Button variant="outline" size="sm" className="flex-1" onClick={() => onSelectAction('view', request)}>
-                            <Eye className="h-4 w-4 mr-2" /> View
-                        </Button>
-                         <Button variant="secondary" size="sm" className="flex-1" onClick={() => onSelectAction('edit', request)}>
-                            <FilePenLine className="h-4 w-4 mr-2" /> Edit
-                        </Button>
-                         <Button variant="destructive" size="sm" className="flex-1" onClick={() => onSelectAction('delete', request)}>
-                            <Trash2 className="h-4 w-4 mr-2" /> Delete
+                        <Button variant="outline" size="sm" className="w-full" onClick={() => onSelectAction('view', request)}>
+                            <Eye className="h-4 w-4 mr-2" /> View Details
                         </Button>
                     </div>
                 </CardContent>
