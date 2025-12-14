@@ -12,14 +12,13 @@ import Link from 'next/link';
 const RequestCard = ({ request }: { request: QuotationRequest }) => {
     const { config } = useBrandsoft();
 
-    const requesterIsSelf = useMemo(() => {
-        if (!config || !request.requesterId) return false;
-        // Check if the requester is the current user's company
+    const currentUserId = useMemo(() => {
+        if (!config || !config.brand) return null;
         const myCompany = config.companies?.find(c => c.companyName === config.brand.businessName);
-        if (myCompany) return myCompany.id === request.requesterId;
-        // Fallback check for demo/customer ID
-        return request.requesterId === 'CUST-DEMO-ME';
-    }, [config, request.requesterId]);
+        return myCompany?.id || 'CUST-DEMO-ME';
+    }, [config]);
+
+    const requesterIsSelf = request.requesterId === currentUserId;
     
     const requester = useMemo(() => {
         if (!config) return null;
@@ -89,7 +88,11 @@ export const PublicQuotationRequestList = ({ searchTerm, industryFilter, townFil
                 (req.description && req.description.toLowerCase().includes(searchTerm.toLowerCase()))
               : true;
             
-            const industryMatch = industryFilter === 'all' || (requester && requester.industry === industryFilter);
+            const requestIndustries = req.industries || [];
+            const industryMatch = industryFilter === 'all' || 
+                                  requestIndustries.length === 0 || 
+                                  requestIndustries.includes(industryFilter);
+            
             const townMatch = townFilter === 'all' || (requester && requester.town === townFilter);
 
             return searchMatch && industryMatch && townMatch;

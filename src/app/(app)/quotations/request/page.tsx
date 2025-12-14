@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -18,9 +18,12 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { SupplierPicker } from '@/components/supplier-picker';
 import { Badge } from '@/components/ui/badge';
 import { useFormState } from '@/hooks/use-form-state';
+import { cn } from '@/lib/utils';
 
 const requestItemSchema = z.object({
   productName: z.string().min(1, 'Product name is required'),
@@ -34,6 +37,7 @@ const formSchema = z.object({
   isPublic: z.boolean().default(true),
   companyIds: z.array(z.string()).optional(),
   items: z.array(requestItemSchema).min(1, 'At least one item is required.'),
+  industries: z.array(z.string()).optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -51,6 +55,7 @@ export default function RequestQuotationPage() {
       isPublic: true,
       items: [{ productName: '', description: '', quantity: 1 }],
       companyIds: [],
+      industries: [],
     },
   });
   
@@ -75,6 +80,13 @@ export default function RequestQuotationPage() {
 
   const isPublic = form.watch('isPublic');
   const selectedCompanyIds = form.watch('companyIds') || [];
+  const selectedIndustries = form.watch('industries') || [];
+  
+  const industries = useMemo(() => {
+    if (!config?.companies) return [];
+    return [...new Set(config.companies.map(b => b.industry).filter((i): i is string => !!i))];
+  }, [config?.companies]);
+
 
   const onSubmit = (data: FormData) => {
     if (!config?.profile.email) {
@@ -116,6 +128,7 @@ export default function RequestQuotationPage() {
       companyIds: data.companyIds,
       items: data.items,
       status: 'open',
+      industries: data.industries,
     });
     
     setFormData(null); 
@@ -197,7 +210,7 @@ export default function RequestQuotationPage() {
             
             <Card>
                 <CardHeader>
-                    <CardTitle>Visibility</CardTitle>
+                    <CardTitle>Visibility & Targeting</CardTitle>
                 </CardHeader>
                  <CardContent className="space-y-4">
                     <FormField control={form.control} name="isPublic" render={({ field }) => (
@@ -209,6 +222,56 @@ export default function RequestQuotationPage() {
                             <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                         </FormItem>
                     )} />
+
+                    {isPublic && (
+                        <FormField
+                            control={form.control}
+                            name="industries"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Target Industries (Optional)</FormLabel>
+                                <FormDescription>Help suppliers find your request by tagging relevant industries.</FormDescription>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                    <FormControl>
+                                        <Button variant="outline" className={cn("w-full justify-start font-normal h-auto py-2", !field.value?.length && "text-muted-foreground")}>
+                                            <div className="flex gap-2 flex-wrap">
+                                            {field.value?.length ? field.value.map(industry => <Badge key={industry}>{industry}</Badge>) : 'Select industries'}
+                                            </div>
+                                        </Button>
+                                    </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                    <Command>
+                                        <CommandInput placeholder="Search industries..." />
+                                        <CommandList>
+                                        <CommandEmpty>No results found.</CommandEmpty>
+                                        <CommandGroup>
+                                            {industries.map(industry => (
+                                                <CommandItem
+                                                    key={industry}
+                                                    onSelect={() => {
+                                                        const currentValue = field.value || [];
+                                                        const newValue = currentValue.includes(industry)
+                                                        ? currentValue.filter(i => i !== industry)
+                                                        : [...currentValue, industry];
+                                                        field.onChange(newValue);
+                                                    }}
+                                                >
+                                                    <Checkbox className="mr-2" checked={field.value?.includes(industry)} />
+                                                    {industry}
+                                                </CommandItem>
+                                            ))}
+                                        </CommandGroup>
+                                        </CommandList>
+                                    </Command>
+                                    </PopoverContent>
+                                </Popover>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    )}
 
                     {!isPublic && (
                         <div className="space-y-4">

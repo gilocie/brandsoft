@@ -124,6 +124,7 @@ export type QuotationRequest = {
   companyIds?: string[];
   items: QuotationRequestItem[];
   status: 'open' | 'closed';
+  industries?: string[];
 };
 
 export type Review = {
