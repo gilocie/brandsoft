@@ -27,6 +27,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import {
   PlusCircle,
@@ -279,10 +280,10 @@ export default function QuotationsPage() {
             </div>
             <TabsContent value="incoming" className="pt-4 space-y-6">
                  <QuotationList quotations={filteredQuotations.requestsIncomingQuotations} layout={layout} onSelectAction={handleSelectAction} currencyCode={currencyCode} />
-                 <QuotationRequestList requests={filteredQuotations.requestsIncomingModern} onSelectAction={handleRequestAction} />
+                 <QuotationRequestList requests={filteredQuotations.requestsIncomingModern} layout={layout} onSelectAction={handleRequestAction} />
             </TabsContent>
              <TabsContent value="outgoing" className="pt-4">
-                 <QuotationRequestList requests={filteredQuotations.requestsOutgoing} onSelectAction={handleRequestAction} />
+                 <QuotationRequestList requests={filteredQuotations.requestsOutgoing} layout={layout} onSelectAction={handleRequestAction} />
             </TabsContent>
           </Tabs>
         </TabsContent>
@@ -452,4 +453,5 @@ export default function QuotationsPage() {
     </div>
   );
 }
+
 
