@@ -51,30 +51,6 @@ export const QuotationRequestList = ({ requests, onSelectAction }: QuotationRequ
                             <CardTitle className="text-base font-semibold truncate pr-2">{request.title}</CardTitle>
                             <CardDescription className="text-xs">{new Date(request.date).toLocaleDateString()}</CardDescription>
                         </div>
-                         <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                {request.status === 'open' && (
-                                    <DropdownMenuItem onClick={() => onSelectAction('close', request)}>
-                                        <CheckCircle2 className="mr-2 h-4 w-4" />
-                                        Mark as Sorted
-                                    </DropdownMenuItem>
-                                )}
-                                <DropdownMenuItem onClick={() => onSelectAction('edit', request)}>
-                                    <FilePenLine className="mr-2 h-4 w-4" />
-                                    Edit Request
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => onSelectAction('delete', request)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Delete Request
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
                     </div>
                 </CardHeader>
                 <CardContent className="flex-grow flex flex-col justify-between p-4 pt-0">
@@ -96,8 +72,31 @@ export const QuotationRequestList = ({ requests, onSelectAction }: QuotationRequ
                     </div>
                     <div className="flex items-center gap-2 mt-4">
                         <Button variant="outline" size="sm" className="w-full" onClick={() => onSelectAction('view', request)}>
-                            <Eye className="h-4 w-4 mr-2" /> View Details
+                            <Eye className="h-4 w-4 mr-2" /> View
                         </Button>
+                        {request.status === 'open' && (
+                             <Button size="sm" className="w-full h-9" onClick={() => onSelectAction('close', request)}>
+                                <CheckCircle2 className="h-4 w-4 mr-2" /> Sorted
+                            </Button>
+                        )}
+                         <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="secondary" size="icon" className="h-9 w-10 flex-shrink-0">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => onSelectAction('edit', request)}>
+                                    <FilePenLine className="mr-2 h-4 w-4" />
+                                    Edit Request
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => onSelectAction('delete', request)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete Request
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                 </CardContent>
               </Card>
