@@ -71,6 +71,7 @@ export function useSetup(
   const initialQuotationRequests: Omit<QuotationRequest, 'id' | 'date' | 'status' | 'requesterId' | 'requesterName' | 'requesterLogo' | 'dueDate'>[] = [
     {
         title: 'Office Stationery Supply for Q4',
+        description: 'Looking for a reliable supplier for bulk office stationery for the upcoming quarter. Please provide a quote for the listed items.',
         isPublic: true,
         items: [
             { productName: 'A4 Reams (box)', quantity: 20 },
@@ -79,6 +80,7 @@ export function useSetup(
     },
     {
         title: 'Website Redesign Project',
+        description: 'We are looking to revamp our corporate website. Seeking quotes from experienced web design agencies. See item description for details.',
         isPublic: false,
         companyIds: ['COMP-DEMO-1', 'COMP-DEMO-0'],
         items: [{ productName: 'Corporate Website', description: 'New 5-page responsive website with a blog and CMS integration.', quantity: 1 }],
@@ -129,7 +131,7 @@ export function useSetup(
 
     const finalQuotationRequests: QuotationRequest[] = initialQuotationRequests.map((req, i) => ({
       ...req,
-      id: `QR-DEMO-${i+1}`, // Assign a consistent, unique ID
+      id: `QR-${Date.now() + i}`, // Correctly use a unique timestamp-based ID
       requesterId: userAsCustomer.id, // Use the consistent customer ID
       requesterName: data.businessName,
       requesterLogo: data.logo,
