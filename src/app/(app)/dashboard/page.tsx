@@ -294,13 +294,12 @@ export default function DashboardPage() {
         paidAmount: 0,
         unpaidAmount: 0,
         canceledAmount: 0,
-        quotationsSent: 0,
         incomingRequests: 0,
       };
     }
 
     const invoices = config.invoices || [];
-    const quotationRequests = config.quotationRequests || [];
+    const incomingRequestsCount = config.incomingRequests?.length || 0;
 
     const paidInvoices = invoices.filter((inv) => inv.status === 'Paid');
     const unpaidInvoices = invoices.filter(
@@ -312,13 +311,6 @@ export default function DashboardPage() {
     const unpaidAmount = unpaidInvoices.reduce((sum, inv) => sum + inv.amount, 0);
     const canceledAmount = canceledInvoices.reduce((sum, inv) => sum + inv.amount, 0);
     
-    const incomingRequests = quotationRequests.filter(
-      q => q.requesterId !== currentUserId && 
-           new Date(q.dueDate) >= new Date() &&
-           q.status === 'open' &&
-           (q.isPublic || (q.companyIds && q.companyIds.includes(currentUserId)))
-    ).length;
-
     return {
       paidCount: paidInvoices.length,
       unpaidCount: invoices.filter((inv) => inv.status === 'Pending').length,
@@ -329,7 +321,7 @@ export default function DashboardPage() {
       paidAmount,
       unpaidAmount,
       canceledAmount,
-      incomingRequests,
+      incomingRequests: incomingRequestsCount,
     };
   }, [config, currentUserId]);
 
@@ -557,7 +549,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
-
-    
