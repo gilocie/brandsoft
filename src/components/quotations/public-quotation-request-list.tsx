@@ -11,8 +11,11 @@ import { FileText, Eye } from 'lucide-react';
 const RequestCard = ({ request }: { request: QuotationRequest }) => {
     const { config } = useBrandsoft();
     
-    // Find the requester's logo from the companies list
-    const requester = config?.companies.find(c => c.id === request.requesterId);
+    const requester = useMemo(() => {
+        if (!config || !request.requesterId) return null;
+        // The requester could be a company or a customer, check both
+        return config.companies?.find(c => c.id === request.requesterId);
+    }, [config, request.requesterId]);
 
     return (
         <Card>

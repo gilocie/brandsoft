@@ -86,19 +86,14 @@ export default function RequestQuotationPage() {
       return;
     }
     
-    // --- FIX STARTS HERE ---
     let myId: string | undefined;
-    
-    // We safeguard against casing issues or missing names
     const userBusinessName = (config?.brand?.businessName || "").toLowerCase();
 
-    // 1. Try to find ID in Companies list first
     const myCompany = config?.companies?.find(c => (c.companyName || "").toLowerCase() === userBusinessName);
     if (myCompany) {
       myId = myCompany.id;
     }
 
-    // 2. If not found, try to find ID in Customers list
     if (!myId) {
       const myCustomer = config?.customers?.find(c => (c.name || "").toLowerCase() === userBusinessName);
       if (myCustomer) {
@@ -106,19 +101,15 @@ export default function RequestQuotationPage() {
       }
     }
     
-    // 3. CRITICAL FALLBACK: If we still don't know who you are, 
-    // we assume you are the main demo user.
     if (!myId) {
-        console.log("Exact profile match not found. Defaulting to Admin ID.");
         myId = 'CUST-DEMO-ME'; 
     }
-    // --- FIX ENDS HERE ---
 
     addQuotationRequest({
       id: `QR-${Date.now()}`,
       title: data.title,
       description: data.description,
-      requesterId: myId, // Now this is guaranteed to have a string value
+      requesterId: myId,
       requesterName: config.brand.businessName,
       date: new Date().toISOString(),
       isPublic: data.isPublic,
