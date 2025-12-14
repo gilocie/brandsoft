@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm, useWatch, Controller } from 'react-hook-form';
@@ -59,15 +60,11 @@ const SimpleImageUploadButton = ({
   value,
   onChange,
   buttonText = "Upload Image",
-  showPreview = false,
-  previewClassName = '',
   iconOnly = false,
 }: {
   value?: string;
   onChange: (value: string) => void;
   buttonText?: string;
-  showPreview?: boolean;
-  previewClassName?: string;
   iconOnly?: boolean;
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -247,10 +244,6 @@ export default function SettingsPage() {
         });
     }
   };
-
-  if (!config) {
-    return <div>Loading settings...</div>;
-  }
   
   const watchedValues = form.watch();
 
@@ -260,6 +253,9 @@ export default function SettingsPage() {
     return uniqueIndustries.map(industry => ({ value: industry.toLowerCase(), label: industry }));
   }, [config?.companies]);
 
+  if (!config) {
+    return <div>Loading settings...</div>;
+  }
 
   return (
     <div className="container mx-auto space-y-6">
