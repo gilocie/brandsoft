@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import type { BrandsoftConfig, Quotation } from '@/types/brandsoft';
@@ -16,10 +17,24 @@ export function useQuotations(
     if (!config) throw new Error("Config not loaded");
     const startNumber = numbering?.startNumber ?? config.profile.quotationStartNumber;
     const prefix = numbering?.prefix ?? config.profile.quotationPrefix;
-    const nextNumber = (Number(startNumber) || 100) + (config.quotations?.length || 0);
+    
+    // Determine the next number based on the correct collection
+    const quotationCount = quotation.isRequest 
+        ? (config.requestResponses?.length || 0)
+        : (config.quotations?.filter(q => !q.isRequest).length || 0);
+
+    const nextNumber = (Number(startNumber) || 100) + quotationCount;
     const generatedId = `${prefix}${nextNumber}`.replace(/\s+/g, '');
+    
     const newQuotation: Quotation = { ...quotation, quotationId: generatedId };
-    const newConfig = { ...config, quotations: [...(config.quotations || []), newQuotation] };
+
+    let newConfig = { ...config };
+    if (quotation.isRequest) {
+        newConfig = { ...newConfig, requestResponses: [...(newConfig.requestResponses || []), newQuotation] };
+    } else {
+        newConfig = { ...newConfig, quotations: [...(newConfig.quotations || []), newQuotation] };
+    }
+
     saveConfig(newConfig, { redirect: false, revalidate: false });
     return newQuotation;
   };
@@ -29,14 +44,18 @@ export function useQuotations(
           const newQuotations = (config.quotations || []).map(q => 
               q.quotationId === quotationId ? { ...q, ...data } : q
           );
-          saveConfig({ ...config, quotations: newQuotations }, { redirect: false, revalidate: false });
+           const newResponses = (config.requestResponses || []).map(q => 
+              q.quotationId === quotationId ? { ...q, ...data } : q
+          );
+          saveConfig({ ...config, quotations: newQuotations, requestResponses: newResponses }, { redirect: false, revalidate: false });
       }
   };
   
   const deleteQuotation = (quotationId: string) => {
       if (config) {
           const newQuotations = (config.quotations || []).filter(q => q.quotationId !== quotationId);
-          saveConfig({ ...config, quotations: newQuotations }, { redirect: false, revalidate: false });
+           const newResponses = (config.requestResponses || []).filter(q => q.quotationId !== quotationId);
+          saveConfig({ ...config, quotations: newQuotations, requestResponses: newResponses }, { redirect: false, revalidate: false });
       }
   };
 

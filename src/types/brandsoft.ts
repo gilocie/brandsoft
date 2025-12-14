@@ -1,4 +1,5 @@
 
+
 import { Page } from '@/stores/canvas-store';
 
 export type Company = {
@@ -202,7 +203,10 @@ export type BrandsoftConfig = {
   products: Product[];
   invoices: Invoice[];
   quotations: Quotation[];
-  quotationRequests?: QuotationRequest[];
+  // New structure for quotation requests
+  incomingRequests?: QuotationRequest[];
+  outgoingRequests?: QuotationRequest[];
+  requestResponses?: Quotation[];
   templates: BrandsoftTemplate[];
   currencies: string[];
   purchases?: Purchase[];
@@ -241,6 +245,7 @@ export type Quotation = {
     customer: string;
     customerId: string;
     senderId?: string; // ID of the company who sent the request
+    requestId?: string; // ID of the QuotationRequest this is a response to
     date: string;
     validUntil: string;
     amount: number;

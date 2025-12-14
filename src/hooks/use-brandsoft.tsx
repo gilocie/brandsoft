@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, createContext, useContext, ReactNode, useCallback } from 'react';
@@ -127,6 +128,14 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
   const saveConfig = (newConfig: BrandsoftConfig, options: { redirect?: boolean; revalidate?: boolean } = {}) => {
     const { redirect = true, revalidate: shouldRevalidate = false } = options;
     
+    // Migrate old quotationRequests to new structure
+    if (newConfig.quotationRequests && !newConfig.outgoingRequests) {
+        const myUserId = newConfig.customers.find(c => c.companyName === newConfig.brand.businessName)?.id || 'CUST-DEMO-ME';
+        newConfig.outgoingRequests = newConfig.quotationRequests.filter(r => r.requesterId === myUserId);
+        newConfig.incomingRequests = newConfig.quotationRequests.filter(r => r.requesterId !== myUserId);
+        delete (newConfig as any).quotationRequests;
+    }
+
     setConfig(newConfig);
     
     localStorage.setItem(CONFIG_KEY, JSON.stringify(newConfig));
@@ -151,6 +160,15 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       setIsConfigured(!!storedConfig);
       if (storedConfig) {
         let parsedConfig = JSON.parse(storedConfig);
+        // Migration logic
+        if (parsedConfig.quotationRequests && !parsedConfig.outgoingRequests) {
+          const myUserId = parsedConfig.customers.find((c: Customer) => c.companyName === parsedConfig.brand.businessName)?.id || 'CUST-DEMO-ME';
+          parsedConfig.outgoingRequests = parsedConfig.quotationRequests.filter((r: QuotationRequest) => r.requesterId === myUserId);
+          parsedConfig.incomingRequests = parsedConfig.quotationRequests.filter((r: QuotationRequest) => r.requesterId !== myUserId);
+          parsedConfig.requestResponses = parsedConfig.quotations?.filter((q: Quotation) => q.isRequest) || [];
+          delete parsedConfig.quotationRequests;
+          localStorage.setItem(CONFIG_KEY, JSON.stringify(parsedConfig));
+        }
         setConfig(parsedConfig);
       }
     } catch (error) {

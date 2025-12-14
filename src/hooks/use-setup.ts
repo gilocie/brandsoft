@@ -201,7 +201,7 @@ export function useSetup(
     
     const finalCustomers = [...initialCustomers, userAsCustomer];
 
-    const finalQuotationRequests: QuotationRequest[] = initialQuotationRequests.map((req, i) => ({
+    const finalOutgoingQuotationRequests: QuotationRequest[] = initialQuotationRequests.map((req, i) => ({
       ...req,
       id: `QR-${Date.now() + i}`,
       requesterId: userAsCustomer.id,
@@ -253,7 +253,9 @@ export function useSetup(
       products: [],
       invoices: initialInvoices,
       quotations: initialQuotations,
-      quotationRequests: finalQuotationRequests,
+      outgoingRequests: finalOutgoingQuotationRequests,
+      incomingRequests: [],
+      requestResponses: [],
       templates: [],
       currencies: ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD'],
       purchases: [],

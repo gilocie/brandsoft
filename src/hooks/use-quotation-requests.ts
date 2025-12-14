@@ -2,7 +2,7 @@
 
 'use client';
 
-import type { BrandsoftConfig, QuotationRequest, Customer } from '@/types/brandsoft';
+import type { BrandsoftConfig, QuotationRequest } from '@/types/brandsoft';
 
 export function useQuotationRequests(
   config: BrandsoftConfig | null,
@@ -17,8 +17,8 @@ export function useQuotationRequests(
       status: 'open',
     };
 
-    const newQuotationRequests = [...(config.quotationRequests || []), newRequest];
-    const newConfig = { ...config, quotationRequests: newQuotationRequests };
+    const newOutgoingRequests = [...(config.outgoingRequests || []), newRequest];
+    const newConfig = { ...config, outgoingRequests: newOutgoingRequests };
     
     saveConfig(newConfig, { redirect: false, revalidate: true });
     return newRequest;
@@ -27,17 +27,21 @@ export function useQuotationRequests(
 
   const updateQuotationRequest = (requestId: string, data: Partial<Omit<QuotationRequest, 'id'>>) => {
       if (config) {
-          const newRequests = (config.quotationRequests || []).map(r => 
+          const newOutgoing = (config.outgoingRequests || []).map(r => 
               r.id === requestId ? { ...r, ...data } : r
           );
-          saveConfig({ ...config, quotationRequests: newRequests }, { redirect: false, revalidate: true });
+           const newIncoming = (config.incomingRequests || []).map(r => 
+              r.id === requestId ? { ...r, ...data } : r
+          );
+          saveConfig({ ...config, outgoingRequests: newOutgoing, incomingRequests: newIncoming }, { redirect: false, revalidate: true });
       }
   };
 
   const deleteQuotationRequest = (requestId: string) => {
       if (config) {
-          const newRequests = (config.quotationRequests || []).filter(r => r.id !== requestId);
-          saveConfig({ ...config, quotationRequests: newRequests }, { redirect: false, revalidate: true });
+          const newOutgoing = (config.outgoingRequests || []).filter(r => r.id !== requestId);
+           const newIncoming = (config.incomingRequests || []).filter(r => r.id !== requestId);
+          saveConfig({ ...config, outgoingRequests: newOutgoing, incomingRequests: newIncoming }, { redirect: false, revalidate: true });
       }
   };
 
