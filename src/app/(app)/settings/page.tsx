@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm, useWatch, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useBrandsoft, type BrandsoftConfig, type DesignSettings, type Company } from '@/hooks/use-brandsoft';
@@ -189,68 +189,68 @@ export default function SettingsPage() {
   }, [config, form]);
 
   const onSubmit = (data: SettingsFormData) => {
-    if (config) {
-        const companies = config.companies || [];
-        const myCompanyIndex = companies.findIndex(c => c.companyName === config.brand.businessName);
+    if (!config) return;
 
-        const updatedMyCompany: Partial<Company> = {
-            name: data.businessName,
-            companyName: data.businessName,
-            description: data.description,
-            logo: data.logo,
-            coverImage: data.coverImage,
-            website: data.website,
-            phone: data.phone,
-            email: data.email,
-            address: data.address,
-            town: data.town,
-            industry: data.industry,
-        };
+    const companies = config.companies || [];
+    const myCompanyIndex = companies.findIndex(c => c.companyName === config.brand.businessName);
 
-        const newCompanies = [...companies];
-        if (myCompanyIndex > -1) {
-            newCompanies[myCompanyIndex] = { ...newCompanies[myCompanyIndex], ...updatedMyCompany };
-        } else {
-             newCompanies.push({
-                id: `COMP-ME-${Date.now()}`,
-                ...updatedMyCompany
-             } as Company);
-        }
+    const updatedMyCompany: Partial<Company> = {
+        name: data.businessName,
+        companyName: data.businessName,
+        description: data.description,
+        logo: data.logo,
+        coverImage: data.coverImage,
+        website: data.website,
+        phone: data.phone,
+        email: data.email,
+        address: data.address,
+        town: data.town,
+        industry: data.industry,
+    };
 
-        const newConfig: BrandsoftConfig = {
-            ...config,
-            brand: {
-            ...config.brand,
-            businessName: data.businessName,
-            description: data.description || '',
-            logo: data.logo || '',
-            coverImage: data.coverImage || '',
-            primaryColor: data.primaryColor || '#9400D3',
-            secondaryColor: data.secondaryColor || '#D87093',
-            font: data.font || 'Poppins',
-            buttonPrimaryBg: data.buttonPrimaryBg,
-            buttonPrimaryBgHover: data.buttonPrimaryBgHover,
-            buttonPrimaryText: data.buttonPrimaryText,
-            buttonPrimaryTextHover: data.buttonPrimaryTextHover,
-            },
-            profile: {
-            ...config.profile,
-            address: data.address,
-            town: data.town || '',
-            industry: data.industry || '',
-            phone: data.phone,
-            email: data.email,
-            website: data.website || '',
-            taxNumber: data.taxNumber || '',
-            },
-            companies: newCompanies,
-        };
-        saveConfig(newConfig, { redirect: false });
-        toast({
-            title: "Settings Saved",
-            description: "Your new settings have been applied.",
-        });
+    const newCompanies = [...companies];
+    if (myCompanyIndex > -1) {
+        newCompanies[myCompanyIndex] = { ...newCompanies[myCompanyIndex], ...updatedMyCompany };
+    } else {
+          newCompanies.push({
+            id: `COMP-ME-${Date.now()}`,
+            ...updatedMyCompany
+          } as Company);
     }
+
+    const newConfig: BrandsoftConfig = {
+        ...config,
+        brand: {
+        ...config.brand,
+        businessName: data.businessName,
+        description: data.description || '',
+        logo: data.logo || '',
+        coverImage: data.coverImage || '',
+        primaryColor: data.primaryColor || '#9400D3',
+        secondaryColor: data.secondaryColor || '#D87093',
+        font: data.font || 'Poppins',
+        buttonPrimaryBg: data.buttonPrimaryBg,
+        buttonPrimaryBgHover: data.buttonPrimaryBgHover,
+        buttonPrimaryText: data.buttonPrimaryText,
+        buttonPrimaryTextHover: data.buttonPrimaryTextHover,
+        },
+        profile: {
+        ...config.profile,
+        address: data.address,
+        town: data.town || '',
+        industry: data.industry || '',
+        phone: data.phone,
+        email: data.email,
+        website: data.website || '',
+        taxNumber: data.taxNumber || '',
+        },
+        companies: newCompanies,
+    };
+    saveConfig(newConfig, { redirect: false });
+    toast({
+        title: "Settings Saved",
+        description: "Your new settings have been applied.",
+    });
   };
 
   if (!config) {
@@ -372,15 +372,24 @@ export default function SettingsPage() {
                                   )} />
                               </div>
                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  <FormField control={form.control} name="industry" render={({ field }) => (
-                                      <FormItem>
-                                        <FormLabel>Industry</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="e.g., Graphic Design, Retail" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                  )} />
+                                  <FormField
+                                    control={form.control}
+                                    name="industry"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Industry</FormLabel>
+                                            <FormControl>
+                                                <Combobox
+                                                    options={industries}
+                                                    value={field.value || ''}
+                                                    onChange={field.onChange}
+                                                    placeholder="Select or create an industry..."
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
                                   <FormField control={form.control} name="town" render={({ field }) => (
                                       <FormItem><FormLabel>Town/Area</FormLabel><FormControl><Input placeholder="e.g., Blantyre, Lilongwe" {...field} /></FormControl><FormMessage /></FormItem>
                                   )} />

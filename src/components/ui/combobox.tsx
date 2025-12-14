@@ -24,43 +24,24 @@ type ComboboxProps = {
     options: { value: string; label: string }[];
     value: string;
     onChange: (value: string) => void;
-    onCreate?: (value: string) => void;
     placeholder?: string;
-    createText?: (value: string) => string;
-    notFoundText?: string;
 }
 
 export function Combobox({ 
     options, 
     value, 
     onChange, 
-    onCreate, 
     placeholder = "Select an option...", 
-    createText = (value) => `Create "${value}"`, 
-    notFoundText = "No results found." 
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
-  const [inputValue, setInputValue] = React.useState("")
 
   const handleSelect = (currentValue: string) => {
-    const lowercasedValue = currentValue.toLowerCase();
-    // Check if the selected value is different from the current value before calling onChange
-    if (lowercasedValue !== value.toLowerCase()) {
-      onChange(currentValue);
-    } else {
-      onChange(''); // Allow unselecting
-    }
+    const newValue = currentValue === value ? "" : currentValue;
+    onChange(newValue);
     setOpen(false);
   };
   
-  const handleCreate = () => {
-    if(onCreate && inputValue) {
-        onCreate(inputValue);
-        setOpen(false);
-    }
-  }
-  
-  const displayedValue = options.find((option) => option.value.toLowerCase() === value.toLowerCase())?.label || value || placeholder;
+  const displayedValue = options.find((option) => option.value.toLowerCase() === value?.toLowerCase())?.label || value || placeholder;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -76,29 +57,23 @@ export function Combobox({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-        <Command shouldFilter={true}>
+        <Command>
           <CommandInput 
             placeholder={placeholder}
-            onValueChange={setInputValue}
+            onValueChange={(search) => {
+              const match = options.find(option => option.label.toLowerCase() === search.toLowerCase());
+              if (!match) {
+                onChange(search);
+              }
+            }}
           />
           <CommandList>
-            <CommandEmpty>
-                {onCreate ? (
-                     <Button variant="ghost" className="w-full" onMouseDown={(e) => {
-                        e.preventDefault();
-                        handleCreate();
-                     }}>
-                        {createText(inputValue)}
-                     </Button>
-                ) : (
-                    notFoundText
-                )}
-            </CommandEmpty>
+            <CommandEmpty>No results found.</CommandEmpty>
             <CommandGroup>
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={option.label} // Compare against label for filtering
+                  value={option.label}
                   onSelect={() => {
                     handleSelect(option.label)
                   }}
@@ -106,7 +81,7 @@ export function Combobox({
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      value.toLowerCase() === option.label.toLowerCase() ? "opacity-100" : "opacity-0"
+                      value?.toLowerCase() === option.label.toLowerCase() ? "opacity-100" : "opacity-0"
                     )}
                   />
                   {option.label}
