@@ -22,7 +22,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, ChangeEvent } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { UploadCloud, Paintbrush, SlidersHorizontal, User } from 'lucide-react';
@@ -36,6 +36,7 @@ const settingsSchema = z.object({
   // Branding
   businessName: z.string().min(2, "Business name is required"),
   logo: z.string().optional(),
+  coverImage: z.string().optional(),
   primaryColor: z.string().optional(),
   secondaryColor: z.string().optional(),
   font: z.string().optional(),
@@ -57,19 +58,74 @@ const settingsSchema = z.object({
 
 type SettingsFormData = z.infer<typeof settingsSchema>;
 
+const ImageUploadField = ({
+  form,
+  name,
+  label,
+  currentValue,
+  previewClassName = 'h-24 w-24 rounded-full'
+}: {
+  form: any;
+  name: keyof SettingsFormData;
+  label: string;
+  currentValue?: string;
+  previewClassName?: string;
+}) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [preview, setPreview] = useState<string | undefined>(currentValue);
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = reader.result as string;
+        setPreview(dataUrl);
+        form.setValue(name, dataUrl, { shouldDirty: true });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  useEffect(() => {
+    setPreview(currentValue);
+  }, [currentValue]);
+
+  return (
+    <FormItem>
+      <FormLabel>{label}</FormLabel>
+      <div className="flex items-center gap-4">
+        {preview && <img src={preview} alt={`${label} preview`} className={`object-cover border bg-muted ${previewClassName}`} />}
+        <div className="flex-grow">
+          <Input
+            type="file"
+            accept="image/*"
+            ref={inputRef}
+            onChange={handleFileChange}
+            className="hidden"
+          />
+          <Button type="button" variant="outline" onClick={() => inputRef.current?.click()} className="w-full">
+            <UploadCloud className="mr-2 h-4 w-4" />
+            {preview ? 'Change Image' : 'Upload Image'}
+          </Button>
+        </div>
+      </div>
+      <FormMessage />
+    </FormItem>
+  );
+};
+
 
 export default function SettingsPage() {
   const { config, saveConfig } = useBrandsoft();
   const { toast } = useToast();
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  
-  const logoInputRef = useRef<HTMLInputElement>(null);
   
   const form = useForm<SettingsFormData>({
     resolver: zodResolver(settingsSchema),
     defaultValues: {
       businessName: '',
       logo: '',
+      coverImage: '',
       primaryColor: '#9400D3',
       secondaryColor: '#D87093',
       font: 'Poppins',
@@ -85,6 +141,7 @@ export default function SettingsPage() {
         form.reset({
             businessName: config.brand.businessName,
             logo: config.brand.logo,
+            coverImage: config.brand.coverImage,
             primaryColor: config.brand.primaryColor,
             secondaryColor: config.brand.secondaryColor,
             font: config.brand.font,
@@ -101,23 +158,8 @@ export default function SettingsPage() {
             website: config.profile.website,
             taxNumber: config.profile.taxNumber,
         });
-        setLogoPreview(config.brand.logo);
     }
   }, [config, form]);
-  
-  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const dataUrl = reader.result as string;
-        setLogoPreview(dataUrl);
-        form.setValue('logo', dataUrl, { shouldDirty: true });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
 
   const onSubmit = (data: SettingsFormData) => {
     if (config) {
@@ -128,6 +170,7 @@ export default function SettingsPage() {
           businessName: data.businessName,
           description: data.description || '',
           logo: data.logo || '',
+          coverImage: data.coverImage || '',
           primaryColor: data.primaryColor || '#9400D3',
           secondaryColor: data.secondaryColor || '#D87093',
           font: data.font || 'Poppins',
@@ -180,6 +223,25 @@ export default function SettingsPage() {
                 <TabsContent value="profile" className="space-y-6">
                     <Card>
                         <CardHeader>
+                            <CardTitle>Business Identity</CardTitle>
+                            <CardDescription>Update your company's core details and branding assets.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <FormField control={form.control} name="businessName" render={({ field }) => (
+                                <FormItem><FormLabel>Business Name</FormLabel><FormControl><Input placeholder="Your Company LLC" {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                            <FormField control={form.control} name="description" render={({ field }) => (
+                                <FormItem><FormLabel>Company Description</FormLabel><FormControl><Textarea placeholder="A brief description of what your business does." {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              <ImageUploadField form={form} name="logo" label="Logo" currentValue={form.getValues('logo')} previewClassName="h-24 w-24 rounded-full" />
+                              <ImageUploadField form={form} name="coverImage" label="Cover Image" currentValue={form.getValues('coverImage')} previewClassName="h-24 w-full rounded-md" />
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
                             <CardTitle>Profile & Contact Information</CardTitle>
                             <CardDescription>This information will appear on your documents and your public profile.</CardDescription>
                         </CardHeader>
@@ -218,43 +280,10 @@ export default function SettingsPage() {
                 <TabsContent value="branding" className="space-y-6">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Brand Identity</CardTitle>
-                            <CardDescription>Update your company's branding details.</CardDescription>
+                            <CardTitle>Color & Font</CardTitle>
+                            <CardDescription>Customize the visual style of the application and documents.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-                                <div className="space-y-4">
-                                    <FormField control={form.control} name="businessName" render={({ field }) => (
-                                        <FormItem><FormLabel>Business Name</FormLabel><FormControl><Input placeholder="Your Company LLC" {...field} /></FormControl><FormMessage /></FormItem>
-                                    )} />
-                                    <FormField control={form.control} name="logo" render={() => (
-                                        <FormItem>
-                                            <FormLabel>Logo</FormLabel>
-                                            <FormControl>
-                                                <div>
-                                                    <Input type="file" accept="image/*" className="hidden" ref={logoInputRef} onChange={handleLogoUpload}/>
-                                                    <Button type="button" variant="outline" onClick={() => logoInputRef.current?.click()} className="w-full">
-                                                        <UploadCloud className="mr-2 h-4 w-4" /> Upload Logo
-                                                    </Button>
-                                                </div>
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )} />
-                                </div>
-                                <div className="flex flex-col items-center justify-center space-y-2 rounded-md border border-dashed p-4 h-full">
-                                    <Avatar className="h-24 w-24">
-                                        <AvatarImage src={logoPreview || undefined} alt={config?.brand.businessName} />
-                                        <AvatarFallback className="text-3xl">
-                                            {config?.brand.businessName?.charAt(0).toUpperCase()}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <p className="text-sm text-muted-foreground">Logo Preview</p>
-                                </div>
-                            </div>
-                            <FormField control={form.control} name="description" render={({ field }) => (
-                                <FormItem><FormLabel>Company Description</FormLabel><FormControl><Textarea placeholder="A brief description of what your business does." {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
                             <FormField control={form.control} name="font" render={({ field }) => (
                                 <FormItem><FormLabel>Font</FormLabel>
                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
@@ -349,3 +378,5 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+    
