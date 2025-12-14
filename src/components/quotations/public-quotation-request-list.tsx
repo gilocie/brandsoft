@@ -83,7 +83,7 @@ const RequestCard = ({ request, currentUserId }: { request: QuotationRequest, cu
                     <span>Expires: {new Date(request.dueDate).toLocaleDateString()}</span>
                 </div>
                 <Button className="w-full" asChild>
-                    <Link href={`/quotations/request/respond/${request.id}`}>
+                    <Link href={`/quotations/request/${request.id}`}>
                         <Eye className="mr-2 h-4 w-4" />
                         View & Respond
                     </Link>
