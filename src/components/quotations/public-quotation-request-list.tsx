@@ -18,7 +18,6 @@ const RequestCard = ({ request, currentUserId }: { request: QuotationRequest, cu
         let name: string | undefined;
 
         // 1. Try to find a Company matching the requester ID exactly
-        // (This handles requests from other suppliers)
         if (config?.companies) {
             const company = config.companies.find(c => c.id === request.requesterId);
             if (company) {
@@ -27,19 +26,16 @@ const RequestCard = ({ request, currentUserId }: { request: QuotationRequest, cu
             }
         }
 
-        // 2. If no logo found yet, check if it's the current user
-        if (!logo && request.requesterId === currentUserId) {
+        // 2. If no logo found yet, check if it's the current user's brand name
+        if (!logo && name === config?.brand.businessName) {
             logo = config?.brand.logo;
-            name = config?.brand.businessName;
         }
 
         // 3. Fallback names if not found in lists
         if (!name) name = request.requesterName;
 
-        // --- THE FIX IS HERE ---
-        // 4. "Smart Link": If we have a name but no logo, try to find a Company 
+        // 4. "Smart Link": If we have a name but no logo, try to find a Company
         // in the marketplace with the same name to get the logo.
-        // This links your "User" requests to your "Company" logo.
         if (!logo && name && config?.companies) {
             const matchingCompany = config.companies.find(c => c.companyName === name);
             if (matchingCompany) {
