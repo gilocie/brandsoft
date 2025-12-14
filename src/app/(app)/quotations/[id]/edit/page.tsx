@@ -857,6 +857,7 @@ export default function EditQuotationPage() {
                 customer={config?.customers.find(c => c.id === watchedValues.customerId) || null}
                 quotationData={{
                     ...watchedValues,
+                    quotationDate: watchedValues.quotationDate ? format(watchedValues.quotationDate, 'yyyy-MM-dd') : '',
                     date: watchedValues.quotationDate ? format(watchedValues.quotationDate, 'yyyy-MM-dd') : '',
                     validUntil: watchedValues.validUntil ? format(watchedValues.validUntil, 'yyyy-MM-dd') : '',
                 }}
