@@ -9,10 +9,11 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, Globe } from 'lucide-react';
+import { Users, Globe, Clock, Layers } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { QuotationRequest } from '@/hooks/use-brandsoft';
 import { QuotationRequestActions } from './quotation-request-actions';
+import { format } from 'date-fns';
 
 interface QuotationRequestListProps {
     requests: QuotationRequest[];
@@ -51,12 +52,24 @@ export const QuotationRequestList = ({ requests, layout, onSelectAction }: Quota
                         <CardTitle className="text-base font-semibold truncate">{request.title}</CardTitle>
                         <CardDescription className="text-xs">{new Date(request.date).toLocaleDateString()}</CardDescription>
                     </CardHeader>
-                    <CardContent className={cn("flex-grow", layout === 'list' ? 'p-0 pt-2' : 'p-6 pt-4')}>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-xs">
-                          <visibility.icon className={cn("h-4 w-4", visibility.className)} />
+                    <CardContent className={cn("flex-grow space-y-2", layout === 'list' ? 'p-0 pt-2' : 'p-6 pt-4')}>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1.5">
+                          <visibility.icon className={cn("h-3 w-3", visibility.className)} />
                           <span className={cn(visibility.className)}>{visibility.text}</span>
                         </div>
+                        {request.isPublic && request.industries && request.industries.length > 0 && (
+                            <div className="flex items-center gap-1.5">
+                                <Layers className="h-3 w-3" />
+                                <span>{request.industries.length} categories</span>
+                            </div>
+                        )}
+                      </div>
+                       <div className="flex items-center justify-between text-xs text-muted-foreground">
+                         <div className="flex items-center gap-1.5">
+                            <Clock className="h-3 w-3" />
+                            <span>Expires {format(new Date(request.dueDate), 'dd MMM yyyy')}</span>
+                         </div>
                         <div className={cn(layout === 'grid' ? "flex" : "hidden")}>
                             <QuotationRequestActions request={request} onSelectAction={onSelectAction} />
                         </div>
