@@ -12,10 +12,12 @@ import Link from 'next/link';
 const RequestCard = ({ request }: { request: QuotationRequest }) => {
     const { config } = useBrandsoft();
 
-     const requesterIsSelf = useMemo(() => {
+    const requesterIsSelf = useMemo(() => {
         if (!config || !request.requesterId) return false;
+        // Check if the requester is the current user's company
         const myCompany = config.companies?.find(c => c.companyName === config.brand.businessName);
         if (myCompany) return myCompany.id === request.requesterId;
+        // Fallback check for demo/customer ID
         return request.requesterId === 'CUST-DEMO-ME';
     }, [config, request.requesterId]);
     
@@ -84,7 +86,7 @@ export const PublicQuotationRequestList = ({ searchTerm, industryFilter, townFil
 
             const searchMatch = searchTerm 
               ? req.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                req.description?.toLowerCase().includes(searchTerm.toLowerCase())
+                (req.description && req.description.toLowerCase().includes(searchTerm.toLowerCase()))
               : true;
             
             const industryMatch = industryFilter === 'all' || (requester && requester.industry === industryFilter);
