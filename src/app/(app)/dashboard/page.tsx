@@ -429,56 +429,27 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      <Card>
-        <CardContent className="p-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <StatCard
-              title="Total Revenue"
-              value={stats.paidAmount}
-              icon={DollarSign}
-              description={`${stats.paidCount} paid invoices`}
-              formatAsCurrency
-              variant="primary"
-              currencyCode={currencyCode}
-            />
-            <StatCard
-              title="Outstanding"
-              value={stats.unpaidAmount}
-              icon={FileClock}
-              description={`${
-                stats.unpaidCount + stats.overdueCount
-              } unpaid invoices`}
-              formatAsCurrency
-              variant="primary"
-              currencyCode={currencyCode}
-            />
-             <StatCard
-              title="Canceled"
-              value={stats.canceledAmount}
-              icon={FileX}
-              description={`${stats.canceledCount} canceled invoices`}
-              formatAsCurrency
-              variant="primary"
-              currencyCode={currencyCode}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         <StatCard
-          title="Paid Invoices"
-          value={stats.paidCount}
-          icon={CheckCircle}
-          description="Total completed payments"
+          title="Total Revenue"
+          value={stats.paidAmount}
+          icon={DollarSign}
+          description={`${stats.paidCount} paid invoices`}
+          formatAsCurrency
+          variant="primary"
+          currencyCode={currencyCode}
         />
         <StatCard
-          title="Unpaid Invoices"
-          value={stats.unpaidCount + stats.overdueCount}
+          title="Outstanding"
+          value={stats.unpaidAmount}
           icon={FileClock}
-          description="Pending or overdue invoices"
+          description={`${
+            stats.unpaidCount + stats.overdueCount
+          } unpaid invoices`}
+          formatAsCurrency
+          currencyCode={currencyCode}
         />
-        <StatCard
+         <StatCard
           title="Quotations Sent"
           value={stats.quotationsSent}
           icon={FileBarChart2}
@@ -575,3 +546,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
