@@ -145,13 +145,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <SidebarMenu>
             {config ? visibleMainNavItems.map((item) => (
               <SidebarMenuItem key={item.href}>
-                <Link href={item.href}>
+                <Link href={item.href} className="relative">
                   <SidebarMenuButton
                     isActive={pathname.startsWith(item.href)}
                     tooltip={item.label}
                   >
                     <item.icon />
                     <span>{item.label}</span>
+                     {item.href === '/quotation-requests' && notificationCount > 0 && (
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs font-bold text-destructive-foreground">
+                            {notificationCount}
+                        </span>
+                    )}
                   </SidebarMenuButton>
                 </Link>
               </SidebarMenuItem>
