@@ -27,23 +27,19 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription as ShadcnDialogDescription,
 } from '@/components/ui/dialog';
 import {
   PlusCircle,
   LayoutGrid,
   List,
   MessageSquareQuote,
-  Globe,
-  Users,
-  Clock,
 } from 'lucide-react';
 import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@/components/ui/toggle-group"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useBrandsoft, type Quotation, type QuotationRequest, type Company } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Quotation, type QuotationRequest } from '@/hooks/use-brandsoft';
 import { QuotationPreview, downloadQuotationAsPdf } from '@/components/quotation-preview';
 import { useToast } from '@/hooks/use-toast';
 import { QuotationList } from '@/components/quotations/quotation-list';
@@ -65,7 +61,6 @@ export default function QuotationsPage() {
   const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null);
   
   // State for request actions
-  const [isRequestViewOpen, setIsRequestViewOpen] = useState(false);
   const [isRequestDeleteOpen, setIsRequestDeleteOpen] = useState(false);
   const [isRequestCloseOpen, setIsRequestCloseOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<QuotationRequest | null>(null);
@@ -156,7 +151,7 @@ export default function QuotationsPage() {
     setSelectedRequest(request);
     switch (action) {
         case 'view':
-            setIsRequestViewOpen(true);
+            router.push(`/quotations/request/${request.id}`);
             break;
         case 'edit':
             router.push(`/quotations/request/${request.id}/edit`);
@@ -389,68 +384,6 @@ export default function QuotationsPage() {
         </AlertDialogContent>
     </AlertDialog>
 
-    {/* Request View Dialog */}
-    <Dialog open={isRequestViewOpen} onOpenChange={setIsRequestViewOpen}>
-        <DialogContent className="max-w-2xl">
-            <DialogHeader>
-                <DialogTitle>{selectedRequest?.title}</DialogTitle>
-                <ShadcnDialogDescription>
-                    Request sent on {selectedRequest ? new Date(selectedRequest.date).toLocaleDateString() : ''}. 
-                    <span className="flex items-center gap-1 mt-1">
-                        <Clock className="h-4 w-4" />
-                        Expires on {selectedRequest ? new Date(selectedRequest.dueDate).toLocaleDateString() : ''}.
-                    </span>
-                </ShadcnDialogDescription>
-            </DialogHeader>
-            {selectedRequest && (
-                <div className="space-y-4 py-4">
-                    {selectedRequest.description && (
-                        <p className="text-sm text-muted-foreground">{selectedRequest.description}</p>
-                    )}
-                    <Card>
-                        <CardHeader className="pb-2">
-                           <CardTitle className="text-sm">Requested Items</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <ul className="space-y-3 text-sm">
-                                {selectedRequest.items.map((item, index) => (
-                                    <li key={index} className="flex items-start justify-between border-b pb-3 last:border-b-0 last:pb-0">
-                                        <span className="font-semibold w-1/3">{item.productName}</span>
-                                        <p className="text-xs text-muted-foreground w-1/3 text-center">{item.description}</p>
-                                        <span className="w-1/3 text-right">Qty: {item.quantity}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </CardContent>
-                    </Card>
-                    <div className="flex items-center gap-2 text-sm">
-                        {selectedRequest.isPublic ? <Globe className="h-4 w-4 text-blue-500" /> : <Users className="h-4 w-4 text-muted-foreground" />}
-                        <span>{selectedRequest.isPublic ? 'Public Request' : `Sent to ${selectedRequest.companyIds?.length || 0} supplier(s)`}</span>
-                    </div>
-                     {!selectedRequest.isPublic && selectedRequest.companyIds && (
-                        <Card>
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-sm">Sent To</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="flex flex-wrap gap-2">
-                                    {selectedRequest.companyIds.map(id => {
-                                        const company = config?.companies.find(c => c.id === id);
-                                        return company ? (
-                                            <Button key={id} asChild variant="secondary" size="sm" className="hover:bg-accent hover:text-white">
-                                                <Link href={`/marketplace/${company.id}`}>{company.companyName}</Link>
-                                            </Button>
-                                        ) : null;
-                                    })}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
-                </div>
-            )}
-        </DialogContent>
-    </Dialog>
-
     {/* Request Delete Confirmation Dialog */}
     <AlertDialog open={isRequestDeleteOpen} onOpenChange={setIsRequestDeleteOpen}>
         <AlertDialogContent>
@@ -490,5 +423,3 @@ export default function QuotationsPage() {
     </div>
   );
 }
-
-    
