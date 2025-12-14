@@ -26,7 +26,7 @@ interface QuotationRequestActionsProps {
 export const QuotationRequestActions = ({ request, onSelectAction }: QuotationRequestActionsProps) => (
     <DropdownMenu>
         <DropdownMenuTrigger asChild>
-        <Button variant="default" size="icon" className="h-8 w-8">
+        <Button variant="ghost" size="icon" className="h-8 w-8">
             <MoreHorizontal className="h-4 w-4" />
             <span className="sr-only">Actions</span>
         </Button>

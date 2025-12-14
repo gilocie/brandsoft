@@ -335,10 +335,10 @@ export default function QuotationsPage() {
             </div>
             <TabsContent value="incoming" className="pt-4 space-y-6">
                  <QuotationList quotations={filteredQuotations.requestsIncomingQuotations} layout={layout} onSelectAction={handleSelectAction} currencyCode={currencyCode} />
-                 <QuotationRequestList requests={filteredQuotations.requestsIncomingModern} onSelectAction={() => {}} currentUserId={currentUserId} />
+                 <PublicQuotationRequestList searchTerm="" industryFilter="all" townFilter="all" currentUserId={currentUserId} />
             </TabsContent>
              <TabsContent value="outgoing" className="pt-4">
-                 <QuotationRequestList requests={filteredQuotations.requestsOutgoing} onSelectAction={handleRequestAction} currentUserId={currentUserId} />
+                 <QuotationRequestList requests={filteredQuotations.requestsOutgoing} onSelectAction={handleRequestAction} />
             </TabsContent>
           </Tabs>
         </TabsContent>
