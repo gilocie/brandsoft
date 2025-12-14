@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -440,7 +439,7 @@ export default function QuotationsPage() {
                                     {selectedRequest.companyIds.map(id => {
                                         const company = config?.companies.find(c => c.id === id);
                                         return company ? (
-                                            <Button key={id} asChild variant="secondary" size="sm">
+                                            <Button key={id} asChild variant="secondary" size="sm" className="hover:bg-accent hover:text-accent-foreground">
                                                 <Link href={`/marketplace/${company.id}`}>{company.companyName}</Link>
                                             </Button>
                                         ) : null;
@@ -494,9 +493,4 @@ export default function QuotationsPage() {
   );
 }
 
-
-
-
-
-
-
+    
