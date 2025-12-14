@@ -855,7 +855,11 @@ export default function EditQuotationPage() {
             <QuotationPreview
                 config={config}
                 customer={config?.customers.find(c => c.id === watchedValues.customerId) || null}
-                quotationData={watchedValues}
+                quotationData={{
+                    ...watchedValues,
+                    date: watchedValues.quotationDate ? format(watchedValues.quotationDate, 'yyyy-MM-dd') : '',
+                    validUntil: watchedValues.validUntil ? format(watchedValues.validUntil, 'yyyy-MM-dd') : '',
+                }}
                 quotationId={quotationId}
             />
           </div>
