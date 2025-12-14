@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm, useWatch, Controller } from 'react-hook-form';
@@ -23,6 +24,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
 
 const fallBackCover = 'https://picsum.photos/seed/settingscover/1200/300';
 
@@ -58,13 +61,15 @@ const SimpleImageUploadButton = ({
   onChange,
   buttonText = "Upload Image",
   showPreview = false,
-  previewClassName = ''
+  previewClassName = '',
+  iconOnly = false,
 }: {
   value?: string;
   onChange: (value: string) => void;
   buttonText?: string;
   showPreview?: boolean;
   previewClassName?: string;
+  iconOnly?: boolean;
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -80,6 +85,28 @@ const SimpleImageUploadButton = ({
     }
   };
 
+  const buttonContent = iconOnly ? (
+    <Button 
+        type="button" 
+        variant="outline" 
+        size="icon"
+        onClick={() => inputRef.current?.click()}
+        className="rounded-full h-9 w-9"
+      >
+        <UploadCloud className="h-4 w-4" />
+      </Button>
+  ) : (
+     <Button 
+        type="button" 
+        variant="outline" 
+        onClick={() => inputRef.current?.click()}
+        size="sm"
+      >
+        <UploadCloud className="mr-2 h-4 w-4" />
+        {buttonText}
+      </Button>
+  );
+
   return (
     <>
       {showPreview && value && (
@@ -92,15 +119,16 @@ const SimpleImageUploadButton = ({
         onChange={handleFileChange}
         className="hidden"
       />
-      <Button 
-        type="button" 
-        variant="outline" 
-        onClick={() => inputRef.current?.click()}
-        size="sm"
-      >
-        <UploadCloud className="mr-2 h-4 w-4" />
-        {buttonText}
-      </Button>
+       {iconOnly ? (
+        <TooltipProvider>
+            <Tooltip>
+                <TooltipTrigger asChild>{buttonContent}</TooltipTrigger>
+                <TooltipContent><p>{buttonText}</p></TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
+      ) : (
+        buttonContent
+      )}
     </>
   );
 };
@@ -306,6 +334,7 @@ export default function SettingsPage() {
                               value={watchedValues.logo}
                               onChange={(value) => form.setValue('logo', value)}
                               buttonText="Change Logo"
+                              iconOnly={true}
                             />
                       </div>
                   </div>
