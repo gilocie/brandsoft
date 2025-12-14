@@ -170,12 +170,50 @@ export default function SettingsPage() {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            <Tabs defaultValue="branding" className="w-full">
+            <Tabs defaultValue="profile" className="w-full">
                 <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="profile"><User className="mr-2 h-4 w-4" />Profile</TabsTrigger>
                     <TabsTrigger value="branding"><Paintbrush className="mr-2 h-4 w-4" />Branding</TabsTrigger>
-                     <TabsTrigger value="profile"><User className="mr-2 h-4 w-4" />Profile</TabsTrigger>
                     <TabsTrigger value="modules"><SlidersHorizontal className="mr-2 h-4 w-4" />Modules</TabsTrigger>
                 </TabsList>
+
+                <TabsContent value="profile" className="space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Profile & Contact Information</CardTitle>
+                            <CardDescription>This information will appear on your documents and your public profile.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <FormField control={form.control} name="address" render={({ field }) => (
+                                <FormItem><FormLabel>Business Address</FormLabel><FormControl><Input placeholder="P.O. Box 303, Blantyre, Malawi" {...field} /></FormControl><FormMessage /></FormItem>
+                            )} />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <FormField control={form.control} name="phone" render={({ field }) => (
+                                    <FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input placeholder="+265 999 123 456" {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                                <FormField control={form.control} name="email" render={({ field }) => (
+                                    <FormItem><FormLabel>Contact Email</FormLabel><FormControl><Input placeholder="contact@yourcompany.com" {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <FormField control={form.control} name="website" render={({ field }) => (
+                                    <FormItem><FormLabel>Website (Optional)</FormLabel><FormControl><Input placeholder="https://yourcompany.com" {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                                <FormField control={form.control} name="taxNumber" render={({ field }) => (
+                                    <FormItem><FormLabel>Tax / VAT Number (Optional)</FormLabel><FormControl><Input placeholder="Your Tax ID" {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                            </div>
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <FormField control={form.control} name="industry" render={({ field }) => (
+                                    <FormItem><FormLabel>Industry</FormLabel><FormControl><Input placeholder="e.g., Graphic Design, Retail" {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                                <FormField control={form.control} name="town" render={({ field }) => (
+                                    <FormItem><FormLabel>Town/Area</FormLabel><FormControl><Input placeholder="e.g., Blantyre, Lilongwe" {...field} /></FormControl><FormMessage /></FormItem>
+                                )} />
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
                 
                 <TabsContent value="branding" className="space-y-6">
                     <Card>
@@ -289,44 +327,6 @@ export default function SettingsPage() {
                     </Card>
                 </TabsContent>
                 
-                <TabsContent value="profile" className="space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Profile & Contact Information</CardTitle>
-                            <CardDescription>This information will appear on your documents and your public profile.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <FormField control={form.control} name="address" render={({ field }) => (
-                                <FormItem><FormLabel>Business Address</FormLabel><FormControl><Input placeholder="P.O. Box 303, Blantyre, Malawi" {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <FormField control={form.control} name="phone" render={({ field }) => (
-                                    <FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input placeholder="+265 999 123 456" {...field} /></FormControl><FormMessage /></FormItem>
-                                )} />
-                                <FormField control={form.control} name="email" render={({ field }) => (
-                                    <FormItem><FormLabel>Contact Email</FormLabel><FormControl><Input placeholder="contact@yourcompany.com" {...field} /></FormControl><FormMessage /></FormItem>
-                                )} />
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <FormField control={form.control} name="website" render={({ field }) => (
-                                    <FormItem><FormLabel>Website (Optional)</FormLabel><FormControl><Input placeholder="https://yourcompany.com" {...field} /></FormControl><FormMessage /></FormItem>
-                                )} />
-                                <FormField control={form.control} name="taxNumber" render={({ field }) => (
-                                    <FormItem><FormLabel>Tax / VAT Number (Optional)</FormLabel><FormControl><Input placeholder="Your Tax ID" {...field} /></FormControl><FormMessage /></FormItem>
-                                )} />
-                            </div>
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <FormField control={form.control} name="industry" render={({ field }) => (
-                                    <FormItem><FormLabel>Industry</FormLabel><FormControl><Input placeholder="e.g., Graphic Design, Retail" {...field} /></FormControl><FormMessage /></FormItem>
-                                )} />
-                                <FormField control={form.control} name="town" render={({ field }) => (
-                                    <FormItem><FormLabel>Town/Area</FormLabel><FormControl><Input placeholder="e.g., Blantyre, Lilongwe" {...field} /></FormControl><FormMessage /></FormItem>
-                                )} />
-                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
                 <TabsContent value="modules">
                      <Card>
                         <CardHeader>
