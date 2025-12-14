@@ -415,14 +415,12 @@ export default function QuotationsPage() {
                         <CardContent>
                             <ul className="space-y-3 text-sm">
                                 {selectedRequest.items.map((item, index) => (
-                                    <li key={index} className="border-b pb-3 last:border-b-0 last:pb-0">
-                                        <div className="flex justify-between">
-                                            <span className="font-semibold">{item.productName}</span>
-                                            <span>Qty: {item.quantity}</span>
-                                        </div>
+                                    <li key={index} className="flex items-start justify-between border-b pb-3 last:border-b-0 last:pb-0">
+                                        <span className="font-semibold w-1/3">{item.productName}</span>
                                         {item.description && (
-                                            <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
+                                            <p className="text-xs text-muted-foreground w-1/3 text-center">{item.description}</p>
                                         )}
+                                        <span className="w-1/3 text-right">Qty: {item.quantity}</span>
                                     </li>
                                 ))}
                             </ul>
@@ -438,12 +436,16 @@ export default function QuotationsPage() {
                                 <CardTitle className="text-sm">Sent To</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <ul className="space-y-1 text-sm text-muted-foreground">
+                                <div className="flex flex-wrap gap-2">
                                     {selectedRequest.companyIds.map(id => {
                                         const company = config?.companies.find(c => c.id === id);
-                                        return company ? <li key={id}>- {company.companyName}</li> : null;
+                                        return company ? (
+                                            <Button key={id} asChild variant="secondary" size="sm">
+                                                <Link href={`/marketplace/${company.id}`}>{company.companyName}</Link>
+                                            </Button>
+                                        ) : null;
                                     })}
-                                </ul>
+                                </div>
                             </CardContent>
                         </Card>
                     )}
@@ -457,9 +459,9 @@ export default function QuotationsPage() {
         <AlertDialogContent>
             <AlertDialogHeader>
                 <AlertDialogTitle>Delete Quotation Request?</AlertDialogTitle>
-                <AlertDialogDescription>
+                <ShadcnDialogDescription>
                     This will permanently delete the request "{selectedRequest?.title}". This action cannot be undone.
-                </AlertDialogDescription>
+                </ShadcnDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -475,9 +477,9 @@ export default function QuotationsPage() {
         <AlertDialogContent>
             <AlertDialogHeader>
                 <AlertDialogTitle>Close Quotation Request?</AlertDialogTitle>
-                <AlertDialogDescription>
+                <ShadcnDialogDescription>
                     Marking this request as closed will prevent new suppliers from responding.
-                </AlertDialogDescription>
+                </ShadcnDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -491,6 +493,7 @@ export default function QuotationsPage() {
     </div>
   );
 }
+
 
 
 
