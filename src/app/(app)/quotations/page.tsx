@@ -27,7 +27,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
+  DialogDescription as ShadcnDialogDescription,
 } from '@/components/ui/dialog';
 import {
   PlusCircle,
@@ -75,12 +75,12 @@ export default function QuotationsPage() {
   const currentUserId = useMemo(() => {
     if (!config || !config.brand) return 'CUST-DEMO-ME';
     
-    const businessName = config.brand.businessName;
+    const userBusinessName = config.brand.businessName;
     
-    const asCompany = config.companies?.find(c => c.companyName === businessName);
+    const asCompany = config.companies?.find(c => c.companyName === userBusinessName);
     if (asCompany) return asCompany.id;
 
-    const asCustomer = config.customers?.find(c => c.name === businessName);
+    const asCustomer = config.customers?.find(c => c.name === userBusinessName);
     if (asCustomer) return asCustomer.id;
 
     return 'CUST-DEMO-ME';
@@ -105,6 +105,18 @@ export default function QuotationsPage() {
         requestsOutgoing: myRequests,
     }
   }, [quotations, config?.quotationRequests, currentUserId]);
+  
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', activeTab);
+    if (activeTab === 'requests') {
+        params.set('subtab', activeSubTab);
+    } else {
+        params.delete('subtab');
+    }
+    // Use replace to avoid adding to browser history for tab changes
+    router.replace(`/quotations?${params.toString()}`, { scroll: false });
+  }, [activeTab, activeSubTab, router, searchParams]);
 
 
   const handleSelectAction = async (action: 'view' | 'edit' | 'delete' | 'download' | 'send' | 'accept' | 'decline', quotation: Quotation) => {
@@ -381,9 +393,9 @@ export default function QuotationsPage() {
         <DialogContent className="max-w-2xl">
             <DialogHeader>
                 <DialogTitle>{selectedRequest?.title}</DialogTitle>
-                <DialogDescription>
+                <ShadcnDialogDescription>
                     Request sent on {selectedRequest ? new Date(selectedRequest.date).toLocaleDateString() : ''}
-                </DialogDescription>
+                </ShadcnDialogDescription>
             </DialogHeader>
             {selectedRequest && (
                 <div className="space-y-4 py-4">
@@ -453,6 +465,7 @@ export default function QuotationsPage() {
     </div>
   );
 }
+
 
 
 
