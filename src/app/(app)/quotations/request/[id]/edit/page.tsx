@@ -12,7 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { PlusCircle, Send, Trash2, Search, X, CalendarIcon, Loader2 } from 'lucide-react';
+import { PlusCircle, Send, Trash2, Search, X, CalendarIcon, Loader2, Building2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -24,6 +24,8 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { format } from "date-fns";
 import { Calendar } from '@/components/ui/calendar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
 
 const requestItemSchema = z.object({
   productName: z.string().min(1, 'Product name is required'),
@@ -131,11 +133,17 @@ export default function EditQuotationRequestPage() {
 
   return (
     <div className="container mx-auto max-w-4xl space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold font-headline">Edit Quotation Request</h1>
-        <p className="text-muted-foreground">
-          Modify the details of your quotation request.
-        </p>
+      <div className="flex items-center gap-4">
+        <Avatar className="h-12 w-12 hidden sm:flex">
+            <AvatarImage src={config?.brand.logo} />
+            <AvatarFallback><Building2 /></AvatarFallback>
+        </Avatar>
+        <div>
+            <h1 className="text-3xl font-bold font-headline">Edit Quotation Request</h1>
+            <p className="text-muted-foreground">
+            Modify the details of your quotation request.
+            </p>
+        </div>
       </div>
 
       <Form {...form}>
