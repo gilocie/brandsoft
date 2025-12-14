@@ -70,6 +70,42 @@ export default function MarketplacePage() {
         handleCardClick(company.id);
     }
   };
+  
+  const FilterControls = () => (
+    <Card className="mb-6">
+        <CardContent className="p-4 flex flex-col md:flex-row gap-4">
+        <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+            placeholder="Search by name or keyword..."
+            className="pl-10"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            />
+        </div>
+        <div className="flex gap-4">
+            <Select value={industryFilter} onValueChange={setIndustryFilter}>
+            <SelectTrigger className="w-full md:w-[180px]">
+                <SelectValue placeholder="Filter by industry" />
+            </SelectTrigger>
+            <SelectContent>
+                <SelectItem value="all">All Industries</SelectItem>
+                {industries.map(ind => <SelectItem key={ind} value={ind}>{ind}</SelectItem>)}
+            </SelectContent>
+            </Select>
+            <Select value={townFilter} onValueChange={setTownFilter}>
+            <SelectTrigger className="w-full md:w-[180px]">
+                <SelectValue placeholder="Filter by town" />
+            </SelectTrigger>
+            <SelectContent>
+                <SelectItem value="all">All Towns</SelectItem>
+                {towns.map(town => <SelectItem key={town} value={town}>{town}</SelectItem>)}
+            </SelectContent>
+            </Select>
+        </div>
+        </CardContent>
+    </Card>
+  );
 
   return (
     <div className="container mx-auto space-y-6">
@@ -78,46 +114,13 @@ export default function MarketplacePage() {
         <p className="text-muted-foreground">Discover and connect with local businesses and opportunities.</p>
       </div>
 
-       <Card>
-          <CardContent className="p-4 flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by name or keyword..."
-                className="pl-10"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <div className="flex gap-4">
-              <Select value={industryFilter} onValueChange={setIndustryFilter}>
-                <SelectTrigger className="w-full md:w-[180px]">
-                  <SelectValue placeholder="Filter by industry" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Industries</SelectItem>
-                  {industries.map(ind => <SelectItem key={ind} value={ind}>{ind}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              <Select value={townFilter} onValueChange={setTownFilter}>
-                <SelectTrigger className="w-full md:w-[180px]">
-                  <SelectValue placeholder="Filter by town" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Towns</SelectItem>
-                   {towns.map(town => <SelectItem key={town} value={town}>{town}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
-      
       <Tabs defaultValue="suppliers" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="suppliers">Suppliers</TabsTrigger>
             <TabsTrigger value="public-quotations">Public Quotations</TabsTrigger>
         </TabsList>
         <TabsContent value="suppliers" className="mt-6">
+            <FilterControls />
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {filteredBusinesses.map(biz => (
                     <CompanyCard 
@@ -136,6 +139,7 @@ export default function MarketplacePage() {
                )}
         </TabsContent>
         <TabsContent value="public-quotations" className="mt-6">
+            <FilterControls />
             <PublicQuotationRequestList 
               searchTerm={searchTerm}
               industryFilter={industryFilter}
