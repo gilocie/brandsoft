@@ -82,15 +82,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return 'CUST-DEMO-ME';
   }, [config]);
 
-  const hasNotifications = useMemo(() => {
-    if (!config?.quotationRequests) return false;
+  const notificationCount = useMemo(() => {
+    if (!config?.quotationRequests) return 0;
     
-    return config.quotationRequests.some(
+    return config.quotationRequests.filter(
       q => q.requesterId !== currentUserId && 
            new Date(q.dueDate) >= new Date() &&
            q.status === 'open' &&
            (q.isPublic || (q.companyIds && q.companyIds.includes(currentUserId)))
-    );
+    ).length;
   }, [config?.quotationRequests, currentUserId]);
 
 
@@ -222,7 +222,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <Button variant="ghost" size="icon" asChild className="flex-shrink-0 relative">
               <Link href="/quotation-requests?subtab=incoming">
                 <Bell className="h-6 w-6" />
-                {hasNotifications && <span className="absolute top-2 right-2 h-2.5 w-2.5 rounded-full bg-destructive" />}
+                {notificationCount > 0 && (
+                  <span className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs font-bold text-destructive-foreground">
+                    {notificationCount}
+                  </span>
+                )}
                 <span className="sr-only">Notifications</span>
               </Link>
             </Button>
