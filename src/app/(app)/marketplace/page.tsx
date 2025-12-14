@@ -85,6 +85,39 @@ export default function MarketplacePage() {
         handleCardClick(company.id);
     }
   };
+
+   const filteredRequests = useMemo(() => {
+    if (!config || !config.companies || !currentUserId) return [];
+    
+    let requests = (config.quotationRequests || []).filter(req => 
+        req.status === 'open' && 
+        new Date(req.dueDate) >= new Date() &&
+        req.requesterId !== currentUserId && // Exclude user's own requests
+        (req.isPublic || (req.companyIds && req.companyIds.includes(currentUserId)))
+    );
+
+    const companiesById = new Map<string, Company>(config.companies.map(c => [c.id, c]));
+
+    return requests.filter(req => {
+        const requester = companiesById.get(req.requesterId);
+
+        const searchMatch = searchTerm 
+          ? req.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+            (req.description && req.description.toLowerCase().includes(searchTerm.toLowerCase()))
+          : true;
+        
+        const requestIndustries = req.industries || [];
+        const industryMatch = industryFilter === 'all' || 
+                              requestIndustries.length === 0 || 
+                              requestIndustries.includes(industryFilter);
+        
+        const townMatch = townFilter === 'all' || (requester && requester.town === townFilter);
+
+        return searchMatch && industryMatch && townMatch;
+    });
+
+  }, [config, searchTerm, industryFilter, townFilter, currentUserId]);
+
   
   const FilterControls = () => (
     <Card className="mb-6">
@@ -156,9 +189,7 @@ export default function MarketplacePage() {
         <TabsContent value="public-quotations" className="mt-6">
             <FilterControls />
             <PublicQuotationRequestList 
-              searchTerm={searchTerm}
-              industryFilter={industryFilter}
-              townFilter={townFilter}
+              requests={filteredRequests}
               currentUserId={currentUserId}
             />
         </TabsContent>

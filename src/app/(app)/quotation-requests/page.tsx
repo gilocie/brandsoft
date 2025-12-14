@@ -182,7 +182,10 @@ export default function QuotationRequestsPage() {
                 <TabsTrigger value="favourites">Favourites</TabsTrigger>
             </TabsList>
             <TabsContent value="incoming" className="pt-4">
-                 <PublicQuotationRequestList searchTerm="" industryFilter="all" townFilter="all" currentUserId={currentUserId} />
+                 <PublicQuotationRequestList 
+                    requests={filteredRequests.incoming}
+                    currentUserId={currentUserId}
+                />
             </TabsContent>
              <TabsContent value="outgoing" className="pt-4">
                  <QuotationRequestList requests={filteredRequests.outgoing} onSelectAction={handleRequestAction} />

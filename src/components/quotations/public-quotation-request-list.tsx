@@ -93,49 +93,14 @@ const RequestCard = ({ request, currentUserId }: { request: QuotationRequest, cu
 };
 
 interface PublicQuotationRequestListProps {
-  searchTerm: string;
-  industryFilter: string;
-  townFilter: string;
+  requests: QuotationRequest[];
   currentUserId: string | null;
 }
 
 
-export const PublicQuotationRequestList = ({ searchTerm, industryFilter, townFilter, currentUserId }: PublicQuotationRequestListProps) => {
-    const { config } = useBrandsoft();
-
-    const filteredRequests = useMemo(() => {
-        if (!config || !config.companies || !currentUserId) return [];
-        
-        let requests = (config.quotationRequests || []).filter(req => 
-            req.status === 'open' && 
-            new Date(req.dueDate) >= new Date() &&
-            req.requesterId !== currentUserId && // Exclude user's own requests
-            (req.isPublic || (req.companyIds && req.companyIds.includes(currentUserId)))
-        );
-
-        const companiesById = new Map<string, Company>(config.companies.map(c => [c.id, c]));
-
-        return requests.filter(req => {
-            const requester = companiesById.get(req.requesterId);
-
-            const searchMatch = searchTerm 
-              ? req.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                (req.description && req.description.toLowerCase().includes(searchTerm.toLowerCase()))
-              : true;
-            
-            const requestIndustries = req.industries || [];
-            const industryMatch = industryFilter === 'all' || 
-                                  requestIndustries.length === 0 || 
-                                  requestIndustries.includes(industryFilter);
-            
-            const townMatch = townFilter === 'all' || (requester && requester.town === townFilter);
-
-            return searchMatch && industryMatch && townMatch;
-        });
-
-    }, [config, searchTerm, industryFilter, townFilter, currentUserId]);
-
-    if (filteredRequests.length === 0) {
+export const PublicQuotationRequestList = ({ requests, currentUserId }: PublicQuotationRequestListProps) => {
+    
+    if (requests.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center text-center h-64 rounded-lg border-2 border-dashed">
                 <FileText className="h-12 w-12 text-muted-foreground mb-4" />
@@ -147,7 +112,7 @@ export const PublicQuotationRequestList = ({ searchTerm, industryFilter, townFil
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredRequests.map(request => (
+            {requests.map(request => (
                 <RequestCard key={request.id} request={request} currentUserId={currentUserId} />
             ))}
         </div>
