@@ -83,7 +83,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, [config]);
 
   const notificationCount = useMemo(() => {
-    if (!config?.quotationRequests) return 0;
+    if (!config?.quotationRequests || !currentUserId) return 0;
     
     return config.quotationRequests.filter(
       q => q.requesterId !== currentUserId && 
