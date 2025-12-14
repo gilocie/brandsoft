@@ -2,7 +2,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useBrandsoft, type QuotationRequest } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type QuotationRequest, type Company } from '@/hooks/use-brandsoft';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -11,11 +11,11 @@ import { FileText, Eye } from 'lucide-react';
 const RequestCard = ({ request }: { request: QuotationRequest }) => {
     const { config } = useBrandsoft();
 
-    const requesterIsSelf = useMemo(() => {
+     const requesterIsSelf = useMemo(() => {
         if (!config || !request.requesterId) return false;
-        // This logic needs to mirror how we find the current user's ID elsewhere
         const myCompany = config.companies?.find(c => c.companyName === config.brand.businessName);
-        return myCompany?.id === request.requesterId || request.requesterId === 'CUST-DEMO-ME';
+        if (myCompany) return myCompany.id === request.requesterId;
+        return request.requesterId === 'CUST-DEMO-ME';
     }, [config, request.requesterId]);
     
     const requester = useMemo(() => {
@@ -59,26 +59,52 @@ const RequestCard = ({ request }: { request: QuotationRequest }) => {
     );
 };
 
-export const PublicQuotationRequestList = () => {
+interface PublicQuotationRequestListProps {
+  searchTerm: string;
+  industryFilter: string;
+  townFilter: string;
+}
+
+
+export const PublicQuotationRequestList = ({ searchTerm, industryFilter, townFilter }: PublicQuotationRequestListProps) => {
     const { config } = useBrandsoft();
 
-    const publicRequests = useMemo(() => {
-        return (config?.quotationRequests || []).filter(req => req.isPublic && req.status === 'open');
-    }, [config?.quotationRequests]);
+    const filteredRequests = useMemo(() => {
+        if (!config) return [];
+        
+        let requests = (config.quotationRequests || []).filter(req => req.isPublic && req.status === 'open');
 
-    if (publicRequests.length === 0) {
+        const companiesById = new Map<string, Company>(config.companies.map(c => [c.id, c]));
+
+        return requests.filter(req => {
+            const requester = companiesById.get(req.requesterId);
+
+            const searchMatch = searchTerm 
+              ? req.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                req.description?.toLowerCase().includes(searchTerm.toLowerCase())
+              : true;
+            
+            const industryMatch = industryFilter === 'all' || (requester && requester.industry === industryFilter);
+            const townMatch = townFilter === 'all' || (requester && requester.town === townFilter);
+
+            return searchMatch && industryMatch && townMatch;
+        });
+
+    }, [config, searchTerm, industryFilter, townFilter]);
+
+    if (filteredRequests.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center text-center h-64 rounded-lg border-2 border-dashed">
                 <FileText className="h-12 w-12 text-muted-foreground mb-4" />
                 <p className="text-lg font-medium text-muted-foreground">No Public Quotation Requests</p>
-                <p className="text-sm text-muted-foreground">There are currently no open requests for quotations.</p>
+                <p className="text-sm text-muted-foreground">There are currently no open requests that match your filters.</p>
             </div>
         );
     }
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {publicRequests.map(request => (
+            {filteredRequests.map(request => (
                 <RequestCard key={request.id} request={request} />
             ))}
         </div>
