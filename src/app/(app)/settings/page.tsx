@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm, useWatch, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useBrandsoft, type BrandsoftConfig, type DesignSettings, type Company } from '@/hooks/use-brandsoft';
@@ -54,59 +54,64 @@ const settingsSchema = z.object({
 type SettingsFormData = z.infer<typeof settingsSchema>;
 
 const ImageUploadField = ({
-  form,
+  control,
   name,
   label,
-  currentValue,
   previewClassName = 'h-24 w-24 rounded-full'
 }: {
-  form: any;
+  control: any;
   name: keyof SettingsFormData;
   label: string;
-  currentValue?: string;
   previewClassName?: string;
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [preview, setPreview] = useState<string | undefined>(currentValue);
+  const value = useWatch({ control, name });
+  const [preview, setPreview] = useState<string | undefined>(value);
 
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    setPreview(value);
+  }, [value]);
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>, fieldOnChange: (...event: any[]) => void) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
         const dataUrl = reader.result as string;
         setPreview(dataUrl);
-        form.setValue(name, dataUrl, { shouldDirty: true });
+        fieldOnChange(dataUrl);
       };
       reader.readAsDataURL(file);
     }
   };
 
-  useEffect(() => {
-    setPreview(currentValue);
-  }, [currentValue]);
-
   return (
-    <FormItem>
-      <FormLabel>{label}</FormLabel>
-      <div className="flex items-center gap-4">
-        {preview && <img src={preview} alt={`${label} preview`} className={`object-cover border bg-muted ${previewClassName}`} />}
-        <div className="flex-grow">
-          <Input
-            type="file"
-            accept="image/*"
-            ref={inputRef}
-            onChange={handleFileChange}
-            className="hidden"
-          />
-           <Button type="button" variant="outline" onClick={() => inputRef.current?.click()} className="w-full">
-            <UploadCloud className="mr-2 h-4 w-4" />
-            {preview ? 'Change Image' : 'Upload Image'}
-          </Button>
-        </div>
-      </div>
-      <FormMessage />
-    </FormItem>
+    <Controller
+      control={control}
+      name={name}
+      render={({ field }) => (
+        <FormItem>
+          {label && <FormLabel>{label}</FormLabel>}
+          <div className="flex items-center gap-4">
+            {preview && <img src={preview} alt={`${label} preview`} className={`object-cover border bg-muted ${previewClassName}`} />}
+            <div className="flex-grow">
+              <Input
+                type="file"
+                accept="image/*"
+                ref={inputRef}
+                onChange={(e) => handleFileChange(e, field.onChange)}
+                className="hidden"
+              />
+               <Button type="button" variant="outline" onClick={() => inputRef.current?.click()} className="w-full">
+                <UploadCloud className="mr-2 h-4 w-4" />
+                {preview ? 'Change Image' : 'Upload Image'}
+              </Button>
+            </div>
+          </div>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
   );
 };
 
@@ -184,6 +189,11 @@ export default function SettingsPage() {
         const newCompanies = [...config.companies];
         if (myCompanyIndex > -1) {
             newCompanies[myCompanyIndex] = { ...newCompanies[myCompanyIndex], ...updatedMyCompany };
+        } else {
+             newCompanies.push({
+                id: `COMP-ME-${Date.now()}`,
+                ...updatedMyCompany
+             } as Company);
         }
 
         const newConfig: BrandsoftConfig = {
@@ -241,7 +251,7 @@ export default function SettingsPage() {
               />
               <div className="absolute inset-0 bg-black/60" />
                <div className="absolute top-4 right-4 z-10">
-                  <ImageUploadField form={form} name="coverImage" label="" currentValue={form.getValues('coverImage')} previewClassName="hidden" />
+                  <ImageUploadField control={form.control} name="coverImage" label="" previewClassName="hidden" />
               </div>
 
                <div className="absolute inset-0 p-6 flex flex-col md:flex-row items-end gap-6">
@@ -251,7 +261,7 @@ export default function SettingsPage() {
                           <AvatarFallback><Building className="h-10 w-10" /></AvatarFallback>
                       </Avatar>
                        <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover/avatar:opacity-100 flex items-center justify-center transition-opacity">
-                            <ImageUploadField form={form} name="logo" label="" currentValue={form.getValues('logo')} previewClassName="hidden" />
+                            <ImageUploadField control={form.control} name="logo" label="" previewClassName="hidden" />
                       </div>
                   </div>
 
@@ -327,7 +337,7 @@ export default function SettingsPage() {
                   </TabsContent>
                   
                   <TabsContent value="branding" className="pt-6">
-                      {/* Content moved to profile/banner */}
+                       {/* Content moved to profile/banner */}
                   </TabsContent>
                   
                   <TabsContent value="modules" className="pt-6">
