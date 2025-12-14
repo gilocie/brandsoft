@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { FileText, Eye, Clock } from 'lucide-react';
 import Link from 'next/link';
-import { formatDistanceToNowStrict } from 'date-fns';
+import { formatDistanceToNowStrict, isValid, parseISO } from 'date-fns';
 
 const RequestCard = ({ request, currentUserId }: { request: QuotationRequest, currentUserId: string | null }) => {
     const { config } = useBrandsoft();
@@ -51,8 +51,11 @@ const RequestCard = ({ request, currentUserId }: { request: QuotationRequest, cu
 
     }, [config, request, currentUserId]);
 
+    const parsedDate = new Date(request.dueDate);
+    const timeLeft = isValid(parsedDate)
+        ? formatDistanceToNowStrict(parsedDate, { addSuffix: true })
+        : 'Invalid date';
 
-    const timeLeft = formatDistanceToNowStrict(new Date(request.dueDate), { addSuffix: true });
     const isMyRequest = request.requesterId === currentUserId;
 
 
