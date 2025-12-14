@@ -45,7 +45,6 @@ interface BrandsoftContextType {
   updateQuotation: (quotationId: string, data: Partial<Omit<Quotation, 'quotationId'>>) => void;
   deleteQuotation: (quotationId: string) => void;
   // Quotation Request methods
-  initializeDemoQuotationRequests: (config: BrandsoftConfig) => BrandsoftConfig | null;
   addQuotationRequest: (request: Omit<QuotationRequest, 'id'>) => QuotationRequest;
   updateQuotationRequest: (requestId: string, data: Partial<Omit<QuotationRequest, 'id'>>) => void;
   deleteQuotationRequest: (requestId: string) => void;
@@ -64,6 +63,49 @@ interface BrandsoftContextType {
 }
 
 const BrandsoftContext = createContext<BrandsoftContextType | undefined>(undefined);
+
+function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig: BrandsoftConfig, options?: { redirect?: boolean; revalidate?: boolean }) => void) {
+    const companyMethods = useCompanies(config, saveConfig);
+    const productMethods = useProducts(config, saveConfig);
+    const invoiceMethods = useInvoices(config, saveConfig);
+    const quotationMethods = useQuotations(config, saveConfig);
+    const quotationRequestMethods = useQuotationRequests(config, saveConfig);
+    const purchaseMethods = usePurchases(config, saveConfig);
+    const currencyMethods = useCurrencies(config, saveConfig);
+
+    const addCustomer = (customer: Omit<Customer, 'id'>): Customer => {
+      const newCustomer: Customer = { ...customer, id: `CUST-${Date.now()}` };
+      if (config) {
+          const customers = config.customers || [];
+          const newConfig = { ...config, customers: [...customers, newCustomer] };
+          saveConfig(newConfig, { redirect: false, revalidate: false });
+      }
+      return newCustomer;
+    };
+
+    const addReview = (review: Omit<Review, 'id'>) => {
+      if (!config) return;
+      const newReview = { ...review, id: `REV-${Date.now()}` };
+      const newConfig = {
+        ...config,
+        reviews: [...(config.reviews || []), newReview],
+      };
+      saveConfig(newConfig, { redirect: false, revalidate: true });
+    };
+
+    return {
+        ...companyMethods,
+        addCustomer,
+        ...productMethods,
+        ...invoiceMethods,
+        ...quotationMethods,
+        ...quotationRequestMethods,
+        ...purchaseMethods,
+        ...currencyMethods,
+        addReview,
+    };
+}
+
 
 export function BrandsoftProvider({ children }: { children: ReactNode }) {
   const [isActivated, setIsActivated] = useState<boolean | null>(null);
@@ -91,7 +133,6 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     setIsConfigured(true);
 
     if (shouldRevalidate) {
-      // Dispatch a custom event that can be listened to globally
       window.dispatchEvent(new CustomEvent('brandsoft-update'));
     }
 
@@ -100,14 +141,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const companyMethods = useCompanies(config, saveConfig);
-  const productMethods = useProducts(config, saveConfig);
-  const invoiceMethods = useInvoices(config, saveConfig);
-  const quotationMethods = useQuotations(config, saveConfig);
-  const quotationRequestMethods = useQuotationRequests(config, saveConfig);
-  const purchaseMethods = usePurchases(config, saveConfig);
-  const currencyMethods = useCurrencies(config, saveConfig);
-
+  const dataMethods = useBrandsoftData(config, saveConfig);
 
   useEffect(() => {
     try {
@@ -117,14 +151,6 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       setIsConfigured(!!storedConfig);
       if (storedConfig) {
         let parsedConfig = JSON.parse(storedConfig);
-        
-        const updatedConfigWithRequests = quotationRequestMethods.initializeDemoQuotationRequests(parsedConfig);
-        
-        if (updatedConfigWithRequests) {
-          parsedConfig = updatedConfigWithRequests;
-          localStorage.setItem(CONFIG_KEY, JSON.stringify(parsedConfig));
-        }
-
         setConfig(parsedConfig);
       }
     } catch (error) {
@@ -134,7 +160,6 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     }
   }, []);
   
-  // This effect listens for storage changes across tabs and custom update events
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === CONFIG_KEY) {
@@ -198,27 +223,6 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     setIsConfigured(false);
     router.push('/activation');
   };
-  
-    const addCustomer = (customer: Omit<Customer, 'id'>): Customer => {
-      const newCustomer: Customer = { ...customer, id: `CUST-${Date.now()}` };
-      if (config) {
-          const customers = config.customers || [];
-          const newConfig = { ...config, customers: [...customers, newCustomer] };
-          saveConfig(newConfig, { redirect: false, revalidate: false });
-      }
-      return newCustomer;
-    };
-
-    const addReview = (review: Omit<Review, 'id'>) => {
-      if (!config) return;
-      const newReview = { ...review, id: `REV-${Date.now()}` };
-      const newConfig = {
-        ...config,
-        reviews: [...(config.reviews || []), newReview],
-      };
-      saveConfig(newConfig, { redirect: false, revalidate: true });
-    };
-
 
   const value: BrandsoftContextType = {
     isActivated,
@@ -228,15 +232,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     activate,
     saveConfig,
     logout,
-    ...companyMethods,
-    addCustomer,
-    ...productMethods,
-    ...invoiceMethods,
-    ...quotationMethods,
-    ...quotationRequestMethods,
-    ...purchaseMethods,
-    ...currencyMethods,
-    addReview,
+    ...dataMethods,
   };
 
   return <BrandsoftContext.Provider value={value}>{children}</BrandsoftContext.Provider>;

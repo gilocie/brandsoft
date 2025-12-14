@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useForm, Control } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useBrandsoft, type BrandsoftConfig, type Invoice, type Company, type Quotation, type QuotationRequest, type Customer } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type BrandsoftConfig, type Invoice, type Company, type Quotation, type QuotationRequest } from '@/hooks/use-brandsoft';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
@@ -113,7 +113,6 @@ export default function SetupPage() {
   async function processSubmit(data: FormData) {
     setIsFinishing(true);
     await finalizeSetup(data);
-    // The saveConfig inside finalizeSetup will handle redirection.
   }
 
   const nextStep = async () => {
