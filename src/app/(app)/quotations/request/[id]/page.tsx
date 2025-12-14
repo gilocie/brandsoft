@@ -3,7 +3,7 @@
 
 import { useMemo, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useBrandsoft, type QuotationRequest } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type QuotationRequest, type Company } from '@/hooks/use-brandsoft';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -43,12 +43,18 @@ export default function QuotationRequestDetailsPage() {
     if (!config || !request) return null;
     
     // Try to find in companies first
-    const company = config.companies?.find(c => c.id === request.requesterId);
+    let company = config.companies?.find(c => c.id === request.requesterId);
     if (company) return company;
     
-    // Try to find in customers
+    // Try to find in customers and then find the company by name
     const customer = config.customers?.find(c => c.id === request.requesterId);
-    if (customer) {
+    if (customer && customer.companyName) {
+        company = config.companies?.find(c => c.companyName === customer.companyName);
+        if (company) return company;
+    }
+
+    // Fallback to customer name if no company is found
+    if(customer) {
       return {
         id: customer.id,
         companyName: customer.name,
@@ -208,4 +214,3 @@ export default function QuotationRequestDetailsPage() {
     </div>
   );
 }
-
