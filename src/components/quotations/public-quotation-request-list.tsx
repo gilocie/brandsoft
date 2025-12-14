@@ -27,9 +27,15 @@ const RequestCard = ({ request }: { request: QuotationRequest }) => {
                 name: config?.brand.businessName
             };
         }
+        
+        // Use requesterLogo from the request itself if available
+        if (request.requesterLogo) {
+            return { logo: request.requesterLogo, name: request.requesterName };
+        }
+        
         const company = config?.companies?.find(c => c.id === request.requesterId);
         return company ? { logo: company.logo, name: company.companyName } : { logo: undefined, name: request.requesterName };
-    }, [config, request.requesterId, requesterIsSelf]);
+    }, [config, request.requesterId, request.requesterLogo, request.requesterName, requesterIsSelf]);
 
     const timeLeft = formatDistanceToNowStrict(new Date(request.dueDate), { addSuffix: true });
 

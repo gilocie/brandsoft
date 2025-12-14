@@ -130,6 +130,7 @@ export default function RequestQuotationPage() {
       description: data.description,
       requesterId: myId,
       requesterName: config.brand.businessName,
+      requesterLogo: config.brand.logo,
       date: new Date().toISOString(),
       dueDate: data.dueDate.toISOString(),
       isPublic: data.isPublic,

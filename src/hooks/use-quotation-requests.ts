@@ -58,6 +58,7 @@ export function useQuotationRequests(
         id: `QR-DEMO-${i+1}`,
         requesterId: meAsCustomer.id,
         requesterName: meAsCustomer.name,
+        requesterLogo: currentConfig.brand.logo, // Add logo here
         date: new Date(Date.now() - (i + 1) * 3 * 24 * 60 * 60 * 1000).toISOString(),
         dueDate: new Date(Date.now() + (10 - i) * 24 * 60 * 60 * 1000).toISOString(),
         status: 'open' as const,

@@ -119,6 +119,7 @@ export type QuotationRequest = {
   description?: string;
   requesterId: string;
   requesterName: string;
+  requesterLogo?: string;
   date: string;
   dueDate: string;
   isPublic: boolean;
