@@ -18,7 +18,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import React, { useEffect, useState, useRef, ChangeEvent, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
-import { UploadCloud, Paintbrush, SlidersHorizontal, User, Building, MapPin, Globe, Phone, Mail } from 'lucide-react';
+import { UploadCloud, Paintbrush, SlidersHorizontal, User, Building, MapPin, Globe, Phone, Mail, Eye } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -26,6 +26,7 @@ import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Combobox } from '@/components/ui/combobox';
+import Link from 'next/link';
 
 
 const fallBackCover = 'https://picsum.photos/seed/settingscover/1200/300';
@@ -162,6 +163,11 @@ export default function SettingsPage() {
     const uniqueIndustries = [...new Set(config.companies.map(c => c.industry).filter(Boolean).map(i => i.trim()))];
     return uniqueIndustries.map(industry => ({ value: industry.toLowerCase(), label: industry }));
   }, [config?.companies]);
+
+  const myCompanyId = useMemo(() => {
+    if (!config) return null;
+    return config.companies?.find(c => c.companyName === config.brand.businessName)?.id || null;
+  }, [config]);
 
   useEffect(() => {
     if (config) {
@@ -318,11 +324,18 @@ export default function SettingsPage() {
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               <Tabs defaultValue="profile" className="w-full">
-                  <TabsList className="grid w-full grid-cols-3">
-                      <TabsTrigger value="profile"><User className="mr-2 h-4 w-4" />Profile</TabsTrigger>
-                      <TabsTrigger value="branding"><Paintbrush className="mr-2 h-4 w-4" />Branding</TabsTrigger>
-                      <TabsTrigger value="modules"><SlidersHorizontal className="mr-2 h-4 w-4" />Modules</TabsTrigger>
-                  </TabsList>
+                  <div className="flex items-center justify-between border-b">
+                    <TabsList className="grid grid-cols-3">
+                        <TabsTrigger value="profile"><User className="mr-2 h-4 w-4" />Profile</TabsTrigger>
+                        <TabsTrigger value="branding"><Paintbrush className="mr-2 h-4 w-4" />Branding</TabsTrigger>
+                        <TabsTrigger value="modules"><SlidersHorizontal className="mr-2 h-4 w-4" />Modules</TabsTrigger>
+                    </TabsList>
+                    {myCompanyId && (
+                      <Button variant="outline" asChild>
+                          <Link href={`/marketplace/${myCompanyId}`}><Eye className="mr-2 h-4 w-4"/>View as visitor</Link>
+                      </Button>
+                    )}
+                  </div>
 
                   <TabsContent value="profile" className="pt-6">
                       <Card>
@@ -401,7 +414,7 @@ export default function SettingsPage() {
                   <TabsContent value="branding" className="pt-6">
                       <Card>
                         <CardContent className="pt-6">
-                           <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed bg-muted/40">
+                           <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed bg-muted/50">
                                 <p className="text-muted-foreground">Branding controls are now on the profile banner.</p>
                             </div>
                         </CardContent>
