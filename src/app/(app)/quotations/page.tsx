@@ -36,13 +36,14 @@ import {
   MessageSquareQuote,
   Globe,
   Users,
+  Clock,
 } from 'lucide-react';
 import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@/components/ui/toggle-group"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useBrandsoft, type Quotation, type QuotationRequest } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Quotation, type QuotationRequest, type Company } from '@/hooks/use-brandsoft';
 import { QuotationPreview, downloadQuotationAsPdf } from '@/components/quotation-preview';
 import { useToast } from '@/hooks/use-toast';
 import { QuotationList } from '@/components/quotations/quotation-list';
@@ -394,7 +395,11 @@ export default function QuotationsPage() {
             <DialogHeader>
                 <DialogTitle>{selectedRequest?.title}</DialogTitle>
                 <ShadcnDialogDescription>
-                    Request sent on {selectedRequest ? new Date(selectedRequest.date).toLocaleDateString() : ''}
+                    Request sent on {selectedRequest ? new Date(selectedRequest.date).toLocaleDateString() : ''}. 
+                    <span className="flex items-center gap-1 mt-1">
+                        <Clock className="h-4 w-4" />
+                        Expires on {selectedRequest ? new Date(selectedRequest.dueDate).toLocaleDateString() : ''}.
+                    </span>
                 </ShadcnDialogDescription>
             </DialogHeader>
             {selectedRequest && (
@@ -421,6 +426,21 @@ export default function QuotationsPage() {
                         {selectedRequest.isPublic ? <Globe className="h-4 w-4 text-blue-500" /> : <Users className="h-4 w-4 text-muted-foreground" />}
                         <span>{selectedRequest.isPublic ? 'Public Request' : `Sent to ${selectedRequest.companyIds?.length || 0} supplier(s)`}</span>
                     </div>
+                     {!selectedRequest.isPublic && selectedRequest.companyIds && (
+                        <Card>
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-sm">Sent To</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <ul className="space-y-1 text-sm text-muted-foreground">
+                                    {selectedRequest.companyIds.map(id => {
+                                        const company = config?.companies.find(c => c.id === id);
+                                        return company ? <li key={id}>- {company.companyName}</li> : null;
+                                    })}
+                                </ul>
+                            </CardContent>
+                        </Card>
+                    )}
                 </div>
             )}
         </DialogContent>
@@ -465,6 +485,7 @@ export default function QuotationsPage() {
     </div>
   );
 }
+
 
 
 
