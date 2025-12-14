@@ -38,7 +38,7 @@ const settingsSchema = z.object({
   secondaryColor: z.string().optional(),
   font: z.string().optional(),
   // Profile
-  description: z.string().max(60, "Description cannot exceed 60 characters.").optional(),
+  description: z.string().max(200, "Description cannot exceed 200 characters.").optional(),
   address: z.string().min(5, "Address is required"),
   town: z.string().optional(),
   industry: z.string().optional(),
@@ -374,7 +374,22 @@ export default function SettingsPage() {
                                   <FormItem><FormLabel>Business Name</FormLabel><FormControl><Input placeholder="Your Company LLC" {...field} /></FormControl><FormMessage /></FormItem>
                               )} />
                               <FormField control={form.control} name="description" render={({ field }) => (
-                                  <FormItem><FormLabel>Company Description</FormLabel><FormControl><Textarea placeholder="A brief description of what your business does." {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormItem>
+                                    <FormLabel>Company Description</FormLabel>
+                                    <FormControl>
+                                        <Textarea
+                                            placeholder="A brief description of what your business does."
+                                            maxLength={200}
+                                            {...field}
+                                        />
+                                    </FormControl>
+                                    <div className="flex justify-between">
+                                        <FormMessage />
+                                        <div className="text-xs text-muted-foreground">
+                                            {field.value?.length || 0}/200
+                                        </div>
+                                    </div>
+                                </FormItem>
                               )} />
                                <FormField control={form.control} name="address" render={({ field }) => (
                                   <FormItem><FormLabel>Business Address</FormLabel><FormControl><Input placeholder="P.O. Box 303, Blantyre, Malawi" {...field} /></FormControl><FormMessage /></FormItem>
