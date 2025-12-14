@@ -439,7 +439,7 @@ export default function QuotationsPage() {
                                     {selectedRequest.companyIds.map(id => {
                                         const company = config?.companies.find(c => c.id === id);
                                         return company ? (
-                                            <Button key={id} asChild variant="secondary" size="sm" className="hover:bg-accent text-white">
+                                            <Button key={id} asChild variant="secondary" size="sm" className="hover:bg-accent hover:text-white">
                                                 <Link href={`/marketplace/${company.id}`}>{company.companyName}</Link>
                                             </Button>
                                         ) : null;
