@@ -13,31 +13,29 @@ import { formatDistanceToNowStrict } from 'date-fns';
 const RequestCard = ({ request }: { request: QuotationRequest }) => {
     const { config } = useBrandsoft();
 
-    const requesterIsSelf = useMemo(() => {
-        if (!config?.brand) return false;
-        const userBusinessName = (config.brand.businessName || "").toLowerCase();
-        const myCompany = config.companies?.find(c => (c.companyName || "").toLowerCase() === userBusinessName);
-        return myCompany?.id === request.requesterId;
-    }, [config?.brand, config?.companies, request.requesterId]);
-    
+    const currentUserId = useMemo(() => {
+        if (!config || !config.brand) return null;
+        const myCompany = config.companies?.find(c => c.companyName === config.brand.businessName);
+        return myCompany?.id || null;
+    }, [config]);
+
     const requester = useMemo(() => {
         if (!config) return { logo: undefined, name: request.requesterName };
 
-        if (requesterIsSelf) {
+        if (request.requesterId === currentUserId) {
             return {
                 logo: config.brand.logo,
                 name: config.brand.businessName
             };
         }
         
-        // Use requesterLogo from the request itself if available
-        if (request.requesterLogo) {
-            return { logo: request.requesterLogo, name: request.requesterName };
-        }
-        
+        // Fallback to lookup in companies list
         const company = config.companies?.find(c => c.id === request.requesterId);
-        return company ? { logo: company.logo, name: company.companyName } : { logo: undefined, name: request.requesterName };
-    }, [config, request.requesterId, request.requesterLogo, request.requesterName, requesterIsSelf]);
+        return company 
+            ? { logo: company.logo, name: company.companyName } 
+            : { logo: request.requesterLogo, name: request.requesterName }; // Final fallback to data on request
+
+    }, [config, request, currentUserId]);
 
     const timeLeft = formatDistanceToNowStrict(new Date(request.dueDate), { addSuffix: true });
 
