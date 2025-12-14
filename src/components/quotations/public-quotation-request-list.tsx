@@ -10,14 +10,8 @@ import { FileText, Eye, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { formatDistanceToNowStrict } from 'date-fns';
 
-const RequestCard = ({ request }: { request: QuotationRequest }) => {
+const RequestCard = ({ request, currentUserId }: { request: QuotationRequest, currentUserId: string | null }) => {
     const { config } = useBrandsoft();
-
-    const currentUserId = useMemo(() => {
-        if (!config || !config.brand) return null;
-        const myCompany = config.companies?.find(c => c.companyName === config.brand.businessName);
-        return myCompany?.id || null;
-    }, [config]);
 
     const requester = useMemo(() => {
         if (!config) return { logo: undefined, name: request.requesterName };
@@ -29,11 +23,10 @@ const RequestCard = ({ request }: { request: QuotationRequest }) => {
             };
         }
         
-        // Fallback to lookup in companies list
         const company = config.companies?.find(c => c.id === request.requesterId);
         return company 
             ? { logo: company.logo, name: company.companyName } 
-            : { logo: request.requesterLogo, name: request.requesterName }; // Final fallback to data on request
+            : { logo: request.requesterLogo, name: request.requesterName };
 
     }, [config, request, currentUserId]);
 
@@ -82,10 +75,11 @@ interface PublicQuotationRequestListProps {
   searchTerm: string;
   industryFilter: string;
   townFilter: string;
+  currentUserId: string | null;
 }
 
 
-export const PublicQuotationRequestList = ({ searchTerm, industryFilter, townFilter }: PublicQuotationRequestListProps) => {
+export const PublicQuotationRequestList = ({ searchTerm, industryFilter, townFilter, currentUserId }: PublicQuotationRequestListProps) => {
     const { config } = useBrandsoft();
 
     const filteredRequests = useMemo(() => {
@@ -128,7 +122,7 @@ export const PublicQuotationRequestList = ({ searchTerm, industryFilter, townFil
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredRequests.map(request => (
-                <RequestCard key={request.id} request={request} />
+                <RequestCard key={request.id} request={request} currentUserId={currentUserId} />
             ))}
         </div>
     );

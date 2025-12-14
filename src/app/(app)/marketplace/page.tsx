@@ -60,6 +60,12 @@ export default function MarketplacePage() {
     if (!businesses) return [];
     return [...new Set(businesses.map(b => b.town).filter((t): t is string => !!t))];
   }, [businesses]);
+  
+  const currentUserId = useMemo(() => {
+    if (!config || !config.brand) return null;
+    const myCompany = config.companies?.find(c => c.companyName === config.brand.businessName);
+    return myCompany?.id || null;
+  }, [config]);
 
   const handleCardClick = (companyId: string) => {
     router.push(`/marketplace/${companyId}`);
@@ -144,6 +150,7 @@ export default function MarketplacePage() {
               searchTerm={searchTerm}
               industryFilter={industryFilter}
               townFilter={townFilter}
+              currentUserId={currentUserId}
             />
         </TabsContent>
       </Tabs>
