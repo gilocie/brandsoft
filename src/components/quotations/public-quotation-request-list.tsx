@@ -26,15 +26,16 @@ const RequestCard = ({ request, currentUserId }: { request: QuotationRequest, cu
             }
         }
 
-        // 2. If no logo found yet, check if it's the current user's brand name
-        if (!logo && name === config?.brand.businessName) {
+        // 2. If no logo found yet, check if it's the current user
+        if (!logo && request.requesterId === currentUserId) {
             logo = config?.brand.logo;
+            name = config?.brand.businessName;
         }
 
         // 3. Fallback names if not found in lists
         if (!name) name = request.requesterName;
 
-        // 4. "Smart Link": If we have a name but no logo, try to find a Company
+        // 4. "Smart Link": If we have a name but no logo, try to find a Company 
         // in the marketplace with the same name to get the logo.
         if (!logo && name && config?.companies) {
             const matchingCompany = config.companies.find(c => c.companyName === name);
@@ -49,6 +50,7 @@ const RequestCard = ({ request, currentUserId }: { request: QuotationRequest, cu
         return { logo, name };
 
     }, [config, request, currentUserId]);
+
 
     const timeLeft = formatDistanceToNowStrict(new Date(request.dueDate), { addSuffix: true });
 
@@ -81,7 +83,7 @@ const RequestCard = ({ request, currentUserId }: { request: QuotationRequest, cu
                     <span>Expires: {new Date(request.dueDate).toLocaleDateString()}</span>
                 </div>
                 <Button className="w-full" asChild>
-                    <Link href={`/quotations/request/${request.id}/respond`}>
+                    <Link href={`/quotations/request/respond/${request.id}`}>
                         <Eye className="mr-2 h-4 w-4" />
                         View & Respond
                     </Link>
