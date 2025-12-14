@@ -6,11 +6,13 @@ import { useBrandsoft, type Company, type Review } from '@/hooks/use-brandsoft';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search } from 'lucide-react';
+import { Search, FilePenLine } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CompanyCard } from '@/components/company-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PublicQuotationRequestList } from '@/components/quotations/public-quotation-request-list';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 
 export default function MarketplacePage() {
@@ -170,15 +172,27 @@ export default function MarketplacePage() {
         <TabsContent value="suppliers" className="mt-6">
             <FilterControls />
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {filteredBusinesses.map(biz => (
-                    <CompanyCard 
-                        key={biz.id} 
-                        company={biz} 
-                        averageRating={biz.averageRating}
-                        reviewCount={biz.reviewCount}
-                        onSelectAction={(action) => handleSelectAction(action, biz)} 
-                    />
-                ))}
+                {filteredBusinesses.map(biz => {
+                    const isMyCompany = biz.id === currentUserId;
+                    return (
+                        <CompanyCard 
+                            key={biz.id} 
+                            company={biz} 
+                            averageRating={biz.averageRating}
+                            reviewCount={biz.reviewCount}
+                            onSelectAction={(action) => handleSelectAction(action, biz)} 
+                            actionButton={
+                                isMyCompany ? (
+                                    <Button asChild variant="secondary" size="icon" className="absolute top-3 right-3 h-8 w-8 rounded-full shadow-md" onClick={(e) => e.stopPropagation()}>
+                                        <Link href="/settings">
+                                            <FilePenLine className="h-4 w-4" />
+                                        </Link>
+                                    </Button>
+                                ) : undefined
+                            }
+                        />
+                    )
+                })}
               </div>
                {filteredBusinesses.length === 0 && (
                  <div className="text-center py-16 text-muted-foreground col-span-full">

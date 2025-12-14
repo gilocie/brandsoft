@@ -27,6 +27,7 @@ interface CompanyCardProps {
     reviewCount: number;
     onSelectAction: (action: 'view' | 'edit' | 'delete') => void;
     showActionsMenu?: boolean;
+    actionButton?: React.ReactNode;
 }
 
 const ActionsMenu = ({ onSelectAction }: { onSelectAction: (action: 'edit' | 'delete') => void }) => {
@@ -53,7 +54,7 @@ const ActionsMenu = ({ onSelectAction }: { onSelectAction: (action: 'edit' | 'de
 };
 
 
-export function CompanyCard({ company, averageRating, reviewCount, onSelectAction, showActionsMenu = false }: CompanyCardProps) {
+export function CompanyCard({ company, averageRating, reviewCount, onSelectAction, showActionsMenu = false, actionButton }: CompanyCardProps) {
     const router = useRouter();
     const handleCardClick = () => {
         // Prevent navigation if an action menu is shown, as actions are handled separately.
@@ -80,9 +81,11 @@ export function CompanyCard({ company, averageRating, reviewCount, onSelectActio
                     />
                 </div>
 
-                {/* Actions Menu or Follow Button */}
+                {/* Actions Menu or Custom Button or Follow Button */}
                 {showActionsMenu ? (
                     <ActionsMenu onSelectAction={(action) => onSelectAction(action)} />
+                ) : actionButton ? (
+                    actionButton
                 ) : (
                     <Button variant="secondary" size="icon" className="absolute top-3 right-3 h-8 w-8 rounded-full shadow-md" onClick={(e) => { e.stopPropagation(); alert('Follow functionality to be added!'); }}>
                         <Plus className="h-4 w-4" />
