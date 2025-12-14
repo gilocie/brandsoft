@@ -13,20 +13,27 @@ import { formatDistanceToNowStrict } from 'date-fns';
 const RequestCard = ({ request, currentUserId }: { request: QuotationRequest, currentUserId: string | null }) => {
     const { config } = useBrandsoft();
 
-    const requester = useMemo(() => {
-        if (!config) return { logo: undefined, name: request.requesterName };
+    const requesterInfo = useMemo(() => {
+        let logo: string | undefined = undefined;
+        let name: string | undefined = request.requesterName;
 
+        // Check if the reviewer is the current user
         if (request.requesterId === currentUserId) {
-            return {
-                logo: config.brand.logo,
-                name: config.brand.businessName
-            };
+            logo = config?.brand.logo;
+            name = config?.brand.businessName;
+        } else if (config?.companies) {
+            // Find reviewer in companies list
+            const reviewerCompany = config.companies.find(c => c.id === request.requesterId);
+            if (reviewerCompany) {
+                logo = reviewerCompany.logo;
+                name = reviewerCompany.companyName;
+            }
         }
         
-        const company = config.companies?.find(c => c.id === request.requesterId);
-        return company 
-            ? { logo: company.logo, name: company.companyName } 
-            : { logo: request.requesterLogo, name: request.requesterName };
+        // Fallback to what's on the request if no other info is found
+        if (!logo) logo = request.requesterLogo;
+
+        return { logo, name };
 
     }, [config, request, currentUserId]);
 
@@ -38,13 +45,13 @@ const RequestCard = ({ request, currentUserId }: { request: QuotationRequest, cu
             <CardHeader>
                 <div className="flex items-start gap-4">
                     <Avatar className="h-10 w-10 border">
-                        <AvatarImage src={requester?.logo} />
-                        <AvatarFallback>{requester?.name?.charAt(0) || '?'}</AvatarFallback>
+                        <AvatarImage src={requesterInfo?.logo} />
+                        <AvatarFallback>{requesterInfo?.name?.charAt(0) || '?'}</AvatarFallback>
                     </Avatar>
                     <div>
                         <CardTitle className="text-base">{request.title}</CardTitle>
                         <CardDescription>
-                            by {requester?.name || request.requesterName} on {new Date(request.date).toLocaleDateString()}
+                            by {requesterInfo?.name || request.requesterName} on {new Date(request.date).toLocaleDateString()}
                         </CardDescription>
                     </div>
                 </div>
