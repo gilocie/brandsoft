@@ -38,6 +38,7 @@ import {
   Globe,
   Users,
   Clock,
+  Layers,
 } from 'lucide-react';
 import {
   ToggleGroup,
@@ -110,6 +111,44 @@ export default function QuotationsPage() {
     }
   }, [quotations, config?.quotationRequests, currentUserId]);
   
+  const selectedRequesterInfo = useMemo(() => {
+    if (!config || !selectedRequest) return null;
+
+    let logo: string | undefined;
+    let name: string | undefined;
+
+    // 1. Try to find a Company matching the requester ID exactly
+    if (config.companies) {
+        const company = config.companies.find(c => c.id === selectedRequest.requesterId);
+        if (company) {
+            logo = company.logo;
+            name = company.companyName;
+        }
+    }
+
+    // 2. If no logo found yet, check if it's the current user
+    if (!logo && selectedRequest.requesterId === currentUserId) {
+        logo = config.brand.logo;
+        name = config.brand.businessName;
+    }
+
+    // 3. Fallback names if not found in lists
+    if (!name) name = selectedRequest.requesterName;
+
+    // 4. "Smart Link": If we have a name but no logo, try to find a Company with the same name
+    if (!logo && name && config.companies) {
+        const matchingCompany = config.companies.find(c => c.companyName === name);
+        if (matchingCompany) {
+            logo = matchingCompany.logo;
+        }
+    }
+
+    // 5. Final fallback to data stored on the request itself
+    if (!logo) logo = selectedRequest.requesterLogo;
+
+    return { logo, name };
+  }, [config, selectedRequest, currentUserId]);
+  
   useEffect(() => {
     const params = new URLSearchParams(searchParams.toString());
     params.set('tab', activeTab);
@@ -159,7 +198,7 @@ export default function QuotationsPage() {
     setSelectedRequest(request);
     switch (action) {
         case 'view':
-             router.push(`/quotations/request/${request.id}`);
+             setIsRequestViewOpen(true);
             break;
         case 'edit':
             router.push(`/quotations/request/${request.id}/edit`);
@@ -296,10 +335,10 @@ export default function QuotationsPage() {
             </div>
             <TabsContent value="incoming" className="pt-4 space-y-6">
                  <QuotationList quotations={filteredQuotations.requestsIncomingQuotations} layout={layout} onSelectAction={handleSelectAction} currencyCode={currencyCode} />
-                 <QuotationRequestList requests={filteredQuotations.requestsIncomingModern} layout={layout} onSelectAction={handleRequestAction} currentUserId={currentUserId} />
+                 <QuotationRequestList requests={filteredQuotations.requestsIncomingModern} onSelectAction={() => {}} currentUserId={currentUserId} />
             </TabsContent>
              <TabsContent value="outgoing" className="pt-4">
-                 <QuotationRequestList requests={filteredQuotations.requestsOutgoing} layout={layout} onSelectAction={handleRequestAction} currentUserId={currentUserId} />
+                 <QuotationRequestList requests={filteredQuotations.requestsOutgoing} onSelectAction={handleRequestAction} currentUserId={currentUserId} />
             </TabsContent>
           </Tabs>
         </TabsContent>
@@ -334,6 +373,74 @@ export default function QuotationsPage() {
               />
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Outgoing Request View Details Dialog */}
+      <Dialog open={isRequestViewOpen} onOpenChange={setIsRequestViewOpen}>
+        <DialogContent>
+            {selectedRequest && (
+                <>
+                    <DialogHeader>
+                        <div className="flex items-start gap-4">
+                           <Avatar className="w-12 h-12">
+                              <AvatarImage src={selectedRequesterInfo?.logo} />
+                              <AvatarFallback className="bg-primary text-primary-foreground text-xl">
+                                {selectedRequesterInfo?.name?.charAt(0) || '?'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1">
+                                <DialogTitle>{selectedRequest.title}</DialogTitle>
+                                <DialogDescription>
+                                    by {selectedRequesterInfo?.name} on {new Date(selectedRequest.date).toLocaleDateString()}
+                                </DialogDescription>
+                            </div>
+                        </div>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
+                         {selectedRequest.description && (
+                            <p className="text-sm text-muted-foreground">{selectedRequest.description}</p>
+                         )}
+                         <Separator />
+                        <div>
+                             <h3 className="text-sm font-semibold mb-2">Requested Items</h3>
+                            <div className="space-y-2">
+                                {selectedRequest.items.map((item, index) => (
+                                    <div key={index} className="p-3 border rounded-md text-sm">
+                                        <div className="flex justify-between">
+                                            <p className="font-medium">{item.productName}</p>
+                                            <p>Qty: {item.quantity}</p>
+                                        </div>
+                                        {item.description && <p className="text-xs text-muted-foreground mt-1">{item.description}</p>}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        {selectedRequest.isPublic && selectedRequest.industries && selectedRequest.industries.length > 0 && (
+                            <div className="text-sm">
+                                <span className="font-medium">Target Industries:</span>{' '}
+                                <span className="text-muted-foreground">{selectedRequest.industries.join(', ')}</span>
+                            </div>
+                        )}
+                         {!selectedRequest.isPublic && selectedRequest.companyIds && (
+                            <div>
+                                <h3 className="font-semibold text-sm mb-2">Sent To</h3>
+                                <div className="space-y-2">
+                                    {selectedRequest.companyIds.map(id => {
+                                    const company = config?.companies.find(c => c.id === id);
+                                    return company ? (
+                                        <div key={id} className="flex items-center gap-3 p-2 border rounded-lg text-sm">
+                                            <Avatar className="h-6 w-6"><AvatarImage src={company.logo} /><AvatarFallback><Building className="h-4 w-4"/></AvatarFallback></Avatar>
+                                            <span>{company.companyName}</span>
+                                        </div>
+                                    ) : null;
+                                    })}
+                                </div>
+                            </div>
+                         )}
+                    </div>
+                </>
+            )}
         </DialogContent>
       </Dialog>
       
