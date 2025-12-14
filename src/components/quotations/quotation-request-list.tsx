@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, Globe, Clock, Layers, Trash2, FilePenLine, Eye, CheckCircle2, MoreHorizontal } from 'lucide-react';
+import { Users, Globe, Clock, Layers, Trash2, FilePenLine, Eye, CheckCircle2, MoreHorizontal, CalendarDays } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { QuotationRequest } from '@/hooks/use-brandsoft';
 import { format } from 'date-fns';
@@ -49,7 +49,10 @@ export const QuotationRequestList = ({ requests, onSelectAction }: QuotationRequ
                     <div className="flex justify-between items-start">
                         <div>
                             <CardTitle className="text-base font-semibold truncate pr-2">{request.title}</CardTitle>
-                            <CardDescription className="text-xs">{new Date(request.date).toLocaleDateString()}</CardDescription>
+                            <CardDescription className="text-xs flex items-center gap-1.5">
+                                <CalendarDays className="h-3 w-3" />
+                                <span>{new Date(request.date).toLocaleDateString()}</span>
+                            </CardDescription>
                         </div>
                     </div>
                 </CardHeader>
