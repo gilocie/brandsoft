@@ -360,7 +360,7 @@ export default function RequestQuotationPage() {
 
             <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" asChild>
-                    <Link href="/quotations">Cancel</Link>
+                    <Link href="/quotations?tab=requests&subtab=outgoing">Cancel</Link>
                 </Button>
                 <Button type="submit">
                     <Send className="mr-2 h-4 w-4" /> Submit Request
