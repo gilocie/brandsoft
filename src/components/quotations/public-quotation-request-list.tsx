@@ -108,7 +108,7 @@ interface PublicQuotationRequestListProps {
 
 export const PublicQuotationRequestList = ({ requests, currentUserId }: PublicQuotationRequestListProps) => {
     
-    if (requests.length === 0) {
+    if (!requests || requests.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center text-center h-64 rounded-lg border-2 border-dashed">
                 <FileText className="h-12 w-12 text-muted-foreground mb-4" />

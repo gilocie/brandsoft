@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -47,29 +46,35 @@ export default function QuotationRequestsPage() {
   const [selectedRequest, setSelectedRequest] = useState<QuotationRequest | null>(null);
 
   const currentUserId = useMemo(() => {
-    if (!config) return 'CUST-DEMO-ME';
-    // The setup process creates a predictable customer ID for the current user.
-    return 'CUST-DEMO-ME';
+    if (!config || !config.brand) return null;
+    const myCompany = config.companies?.find(c => c.companyName === config.brand.businessName);
+    return myCompany?.id || null;
   }, [config]);
 
 
   const filteredRequests = useMemo(() => {
-    if (!config?.quotationRequests) {
-        return { incoming: [], outgoing: [] };
+    if (!config || !currentUserId) {
+        return { incoming: [], outgoing: [], responses: [] };
     }
-    const myRequests = config.quotationRequests.filter(q => q.requesterId === currentUserId);
-    const incomingRequests = config.quotationRequests.filter(
-      q => q.requesterId !== currentUserId && 
-           new Date(q.dueDate) >= new Date() && // Not expired
-           q.status === 'open' && // Still open
-           (q.isPublic || (q.companyIds && q.companyIds.includes(currentUserId)))
-    );
+    
+    // INCOMING: Requests from OTHER businesses asking ME to send quotation
+    const incomingRequests = config.incomingRequests || [];
+
+    // OUTGOING: Requests I sent to suppliers
+    const myRequests = config.outgoingRequests || [];
+
+    // RESPONSES: Quotations I received from suppliers for my outgoing requests
+    const myOutgoingRequestIds = myRequests.map(q => q.id);
+    const responses = config.requestResponses?.filter(
+      quote => quote.requestId && myOutgoingRequestIds.includes(quote.requestId)
+    ) || [];
 
     return {
       incoming: incomingRequests,
       outgoing: myRequests,
+      responses: responses,
     }
-  }, [config?.quotationRequests, currentUserId]);
+  }, [config, currentUserId]);
   
   const selectedRequesterInfo = useMemo(() => {
     if (!config || !selectedRequest) return null;
@@ -168,7 +173,7 @@ export default function QuotationRequestsPage() {
             <TabsList>
                 <TabsTrigger value="incoming">Incoming ({filteredRequests.incoming.length})</TabsTrigger>
                 <TabsTrigger value="outgoing">Outgoing ({filteredRequests.outgoing.length})</TabsTrigger>
-                <TabsTrigger value="response">Response</TabsTrigger>
+                <TabsTrigger value="response">Response ({filteredRequests.responses.length})</TabsTrigger>
                 <TabsTrigger value="sorted">Sorted</TabsTrigger>
                 <TabsTrigger value="expired">Expired</TabsTrigger>
                 <TabsTrigger value="favourites">Favourites</TabsTrigger>
@@ -183,9 +188,58 @@ export default function QuotationRequestsPage() {
                  <QuotationRequestList requests={filteredRequests.outgoing} onSelectAction={handleRequestAction} />
             </TabsContent>
             <TabsContent value="response" className="pt-4">
-                <div className="flex h-60 items-center justify-center rounded-lg border-2 border-dashed bg-muted/40">
-                    <p className="text-muted-foreground">Responses to your requests will appear here.</p>
-                </div>
+                {filteredRequests.responses.length > 0 ? (
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        {filteredRequests.responses.map((quote) => {
+                            const relatedRequest = config?.outgoingRequests?.find(r => r.id === quote.requestId);
+                            const supplier = config?.companies.find(c => c.id === quote.senderId) || 
+                                           config?.customers.find(c => c.id === quote.senderId);
+                            
+                            return (
+                                <div key={quote.quotationId} className="border rounded-lg p-4 space-y-3">
+                                    <div className="flex items-start gap-3">
+                                        <Avatar className="h-10 w-10">
+                                            <AvatarImage src={supplier?.logo} />
+                                            <AvatarFallback>
+                                                <Building className="h-5 w-5" />
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="font-semibold truncate">{supplier?.companyName || supplier?.name || 'Unknown Supplier'}</h3>
+                                            <p className="text-sm text-muted-foreground truncate">
+                                                Re: {relatedRequest?.title || 'Request'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <Separator />
+                                    <div className="space-y-1">
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-muted-foreground">Quote ID:</span>
+                                            <span className="font-medium">{quote.quotationId}</span>
+                                        </div>
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-muted-foreground">Amount:</span>
+                                            <span className="font-semibold">{quote.currency} {quote.amount.toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-muted-foreground">Date:</span>
+                                            <span>{new Date(quote.date).toLocaleDateString()}</span>
+                                        </div>
+                                    </div>
+                                    <Button asChild className="w-full" size="sm">
+                                        <Link href={`/quotations/${quote.quotationId.toLowerCase()}`}>
+                                            View Details
+                                        </Link>
+                                    </Button>
+                                </div>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <div className="flex h-60 items-center justify-center rounded-lg border-2 border-dashed bg-muted/40">
+                        <p className="text-muted-foreground">No responses yet. Responses to your requests will appear here.</p>
+                    </div>
+                )}
             </TabsContent>
             <TabsContent value="sorted" className="pt-4">
                 <div className="flex h-60 items-center justify-center rounded-lg border-2 border-dashed bg-muted/40">
