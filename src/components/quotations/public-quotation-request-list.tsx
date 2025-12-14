@@ -10,12 +10,25 @@ import { FileText, Eye } from 'lucide-react';
 
 const RequestCard = ({ request }: { request: QuotationRequest }) => {
     const { config } = useBrandsoft();
+
+    const requesterIsSelf = useMemo(() => {
+        if (!config || !request.requesterId) return false;
+        // This logic needs to mirror how we find the current user's ID elsewhere
+        const myCompany = config.companies?.find(c => c.companyName === config.brand.businessName);
+        return myCompany?.id === request.requesterId || request.requesterId === 'CUST-DEMO-ME';
+    }, [config, request.requesterId]);
     
     const requester = useMemo(() => {
         if (!config || !request.requesterId) return null;
-        // The requester could be a company or a customer, check both
-        return config.companies?.find(c => c.id === request.requesterId);
-    }, [config, request.requesterId]);
+        if (requesterIsSelf) {
+            return {
+                logo: config.brand.logo,
+                name: config.brand.businessName
+            };
+        }
+        const company = config.companies?.find(c => c.id === request.requesterId);
+        return company ? { logo: company.logo, name: company.companyName } : { logo: undefined, name: request.requesterName };
+    }, [config, request.requesterId, requesterIsSelf]);
 
     return (
         <Card>
@@ -23,12 +36,12 @@ const RequestCard = ({ request }: { request: QuotationRequest }) => {
                 <div className="flex items-start gap-4">
                     <Avatar className="h-10 w-10 border">
                         <AvatarImage src={requester?.logo} />
-                        <AvatarFallback>{request.requesterName.charAt(0)}</AvatarFallback>
+                        <AvatarFallback>{requester?.name?.charAt(0) || '?'}</AvatarFallback>
                     </Avatar>
                     <div>
                         <CardTitle className="text-base">{request.title}</CardTitle>
                         <CardDescription>
-                            by {request.requesterName} on {new Date(request.date).toLocaleDateString()}
+                            by {requester?.name || request.requesterName} on {new Date(request.date).toLocaleDateString()}
                         </CardDescription>
                     </div>
                 </div>
