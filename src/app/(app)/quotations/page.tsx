@@ -27,12 +27,17 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import {
   PlusCircle,
   LayoutGrid,
   List,
   MessageSquareQuote,
+  Building,
+  Globe,
+  Users,
+  Clock,
 } from 'lucide-react';
 import {
   ToggleGroup,
@@ -44,6 +49,8 @@ import { QuotationPreview, downloadQuotationAsPdf } from '@/components/quotation
 import { useToast } from '@/hooks/use-toast';
 import { QuotationList } from '@/components/quotations/quotation-list';
 import { QuotationRequestList } from '@/components/quotations/quotation-request-list';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Separator } from '@/components/ui/separator';
 
 export default function QuotationsPage() {
   const [layout, setLayout] = useState<'grid' | 'list'>('grid');
@@ -61,6 +68,7 @@ export default function QuotationsPage() {
   const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null);
   
   // State for request actions
+  const [isRequestViewOpen, setIsRequestViewOpen] = useState(false);
   const [isRequestDeleteOpen, setIsRequestDeleteOpen] = useState(false);
   const [isRequestCloseOpen, setIsRequestCloseOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<QuotationRequest | null>(null);
@@ -151,7 +159,7 @@ export default function QuotationsPage() {
     setSelectedRequest(request);
     switch (action) {
         case 'view':
-            router.push(`/quotations/request/${request.id}`);
+            setIsRequestViewOpen(true);
             break;
         case 'edit':
             router.push(`/quotations/request/${request.id}/edit`);
@@ -288,10 +296,10 @@ export default function QuotationsPage() {
             </div>
             <TabsContent value="incoming" className="pt-4 space-y-6">
                  <QuotationList quotations={filteredQuotations.requestsIncomingQuotations} layout={layout} onSelectAction={handleSelectAction} currencyCode={currencyCode} />
-                 <QuotationRequestList requests={filteredQuotations.requestsIncomingModern} layout={layout} onSelectAction={handleRequestAction} />
+                 <QuotationRequestList requests={filteredQuotations.requestsIncomingModern} layout={layout} onSelectAction={handleRequestAction} currentUserId={currentUserId} />
             </TabsContent>
              <TabsContent value="outgoing" className="pt-4">
-                 <QuotationRequestList requests={filteredQuotations.requestsOutgoing} layout={layout} onSelectAction={handleRequestAction} />
+                 <QuotationRequestList requests={filteredQuotations.requestsOutgoing} layout={layout} onSelectAction={handleRequestAction} currentUserId={currentUserId} />
             </TabsContent>
           </Tabs>
         </TabsContent>
@@ -326,6 +334,74 @@ export default function QuotationsPage() {
               />
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Request View Details Dialog */}
+      <Dialog open={isRequestViewOpen} onOpenChange={setIsRequestViewOpen}>
+        <DialogContent className="max-w-2xl">
+          {selectedRequest && (
+            <>
+              <DialogHeader>
+                <DialogTitle>{selectedRequest.title}</DialogTitle>
+                <DialogDescription>Request sent on {new Date(selectedRequest.date).toLocaleDateString()}</DialogDescription>
+              </DialogHeader>
+              <div className="py-4 space-y-6">
+                {selectedRequest.description && (
+                  <p className="text-sm text-muted-foreground">{selectedRequest.description}</p>
+                )}
+
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-sm">Requested Items</h4>
+                  <div className="space-y-2">
+                    {selectedRequest.items.map((item, index) => (
+                      <div key={index} className="p-3 border rounded-md text-sm">
+                        <p className="font-medium">{item.productName} (Qty: {item.quantity})</p>
+                        {item.description && <p className="text-xs text-muted-foreground mt-1">{item.description}</p>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <Separator />
+                
+                <div>
+                   <h4 className="font-semibold text-sm mb-2">Visibility</h4>
+                    {selectedRequest.isPublic ? (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Globe className="h-4 w-4 text-blue-500" />
+                        <span>Public Request</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                        <span>Sent to {selectedRequest.companyIds?.length || 0} specific supplier(s)</span>
+                      </div>
+                    )}
+                </div>
+
+                 {!selectedRequest.isPublic && selectedRequest.companyIds && (
+                    <div>
+                    <h4 className="font-semibold text-sm mb-2">Suppliers</h4>
+                    <div className="space-y-2">
+                        {selectedRequest.companyIds.map(id => {
+                        const company = config?.companies.find(c => c.id === id);
+                        return company ? (
+                            <div key={id} className="flex items-center gap-3 p-2 border rounded-lg text-sm">
+                                <Avatar className="h-8 w-8">
+                                    <AvatarImage src={company.logo} />
+                                    <AvatarFallback><Building /></AvatarFallback>
+                                </Avatar>
+                                <span>{company.companyName}</span>
+                            </div>
+                        ) : null;
+                        })}
+                    </div>
+                    </div>
+                )}
+              </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
       
@@ -423,3 +499,5 @@ export default function QuotationsPage() {
     </div>
   );
 }
+
+    
