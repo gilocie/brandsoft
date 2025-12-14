@@ -14,24 +14,24 @@ const RequestCard = ({ request, currentUserId }: { request: QuotationRequest, cu
     const { config } = useBrandsoft();
 
     const requesterInfo = useMemo(() => {
-        let logo: string | undefined = undefined;
-        let name: string | undefined = request.requesterName;
+        let logo: string | undefined;
+        let name: string | undefined;
 
-        // Check if the reviewer is the current user
         if (request.requesterId === currentUserId) {
             logo = config?.brand.logo;
             name = config?.brand.businessName;
         } else if (config?.companies) {
-            // Find reviewer in companies list
-            const reviewerCompany = config.companies.find(c => c.id === request.requesterId);
-            if (reviewerCompany) {
-                logo = reviewerCompany.logo;
-                name = reviewerCompany.companyName;
+            const company = config.companies.find(c => c.id === request.requesterId);
+            if (company) {
+                logo = company.logo;
+                name = company.companyName;
             }
         }
         
         // Fallback to what's on the request if no other info is found
+        if (!name) name = request.requesterName;
         if (!logo) logo = request.requesterLogo;
+
 
         return { logo, name };
 
