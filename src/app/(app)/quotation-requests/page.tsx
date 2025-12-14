@@ -47,16 +47,8 @@ export default function QuotationRequestsPage() {
   const [selectedRequest, setSelectedRequest] = useState<QuotationRequest | null>(null);
 
   const currentUserId = useMemo(() => {
-    if (!config || !config.brand) return 'CUST-DEMO-ME';
-    
-    const userBusinessName = config.brand.businessName;
-    
-    const asCompany = config.companies?.find(c => c.companyName === userBusinessName);
-    if (asCompany) return asCompany.id;
-
-    const asCustomer = config.customers?.find(c => c.name === userBusinessName);
-    if (asCustomer) return asCustomer.id;
-
+    if (!config) return 'CUST-DEMO-ME';
+    // The setup process creates a predictable customer ID for the current user.
     return 'CUST-DEMO-ME';
   }, [config]);
 
