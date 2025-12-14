@@ -155,6 +155,14 @@ export default function SettingsPage() {
     },
   });
   
+  const watchedValues = form.watch();
+
+  const industries = useMemo(() => {
+    if (!config?.companies) return [];
+    const uniqueIndustries = [...new Set(config.companies.map(c => c.industry).filter(Boolean).map(i => i.trim()))];
+    return uniqueIndustries.map(industry => ({ value: industry.toLowerCase(), label: industry }));
+  }, [config?.companies]);
+
   useEffect(() => {
     if (config) {
         form.reset({
@@ -244,14 +252,6 @@ export default function SettingsPage() {
         });
     }
   };
-  
-  const watchedValues = form.watch();
-
-  const industries = useMemo(() => {
-    if (!config?.companies) return [];
-    const uniqueIndustries = [...new Set(config.companies.map(c => c.industry).filter(Boolean).map(i => i.trim()))];
-    return uniqueIndustries.map(industry => ({ value: industry.toLowerCase(), label: industry }));
-  }, [config?.companies]);
 
   if (!config) {
     return <div>Loading settings...</div>;
@@ -376,14 +376,7 @@ export default function SettingsPage() {
                                       <FormItem>
                                         <FormLabel>Industry</FormLabel>
                                         <FormControl>
-                                            <Combobox
-                                                options={industries}
-                                                value={field.value || ''}
-                                                onChange={(value) => field.onChange(value)}
-                                                onCreate={(value) => field.onChange(value)}
-                                                placeholder="Select or create an industry"
-                                                createText={(value) => `Create new industry: "${value}"`}
-                                            />
+                                            <Input placeholder="e.g., Graphic Design, Retail" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
