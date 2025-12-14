@@ -53,6 +53,7 @@ const RequestCard = ({ request, currentUserId }: { request: QuotationRequest, cu
 
 
     const timeLeft = formatDistanceToNowStrict(new Date(request.dueDate), { addSuffix: true });
+    const isMyRequest = request.requesterId === currentUserId;
 
 
     return (
@@ -82,10 +83,17 @@ const RequestCard = ({ request, currentUserId }: { request: QuotationRequest, cu
                     </div>
                 </div>
                 <Button className="w-full" asChild>
-                    <Link href={`/quotation-requests/respond/${request.id}`}>
-                        <Eye className="mr-2 h-4 w-4" />
-                        View & Respond
-                    </Link>
+                    {isMyRequest ? (
+                         <Link href={`/quotation-requests/${request.id}`}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            View Request
+                        </Link>
+                    ) : (
+                        <Link href={`/quotation-requests/respond/${request.id}`}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            View & Respond
+                        </Link>
+                    )}
                 </Button>
             </CardContent>
         </Card>
