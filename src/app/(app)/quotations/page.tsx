@@ -95,7 +95,8 @@ export default function QuotationsPage() {
         sent: quotations.filter(q => q.status === 'Sent' && !q.isRequest),
         accepted: quotations.filter(q => q.status === 'Accepted' && !q.isRequest),
         declined: quotations.filter(q => q.status === 'Declined' && !q.isRequest),
-        requestsIncoming: [...theirRequests, ...modernIncomingRequests],
+        requestsIncomingQuotations: theirRequests,
+        requestsIncomingModern: modernIncomingRequests,
         requestsOutgoing: myRequests,
     }
   }, [quotations, config?.quotationRequests, currentUserId]);
@@ -265,7 +266,7 @@ export default function QuotationsPage() {
           <Tabs defaultValue={activeSubTab} onValueChange={setActiveSubTab}>
              <div className="flex items-center justify-between">
                 <TabsList>
-                    <TabsTrigger value="incoming">Incoming ({filteredQuotations.requestsIncoming.length})</TabsTrigger>
+                    <TabsTrigger value="incoming">Incoming ({filteredQuotations.requestsIncomingQuotations.length + filteredQuotations.requestsIncomingModern.length})</TabsTrigger>
                     <TabsTrigger value="outgoing">Outgoing ({filteredQuotations.requestsOutgoing.length})</TabsTrigger>
                 </TabsList>
                  <Button asChild variant="secondary" className="bg-accent hover:bg-accent/90 text-primary-foreground">
@@ -274,8 +275,9 @@ export default function QuotationsPage() {
                   </Link>
                 </Button>
             </div>
-            <TabsContent value="incoming" className="pt-4">
-                 <QuotationList quotations={filteredQuotations.requestsIncoming} layout={layout} onSelectAction={handleSelectAction} currencyCode={currencyCode} />
+            <TabsContent value="incoming" className="pt-4 space-y-6">
+                 <QuotationList quotations={filteredQuotations.requestsIncomingQuotations} layout={layout} onSelectAction={handleSelectAction} currencyCode={currencyCode} />
+                 <QuotationRequestList requests={filteredQuotations.requestsIncomingModern} layout={layout} onSelectAction={handleRequestAction} />
             </TabsContent>
              <TabsContent value="outgoing" className="pt-4">
                  <QuotationRequestList requests={filteredQuotations.requestsOutgoing} layout={layout} onSelectAction={handleRequestAction} />
