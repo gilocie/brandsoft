@@ -130,9 +130,9 @@ export function useSetup(
     const finalQuotationRequests = initialQuotationRequests.map((req, i) => ({
       ...req,
       id: `QR-DEMO-${i+1}`,
-      requesterId: userCompanyId,
+      requesterId: userAsCustomer.id,
       requesterName: data.businessName,
-      requesterLogo: data.logo, // This is the fix
+      requesterLogo: data.logo,
       date: new Date(Date.now() - (i + 1) * 3 * 24 * 60 * 60 * 1000).toISOString(),
       dueDate: new Date(Date.now() + (10 - i) * 24 * 60 * 60 * 1000).toISOString(),
       status: 'open' as const,
