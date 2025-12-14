@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -412,11 +413,16 @@ export default function QuotationsPage() {
                            <CardTitle className="text-sm">Requested Items</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <ul className="space-y-2 text-sm">
+                            <ul className="space-y-3 text-sm">
                                 {selectedRequest.items.map((item, index) => (
-                                    <li key={index} className="flex justify-between border-b pb-2">
-                                        <span>{item.productName}</span>
-                                        <span className="font-semibold">Qty: {item.quantity}</span>
+                                    <li key={index} className="border-b pb-3 last:border-b-0 last:pb-0">
+                                        <div className="flex justify-between">
+                                            <span className="font-semibold">{item.productName}</span>
+                                            <span>Qty: {item.quantity}</span>
+                                        </div>
+                                        {item.description && (
+                                            <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
+                                        )}
                                     </li>
                                 ))}
                             </ul>
@@ -485,6 +491,7 @@ export default function QuotationsPage() {
     </div>
   );
 }
+
 
 
 
