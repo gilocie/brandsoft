@@ -416,9 +416,7 @@ export default function QuotationsPage() {
                                 {selectedRequest.items.map((item, index) => (
                                     <li key={index} className="flex items-start justify-between border-b pb-3 last:border-b-0 last:pb-0">
                                         <span className="font-semibold w-1/3">{item.productName}</span>
-                                        {item.description && (
-                                            <p className="text-xs text-muted-foreground w-1/3 text-center">{item.description}</p>
-                                        )}
+                                        <p className="text-xs text-muted-foreground w-1/3 text-center">{item.description}</p>
                                         <span className="w-1/3 text-right">Qty: {item.quantity}</span>
                                     </li>
                                 ))}
@@ -458,9 +456,9 @@ export default function QuotationsPage() {
         <AlertDialogContent>
             <AlertDialogHeader>
                 <AlertDialogTitle>Delete Quotation Request?</AlertDialogTitle>
-                <ShadcnDialogDescription>
+                <AlertDialogDescription>
                     This will permanently delete the request "{selectedRequest?.title}". This action cannot be undone.
-                </ShadcnDialogDescription>
+                </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -476,9 +474,9 @@ export default function QuotationsPage() {
         <AlertDialogContent>
             <AlertDialogHeader>
                 <AlertDialogTitle>Close Quotation Request?</AlertDialogTitle>
-                <ShadcnDialogDescription>
+                <AlertDialogDescription>
                     Marking this request as closed will prevent new suppliers from responding.
-                </ShadcnDialogDescription>
+                </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
