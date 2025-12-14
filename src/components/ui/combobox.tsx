@@ -2,7 +2,7 @@
 "use client"
 
 import * as React from "react"
-import { Check, ChevronsUpDown } from "lucide-react"
+import { Check, ChevronsUpDown, X as ClearIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -36,39 +36,50 @@ export function Combobox({
   const [open, setOpen] = React.useState(false)
 
   const handleSelect = (currentValue: string) => {
-    const newValue = currentValue === value ? "" : currentValue;
-    onChange(newValue);
+    onChange(currentValue === value ? "" : currentValue);
     setOpen(false);
   };
   
-  const displayedValue = options.find((option) => option.value.toLowerCase() === value?.toLowerCase())?.label || value || placeholder;
+  const displayedValue = options.find((option) => option.value.toLowerCase() === value?.toLowerCase())?.label || value;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="w-full justify-between font-normal"
-        >
-          <span className="truncate">{displayedValue}</span>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
+        <div className="relative">
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full justify-between font-normal pr-10"
+          >
+            <span className="truncate">{displayedValue || placeholder}</span>
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+          {value && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+              onClick={(e) => {
+                e.stopPropagation();
+                onChange('');
+              }}
+            >
+              <ClearIcon className="h-4 w-4 text-muted-foreground" />
+            </Button>
+          )}
+        </div>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
         <Command>
           <CommandInput 
             placeholder={placeholder}
-            onValueChange={(search) => {
-              const match = options.find(option => option.label.toLowerCase() === search.toLowerCase());
-              if (!match) {
-                onChange(search);
-              }
-            }}
+            onValueChange={onChange} // Directly update the value as user types
           />
           <CommandList>
-            <CommandEmpty>No results found.</CommandEmpty>
+            <CommandEmpty>
+                {value && <div className="p-2 text-sm">No results. You can create a new industry.</div>}
+            </CommandEmpty>
             <CommandGroup>
               {options.map((option) => (
                 <CommandItem
