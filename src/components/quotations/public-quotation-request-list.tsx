@@ -83,7 +83,7 @@ export const PublicQuotationRequestList = ({ searchTerm, industryFilter, townFil
     const { config } = useBrandsoft();
 
     const filteredRequests = useMemo(() => {
-        if (!config) return [];
+        if (!config || !config.companies) return [];
         
         let requests = (config.quotationRequests || []).filter(req => req.isPublic && req.status === 'open' && new Date(req.dueDate) >= new Date());
 
