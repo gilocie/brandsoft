@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { FileText, Eye } from 'lucide-react';
+import Link from 'next/link';
 
 const RequestCard = ({ request }: { request: QuotationRequest }) => {
     const { config } = useBrandsoft();
@@ -19,7 +20,7 @@ const RequestCard = ({ request }: { request: QuotationRequest }) => {
     }, [config, request.requesterId]);
     
     const requester = useMemo(() => {
-        if (!config || !request.requesterId) return null;
+        if (!config) return null;
         if (requesterIsSelf) {
             return {
                 logo: config.brand.logo,
@@ -50,9 +51,11 @@ const RequestCard = ({ request }: { request: QuotationRequest }) => {
                 <p className="text-sm text-muted-foreground mb-4 line-clamp-2 h-10">
                     {request.description || 'No description provided.'}
                 </p>
-                <Button className="w-full">
-                    <Eye className="mr-2 h-4 w-4" />
-                    View & Respond
+                <Button className="w-full" asChild>
+                    <Link href={`/quotations/request/${request.id}/respond`}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        View & Respond
+                    </Link>
                 </Button>
             </CardContent>
         </Card>
