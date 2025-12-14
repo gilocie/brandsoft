@@ -22,14 +22,18 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect, useState, useRef, ChangeEvent } from 'react';
+import React, { useEffect, useState, useRef, ChangeEvent } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { UploadCloud, Paintbrush, SlidersHorizontal, User } from 'lucide-react';
+import { UploadCloud, Paintbrush, SlidersHorizontal, User, Building, MapPin, Globe, Phone, Mail, Camera } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
+import Image from 'next/image';
+import { cn } from '@/lib/utils';
+
+const fallBackCover = 'https://picsum.photos/seed/settingscover/1200/300';
 
 
 const settingsSchema = z.object({
@@ -201,9 +205,51 @@ export default function SettingsPage() {
   if (!config) {
     return <div>Loading settings...</div>;
   }
+  
+  const watchedValues = form.watch();
 
   return (
     <div className="container mx-auto space-y-6">
+      <Card className="overflow-hidden -mx-6 -mt-6">
+        <div className="relative h-48 w-full">
+            <Image
+                src={watchedValues.coverImage || fallBackCover}
+                alt={`${watchedValues.businessName} cover`}
+                fill
+                className="object-cover"
+                data-ai-hint="office workspace"
+            />
+            <div className="absolute inset-0 bg-black/60" />
+            <div className="absolute top-4 right-4 z-10">
+                <ImageUploadField form={form} name="coverImage" label="" previewClassName="hidden" />
+            </div>
+
+             <div className="absolute inset-0 p-6 flex flex-col md:flex-row items-end gap-6">
+                <div className="relative group/avatar">
+                    <Avatar className="h-28 w-28 border-4 border-background flex-shrink-0">
+                        <AvatarImage src={watchedValues.logo} />
+                        <AvatarFallback><Building className="h-10 w-10" /></AvatarFallback>
+                    </Avatar>
+                     <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover/avatar:opacity-100 flex items-center justify-center transition-opacity">
+                         <ImageUploadField form={form} name="logo" label="" previewClassName="hidden" />
+                    </div>
+                </div>
+
+                <div className="flex-1 text-white pb-2">
+                    <h1 className="text-3xl font-headline font-bold">{watchedValues.businessName}</h1>
+                    <p className="mt-1 text-gray-300">{watchedValues.description || 'Your company description'}</p>
+                    <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-300">
+                        {watchedValues.industry && <div className="flex items-center gap-2"><Building className="h-4 w-4" /> {watchedValues.industry}</div>}
+                        {watchedValues.town && <div className="flex items-center gap-2"><MapPin className="h-4 w-4" /> {watchedValues.town}</div>}
+                        {watchedValues.website && <a href={watchedValues.website} target="_blank" rel="noreferrer" className="flex items-center gap-2 hover:text-primary-foreground"><Globe className="h-4 w-4" /> {watchedValues.website}</a>}
+                        {watchedValues.phone && <div className="flex items-center gap-2"><Phone className="h-4 w-4" /> {watchedValues.phone}</div>}
+                        {watchedValues.email && <div className="flex items-center gap-2"><Mail className="h-4 w-4" /> {watchedValues.email}</div>}
+                    </div>
+                </div>
+            </div>
+        </div>
+      </Card>
+      
       <div>
         <h1 className="text-3xl font-bold font-headline">Settings</h1>
         <p className="text-muted-foreground">
@@ -233,16 +279,12 @@ export default function SettingsPage() {
                             <FormField control={form.control} name="description" render={({ field }) => (
                                 <FormItem><FormLabel>Company Description</FormLabel><FormControl><Textarea placeholder="A brief description of what your business does." {...field} /></FormControl><FormMessage /></FormItem>
                             )} />
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                              <ImageUploadField form={form} name="logo" label="Logo" currentValue={form.getValues('logo')} previewClassName="h-24 w-24 rounded-full" />
-                              <ImageUploadField form={form} name="coverImage" label="Cover Image" currentValue={form.getValues('coverImage')} previewClassName="h-24 w-full rounded-md" />
-                            </div>
                         </CardContent>
                     </Card>
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>Profile & Contact Information</CardTitle>
+                            <CardTitle>Contact Information</CardTitle>
                             <CardDescription>This information will appear on your documents and your public profile.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -378,5 +420,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
-    
