@@ -50,6 +50,7 @@ import { QuotationPreview, downloadQuotationAsPdf } from '@/components/quotation
 import { useToast } from '@/hooks/use-toast';
 import { QuotationList } from '@/components/quotations/quotation-list';
 import { QuotationRequestList } from '@/components/quotations/quotation-request-list';
+import { PublicQuotationRequestList } from '@/components/quotations/public-quotation-request-list';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 
