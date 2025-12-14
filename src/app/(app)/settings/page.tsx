@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm, useWatch, Controller } from 'react-hook-form';
@@ -24,7 +23,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
-import { useSetup } from '@/hooks/use-setup';
 
 const fallBackCover = 'https://picsum.photos/seed/settingscover/1200/300';
 
@@ -54,6 +52,59 @@ const settingsSchema = z.object({
 
 type SettingsFormData = z.infer<typeof settingsSchema>;
 
+// Simplified image upload button that doesn't use FormField
+const SimpleImageUploadButton = ({
+  value,
+  onChange,
+  buttonText = "Upload Image",
+  showPreview = false,
+  previewClassName = ''
+}: {
+  value?: string;
+  onChange: (value: string) => void;
+  buttonText?: string;
+  showPreview?: boolean;
+  previewClassName?: string;
+}) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = reader.result as string;
+        onChange(dataUrl);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  return (
+    <>
+      {showPreview && value && (
+        <img src={value} alt="preview" className={`object-cover border bg-muted ${previewClassName}`} />
+      )}
+      <Input
+        type="file"
+        accept="image/*"
+        ref={inputRef}
+        onChange={handleFileChange}
+        className="hidden"
+      />
+      <Button 
+        type="button" 
+        variant="outline" 
+        onClick={() => inputRef.current?.click()}
+        size="sm"
+      >
+        <UploadCloud className="mr-2 h-4 w-4" />
+        {buttonText}
+      </Button>
+    </>
+  );
+};
+
 const ImageUploadField = ({
   control,
   name,
@@ -65,26 +116,7 @@ const ImageUploadField = ({
   label: string;
   previewClassName?: string;
 }) => {
-  const inputRef = useRef<HTMLInputElement>(null);
   const value = useWatch({ control, name });
-  const [preview, setPreview] = useState<string | undefined>(value);
-
-  useEffect(() => {
-    setPreview(value);
-  }, [value]);
-
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>, fieldOnChange: (...event: any[]) => void) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const dataUrl = reader.result as string;
-        setPreview(dataUrl);
-        fieldOnChange(dataUrl);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
 
   return (
     <FormField
@@ -93,22 +125,24 @@ const ImageUploadField = ({
       render={({ field }) => (
         <FormItem>
           {label && <FormLabel>{label}</FormLabel>}
+          <FormControl>
             <div className="flex items-center gap-4">
-                {preview && <img src={preview} alt={`${label} preview`} className={`object-cover border bg-muted ${previewClassName}`} />}
-                <div className="flex-grow">
-                    <Input
-                        type="file"
-                        accept="image/*"
-                        ref={inputRef}
-                        onChange={(e) => handleFileChange(e, field.onChange)}
-                        className="hidden"
-                    />
-                    <Button type="button" variant="outline" onClick={() => inputRef.current?.click()} className="w-full">
-                        <UploadCloud className="mr-2 h-4 w-4" />
-                        {preview ? 'Change Image' : 'Upload Image'}
-                    </Button>
-                </div>
+              {value && (
+                <img 
+                  src={value} 
+                  alt={`${label} preview`} 
+                  className={`object-cover border bg-muted ${previewClassName}`} 
+                />
+              )}
+              <div className="flex-grow">
+                <SimpleImageUploadButton
+                  value={value}
+                  onChange={field.onChange}
+                  buttonText={value ? 'Change Image' : 'Upload Image'}
+                />
+              </div>
             </div>
+          </FormControl>
           <FormMessage />
         </FormItem>
       )}
@@ -242,6 +276,7 @@ export default function SettingsPage() {
 
   return (
     <div className="container mx-auto space-y-6">
+      <Form {...form}>
         <Card className="overflow-hidden">
           <div className="relative h-48 w-full">
               <Image
@@ -253,7 +288,11 @@ export default function SettingsPage() {
               />
               <div className="absolute inset-0 bg-black/60" />
                <div className="absolute top-4 right-4 z-10">
-                  <ImageUploadField control={form.control} name="coverImage" label="" previewClassName="hidden" />
+                  <SimpleImageUploadButton
+                    value={watchedValues.coverImage}
+                    onChange={(value) => form.setValue('coverImage', value)}
+                    buttonText="Change Cover"
+                  />
               </div>
 
                <div className="absolute inset-0 p-6 flex flex-col md:flex-row items-end gap-6">
@@ -263,7 +302,11 @@ export default function SettingsPage() {
                           <AvatarFallback><Building className="h-10 w-10" /></AvatarFallback>
                       </Avatar>
                        <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover/avatar:opacity-100 flex items-center justify-center transition-opacity">
-                            <ImageUploadField control={form.control} name="logo" label="" previewClassName="hidden" />
+                            <SimpleImageUploadButton
+                              value={watchedValues.logo}
+                              onChange={(value) => form.setValue('logo', value)}
+                              buttonText="Change Logo"
+                            />
                       </div>
                   </div>
 
@@ -282,14 +325,13 @@ export default function SettingsPage() {
           </div>
         </Card>
 
-      <div>
-        <h1 className="text-3xl font-bold font-headline">Settings</h1>
-        <p className="text-muted-foreground">
-          Manage your application-wide settings here.
-        </p>
-      </div>
+        <div>
+          <h1 className="text-3xl font-bold font-headline">Settings</h1>
+          <p className="text-muted-foreground">
+            Manage your application-wide settings here.
+          </p>
+        </div>
 
-      <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               <Tabs defaultValue="profile" className="w-full">
                   <TabsList className="grid w-full grid-cols-3">
