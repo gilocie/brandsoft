@@ -78,22 +78,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return myCompany?.id || null;
   }, [config]);
 
-  const notificationCount = useMemo(() => {
-    if (!config?.quotationRequests || !currentUserId) return 0;
-    
-    // Only count open, non-expired requests that are NOT from the current user
-    const incomingRequests = config.quotationRequests.filter(
-      q => q.requesterId !== currentUserId && 
-           new Date(q.dueDate) >= new Date() &&
-           q.status === 'open' &&
-           (q.isPublic || (q.companyIds && q.companyIds.includes(currentUserId)))
-    ).length;
-
-    // In the future, you would add logic here to count new responses to your outgoing requests
-    // const responseCount = ...;
-
-    return incomingRequests; // + responseCount;
-  }, [config?.quotationRequests, currentUserId]);
+  const notificationCount = 0;
 
 
   const getVisibleNavItems = (items: typeof mainNavItems) => {
