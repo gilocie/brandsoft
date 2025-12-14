@@ -9,6 +9,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardContent,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -32,6 +33,8 @@ import {
   LayoutGrid,
   List,
   MessageSquareQuote,
+  Globe,
+  Users,
 } from 'lucide-react';
 import {
   ToggleGroup,
@@ -60,6 +63,7 @@ export default function QuotationsPage() {
   const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null);
   
   // State for request actions
+  const [isRequestViewOpen, setIsRequestViewOpen] = useState(false);
   const [isRequestDeleteOpen, setIsRequestDeleteOpen] = useState(false);
   const [isRequestCloseOpen, setIsRequestCloseOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<QuotationRequest | null>(null);
@@ -138,11 +142,9 @@ export default function QuotationsPage() {
     setSelectedRequest(request);
     switch (action) {
         case 'view':
-            // Implement view logic, e.g., open a dialog
-            alert(`Viewing request: ${request.title}`);
+            setIsRequestViewOpen(true);
             break;
         case 'edit':
-            // Navigate to an edit page
             router.push(`/quotations/request/${request.id}/edit`);
             break;
         case 'delete':
@@ -277,10 +279,10 @@ export default function QuotationsPage() {
             </div>
             <TabsContent value="incoming" className="pt-4 space-y-6">
                  <QuotationList quotations={filteredQuotations.requestsIncomingQuotations} layout={layout} onSelectAction={handleSelectAction} currencyCode={currencyCode} />
-                 <QuotationRequestList requests={filteredQuotations.requestsIncomingModern} layout={layout} onSelectAction={handleRequestAction} />
+                 <QuotationRequestList requests={filteredQuotations.requestsIncomingModern} onSelectAction={handleRequestAction} />
             </TabsContent>
              <TabsContent value="outgoing" className="pt-4">
-                 <QuotationRequestList requests={filteredQuotations.requestsOutgoing} layout={layout} onSelectAction={handleRequestAction} />
+                 <QuotationRequestList requests={filteredQuotations.requestsOutgoing} onSelectAction={handleRequestAction} />
             </TabsContent>
           </Tabs>
         </TabsContent>
@@ -373,6 +375,44 @@ export default function QuotationsPage() {
         </AlertDialogContent>
     </AlertDialog>
 
+    {/* Request View Dialog */}
+    <Dialog open={isRequestViewOpen} onOpenChange={setIsRequestViewOpen}>
+        <DialogContent className="max-w-2xl">
+            <DialogHeader>
+                <DialogTitle>{selectedRequest?.title}</DialogTitle>
+                <DialogDescription>
+                    Request sent on {selectedRequest ? new Date(selectedRequest.date).toLocaleDateString() : ''}
+                </DialogDescription>
+            </DialogHeader>
+            {selectedRequest && (
+                <div className="space-y-4 py-4">
+                    {selectedRequest.description && (
+                        <p className="text-sm text-muted-foreground">{selectedRequest.description}</p>
+                    )}
+                    <Card>
+                        <CardHeader className="pb-2">
+                           <CardTitle className="text-sm">Requested Items</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <ul className="space-y-2 text-sm">
+                                {selectedRequest.items.map((item, index) => (
+                                    <li key={index} className="flex justify-between border-b pb-2">
+                                        <span>{item.productName}</span>
+                                        <span className="font-semibold">Qty: {item.quantity}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </CardContent>
+                    </Card>
+                    <div className="flex items-center gap-2 text-sm">
+                        {selectedRequest.isPublic ? <Globe className="h-4 w-4 text-blue-500" /> : <Users className="h-4 w-4 text-muted-foreground" />}
+                        <span>{selectedRequest.isPublic ? 'Public Request' : `Sent to ${selectedRequest.companyIds?.length || 0} supplier(s)`}</span>
+                    </div>
+                </div>
+            )}
+        </DialogContent>
+    </Dialog>
+
     {/* Request Delete Confirmation Dialog */}
     <AlertDialog open={isRequestDeleteOpen} onOpenChange={setIsRequestDeleteOpen}>
         <AlertDialogContent>
@@ -412,3 +452,4 @@ export default function QuotationsPage() {
     </div>
   );
 }
+
