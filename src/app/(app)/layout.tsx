@@ -54,7 +54,7 @@ const mainNavItems = [
   { href: '/quotation-requests', icon: MessageSquareQuote, label: 'Requests', enabledKey: 'quotation' },
   { href: '/products', icon: Package, label: 'Products', enabledKey: 'invoice' },
   { href: '/companies', icon: Users, label: 'Companies', enabledKey: null },
-  { href: '/marketplace', icon: Store, label: 'Marketplace', enabledKey: null },
+  { href: '/marketplace', icon: Store, label: 'Suppliers', enabledKey: null },
 ];
 
 const upcomingNavItems = [
