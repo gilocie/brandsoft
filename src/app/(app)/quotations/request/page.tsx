@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
-import { PlusCircle, Send, Trash2, Search, X } from 'lucide-react';
+import { PlusCircle, Send, Trash2, Search, X, CalendarIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -24,6 +24,8 @@ import { SupplierPicker } from '@/components/supplier-picker';
 import { Badge } from '@/components/ui/badge';
 import { useFormState } from '@/hooks/use-form-state';
 import { cn } from '@/lib/utils';
+import { format, addDays } from 'date-fns';
+import { Calendar } from '@/components/ui/calendar';
 
 const requestItemSchema = z.object({
   productName: z.string().min(1, 'Product name is required'),
@@ -38,6 +40,9 @@ const formSchema = z.object({
   companyIds: z.array(z.string()).optional(),
   items: z.array(requestItemSchema).min(1, 'At least one item is required.'),
   industries: z.array(z.string()).optional(),
+  dueDate: z.date({
+    required_error: "A due date is required.",
+  }),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -56,12 +61,14 @@ export default function RequestQuotationPage() {
       items: [{ productName: '', description: '', quantity: 1 }],
       companyIds: [],
       industries: [],
+      dueDate: addDays(new Date(), 7),
     },
   });
   
   useEffect(() => {
     const storedData = getFormData();
     if (storedData && Object.keys(storedData).length > 0) {
+        if (storedData.dueDate) storedData.dueDate = new Date(storedData.dueDate);
         form.reset(storedData);
     }
   }, []);
@@ -124,6 +131,7 @@ export default function RequestQuotationPage() {
       requesterId: myId,
       requesterName: config.brand.businessName,
       date: new Date().toISOString(),
+      dueDate: data.dueDate.toISOString(),
       isPublic: data.isPublic,
       companyIds: data.companyIds,
       items: data.items,
@@ -176,6 +184,40 @@ export default function RequestQuotationPage() {
                      <FormField control={form.control} name="description" render={({ field }) => (
                         <FormItem><FormLabel>General Description (Optional)</FormLabel><FormControl><Textarea placeholder="Provide more details about your overall needs..." {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
+                     <FormField
+                        control={form.control}
+                        name="dueDate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Request Expires On</FormLabel>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <FormControl>
+                                  <Button
+                                    variant={"outline"}
+                                    className={cn(
+                                      "w-full pl-3 text-left font-normal",
+                                      !field.value && "text-muted-foreground"
+                                    )}
+                                  >
+                                    {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                  </Button>
+                                </FormControl>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                  mode="single"
+                                  selected={field.value}
+                                  onSelect={field.onChange}
+                                  initialFocus
+                                />
+                              </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                 </CardContent>
             </Card>
 

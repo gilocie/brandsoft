@@ -120,6 +120,7 @@ export type QuotationRequest = {
   requesterId: string;
   requesterName: string;
   date: string;
+  dueDate: string;
   isPublic: boolean;
   companyIds?: string[];
   items: QuotationRequestItem[];

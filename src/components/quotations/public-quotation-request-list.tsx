@@ -6,31 +6,33 @@ import { useBrandsoft, type QuotationRequest, type Company } from '@/hooks/use-b
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { FileText, Eye } from 'lucide-react';
+import { FileText, Eye, Clock } from 'lucide-react';
 import Link from 'next/link';
+import { formatDistanceToNowStrict } from 'date-fns';
 
 const RequestCard = ({ request }: { request: QuotationRequest }) => {
     const { config } = useBrandsoft();
 
-    const currentUserId = useMemo(() => {
-        if (!config || !config.brand) return null;
-        const myCompany = config.companies?.find(c => c.companyName === config.brand.businessName);
-        return myCompany?.id || 'CUST-DEMO-ME';
-    }, [config]);
-
-    const requesterIsSelf = request.requesterId === currentUserId;
+    const requesterIsSelf = useMemo(() => {
+        if (!config?.brand) return false;
+        const userBusinessName = (config.brand.businessName || "").toLowerCase();
+        const myCompany = config.companies?.find(c => (c.companyName || "").toLowerCase() === userBusinessName);
+        return myCompany?.id === request.requesterId;
+    }, [config, request.requesterId]);
     
     const requester = useMemo(() => {
-        if (!config) return null;
         if (requesterIsSelf) {
             return {
-                logo: config.brand.logo,
-                name: config.brand.businessName
+                logo: config?.brand.logo,
+                name: config?.brand.businessName
             };
         }
-        const company = config.companies?.find(c => c.id === request.requesterId);
+        const company = config?.companies?.find(c => c.id === request.requesterId);
         return company ? { logo: company.logo, name: company.companyName } : { logo: undefined, name: request.requesterName };
     }, [config, request.requesterId, requesterIsSelf]);
+
+    const timeLeft = formatDistanceToNowStrict(new Date(request.dueDate), { addSuffix: true });
+
 
     return (
         <Card>
@@ -52,6 +54,13 @@ const RequestCard = ({ request }: { request: QuotationRequest }) => {
                 <p className="text-sm text-muted-foreground mb-4 line-clamp-2 h-10">
                     {request.description || 'No description provided.'}
                 </p>
+                <div className="flex items-center justify-between text-xs text-muted-foreground mb-4">
+                    <div className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        <span>{timeLeft}</span>
+                    </div>
+                    <span>Expires: {new Date(request.dueDate).toLocaleDateString()}</span>
+                </div>
                 <Button className="w-full" asChild>
                     <Link href={`/quotations/request/${request.id}/respond`}>
                         <Eye className="mr-2 h-4 w-4" />
@@ -76,7 +85,7 @@ export const PublicQuotationRequestList = ({ searchTerm, industryFilter, townFil
     const filteredRequests = useMemo(() => {
         if (!config) return [];
         
-        let requests = (config.quotationRequests || []).filter(req => req.isPublic && req.status === 'open');
+        let requests = (config.quotationRequests || []).filter(req => req.isPublic && req.status === 'open' && new Date(req.dueDate) >= new Date());
 
         const companiesById = new Map<string, Company>(config.companies.map(c => [c.id, c]));
 
