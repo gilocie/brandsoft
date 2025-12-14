@@ -64,7 +64,7 @@ export default function QuotationRequestsPage() {
   const filteredRequests = useMemo(() => {
       const myRequests = (config?.quotationRequests || []).filter(q => q.requesterId === currentUserId);
       const incomingRequests = (config?.quotationRequests || []).filter(
-        q => (q.companyIds && q.companyIds.includes(currentUserId)) || (q.isPublic && q.requesterId !== currentUserId)
+        q => q.requesterId !== currentUserId && ((q.companyIds && q.companyIds.includes(currentUserId)) || q.isPublic)
       );
 
       return {

@@ -82,7 +82,7 @@ const RequestCard = ({ request, currentUserId }: { request: QuotationRequest, cu
                     </div>
                 </div>
                 <Button className="w-full" asChild>
-                    <Link href={`/quotations/request/respond/${request.id}`}>
+                    <Link href={`/quotation-requests/respond/${request.id}`}>
                         <Eye className="mr-2 h-4 w-4" />
                         View & Respond
                     </Link>
@@ -104,9 +104,14 @@ export const PublicQuotationRequestList = ({ searchTerm, industryFilter, townFil
     const { config } = useBrandsoft();
 
     const filteredRequests = useMemo(() => {
-        if (!config || !config.companies) return [];
+        if (!config || !config.companies || !currentUserId) return [];
         
-        let requests = (config.quotationRequests || []).filter(req => req.isPublic && req.status === 'open' && new Date(req.dueDate) >= new Date());
+        let requests = (config.quotationRequests || []).filter(req => 
+            req.status === 'open' && 
+            new Date(req.dueDate) >= new Date() &&
+            req.requesterId !== currentUserId && // Exclude user's own requests
+            (req.isPublic || (req.companyIds && req.companyIds.includes(currentUserId)))
+        );
 
         const companiesById = new Map<string, Company>(config.companies.map(c => [c.id, c]));
 
@@ -128,13 +133,13 @@ export const PublicQuotationRequestList = ({ searchTerm, industryFilter, townFil
             return searchMatch && industryMatch && townMatch;
         });
 
-    }, [config, searchTerm, industryFilter, townFilter]);
+    }, [config, searchTerm, industryFilter, townFilter, currentUserId]);
 
     if (filteredRequests.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center text-center h-64 rounded-lg border-2 border-dashed">
                 <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-lg font-medium text-muted-foreground">No Public Quotation Requests</p>
+                <p className="text-lg font-medium text-muted-foreground">No Incoming Quotation Requests</p>
                 <p className="text-sm text-muted-foreground">There are currently no open requests that match your filters.</p>
             </div>
         );
