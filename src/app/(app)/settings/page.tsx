@@ -63,20 +63,16 @@ const settingsSchema = z.object({
 type SettingsFormData = z.infer<typeof settingsSchema>;
 
 const ImageUploadField = ({
-  form,
-  name,
+  field,
   label,
-  currentValue,
   previewClassName = 'h-24 w-24 rounded-full'
 }: {
-  form: any;
-  name: keyof SettingsFormData;
+  field: any;
   label: string;
-  currentValue?: string;
   previewClassName?: string;
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [preview, setPreview] = useState<string | undefined>(currentValue);
+  const [preview, setPreview] = useState<string | undefined>(field.value);
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -85,19 +81,19 @@ const ImageUploadField = ({
       reader.onloadend = () => {
         const dataUrl = reader.result as string;
         setPreview(dataUrl);
-        form.setValue(name, dataUrl, { shouldDirty: true });
+        field.onChange(dataUrl);
       };
       reader.readAsDataURL(file);
     }
   };
 
   useEffect(() => {
-    setPreview(currentValue);
-  }, [currentValue]);
+    setPreview(field.value);
+  }, [field.value]);
 
   return (
     <FormItem>
-      <FormLabel>{label}</FormLabel>
+      {label && <FormLabel>{label}</FormLabel>}
       <div className="flex items-center gap-4">
         {preview && <img src={preview} alt={`${label} preview`} className={`object-cover border bg-muted ${previewClassName}`} />}
         <div className="flex-grow">
@@ -108,7 +104,7 @@ const ImageUploadField = ({
             onChange={handleFileChange}
             className="hidden"
           />
-          <Button type="button" variant="outline" onClick={() => inputRef.current?.click()} className="w-full">
+           <Button type="button" variant="outline" onClick={() => inputRef.current?.click()} className="w-full">
             <UploadCloud className="mr-2 h-4 w-4" />
             {preview ? 'Change Image' : 'Upload Image'}
           </Button>
@@ -210,211 +206,215 @@ export default function SettingsPage() {
 
   return (
     <div className="container mx-auto space-y-6">
-      <Card className="overflow-hidden -mx-6 -mt-6">
-        <div className="relative h-48 w-full">
-            <Image
-                src={watchedValues.coverImage || fallBackCover}
-                alt={`${watchedValues.businessName} cover`}
-                fill
-                className="object-cover"
-                data-ai-hint="office workspace"
-            />
-            <div className="absolute inset-0 bg-black/60" />
-            <div className="absolute top-4 right-4 z-10">
-                <ImageUploadField form={form} name="coverImage" label="" previewClassName="hidden" />
-            </div>
-
-             <div className="absolute inset-0 p-6 flex flex-col md:flex-row items-end gap-6">
-                <div className="relative group/avatar">
-                    <Avatar className="h-28 w-28 border-4 border-background flex-shrink-0">
-                        <AvatarImage src={watchedValues.logo} />
-                        <AvatarFallback><Building className="h-10 w-10" /></AvatarFallback>
-                    </Avatar>
-                     <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover/avatar:opacity-100 flex items-center justify-center transition-opacity">
-                         <ImageUploadField form={form} name="logo" label="" previewClassName="hidden" />
-                    </div>
-                </div>
-
-                <div className="flex-1 text-white pb-2">
-                    <h1 className="text-3xl font-headline font-bold">{watchedValues.businessName}</h1>
-                    <p className="mt-1 text-gray-300">{watchedValues.description || 'Your company description'}</p>
-                    <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-300">
-                        {watchedValues.industry && <div className="flex items-center gap-2"><Building className="h-4 w-4" /> {watchedValues.industry}</div>}
-                        {watchedValues.town && <div className="flex items-center gap-2"><MapPin className="h-4 w-4" /> {watchedValues.town}</div>}
-                        {watchedValues.website && <a href={watchedValues.website} target="_blank" rel="noreferrer" className="flex items-center gap-2 hover:text-primary-foreground"><Globe className="h-4 w-4" /> {watchedValues.website}</a>}
-                        {watchedValues.phone && <div className="flex items-center gap-2"><Phone className="h-4 w-4" /> {watchedValues.phone}</div>}
-                        {watchedValues.email && <div className="flex items-center gap-2"><Mail className="h-4 w-4" /> {watchedValues.email}</div>}
-                    </div>
-                </div>
-            </div>
-        </div>
-      </Card>
-      
-      <div>
-        <h1 className="text-3xl font-bold font-headline">Settings</h1>
-        <p className="text-muted-foreground">
-          Manage your application-wide settings here.
-        </p>
-      </div>
-
       <Form {...form}>
+        <Card className="overflow-hidden -mx-6 -mt-6">
+          <div className="relative h-48 w-full">
+              <Image
+                  src={watchedValues.coverImage || fallBackCover}
+                  alt={`${watchedValues.businessName} cover`}
+                  fill
+                  className="object-cover"
+                  data-ai-hint="office workspace"
+              />
+              <div className="absolute inset-0 bg-black/60" />
+              <div className="absolute top-4 right-4 z-10">
+                  <FormField control={form.control} name="coverImage" render={({ field }) => (
+                      <ImageUploadField field={field} label="" previewClassName="hidden" />
+                  )} />
+              </div>
+
+               <div className="absolute inset-0 p-6 flex flex-col md:flex-row items-end gap-6">
+                  <div className="relative group/avatar">
+                      <Avatar className="h-28 w-28 border-4 border-background flex-shrink-0">
+                          <AvatarImage src={watchedValues.logo} />
+                          <AvatarFallback><Building className="h-10 w-10" /></AvatarFallback>
+                      </Avatar>
+                       <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover/avatar:opacity-100 flex items-center justify-center transition-opacity">
+                            <FormField control={form.control} name="logo" render={({ field }) => (
+                                <ImageUploadField field={field} label="" previewClassName="hidden" />
+                            )} />
+                      </div>
+                  </div>
+
+                  <div className="flex-1 text-white pb-2">
+                      <h1 className="text-3xl font-headline font-bold">{watchedValues.businessName}</h1>
+                      <p className="mt-1 text-gray-300">{watchedValues.description || 'Your company description'}</p>
+                      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-300">
+                          {watchedValues.industry && <div className="flex items-center gap-2"><Building className="h-4 w-4" /> {watchedValues.industry}</div>}
+                          {watchedValues.town && <div className="flex items-center gap-2"><MapPin className="h-4 w-4" /> {watchedValues.town}</div>}
+                          {watchedValues.website && <a href={watchedValues.website} target="_blank" rel="noreferrer" className="flex items-center gap-2 hover:text-primary-foreground"><Globe className="h-4 w-4" /> {watchedValues.website}</a>}
+                          {watchedValues.phone && <div className="flex items-center gap-2"><Phone className="h-4 w-4" /> {watchedValues.phone}</div>}
+                          {watchedValues.email && <div className="flex items-center gap-2"><Mail className="h-4 w-4" /> {watchedValues.email}</div>}
+                      </div>
+                  </div>
+              </div>
+          </div>
+        </Card>
+        
+        <div>
+          <h1 className="text-3xl font-bold font-headline">Settings</h1>
+          <p className="text-muted-foreground">
+            Manage your application-wide settings here.
+          </p>
+        </div>
+
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            <Tabs defaultValue="profile" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="profile"><User className="mr-2 h-4 w-4" />Profile</TabsTrigger>
-                    <TabsTrigger value="branding"><Paintbrush className="mr-2 h-4 w-4" />Branding</TabsTrigger>
-                    <TabsTrigger value="modules"><SlidersHorizontal className="mr-2 h-4 w-4" />Modules</TabsTrigger>
-                </TabsList>
+              <Tabs defaultValue="profile" className="w-full">
+                  <TabsList className="grid w-full grid-cols-3">
+                      <TabsTrigger value="profile"><User className="mr-2 h-4 w-4" />Profile</TabsTrigger>
+                      <TabsTrigger value="branding"><Paintbrush className="mr-2 h-4 w-4" />Branding</TabsTrigger>
+                      <TabsTrigger value="modules"><SlidersHorizontal className="mr-2 h-4 w-4" />Modules</TabsTrigger>
+                  </TabsList>
 
-                <TabsContent value="profile" className="space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Business Identity</CardTitle>
-                            <CardDescription>Update your company's core details and branding assets.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <FormField control={form.control} name="businessName" render={({ field }) => (
-                                <FormItem><FormLabel>Business Name</FormLabel><FormControl><Input placeholder="Your Company LLC" {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
-                            <FormField control={form.control} name="description" render={({ field }) => (
-                                <FormItem><FormLabel>Company Description</FormLabel><FormControl><Textarea placeholder="A brief description of what your business does." {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
-                        </CardContent>
-                    </Card>
+                  <TabsContent value="profile" className="space-y-6">
+                      <Card>
+                          <CardHeader>
+                              <CardTitle>Business Identity</CardTitle>
+                              <CardDescription>Update your company's core details and branding assets.</CardDescription>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                              <FormField control={form.control} name="businessName" render={({ field }) => (
+                                  <FormItem><FormLabel>Business Name</FormLabel><FormControl><Input placeholder="Your Company LLC" {...field} /></FormControl><FormMessage /></FormItem>
+                              )} />
+                              <FormField control={form.control} name="description" render={({ field }) => (
+                                  <FormItem><FormLabel>Company Description</FormLabel><FormControl><Textarea placeholder="A brief description of what your business does." {...field} /></FormControl><FormMessage /></FormItem>
+                              )} />
+                          </CardContent>
+                      </Card>
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Contact Information</CardTitle>
-                            <CardDescription>This information will appear on your documents and your public profile.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <FormField control={form.control} name="address" render={({ field }) => (
-                                <FormItem><FormLabel>Business Address</FormLabel><FormControl><Input placeholder="P.O. Box 303, Blantyre, Malawi" {...field} /></FormControl><FormMessage /></FormItem>
-                            )} />
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <FormField control={form.control} name="phone" render={({ field }) => (
-                                    <FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input placeholder="+265 999 123 456" {...field} /></FormControl><FormMessage /></FormItem>
-                                )} />
-                                <FormField control={form.control} name="email" render={({ field }) => (
-                                    <FormItem><FormLabel>Contact Email</FormLabel><FormControl><Input placeholder="contact@yourcompany.com" {...field} /></FormControl><FormMessage /></FormItem>
-                                )} />
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <FormField control={form.control} name="website" render={({ field }) => (
-                                    <FormItem><FormLabel>Website (Optional)</FormLabel><FormControl><Input placeholder="https://yourcompany.com" {...field} /></FormControl><FormMessage /></FormItem>
-                                )} />
-                                <FormField control={form.control} name="taxNumber" render={({ field }) => (
-                                    <FormItem><FormLabel>Tax / VAT Number (Optional)</FormLabel><FormControl><Input placeholder="Your Tax ID" {...field} /></FormControl><FormMessage /></FormItem>
-                                )} />
-                            </div>
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <FormField control={form.control} name="industry" render={({ field }) => (
-                                    <FormItem><FormLabel>Industry</FormLabel><FormControl><Input placeholder="e.g., Graphic Design, Retail" {...field} /></FormControl><FormMessage /></FormItem>
-                                )} />
-                                <FormField control={form.control} name="town" render={({ field }) => (
-                                    <FormItem><FormLabel>Town/Area</FormLabel><FormControl><Input placeholder="e.g., Blantyre, Lilongwe" {...field} /></FormControl><FormMessage /></FormItem>
-                                )} />
-                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-                
-                <TabsContent value="branding" className="space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Color & Font</CardTitle>
-                            <CardDescription>Customize the visual style of the application and documents.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <FormField control={form.control} name="font" render={({ field }) => (
-                                <FormItem><FormLabel>Font</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <FormControl><SelectTrigger><SelectValue placeholder="Select a font" /></SelectTrigger></FormControl>
-                                    <SelectContent>
-                                        <SelectItem value="Poppins">Poppins</SelectItem>
-                                        <SelectItem value="Belleza">Belleza</SelectItem>
-                                        <SelectItem value="Source Code Pro">Source Code Pro</SelectItem>
-                                        <SelectItem value="Arial">Arial</SelectItem>
-                                        <SelectItem value="Verdana">Verdana</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage /></FormItem>
-                            )} />
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <FormField control={form.control} name="primaryColor" render={({ field }) => (
-                                <FormItem><FormLabel>Primary Color</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>
-                                )} />
-                                <FormField control={form.control} name="secondaryColor" render={({ field }) => (
-                                <FormItem><FormLabel>Accent Color</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>
-                                )} />
-                            </div>
-                        </CardContent>
-                    </Card>
+                      <Card>
+                          <CardHeader>
+                              <CardTitle>Contact Information</CardTitle>
+                              <CardDescription>This information will appear on your documents and your public profile.</CardDescription>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                              <FormField control={form.control} name="address" render={({ field }) => (
+                                  <FormItem><FormLabel>Business Address</FormLabel><FormControl><Input placeholder="P.O. Box 303, Blantyre, Malawi" {...field} /></FormControl><FormMessage /></FormItem>
+                              )} />
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <FormField control={form.control} name="phone" render={({ field }) => (
+                                      <FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input placeholder="+265 999 123 456" {...field} /></FormControl><FormMessage /></FormItem>
+                                  )} />
+                                  <FormField control={form.control} name="email" render={({ field }) => (
+                                      <FormItem><FormLabel>Contact Email</FormLabel><FormControl><Input placeholder="contact@yourcompany.com" {...field} /></FormControl><FormMessage /></FormItem>
+                                  )} />
+                              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <FormField control={form.control} name="website" render={({ field }) => (
+                                      <FormItem><FormLabel>Website (Optional)</FormLabel><FormControl><Input placeholder="https://yourcompany.com" {...field} /></FormControl><FormMessage /></FormItem>
+                                  )} />
+                                  <FormField control={form.control} name="taxNumber" render={({ field }) => (
+                                      <FormItem><FormLabel>Tax / VAT Number (Optional)</FormLabel><FormControl><Input placeholder="Your Tax ID" {...field} /></FormControl><FormMessage /></FormItem>
+                                  )} />
+                              </div>
+                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <FormField control={form.control} name="industry" render={({ field }) => (
+                                      <FormItem><FormLabel>Industry</FormLabel><FormControl><Input placeholder="e.g., Graphic Design, Retail" {...field} /></FormControl><FormMessage /></FormItem>
+                                  )} />
+                                  <FormField control={form.control} name="town" render={({ field }) => (
+                                      <FormItem><FormLabel>Town/Area</FormLabel><FormControl><Input placeholder="e.g., Blantyre, Lilongwe" {...field} /></FormControl><FormMessage /></FormItem>
+                                  )} />
+                              </div>
+                          </CardContent>
+                      </Card>
+                  </TabsContent>
+                  
+                  <TabsContent value="branding" className="space-y-6">
+                      <Card>
+                          <CardHeader>
+                              <CardTitle>Color & Font</CardTitle>
+                              <CardDescription>Customize the visual style of the application and documents.</CardDescription>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                              <FormField control={form.control} name="font" render={({ field }) => (
+                                  <FormItem><FormLabel>Font</FormLabel>
+                                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                      <FormControl><SelectTrigger><SelectValue placeholder="Select a font" /></SelectTrigger></FormControl>
+                                      <SelectContent>
+                                          <SelectItem value="Poppins">Poppins</SelectItem>
+                                          <SelectItem value="Belleza">Belleza</SelectItem>
+                                          <SelectItem value="Source Code Pro">Source Code Pro</SelectItem>
+                                          <SelectItem value="Arial">Arial</SelectItem>
+                                          <SelectItem value="Verdana">Verdana</SelectItem>
+                                      </SelectContent>
+                                  </Select>
+                                  <FormMessage /></FormItem>
+                              )} />
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <FormField control={form.control} name="primaryColor" render={({ field }) => (
+                                  <FormItem><FormLabel>Primary Color</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>
+                                  )} />
+                                  <FormField control={form.control} name="secondaryColor" render={({ field }) => (
+                                  <FormItem><FormLabel>Accent Color</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>
+                                  )} />
+                              </div>
+                          </CardContent>
+                      </Card>
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Button Customization</CardTitle>
-                            <CardDescription>Define the look of your primary buttons.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-4">
-                                    <h4 className="text-sm font-medium">Normal State</h4>
-                                    <FormField control={form.control} name="buttonPrimaryBg" render={({ field }) => (
-                                        <FormItem><FormLabel>Background</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>
-                                    )} />
-                                    <FormField control={form.control} name="buttonPrimaryText" render={({ field }) => (
-                                        <FormItem><FormLabel>Text Color</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>
-                                    )} />
-                                </div>
-                                <div className="space-y-4">
-                                    <h4 className="text-sm font-medium">Hover State</h4>
-                                    <FormField control={form.control} name="buttonPrimaryBgHover" render={({ field }) => (
-                                        <FormItem><FormLabel>Background</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>
-                                    )} />
-                                    <FormField control={form.control} name="buttonPrimaryTextHover" render={({ field }) => (
-                                        <FormItem><FormLabel>Text Color</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>
-                                    )} />
-                                </div>
-                           </div>
-                           <div className="pt-4">
-                                <Label>Preview</Label>
-                                <div className="p-4 rounded-md border flex justify-center">
-                                    <Button 
-                                        type="button" 
-                                        className="btn-primary-custom"
-                                        style={{
-                                            '--btn-primary-bg': form.watch('buttonPrimaryBg'),
-                                            '--btn-primary-text': form.watch('buttonPrimaryText'),
-                                            '--btn-primary-bg-hover': form.watch('buttonPrimaryBgHover'),
-                                            '--btn-primary-text-hover': form.watch('buttonPrimaryTextHover'),
-                                        } as React.CSSProperties}
-                                    >
-                                        Primary Button
-                                    </Button>
-                               </div>
-                           </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-                
-                <TabsContent value="modules">
-                     <Card>
-                        <CardHeader>
-                            <CardTitle>Module Options</CardTitle>
-                            <CardDescription>Enable or disable specific application modules.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                           <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed bg-muted/40">
-                                <p className="text-muted-foreground">Feature toggles will be available here soon.</p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-            </Tabs>
-            <div className="flex justify-start pt-8">
-                <Button type="submit">Save All Settings</Button>
-            </div>
+                      <Card>
+                          <CardHeader>
+                              <CardTitle>Button Customization</CardTitle>
+                              <CardDescription>Define the look of your primary buttons.</CardDescription>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                  <div className="space-y-4">
+                                      <h4 className="text-sm font-medium">Normal State</h4>
+                                      <FormField control={form.control} name="buttonPrimaryBg" render={({ field }) => (
+                                          <FormItem><FormLabel>Background</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>
+                                      )} />
+                                      <FormField control={form.control} name="buttonPrimaryText" render={({ field }) => (
+                                          <FormItem><FormLabel>Text Color</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>
+                                      )} />
+                                  </div>
+                                  <div className="space-y-4">
+                                      <h4 className="text-sm font-medium">Hover State</h4>
+                                      <FormField control={form.control} name="buttonPrimaryBgHover" render={({ field }) => (
+                                          <FormItem><FormLabel>Background</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>
+                                      )} />
+                                      <FormField control={form.control} name="buttonPrimaryTextHover" render={({ field }) => (
+                                          <FormItem><FormLabel>Text Color</FormLabel><FormControl><Input type="color" {...field} className="h-10 p-1" /></FormControl></FormItem>
+                                      )} />
+                                  </div>
+                             </div>
+                             <div className="pt-4">
+                                  <Label>Preview</Label>
+                                  <div className="p-4 rounded-md border flex justify-center">
+                                      <Button 
+                                          type="button" 
+                                          className="btn-primary-custom"
+                                          style={{
+                                              '--btn-primary-bg': form.watch('buttonPrimaryBg'),
+                                              '--btn-primary-text': form.watch('buttonPrimaryText'),
+                                              '--btn-primary-bg-hover': form.watch('buttonPrimaryBgHover'),
+                                              '--btn-primary-text-hover': form.watch('buttonPrimaryTextHover'),
+                                          } as React.CSSProperties}
+                                      >
+                                          Primary Button
+                                      </Button>
+                                 </div>
+                             </div>
+                          </CardContent>
+                      </Card>
+                  </TabsContent>
+                  
+                  <TabsContent value="modules">
+                       <Card>
+                          <CardHeader>
+                              <CardTitle>Module Options</CardTitle>
+                              <CardDescription>Enable or disable specific application modules.</CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                             <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed bg-muted/40">
+                                  <p className="text-muted-foreground">Feature toggles will be available here soon.</p>
+                              </div>
+                          </CardContent>
+                      </Card>
+                  </TabsContent>
+              </Tabs>
+              <div className="flex justify-start pt-8">
+                  <Button type="submit">Save All Settings</Button>
+              </div>
         </form>
       </Form>
     </div>
