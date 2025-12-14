@@ -1,13 +1,13 @@
 
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useBrandsoft, type Company, type Review } from '@/hooks/use-brandsoft';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { CompanyCard } from '@/components/company-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PublicQuotationRequestList } from '@/components/quotations/public-quotation-request-list';
@@ -16,9 +16,18 @@ import { PublicQuotationRequestList } from '@/components/quotations/public-quota
 export default function MarketplacePage() {
   const { config } = useBrandsoft();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [industryFilter, setIndustryFilter] = useState('all');
   const [townFilter, setTownFilter] = useState('all');
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'suppliers');
+
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', activeTab);
+    router.replace(`/marketplace?${params.toString()}`, { scroll: false });
+  }, [activeTab, router, searchParams]);
 
   const businesses = useMemo(() => {
     if (!config || !config.companies) return [];
@@ -120,7 +129,7 @@ export default function MarketplacePage() {
         <p className="text-muted-foreground">Discover and connect with local businesses and opportunities.</p>
       </div>
 
-      <Tabs defaultValue="suppliers" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="suppliers">Suppliers</TabsTrigger>
             <TabsTrigger value="public-quotations">Public Quotations</TabsTrigger>
