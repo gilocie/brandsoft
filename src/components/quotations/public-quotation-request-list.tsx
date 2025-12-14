@@ -66,7 +66,7 @@ const RequestCard = ({ request, currentUserId }: { request: QuotationRequest, cu
                     <div>
                         <CardTitle className="text-base">{request.title}</CardTitle>
                         <CardDescription>
-                            by {requesterInfo?.name || request.requesterName} on {new Date(request.date).toLocaleDateString()}
+                            by {requesterInfo?.name || request.requesterName}
                         </CardDescription>
                     </div>
                 </div>
@@ -78,9 +78,8 @@ const RequestCard = ({ request, currentUserId }: { request: QuotationRequest, cu
                 <div className="flex items-center justify-between text-xs text-muted-foreground mb-4">
                     <div className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        <span>{timeLeft}</span>
+                        <span>Expires {timeLeft}</span>
                     </div>
-                    <span>Expires: {new Date(request.dueDate).toLocaleDateString()}</span>
                 </div>
                 <Button className="w-full" asChild>
                     <Link href={`/quotations/request/respond/${request.id}`}>
