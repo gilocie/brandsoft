@@ -38,7 +38,7 @@ const settingsSchema = z.object({
   secondaryColor: z.string().optional(),
   font: z.string().optional(),
   // Profile
-  description: z.string().optional(),
+  description: z.string().max(60, "Description cannot exceed 60 characters.").optional(),
   address: z.string().min(5, "Address is required"),
   town: z.string().optional(),
   industry: z.string().optional(),
@@ -144,8 +144,6 @@ const ImageUploadField = ({
   label: string;
   previewClassName?: string;
 }) => {
-  const value = useWatch({ control, name });
-
   return (
     <FormField
       control={control}
@@ -155,18 +153,18 @@ const ImageUploadField = ({
           {label && <FormLabel>{label}</FormLabel>}
           <FormControl>
             <div className="flex items-center gap-4">
-              {value && (
+              {field.value && (
                 <img 
-                  src={value} 
+                  src={field.value} 
                   alt={`${label} preview`} 
                   className={`object-cover border bg-muted ${previewClassName}`} 
                 />
               )}
               <div className="flex-grow">
                 <SimpleImageUploadButton
-                  value={value}
+                  value={field.value}
                   onChange={field.onChange}
-                  buttonText={value ? 'Change Image' : 'Upload Image'}
+                  buttonText={field.value ? 'Change Image' : 'Upload Image'}
                 />
               </div>
             </div>
