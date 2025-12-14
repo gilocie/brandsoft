@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm, useWatch, Controller } from 'react-hook-form';
@@ -6,10 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useBrandsoft, type BrandsoftConfig, type DesignSettings, type Company } from '@/hooks/use-brandsoft';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-} from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Form,
   FormControl,
@@ -19,7 +15,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import React, { useEffect, useState, useRef, ChangeEvent } from 'react';
+import React, { useEffect, useState, useRef, ChangeEvent, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { UploadCloud, Paintbrush, SlidersHorizontal, User, Building, MapPin, Globe, Phone, Mail } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -28,6 +24,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Combobox } from '@/components/ui/combobox';
 
 
 const fallBackCover = 'https://picsum.photos/seed/settingscover/1200/300';
@@ -131,6 +128,7 @@ const SimpleImageUploadButton = ({
     </>
   );
 };
+
 
 export default function SettingsPage() {
   const { config, saveConfig } = useBrandsoft();
@@ -256,6 +254,13 @@ export default function SettingsPage() {
   
   const watchedValues = form.watch();
 
+  const industries = useMemo(() => {
+    if (!config?.companies) return [];
+    const uniqueIndustries = [...new Set(config.companies.map(c => c.industry).filter(Boolean).map(i => i.trim()))];
+    return uniqueIndustries.map(industry => ({ value: industry.toLowerCase(), label: industry }));
+  }, [config?.companies]);
+
+
   return (
     <div className="container mx-auto space-y-6">
       <Form {...form}>
@@ -272,7 +277,7 @@ export default function SettingsPage() {
                <div className="absolute top-4 right-4 z-10">
                   <SimpleImageUploadButton
                     value={watchedValues.coverImage}
-                    onChange={(value) => form.setValue('coverImage', value)}
+                    onChange={(value) => form.setValue('coverImage', value, { shouldDirty: true })}
                     buttonText="Change Cover"
                   />
               </div>
@@ -286,7 +291,7 @@ export default function SettingsPage() {
                        <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover/avatar:opacity-100 flex items-center justify-center transition-opacity">
                             <SimpleImageUploadButton
                               value={watchedValues.logo}
-                              onChange={(value) => form.setValue('logo', value)}
+                              onChange={(value) => form.setValue('logo', value, { shouldDirty: true })}
                               buttonText="Change Logo"
                               iconOnly={true}
                             />
@@ -372,7 +377,20 @@ export default function SettingsPage() {
                               </div>
                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                   <FormField control={form.control} name="industry" render={({ field }) => (
-                                      <FormItem><FormLabel>Industry</FormLabel><FormControl><Input placeholder="e.g., Graphic Design, Retail" {...field} /></FormControl><FormMessage /></FormItem>
+                                      <FormItem>
+                                        <FormLabel>Industry</FormLabel>
+                                        <FormControl>
+                                            <Combobox
+                                                options={industries}
+                                                value={field.value || ''}
+                                                onChange={(value) => field.onChange(value)}
+                                                onCreate={(value) => field.onChange(value)}
+                                                placeholder="Select or create an industry"
+                                                createText={(value) => `Create new industry: "${value}"`}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
                                   )} />
                                   <FormField control={form.control} name="town" render={({ field }) => (
                                       <FormItem><FormLabel>Town/Area</FormLabel><FormControl><Input placeholder="e.g., Blantyre, Lilongwe" {...field} /></FormControl><FormMessage /></FormItem>
