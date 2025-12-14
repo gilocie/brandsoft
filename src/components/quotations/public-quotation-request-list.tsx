@@ -18,13 +18,15 @@ const RequestCard = ({ request }: { request: QuotationRequest }) => {
         const userBusinessName = (config.brand.businessName || "").toLowerCase();
         const myCompany = config.companies?.find(c => (c.companyName || "").toLowerCase() === userBusinessName);
         return myCompany?.id === request.requesterId;
-    }, [config, request.requesterId]);
+    }, [config?.brand, config?.companies, request.requesterId]);
     
     const requester = useMemo(() => {
+        if (!config) return { logo: undefined, name: request.requesterName };
+
         if (requesterIsSelf) {
             return {
-                logo: config?.brand.logo,
-                name: config?.brand.businessName
+                logo: config.brand.logo,
+                name: config.brand.businessName
             };
         }
         
@@ -33,7 +35,7 @@ const RequestCard = ({ request }: { request: QuotationRequest }) => {
             return { logo: request.requesterLogo, name: request.requesterName };
         }
         
-        const company = config?.companies?.find(c => c.id === request.requesterId);
+        const company = config.companies?.find(c => c.id === request.requesterId);
         return company ? { logo: company.logo, name: company.companyName } : { logo: undefined, name: request.requesterName };
     }, [config, request.requesterId, request.requesterLogo, request.requesterName, requesterIsSelf]);
 
