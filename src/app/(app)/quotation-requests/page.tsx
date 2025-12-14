@@ -62,14 +62,20 @@ export default function QuotationRequestsPage() {
 
 
   const filteredRequests = useMemo(() => {
-      const myRequests = (config?.quotationRequests || []).filter(q => q.requesterId === currentUserId);
-      const incomingRequests = (config?.quotationRequests || []).filter(
-        q => q.requesterId !== currentUserId && ((q.companyIds && q.companyIds.includes(currentUserId)) || q.isPublic)
-      );
+    if (!config?.quotationRequests) {
+        return { incoming: [], outgoing: [] };
+    }
+    const myRequests = config.quotationRequests.filter(q => q.requesterId === currentUserId);
+    const incomingRequests = config.quotationRequests.filter(
+      q => q.requesterId !== currentUserId && 
+           new Date(q.dueDate) >= new Date() && // Not expired
+           q.status === 'open' && // Still open
+           (q.isPublic || (q.companyIds && q.companyIds.includes(currentUserId)))
+    );
 
-      return {
-        incoming: incomingRequests,
-        outgoing: myRequests,
+    return {
+      incoming: incomingRequests,
+      outgoing: myRequests,
     }
   }, [config?.quotationRequests, currentUserId]);
   
@@ -309,4 +315,5 @@ export default function QuotationRequestsPage() {
 
     </div>
   );
-}
+
+    
