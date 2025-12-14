@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
-import { PlusCircle, Send, Trash2, Search, X, CalendarIcon } from 'lucide-react';
+import { PlusCircle, Send, Trash2, Search, X, CalendarIcon, Building2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -26,6 +26,7 @@ import { useFormState } from '@/hooks/use-form-state';
 import { cn } from '@/lib/utils';
 import { format, addDays } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const requestItemSchema = z.object({
   productName: z.string().min(1, 'Product name is required'),
@@ -165,12 +166,18 @@ export default function RequestQuotationPage() {
 
   return (
     <div className="container mx-auto max-w-4xl space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold font-headline">Request a Quotation</h1>
-        <p className="text-muted-foreground">
-          Submit a request to one or more businesses in the marketplace.
-        </p>
-      </div>
+        <div className="flex items-center gap-4">
+            <Avatar className="h-12 w-12 hidden sm:flex">
+                <AvatarImage src={config?.brand.logo} />
+                <AvatarFallback><Building2 /></AvatarFallback>
+            </Avatar>
+            <div>
+                <h1 className="text-3xl font-bold font-headline">Request a Quotation</h1>
+                <p className="text-muted-foreground">
+                Submit a request to one or more businesses in the marketplace.
+                </p>
+            </div>
+        </div>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
