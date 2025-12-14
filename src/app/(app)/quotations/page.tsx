@@ -365,7 +365,7 @@ export default function QuotationsPage() {
             <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction onClick={handleAccept}>
-                    Accept & Create Invoice
+                    Accept &amp; Create Invoice
                 </AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
@@ -439,7 +439,7 @@ export default function QuotationsPage() {
                                     {selectedRequest.companyIds.map(id => {
                                         const company = config?.companies.find(c => c.id === id);
                                         return company ? (
-                                            <Button key={id} asChild variant="secondary" size="sm" className="hover:bg-accent hover:text-accent-foreground">
+                                            <Button key={id} asChild variant="secondary" size="sm" className="hover:bg-accent text-white">
                                                 <Link href={`/marketplace/${company.id}`}>{company.companyName}</Link>
                                             </Button>
                                         ) : null;
