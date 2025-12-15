@@ -22,6 +22,7 @@ export type Affiliate = {
   creditBalance: number;
   bonus: number;
   clients: AffiliateClient[];
+  staffId?: string;
 };
 
 export type Company = {

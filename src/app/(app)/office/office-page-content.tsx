@@ -6,7 +6,7 @@ import { useBrandsoft } from '@/hooks/use-brandsoft';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Copy, DollarSign, ExternalLink, ShieldCheck, ShieldOff, UserCheck, Users, Edit, CreditCard, Gift } from 'lucide-react';
+import { Copy, DollarSign, ExternalLink, ShieldCheck, ShieldOff, UserCheck, Users, Edit, CreditCard, Gift, KeyRound } from 'lucide-react';
 import { ClientCard } from '@/components/affiliate/client-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -214,6 +214,7 @@ export function OfficePageContent() {
             <TabsTrigger value="clients">Clients ({affiliate.clients.length})</TabsTrigger>
             <TabsTrigger value="transactions">Transactions</TabsTrigger>
             <TabsTrigger value="invitations">Invitations</TabsTrigger>
+            <TabsTrigger value="my-features">My Features</TabsTrigger>
         </TabsList>
         <TabsContent value="dashboard" className="pt-6">
             <div className="grid gap-6">
@@ -285,6 +286,26 @@ export function OfficePageContent() {
             <div className="flex h-60 items-center justify-center rounded-lg border-2 border-dashed">
                 <p className="text-muted-foreground">Invitation management will be available here.</p>
             </div>
+        </TabsContent>
+        <TabsContent value="my-features" className="pt-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><KeyRound className="h-5 w-5" /> My Features</CardTitle>
+                    <CardDescription>Unique codes and features for your affiliate account.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div>
+                        <h3 className="text-sm font-semibold mb-2">Staff ID Code</h3>
+                        <p className="text-xs text-muted-foreground mb-2">Provide this code to your staff when they are selling credits on your behalf.</p>
+                        <div className="flex items-center gap-2">
+                            <Input readOnly value={affiliate.staffId || 'Not available'} className="font-mono" />
+                             <Button size="sm" variant="outline" onClick={() => navigator.clipboard.writeText(affiliate.staffId || '')}>
+                                <Copy className="h-4 w-4 mr-2"/> Copy ID
+                            </Button>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
         </TabsContent>
        </Tabs>
     </div>
