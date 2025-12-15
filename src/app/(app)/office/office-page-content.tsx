@@ -21,6 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 const affiliateSchema = z.object({
     fullName: z.string().min(2, "Full name is required"),
@@ -36,23 +37,26 @@ const withdrawSchema = z.object({
   method: z.string().min(1, "Please select a payment method"),
   details: z.string().min(1, "Please provide payment details"),
   pin: z.string().length(4, "PIN must be 4 digits"),
+  source: z.enum(['commission', 'bonus']).default('commission'),
 });
 type WithdrawFormData = z.infer<typeof withdrawSchema>;
 
 
-const WithdrawDialog = ({ balance, onWithdraw }: { balance: number, onWithdraw: (amount: number) => void }) => {
+const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw }: { commissionBalance: number, bonusBalance: number, onWithdraw: (amount: number, source: 'commission' | 'bonus') => void }) => {
     const [step, setStep] = useState(1);
     const [isOpen, setIsOpen] = useState(false);
     const form = useForm<WithdrawFormData>({
         resolver: zodResolver(withdrawSchema),
-        defaultValues: { amount: 0, method: '', details: '', pin: '' },
+        defaultValues: { amount: 0, method: '', details: '', pin: '', source: 'commission' },
     });
     
     const { toast } = useToast();
+    const selectedSource = form.watch('source');
+    const availableBalance = selectedSource === 'bonus' ? bonusBalance : commissionBalance;
 
     const handleNext = async () => {
         let isValid = false;
-        if (step === 1) isValid = await form.trigger("amount");
+        if (step === 1) isValid = await form.trigger(["amount", "source"]);
         if (step === 2) isValid = await form.trigger(["method", "details"]);
         if (isValid) setStep(s => s + 1);
     };
@@ -60,7 +64,8 @@ const WithdrawDialog = ({ balance, onWithdraw }: { balance: number, onWithdraw: 
     const handleBack = () => setStep(s => s - 1);
 
     const onSubmit = (data: WithdrawFormData) => {
-        if (data.amount > balance) {
+        const balanceToCheck = data.source === 'bonus' ? bonusBalance : commissionBalance;
+        if (data.amount > balanceToCheck) {
             toast({ variant: 'destructive', title: "Insufficient Funds" });
             return;
         }
@@ -68,8 +73,8 @@ const WithdrawDialog = ({ balance, onWithdraw }: { balance: number, onWithdraw: 
             toast({ variant: 'destructive', title: "Incorrect PIN" });
             return;
         }
-        onWithdraw(data.amount);
-        toast({ title: 'Withdrawal Successful!', description: `K${data.amount} has been processed.` });
+        onWithdraw(data.amount, data.source);
+        toast({ title: 'Withdrawal Successful!', description: `K${data.amount} has been processed from your ${data.source} balance.` });
         setIsOpen(false);
         form.reset();
         setStep(1);
@@ -88,14 +93,32 @@ const WithdrawDialog = ({ balance, onWithdraw }: { balance: number, onWithdraw: 
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                         {step === 1 && (
-                            <FormField control={form.control} name="amount" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Amount to Withdraw</FormLabel>
-                                    <FormControl><Input type="number" {...field} /></FormControl>
-                                    <FormMessage />
-                                    <p className="text-xs text-muted-foreground">Available: K{balance.toLocaleString()}</p>
-                                </FormItem>
-                            )}/>
+                             <div className="space-y-4">
+                                 <FormField control={form.control} name="source" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Withdraw From</FormLabel>
+                                        <FormControl>
+                                            <ToggleGroup
+                                                type="single"
+                                                value={field.value}
+                                                onValueChange={field.onChange}
+                                                className="grid grid-cols-2"
+                                            >
+                                                <ToggleGroupItem value="commission">Commission (K{commissionBalance.toLocaleString()})</ToggleGroupItem>
+                                                <ToggleGroupItem value="bonus" disabled={bonusBalance <= 0}>Bonus (K{bonusBalance.toLocaleString()})</ToggleGroupItem>
+                                            </ToggleGroup>
+                                        </FormControl>
+                                    </FormItem>
+                                )}/>
+                                <FormField control={form.control} name="amount" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Amount to Withdraw</FormLabel>
+                                        <FormControl><Input type="number" {...field} /></FormControl>
+                                        <FormMessage />
+                                        <p className="text-xs text-muted-foreground">Available in {selectedSource}: K{availableBalance.toLocaleString()}</p>
+                                    </FormItem>
+                                )}/>
+                            </div>
                         )}
                          {step === 2 && (
                             <div className="space-y-4">
@@ -275,22 +298,25 @@ export function OfficePageContent() {
   const displayBalance = affiliate.balance + bonusAmount;
   const activeClients = affiliate.clients.filter(c => c.status === 'active').length;
 
-  const handleWithdraw = (amount: number) => {
+  const handleWithdraw = (amount: number, source: 'commission' | 'bonus') => {
     if (!config || !affiliate) return;
     
     const newTransaction: Transaction = {
       id: `TRN-${Date.now()}`,
       date: new Date().toISOString(),
-      description: "Withdrawal",
+      description: `Withdrawal from ${source}`,
       amount: amount,
       type: 'debit',
     };
 
-    const newAffiliateData = {
-        ...affiliate,
-        balance: affiliate.balance - amount,
-        transactions: [newTransaction, ...(affiliate.transactions || [])],
-    };
+    const newAffiliateData = { ...affiliate };
+    if (source === 'commission') {
+        newAffiliateData.balance -= amount;
+    } else {
+        newAffiliateData.bonus -= amount;
+    }
+    
+    newAffiliateData.transactions = [newTransaction, ...(affiliate.transactions || [])];
     
     saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
   }
@@ -457,7 +483,7 @@ export function OfficePageContent() {
                             <p className="text-3xl font-bold">${displayBalance.toLocaleString()}</p>
                         </CardContent>
                         <CardContent>
-                            <WithdrawDialog balance={displayBalance} onWithdraw={handleWithdraw} />
+                            <WithdrawDialog commissionBalance={affiliate.balance} bonusBalance={bonusAmount} onWithdraw={handleWithdraw} />
                         </CardContent>
                      </Card>
                 </div>
@@ -619,4 +645,5 @@ export function OfficePageContent() {
     </div>
   );
 }
+
 
