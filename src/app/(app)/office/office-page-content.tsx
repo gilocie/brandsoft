@@ -280,7 +280,30 @@ export function OfficePageContent() {
                     <StatCard icon={DollarSign} title="Total Sales" value={affiliate.totalSales} footer="All-time client sales" isCurrency />
                     <StatCard icon={Users} title="Active Clients" value={activeClients} footer={`${affiliate.clients.length - activeClients} expired`} />
                     <StatCard icon={UserCheck} title="Total Referrals" value={affiliate.clients.length} footer="All-time client sign-ups" />
-                    <StatCard icon={Gift} title="Bonus Tier" value={affiliate.bonus} footer="For referring 10+ clients" isCurrency />
+                    <Card className="bg-gradient-to-br from-primary to-orange-500 text-white">
+                        <CardHeader>
+                            <div className="flex items-center justify-between">
+                                <CardTitle>My Wallet</CardTitle>
+                                <Wallet className="h-5 w-5" />
+                            </div>
+                             {affiliate.clients.length >= 10 ? (
+                                <CardDescription className="text-white/80">Balance includes ${affiliate.bonus} bonus.</CardDescription>
+                            ) : (
+                                <CardDescription className="text-white/80">Available for withdrawal</CardDescription>
+                            )}
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-3xl font-bold">${displayBalance.toLocaleString()}</p>
+                        </CardContent>
+                        <CardContent>
+                           <Button 
+                                variant="secondary"
+                                disabled={!affiliate.securityQuestion || !affiliate.idUploaded || affiliate.balance <= 0}
+                            >
+                                Withdraw Balance
+                            </Button>
+                        </CardContent>
+                     </Card>
                 </div>
                  <div className="grid md:grid-cols-2 gap-6">
                     <Card>
@@ -298,25 +321,19 @@ export function OfficePageContent() {
                             <Button>Request Credits</Button>
                         </CardContent>
                     </Card>
-                     <Card className="bg-gradient-to-br from-primary to-orange-500 text-white">
+                     <Card>
                         <CardHeader>
                             <div className="flex items-center justify-between">
-                                <CardTitle>My Wallet</CardTitle>
-                                <Wallet className="h-5 w-5" />
+                                <CardTitle>Bonus Tier</CardTitle>
+                                 <Gift className="h-5 w-5 text-muted-foreground" />
                             </div>
-                            <CardDescription className="text-white/80">Available for withdrawal</CardDescription>
+                            <CardDescription>Bonus for referring 10+ clients.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-3xl font-bold">${displayBalance.toLocaleString()}</p>
-                            {affiliate.clients.length >= 10 && <p className="text-xs text-white/80">Includes ${affiliate.bonus} bonus</p>}
+                             <p className="text-3xl font-bold">${affiliate.bonus.toLocaleString()}</p>
                         </CardContent>
                         <CardContent>
-                           <Button 
-                                variant="secondary"
-                                disabled={!affiliate.securityQuestion || !affiliate.idUploaded || affiliate.balance <= 0}
-                            >
-                                Withdraw Balance
-                            </Button>
+                           <Button variant="outline" disabled>View Progress</Button>
                         </CardContent>
                      </Card>
                 </div>
