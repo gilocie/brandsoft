@@ -23,6 +23,9 @@ import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Switch } from '@/components/ui/switch';
+import { StatCard } from '@/components/office/stat-card';
+import { VerificationItem } from '@/components/office/verification-item';
+import { WithdrawDialog } from '@/components/office/withdraw-dialog';
 
 const affiliateSchema = z.object({
     fullName: z.string().min(2, "Full name is required"),
@@ -33,184 +36,7 @@ const affiliateSchema = z.object({
 
 type AffiliateFormData = z.infer<typeof affiliateSchema>;
 
-const TRANSACTION_FEE = 3000;
 const USD_TO_MWK = 1700;
-
-const withdrawSchema = z.object({
-  amount: z.coerce.number().positive("Amount must be greater than 0"),
-  method: z.string().min(1, "Please select a payment method"),
-  details: z.string().min(1, "Please provide payment details"),
-  pin: z.string().length(4, "PIN must be 4 digits"),
-  includeBonus: z.boolean().default(false),
-});
-type WithdrawFormData = z.infer<typeof withdrawSchema>;
-
-
-const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw }: { commissionBalance: number, bonusBalance: number, onWithdraw: (amount: number, source: 'commission' | 'bonus' | 'combined') => void }) => {
-    const [step, setStep] = useState(1);
-    const [isOpen, setIsOpen] = useState(false);
-    const form = useForm<WithdrawFormData>({
-        resolver: zodResolver(withdrawSchema),
-        defaultValues: { amount: 0, method: '', details: '', pin: '', includeBonus: false },
-    });
-    
-    const { toast } = useToast();
-    const includeBonus = form.watch('includeBonus');
-
-    const availableBalance = includeBonus ? commissionBalance + bonusBalance : commissionBalance;
-    const withdrawableAmount = availableBalance - TRANSACTION_FEE;
-
-    const handleNext = async () => {
-        let isValid = false;
-        if (step === 1) isValid = await form.trigger(["amount", "includeBonus"]);
-        if (step === 2) isValid = await form.trigger(["method", "details"]);
-        if (isValid) setStep(s => s + 1);
-    };
-
-    const handleBack = () => setStep(s => s - 1);
-
-    const onSubmit = (data: WithdrawFormData) => {
-        const totalToWithdraw = data.amount + TRANSACTION_FEE;
-        
-        if (totalToWithdraw > availableBalance) {
-            toast({ variant: 'destructive', title: "Insufficient Funds", description: "The amount plus the transaction fee exceeds your available balance." });
-            return;
-        }
-        if (data.pin !== "1234") { // Demo PIN
-            toast({ variant: 'destructive', title: "Incorrect PIN" });
-            return;
-        }
-        
-        onWithdraw(data.amount, data.includeBonus ? 'combined' : 'commission');
-        
-        toast({ title: 'Withdrawal Successful!', description: `K${data.amount.toLocaleString()} has been processed.` });
-        setIsOpen(false);
-        form.reset();
-        setStep(1);
-    };
-
-    return (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
-                <Button variant="secondary">Withdraw Balance</Button>
-            </DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Withdraw Funds</DialogTitle>
-                    <DialogDescription>Follow the steps to withdraw from your wallet.</DialogDescription>
-                </DialogHeader>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                        {step === 1 && (
-                             <div className="space-y-4">
-                                <FormField
-                                    control={form.control}
-                                    name="includeBonus"
-                                    render={({ field }) => (
-                                        <FormItem className="flex items-center justify-between rounded-lg border p-3">
-                                            <div className="space-y-0.5">
-                                                <FormLabel>Include Bonus Balance?</FormLabel>
-                                                <FormMessage>Your bonus balance is K{bonusBalance.toLocaleString()}.</FormMessage>
-                                            </div>
-                                            <FormControl>
-                                                <Switch checked={field.value} onCheckedChange={field.onChange} disabled={bonusBalance <= 0} />
-                                            </FormControl>
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField control={form.control} name="amount" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Amount to Withdraw</FormLabel>
-                                        <FormControl><Input type="number" {...field} /></FormControl>
-                                        <FormMessage />
-                                        <div className="text-xs text-muted-foreground flex justify-between">
-                                          <span>Available: K{withdrawableAmount.toLocaleString()}</span>
-                                          <span>Fee: K{TRANSACTION_FEE.toLocaleString()}</span>
-                                        </div>
-                                    </FormItem>
-                                )}/>
-                            </div>
-                        )}
-                         {step === 2 && (
-                            <div className="space-y-4">
-                                 <FormField control={form.control} name="method" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Withdrawal Method</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                            <FormControl><SelectTrigger><SelectValue placeholder="Select a method" /></SelectTrigger></FormControl>
-                                            <SelectContent>
-                                                <SelectItem value="airtel">Airtel Money</SelectItem>
-                                                <SelectItem value="tnm">TNM Mpamba</SelectItem>
-                                                <SelectItem value="bank">Bank Transfer</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}/>
-                                <FormField control={form.control} name="details" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Details (e.g., Phone or Account #)</FormLabel>
-                                        <FormControl><Input {...field} /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}/>
-                            </div>
-                        )}
-                        {step === 3 && (
-                            <FormField control={form.control} name="pin" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Confirm with PIN</FormLabel>
-                                    <FormControl><Input type="password" {...field} maxLength={4} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}/>
-                        )}
-                        <DialogFooter>
-                            {step > 1 && <Button type="button" variant="outline" onClick={handleBack}>Back</Button>}
-                            {step < 3 && <Button type="button" onClick={handleNext}>Next</Button>}
-                            {step === 3 && <Button type="submit">Confirm Withdrawal</Button>}
-                        </DialogFooter>
-                    </form>
-                </Form>
-            </DialogContent>
-        </Dialog>
-    );
-};
-
-
-const StatCard = ({ icon: Icon, title, value, footer, isCurrency = false }: { icon: React.ElementType, title: string, value: string | number, footer: string, isCurrency?: boolean }) => (
-  <Card>
-    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-      <CardTitle className="text-sm font-medium">{title}</CardTitle>
-      <Icon className="h-4 w-4 text-muted-foreground" />
-    </CardHeader>
-    <CardContent>
-      <div className="text-2xl font-bold">
-        {isCurrency && <span className="text-muted-foreground">$</span>}
-        {typeof value === 'number' && isCurrency ? value.toLocaleString() : value}
-      </div>
-      <p className="text-xs text-muted-foreground">{footer}</p>
-    </CardContent>
-  </Card>
-);
-
-const VerificationItem = ({ title, status, actionText, onAction }: { title: string, status: boolean, actionText: string, onAction: () => void }) => (
-    <div className="flex items-center justify-between p-3 border rounded-lg">
-        <div className="flex items-center gap-3">
-            {status ? <ShieldCheck className="h-5 w-5 text-green-500" /> : <ShieldOff className="h-5 w-5 text-destructive" />}
-            <div>
-                <p className="text-sm font-medium">{title}</p>
-                <p className={`text-xs ${status ? 'text-green-600' : 'text-destructive'}`}>
-                    {status ? 'Verified' : 'Not Verified'}
-                </p>
-            </div>
-        </div>
-        {!status && (
-            <Button variant="secondary" size="sm" onClick={onAction}>{actionText}</Button>
-        )}
-    </div>
-);
-
 const ITEMS_PER_PAGE = 10;
 
 export function OfficePageContent() {
@@ -313,6 +139,8 @@ export function OfficePageContent() {
   const handleWithdraw = (amount: number, source: 'commission' | 'bonus' | 'combined') => {
     if (!config || !affiliate) return;
     
+    const TRANSACTION_FEE = 3000 / USD_TO_MWK; // Convert fee to USD
+
     const newTransaction: Transaction = {
       id: `TRN-${Date.now()}`,
       date: new Date().toISOString(),
@@ -329,18 +157,15 @@ export function OfficePageContent() {
       type: 'debit',
     };
 
-
     const newAffiliateData = { ...affiliate };
     
     if (source === 'combined') {
         let remainingAmount = amount + TRANSACTION_FEE;
         
-        // Deduct from bonus first
-        const bonusDeduction = Math.min(newAffiliateData.bonus, remainingAmount);
-        newAffiliateData.bonus -= bonusDeduction;
+        const bonusDeduction = Math.min(newAffiliateData.bonus || 0, remainingAmount);
+        newAffiliateData.bonus = (newAffiliateData.bonus || 0) - bonusDeduction;
         remainingAmount -= bonusDeduction;
         
-        // Deduct remaining from commission
         if (remainingAmount > 0) {
             newAffiliateData.balance -= remainingAmount;
         }
@@ -492,8 +317,8 @@ export function OfficePageContent() {
                                 <CardTitle>My Wallet</CardTitle>
                                 <Wallet className="h-5 w-5" />
                             </div>
-                            <CardDescription className="text-white/80">
-                              {bonusAmount > 0 ? `Includes $${bonusAmount} bonus` : 'Available for withdrawal'}
+                             <CardDescription className="text-white/80">
+                               {bonusAmount > 0 ? `Includes $${bonusAmount} bonus` : 'Available for withdrawal'}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -501,7 +326,12 @@ export function OfficePageContent() {
                             <p className="text-sm text-white/80">~K{mwkBalance.toLocaleString()}</p>
                         </CardContent>
                         <CardContent>
-                            <WithdrawDialog commissionBalance={affiliate.balance} bonusBalance={bonusAmount} onWithdraw={handleWithdraw} />
+                            <WithdrawDialog 
+                                commissionBalance={affiliate.balance} 
+                                bonusBalance={bonusAmount} 
+                                onWithdraw={handleWithdraw} 
+                                isVerified={affiliate.idUploaded && affiliate.securityQuestion}
+                            />
                         </CardContent>
                      </Card>
                 </div>
@@ -663,7 +493,3 @@ export function OfficePageContent() {
     </div>
   );
 }
-
-
-
-
