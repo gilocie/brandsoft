@@ -338,9 +338,22 @@ export function OfficePageContent() {
             </div>
         </TabsContent>
          <TabsContent value="transactions" className="pt-6">
-            <div className="flex h-60 items-center justify-center rounded-lg border-2 border-dashed">
-                <p className="text-muted-foreground">Transaction history will be shown here.</p>
-            </div>
+            <Tabs defaultValue="sales">
+                <TabsList>
+                    <TabsTrigger value="sales">Sales Transactions</TabsTrigger>
+                    <TabsTrigger value="payouts">Payout Transactions</TabsTrigger>
+                </TabsList>
+                <TabsContent value="sales" className="pt-4">
+                    <div className="flex h-60 items-center justify-center rounded-lg border-2 border-dashed">
+                        <p className="text-muted-foreground">Sales transaction history will be shown here.</p>
+                    </div>
+                </TabsContent>
+                <TabsContent value="payouts" className="pt-4">
+                    <div className="flex h-60 items-center justify-center rounded-lg border-2 border-dashed">
+                        <p className="text-muted-foreground">Payout transaction history will be shown here.</p>
+                    </div>
+                </TabsContent>
+            </Tabs>
         </TabsContent>
         <TabsContent value="invitations" className="pt-6">
             <div className="flex h-60 items-center justify-center rounded-lg border-2 border-dashed">
@@ -402,3 +415,4 @@ export function OfficePageContent() {
     </div>
   );
 }
+
