@@ -86,6 +86,7 @@ export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, is
           if (key === 'airtel' && details) return { value: 'airtel', label: 'Airtel Money', details: `${details.name} - ${details.phone}` };
           if (key === 'tnm' && details) return { value: 'tnm', label: 'TNM Mpamba', details: `${details.name} - ${details.phone}` };
           if (key === 'bank' && details) return { value: 'bank', label: 'Bank Transfer', details: `${details.bankName} - ${details.accountNumber}` };
+          if (key === 'bsCredits' && details) return { value: 'bsCredits', label: 'BS Credits', details: `Staff ID: ${details.staffId}` };
           return null;
       }).filter(Boolean) as { value: string; label: string; details: string; }[];
       
