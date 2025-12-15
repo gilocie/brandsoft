@@ -16,12 +16,14 @@ const CREDIT_PURCHASE_PRICE = 900; // K900 per credit
 
 const buyCreditsSchema = z.object({
   credits: z.coerce.number().int().min(1, "Must purchase at least 1 credit."),
+  pin: z.string().length(4, "PIN must be 4 digits.").optional(),
 });
 
 type BuyCreditsFormData = z.infer<typeof buyCreditsSchema>;
 
 export const BuyCreditsDialog = ({ walletBalance }: { walletBalance: number }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [step, setStep] = useState(1);
   const { config, saveConfig } = useBrandsoft();
   const { toast } = useToast();
 
@@ -33,16 +35,28 @@ export const BuyCreditsDialog = ({ walletBalance }: { walletBalance: number }) =
   const creditsToBuy = form.watch('credits');
   const cost = creditsToBuy * CREDIT_PURCHASE_PRICE;
 
+  const handleNextStep = async () => {
+      const isValid = await form.trigger(['credits']);
+      if (isValid) {
+          if (cost > walletBalance) {
+              toast({
+                variant: 'destructive',
+                title: "Insufficient Funds",
+                description: `You need K${cost.toLocaleString()} but only have K${walletBalance.toLocaleString()} available.`,
+              });
+              return;
+          }
+          setStep(2);
+      }
+  }
+
   const onSubmit = (data: BuyCreditsFormData) => {
     if (!config || !config.affiliate) return;
 
-    if (cost > walletBalance) {
-      toast({
-        variant: 'destructive',
-        title: "Insufficient Funds",
-        description: `You need K${cost.toLocaleString()} but only have K${walletBalance.toLocaleString()} available.`,
-      });
-      return;
+    if (data.pin !== '1234') { // Demo PIN check
+        toast({ variant: 'destructive', title: "Incorrect PIN" });
+        form.setError('pin', { type: 'manual', message: 'The entered PIN is incorrect.' });
+        return;
     }
 
     const newTransaction = {
@@ -69,10 +83,11 @@ export const BuyCreditsDialog = ({ walletBalance }: { walletBalance: number }) =
     
     setIsOpen(false);
     form.reset();
+    setStep(1);
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if(!open) setStep(1); }}>
       <DialogTrigger asChild>
         <Button>Buy Credits</Button>
       </DialogTrigger>
@@ -80,45 +95,79 @@ export const BuyCreditsDialog = ({ walletBalance }: { walletBalance: number }) =
         <DialogHeader>
           <DialogTitle>Buy Platform Credits</DialogTitle>
           <DialogDescription>
-            Purchase credits using your available wallet balance. 1 Credit = K1,000 value.
+            {step === 1 ? 'Purchase credits using your available wallet balance. 1 Credit = K1,000 value.' : 'Confirm your purchase with your PIN.'}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="text-sm">
-                <div className="flex justify-between">
-                    <span>Available Wallet Balance:</span>
-                    <span className="font-bold">K{walletBalance.toLocaleString()}</span>
-                </div>
-                 <div className="flex justify-between text-primary">
-                    <span>Your Purchase Price:</span>
-                    <span className="font-bold">K{CREDIT_PURCHASE_PRICE}/Credit</span>
-                </div>
-            </div>
             
-            <FormField
-              control={form.control}
-              name="credits"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Number of Credits to Buy</FormLabel>
-                  <FormControl>
-                    <Input type="number" min="1" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {step === 1 && (
+                <>
+                    <div className="text-sm">
+                        <div className="flex justify-between">
+                            <span>Available Wallet Balance:</span>
+                            <span className="font-bold">K{walletBalance.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between text-primary">
+                            <span>Your Purchase Price:</span>
+                            <span className="font-bold">K{CREDIT_PURCHASE_PRICE}/Credit</span>
+                        </div>
+                    </div>
+                    
+                    <FormField
+                    control={form.control}
+                    name="credits"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Number of Credits to Buy</FormLabel>
+                        <FormControl>
+                            <Input type="number" min="1" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
 
-            <div className="p-4 bg-muted rounded-lg text-center space-y-1">
-                <p className="text-sm text-muted-foreground">Total Cost</p>
-                <p className="text-2xl font-bold">K{cost.toLocaleString()}</p>
-            </div>
+                    <div className="p-4 bg-muted rounded-lg text-center space-y-1">
+                        <p className="text-sm text-muted-foreground">Total Cost</p>
+                        <p className="text-2xl font-bold">K{cost.toLocaleString()}</p>
+                    </div>
 
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
-              <Button type="submit" disabled={cost > walletBalance}>Confirm Purchase</Button>
-            </DialogFooter>
+                    <DialogFooter>
+                        <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
+                        <Button type="button" onClick={handleNextStep}>Continue</Button>
+                    </DialogFooter>
+                </>
+            )}
+
+            {step === 2 && (
+                <>
+                    <div className="p-4 bg-muted rounded-lg text-center space-y-1">
+                        <p className="text-sm text-muted-foreground">Total Cost</p>
+                        <p className="text-2xl font-bold">K{cost.toLocaleString()}</p>
+                    </div>
+
+                    <FormField
+                    control={form.control}
+                    name="pin"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Enter your 4-digit PIN to confirm</FormLabel>
+                        <FormControl>
+                            <Input type="password" maxLength={4} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+
+                    <DialogFooter>
+                        <Button type="button" variant="outline" onClick={() => setStep(1)}>Back</Button>
+                        <Button type="submit">Confirm Purchase</Button>
+                    </DialogFooter>
+                </>
+            )}
+
           </form>
         </Form>
       </DialogContent>
