@@ -2,11 +2,11 @@
 
 'use client';
 
-import { useBrandsoft, type Transaction } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Transaction, type Affiliate } from '@/hooks/use-brandsoft';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Copy, DollarSign, ExternalLink, ShieldCheck, ShieldOff, UserCheck, Users, Edit, CreditCard, Gift, KeyRound, Phone, TrendingUp, TrendingDown, MoreHorizontal, ArrowRight, Wallet, Banknote, Smartphone } from 'lucide-react';
+import { Copy, DollarSign, ExternalLink, ShieldCheck, ShieldOff, UserCheck, Users, Edit, CreditCard, Gift, KeyRound, Phone, TrendingUp, TrendingDown, MoreHorizontal, ArrowRight, Wallet, Banknote, Smartphone, CheckCircle, Pencil } from 'lucide-react';
 import { ClientCard } from '@/components/affiliate/client-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -20,7 +20,6 @@ import { useState, useEffect, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Switch } from '@/components/ui/switch';
 import { StatCard } from '@/components/office/stat-card';
@@ -37,9 +36,72 @@ const affiliateSchema = z.object({
 
 type AffiliateFormData = z.infer<typeof affiliateSchema>;
 
+const withdrawalMethodSchema = z.object({
+    name: z.string().min(2, 'Name is required'),
+    phone: z.string().min(9, 'Phone number is required'),
+});
+
+type WithdrawalMethodFormData = z.infer<typeof withdrawalMethodSchema>;
+
+type EditableWithdrawalMethod = 'airtel' | 'tnm';
+
 const USD_TO_MWK = 1700;
 const CREDIT_TO_MWK = 1000;
 const ITEMS_PER_PAGE = 10;
+
+const WithdrawalMethodDialog = ({
+    method,
+    isOpen,
+    onClose,
+    onSave,
+    currentData
+}: {
+    method: EditableWithdrawalMethod,
+    isOpen: boolean,
+    onClose: () => void,
+    onSave: (method: EditableWithdrawalMethod, data: WithdrawalMethodFormData) => void,
+    currentData?: { name: string; phone: string }
+}) => {
+    const form = useForm<WithdrawalMethodFormData>({
+        resolver: zodResolver(withdrawalMethodSchema),
+        defaultValues: currentData || { name: '', phone: '' }
+    });
+
+    useEffect(() => {
+        form.reset(currentData || { name: '', phone: '' });
+    }, [currentData, form]);
+
+    const onSubmit = (data: WithdrawalMethodFormData) => {
+        onSave(method, data);
+    };
+    
+    const methodName = method === 'airtel' ? 'Airtel Money' : 'TNM Mpamba';
+
+    return (
+         <Dialog open={isOpen} onOpenChange={onClose}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Set Up {methodName}</DialogTitle>
+                    <DialogDescription>Enter your {methodName} details below.</DialogDescription>
+                </DialogHeader>
+                 <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                        <FormField control={form.control} name="name" render={({ field }) => (
+                            <FormItem><FormLabel>Account Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                        <FormField control={form.control} name="phone" render={({ field }) => (
+                            <FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input type="tel" {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                        <DialogFooter>
+                            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+                            <Button type="submit">Save Details</Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    )
+};
 
 export function OfficePageContent() {
   const { config, saveConfig } = useBrandsoft();
@@ -47,6 +109,8 @@ export function OfficePageContent() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [payoutsPage, setPayoutsPage] = useState(0);
   const { toast } = useToast();
+
+  const [editingMethod, setEditingMethod] = useState<EditableWithdrawalMethod | null>(null);
 
   const affiliate = config?.affiliate;
 
@@ -183,6 +247,43 @@ export function OfficePageContent() {
     saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
   }
 
+  const handleSaveWithdrawalMethod = (method: EditableWithdrawalMethod, data: WithdrawalMethodFormData) => {
+    if (!config || !affiliate) return;
+
+    const newAffiliateData = { ...affiliate };
+    if (!newAffiliateData.withdrawalMethods) {
+        newAffiliateData.withdrawalMethods = {};
+    }
+    newAffiliateData.withdrawalMethods[method] = data;
+
+    saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
+    toast({ title: `${method.toUpperCase()} Details Saved!`});
+    setEditingMethod(null);
+  };
+  
+  const MethodCard = ({method, name, icon: Icon}: {method: EditableWithdrawalMethod, name: string, icon: React.ElementType}) => {
+      const details = affiliate.withdrawalMethods?.[method];
+      const isSetup = !!details;
+
+      return (
+          <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                  <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-full bg-primary/10"><Icon className="h-5 w-5 text-primary" /></div>
+                      <CardTitle className="text-base">{name}</CardTitle>
+                  </div>
+                   {isSetup && <CheckCircle className="h-5 w-5 text-green-500" />}
+              </CardHeader>
+              <CardContent className="flex items-center justify-end gap-2">
+                 <Button variant={isSetup ? 'secondary' : 'default'} size="sm" onClick={() => setEditingMethod(method)}>
+                    {isSetup ? <Pencil className="h-4 w-4 mr-2" /> : null}
+                    {isSetup ? 'Edit' : 'Set Up'}
+                </Button>
+              </CardContent>
+          </Card>
+      );
+  }
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -305,11 +406,11 @@ export function OfficePageContent() {
                         isCurrency 
                         footer="All-time gross sales volume"
                     />
-                    <StatCard 
+                     <StatCard 
                         icon={CreditCard} 
                         title="Credit Balance" 
-                        value={`${affiliate.creditBalance.toLocaleString()}`}
-                        valuePrefix="BS"
+                        value={affiliate.creditBalance}
+                        valuePrefix={`BS ${affiliate.creditBalance.toLocaleString()}`}
                         footer={`= K${(affiliate.creditBalance * CREDIT_TO_MWK).toLocaleString()}`}
                     >
                         <BuyCreditsDialog walletBalance={affiliate.balance * USD_TO_MWK} />
@@ -508,46 +609,16 @@ export function OfficePageContent() {
                             <TabsTrigger value="verification">Verification</TabsTrigger>
                         </TabsList>
                         <TabsContent value="withdraw" className="p-6">
-                            <div className="grid grid-cols-2 gap-4">
-                                <Card className="cursor-pointer hover:bg-muted">
-                                    <CardHeader className="flex flex-row items-center gap-4">
-                                        <div className="p-3 rounded-full bg-primary/10">
-                                            <Smartphone className="h-6 w-6 text-primary" />
-                                        </div>
-                                        <div>
-                                            <CardTitle className="text-base">Airtel Money</CardTitle>
-                                        </div>
-                                    </CardHeader>
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <MethodCard method="airtel" name="Airtel Money" icon={Smartphone} />
+                                <MethodCard method="tnm" name="TNM Mpamba" icon={Smartphone} />
+                                <Card>
+                                    <CardHeader className="flex flex-row items-center gap-3"><div className="p-2 rounded-full bg-muted"><Banknote className="h-5 w-5 text-muted-foreground" /></div><CardTitle className="text-base">Bank Transfer</CardTitle></CardHeader>
+                                    <CardContent><Button variant="secondary" size="sm" disabled>Set Up</Button></CardContent>
                                 </Card>
-                                <Card className="cursor-pointer hover:bg-muted">
-                                    <CardHeader className="flex flex-row items-center gap-4">
-                                        <div className="p-3 rounded-full bg-primary/10">
-                                            <Smartphone className="h-6 w-6 text-primary" />
-                                        </div>
-                                        <div>
-                                            <CardTitle className="text-base">TNM Mpamba</CardTitle>
-                                        </div>
-                                    </CardHeader>
-                                </Card>
-                                <Card className="cursor-pointer hover:bg-muted">
-                                    <CardHeader className="flex flex-row items-center gap-4">
-                                        <div className="p-3 rounded-full bg-primary/10">
-                                            <Banknote className="h-6 w-6 text-primary" />
-                                        </div>
-                                        <div>
-                                            <CardTitle className="text-base">Bank Transfer</CardTitle>
-                                        </div>
-                                    </CardHeader>
-                                </Card>
-                                <Card className="cursor-pointer hover:bg-muted">
-                                    <CardHeader className="flex flex-row items-center gap-4">
-                                        <div className="p-3 rounded-full bg-primary/10">
-                                            <Wallet className="h-6 w-6 text-primary" />
-                                        </div>
-                                        <div>
-                                            <CardTitle className="text-base">BS Credits</CardTitle>
-                                        </div>
-                                    </CardHeader>
+                                <Card>
+                                    <CardHeader className="flex flex-row items-center gap-3"><div className="p-2 rounded-full bg-muted"><Wallet className="h-5 w-5 text-muted-foreground" /></div><CardTitle className="text-base">BS Credits</CardTitle></CardHeader>
+                                    <CardContent><Button variant="secondary" size="sm" disabled>Set Up</Button></CardContent>
                                 </Card>
                             </div>
                         </TabsContent>
@@ -562,6 +633,13 @@ export function OfficePageContent() {
             </Card>
         </TabsContent>
        </Tabs>
+        <WithdrawalMethodDialog
+            method={editingMethod!}
+            isOpen={!!editingMethod}
+            onClose={() => setEditingMethod(null)}
+            onSave={handleSaveWithdrawalMethod}
+            currentData={editingMethod ? affiliate.withdrawalMethods?.[editingMethod] : undefined}
+        />
     </div>
   );
 }

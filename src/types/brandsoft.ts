@@ -33,6 +33,10 @@ export type Affiliate = {
   clients: AffiliateClient[];
   staffId?: string;
   transactions?: Transaction[];
+  withdrawalMethods?: {
+    airtel?: { name: string; phone: string };
+    tnm?: { name: string; phone: string };
+  };
 };
 
 export type Company = {
