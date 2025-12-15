@@ -13,7 +13,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useBrandsoft } from '@/hooks/use-brandsoft';
 
 const CREDIT_PURCHASE_PRICE = 900; // K900 per credit
-const USD_TO_MWK = 1700;
 
 const buyCreditsSchema = z.object({
   credits: z.coerce.number().int().min(1, "Must purchase at least 1 credit."),
@@ -68,19 +67,19 @@ export const BuyCreditsDialog = ({ walletBalance }: { walletBalance: number }) =
         return;
     }
     
-    const costInUSD = cost / USD_TO_MWK;
+    const costInMWK = data.credits * CREDIT_PURCHASE_PRICE;
 
     const newTransaction = {
       id: `TRN-CREDIT-${Date.now()}`,
       date: new Date().toISOString(),
       description: `Purchased ${data.credits} credits`,
-      amount: costInUSD, // Store as USD equivalent
+      amount: costInMWK,
       type: 'debit' as 'debit',
     };
 
     const newAffiliateData = {
       ...config.affiliate,
-      balance: config.affiliate.balance - costInUSD, // Deduct USD equivalent from balance
+      balance: config.affiliate.balance - costInMWK,
       creditBalance: (config.affiliate.creditBalance || 0) + data.credits,
       transactions: [newTransaction, ...(config.affiliate.transactions || [])],
     };

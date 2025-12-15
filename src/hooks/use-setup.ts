@@ -167,6 +167,8 @@ export function useSetup(
       { id: 'COMP-DEMO-3', name: 'Grace Moyo', email: 'grace.moyo@buildright.mw', companyName: 'BuildRight Hardware'},
   ];
 
+  const USD_TO_MWK_RATE = 1700;
+
   const initialAffiliateData: Affiliate = {
     fullName: 'Your Affiliate Name',
     username: 'affiliate_user',
@@ -176,32 +178,20 @@ export function useSetup(
     securityQuestion: false,
     idUploaded: false,
     isPinSet: false,
-    balance: 2500,
-    totalSales: 17500.00,
+    balance: 2500 * USD_TO_MWK_RATE,
+    totalSales: 17500.00 * USD_TO_MWK_RATE,
     creditBalance: 50.00,
-    bonus: 20.00,
+    bonus: 20.00 * USD_TO_MWK_RATE,
     staffId: 'BS-AFF-12345678',
     clients: [
       { id: 'CLIENT-1', name: 'Client A', avatar: 'https://picsum.photos/seed/client1/100', plan: 'Standard', status: 'active' },
       { id: 'CLIENT-2', name: 'Client B', avatar: 'https://picsum.photos/seed/client2/100', plan: 'Pro', status: 'active' },
       { id: 'CLIENT-3', name: 'Client C', avatar: 'https://picsum.photos/seed/client3/100', plan: 'Standard', status: 'expired' },
-      { id: 'CLIENT-4', name: 'Client D', avatar: 'https://picsum.photos/seed/client4/100', plan: 'Standard', status: 'active' },
-      { id: 'CLIENT-5', name: 'Client E', avatar: 'https://picsum.photos/seed/client5/100', plan: 'Pro', status: 'active' },
-      { id: 'CLIENT-6', name: 'Client F', avatar: 'https://picsum.photos/seed/client6/100', plan: 'Standard', status: 'expired' },
-      { id: 'CLIENT-7', name: 'Client G', avatar: 'https://picsum.photos/seed/client7/100', plan: 'Standard', status: 'active' },
-      { id: 'CLIENT-8', name: 'Client H', avatar: 'https://picsum.photos/seed/client8/100', plan: 'Pro', status: 'active' },
-      { id: 'CLIENT-9', name: 'Client I', avatar: 'https://picsum.photos/seed/client9/100', plan: 'Standard', status: 'expired' },
-      { id: 'CLIENT-10', name: 'Client J', avatar: 'https://picsum.photos/seed/client10/100', plan: 'Standard', status: 'active' },
-      { id: 'CLIENT-11', name: 'Client K', avatar: 'https://picsum.photos/seed/client11/100', plan: 'Pro', status: 'active' },
-      { id: 'CLIENT-12', name: 'Client L', avatar: 'https://picsum.photos/seed/client12/100', plan: 'Standard', status: 'expired' },
     ],
     transactions: [
-        { id: 'TRN-1', date: '2024-07-20', description: 'Withdrawal', amount: 500, type: 'debit' },
-        { id: 'TRN-2', date: '2024-07-18', description: 'Commission: Client B', amount: 75.50, type: 'credit' },
-        { id: 'TRN-3', date: '2024-07-15', description: 'Commission: Client A', amount: 50.00, type: 'credit' },
-        { id: 'TRN-4', date: '2024-07-10', description: 'Bonus Payout', amount: 200, type: 'credit' },
-        { id: 'TRN-5', date: '2024-07-05', description: 'Withdrawal', amount: 1000, type: 'debit' },
-        { id: 'TRN-6', date: '2024-06-28', description: 'Commission: Old Client', amount: 30.00, type: 'credit' },
+        { id: 'TRN-1', date: '2024-07-20', description: 'Withdrawal', amount: 500 * USD_TO_MWK_RATE, type: 'debit' },
+        { id: 'TRN-2', date: '2024-07-18', description: 'Commission: Client B', amount: 75.50 * USD_TO_MWK_RATE, type: 'credit' },
+        { id: 'TRN-3', date: '2024-07-15', description: 'Commission: Client A', amount: 50.00 * USD_TO_MWK_RATE, type: 'credit' },
     ],
     withdrawalMethods: {
         airtel: undefined,
@@ -281,6 +271,7 @@ export function useSetup(
         website: data.website || '',
         taxNumber: data.taxNumber || '',
         defaultCurrency: 'USD',
+        paymentDetails: '',
         invoicePrefix: 'INV-',
         invoiceStartNumber: 101,
         quotationPrefix: 'QUO-',
