@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -11,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Banknote } from 'lucide-react';
 
 const USD_TO_MWK = 1700;
 const TRANSACTION_FEE_MWK = 3000;
@@ -71,7 +73,10 @@ export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, is
     return (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-                <Button variant="secondary" disabled={!isVerified || availableBalance <= 0}>Withdraw Balance</Button>
+                <Button variant="secondary">
+                    <Banknote className="h-4 w-4 mr-2" />
+                    Withdraw Balance
+                </Button>
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
