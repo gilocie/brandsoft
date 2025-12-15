@@ -430,15 +430,18 @@ export function OfficePageContent() {
     setIsBsCreditsDialogOpen(false);
   };
   
-  const MethodCard = ({method, name, icon: Icon, onAction, isSetup}: {method?: EditableWithdrawalMethod | 'bsCredits', name: string, icon: React.ElementType, onAction: () => void, isSetup: boolean}) => {
+  const MethodCard = ({method, name, description, icon: Icon, onAction, isSetup}: {method?: EditableWithdrawalMethod | 'bsCredits', name: string, description: string, icon: React.ElementType, onAction: () => void, isSetup: boolean}) => {
       return (
           <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                  <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-full bg-primary/10"><Icon className="h-5 w-5 text-primary" /></div>
-                      <CardTitle className="text-base">{name}</CardTitle>
+              <CardHeader>
+                  <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-full bg-primary/10"><Icon className="h-5 w-5 text-primary" /></div>
+                          <CardTitle className="text-base">{name}</CardTitle>
+                      </div>
+                       {isSetup && <CheckCircle className="h-5 w-5 text-green-500" />}
                   </div>
-                   {isSetup && <CheckCircle className="h-5 w-5 text-green-500" />}
+                  <CardDescription className="pt-2">{description}</CardDescription>
               </CardHeader>
               <CardContent className="flex items-center justify-end gap-2">
                  <Button variant={isSetup ? 'secondary' : 'default'} size="sm" onClick={onAction}>
@@ -777,10 +780,10 @@ export function OfficePageContent() {
                         </TabsList>
                         <TabsContent value="withdraw" className="p-6">
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <MethodCard method="airtel" name="Airtel Money" icon={Smartphone} isSetup={!!affiliate.withdrawalMethods?.airtel} onAction={() => setEditingMethod('airtel')} />
-                                <MethodCard method="tnm" name="TNM Mpamba" icon={Smartphone} isSetup={!!affiliate.withdrawalMethods?.tnm} onAction={() => setEditingMethod('tnm')} />
-                                <MethodCard name="Bank Transfer" icon={Banknote} isSetup={!!affiliate.withdrawalMethods?.bank} onAction={() => setIsBankDialogOpen(true)} />
-                                <MethodCard method="bsCredits" name="BS Credits" icon={Wallet} isSetup={!!affiliate.withdrawalMethods?.bsCredits} onAction={() => setIsBsCreditsDialogOpen(true)} />
+                                <MethodCard method="airtel" name="Airtel Money" description="Fee: K3,000" icon={Smartphone} isSetup={!!affiliate.withdrawalMethods?.airtel} onAction={() => setEditingMethod('airtel')} />
+                                <MethodCard method="tnm" name="TNM Mpamba" description="Fee: K3,000" icon={Smartphone} isSetup={!!affiliate.withdrawalMethods?.tnm} onAction={() => setEditingMethod('tnm')} />
+                                <MethodCard name="Bank Transfer" description="Fee: K5,000" icon={Banknote} isSetup={!!affiliate.withdrawalMethods?.bank} onAction={() => setIsBankDialogOpen(true)} />
+                                <MethodCard method="bsCredits" name="BS Credits" description="No fees" icon={Wallet} isSetup={!!affiliate.withdrawalMethods?.bsCredits} onAction={() => setIsBsCreditsDialogOpen(true)} />
                             </div>
                         </TabsContent>
                         <TabsContent value="security" className="p-6">
