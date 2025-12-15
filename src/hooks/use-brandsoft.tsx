@@ -31,7 +31,7 @@ const initialAffiliateData: Affiliate = {
     balance: 1250.50,
     totalSales: 17500.00,
     creditBalance: 50.00,
-    bonus: 2500.00,
+    bonus: 20.00,
     staffId: 'BS-AFF-12345678',
     clients: [
       { id: 'CLIENT-1', name: 'Client A', avatar: 'https://picsum.photos/seed/client1/100', plan: 'Standard', status: 'active' },

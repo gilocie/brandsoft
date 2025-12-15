@@ -158,7 +158,8 @@ export function OfficePageContent() {
     );
   }
   
-  const displayBalance = affiliate.balance + (affiliate.clients.length >= 10 ? affiliate.bonus : 0);
+  const bonusAmount = affiliate.bonus || 20;
+  const displayBalance = affiliate.balance + (affiliate.clients.length >= 10 ? bonusAmount : 0);
 
   const activeClients = affiliate.clients.filter(c => c.status === 'active').length;
 
@@ -276,9 +277,9 @@ export function OfficePageContent() {
         </TabsList>
         <TabsContent value="dashboard" className="pt-6">
             <div className="grid gap-6">
-                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                     <StatCard icon={DollarSign} title="Total Sales" value={affiliate.totalSales} footer="All-time client sales" isCurrency />
-                     <Card>
+                 <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <StatCard icon={DollarSign} title="Total Sales" value={affiliate.totalSales} footer="All-time client sales" isCurrency />
+                    <Card>
                         <CardHeader>
                             <div className="flex items-center justify-between">
                                 <CardTitle>Credit Balance</CardTitle>
@@ -302,7 +303,7 @@ export function OfficePageContent() {
                             <CardDescription>Bonus for referring 10+ clients.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                             <p className="text-3xl font-bold">${affiliate.bonus.toLocaleString()}</p>
+                             <p className="text-3xl font-bold">${bonusAmount.toLocaleString()}</p>
                         </CardContent>
                         <CardContent>
                            <Button variant="outline" disabled>View Progress</Button>
@@ -314,8 +315,8 @@ export function OfficePageContent() {
                                 <CardTitle>My Wallet</CardTitle>
                                 <Wallet className="h-5 w-5" />
                             </div>
-                             {affiliate.clients.length >= 10 ? (
-                                <CardDescription className="text-white/80">Balance includes ${affiliate.bonus} bonus.</CardDescription>
+                            {affiliate.clients.length >= 10 ? (
+                                <CardDescription className="text-white/80">Balance includes ${bonusAmount} bonus.</CardDescription>
                             ) : (
                                 <CardDescription className="text-white/80">Available for withdrawal</CardDescription>
                             )}
@@ -491,6 +492,7 @@ export function OfficePageContent() {
     </div>
   );
 }
+
 
 
 
