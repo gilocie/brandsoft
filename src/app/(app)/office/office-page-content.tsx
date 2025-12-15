@@ -293,7 +293,22 @@ export function OfficePageContent() {
                             <Button>Request Credits</Button>
                         </CardContent>
                     </Card>
-                    <Card className="bg-gradient-to-br from-primary to-orange-500 text-white">
+                    <Card>
+                        <CardHeader>
+                            <div className="flex items-center justify-between">
+                                <CardTitle>Bonus Tier</CardTitle>
+                                 <Gift className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                            <CardDescription>Bonus for referring 10+ clients.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                             <p className="text-3xl font-bold">${affiliate.bonus.toLocaleString()}</p>
+                        </CardContent>
+                        <CardContent>
+                           <Button variant="outline" disabled>View Progress</Button>
+                        </CardContent>
+                     </Card>
+                     <Card className="bg-gradient-to-br from-primary to-orange-500 text-white">
                         <CardHeader>
                             <div className="flex items-center justify-between">
                                 <CardTitle>My Wallet</CardTitle>
@@ -317,25 +332,10 @@ export function OfficePageContent() {
                             </Button>
                         </CardContent>
                      </Card>
-                     <StatCard icon={Users} title="Active Clients" value={activeClients} footer={`${affiliate.clients.length - activeClients} expired`} />
                 </div>
                  <div className="grid md:grid-cols-2 gap-6">
+                    <StatCard icon={Users} title="Active Clients" value={activeClients} footer={`${affiliate.clients.length - activeClients} expired`} />
                     <StatCard icon={UserCheck} title="Total Referrals" value={affiliate.clients.length} footer="All-time client sign-ups" />
-                    <Card>
-                        <CardHeader>
-                            <div className="flex items-center justify-between">
-                                <CardTitle>Bonus Tier</CardTitle>
-                                 <Gift className="h-5 w-5 text-muted-foreground" />
-                            </div>
-                            <CardDescription>Bonus for referring 10+ clients.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                             <p className="text-3xl font-bold">${affiliate.bonus.toLocaleString()}</p>
-                        </CardContent>
-                        <CardContent>
-                           <Button variant="outline" disabled>View Progress</Button>
-                        </CardContent>
-                     </Card>
                 </div>
                  <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
@@ -491,6 +491,7 @@ export function OfficePageContent() {
     </div>
   );
 }
+
 
 
 
