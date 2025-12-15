@@ -294,7 +294,7 @@ export function OfficePageContent() {
         <TabsContent value="dashboard" className="pt-6">
             <div className="grid gap-6">
                  <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <StatCard icon={DollarSign} title="Total Sales" value={affiliate.totalSales} footer="All-time client sales" isCurrency />
+                    <StatCard icon={DollarSign} title="Total Sales" value={affiliate.totalSales} footer="All-time client sales" isCurrency showMwk usdToMwkRate={USD_TO_MWK} />
                     <StatCard icon={CreditCard} title="Credit Balance" value={affiliate.creditBalance} footer="Credits for platform usage" />
                     <Card>
                         <CardHeader>
