@@ -262,7 +262,7 @@ const SetPinDialog = ({ isOpen, onClose, onSave, isPinSet }: { isOpen: boolean; 
         onSave(data.pin);
     };
 
-    const handleVerifyAnswer = (data: { answer: string }) => {
+    const handleVerifyAnswer = (data: Pick<ResetPinFormData, 'answer'>) => {
         if (data.answer.toLowerCase() !== config?.affiliate?.securityQuestionData?.answer.toLowerCase()) {
             toast({ variant: 'destructive', title: "Incorrect Answer" });
             return;
