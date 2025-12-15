@@ -157,6 +157,8 @@ export function OfficePageContent() {
       </div>
     );
   }
+  
+  const displayBalance = affiliate.balance + (affiliate.clients.length >= 10 ? affiliate.bonus : 0);
 
   const activeClients = affiliate.clients.filter(c => c.status === 'active').length;
 
@@ -305,7 +307,16 @@ export function OfficePageContent() {
                             <CardDescription className="text-white/80">Available for withdrawal</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-3xl font-bold">${affiliate.balance.toLocaleString()}</p>
+                            <p className="text-3xl font-bold">${displayBalance.toLocaleString()}</p>
+                            {affiliate.clients.length >= 10 && <p className="text-xs text-white/80">Includes ${affiliate.bonus} bonus</p>}
+                        </CardContent>
+                        <CardContent>
+                           <Button 
+                                variant="secondary"
+                                disabled={!affiliate.securityQuestion || !affiliate.idUploaded || affiliate.balance <= 0}
+                            >
+                                Withdraw Balance
+                            </Button>
                         </CardContent>
                      </Card>
                 </div>
@@ -342,11 +353,6 @@ export function OfficePageContent() {
                         </div>
                     </CardContent>
                 </Card>
-                <div className="flex justify-end">
-                    <Button disabled={!affiliate.securityQuestion || !affiliate.idUploaded || affiliate.balance <= 0}>
-                        Withdraw Balance
-                    </Button>
-                </div>
             </div>
         </TabsContent>
          <TabsContent value="clients" className="pt-6">
@@ -468,6 +474,4 @@ export function OfficePageContent() {
     </div>
   );
 }
-
-
 
