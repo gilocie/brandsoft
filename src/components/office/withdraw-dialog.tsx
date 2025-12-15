@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -17,7 +17,10 @@ import { Banknote } from 'lucide-react';
 const TRANSACTION_FEE_MWK = 3000;
 
 const withdrawSchema = z.object({
-  amount: z.coerce.number().positive("Amount must be greater than 0"),
+  amount: z.coerce.number()
+      .positive("Amount must be greater than 0")
+      .min(30000, "Minimum withdrawal is K30,000")
+      .max(1000000, "Maximum withdrawal at once is K1,000,000"),
   method: z.string().min(1, "Please select a payment method"),
   details: z.string().min(1, "Please provide payment details"),
   pin: z.string().length(4, "PIN must be 4 digits"),
@@ -92,7 +95,7 @@ export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, is
                                         <FormItem className="flex items-center justify-between rounded-lg border p-3">
                                             <div className="space-y-0.5">
                                                 <FormLabel>Include Bonus Balance?</FormLabel>
-                                                <FormMessage>Your bonus balance is K{bonusBalance.toLocaleString()}.</FormMessage>
+                                                <FormDescription>Your bonus balance is K{bonusBalance.toLocaleString()}.</FormDescription>
                                             </div>
                                             <FormControl>
                                                 <Switch checked={field.value} onCheckedChange={field.onChange} disabled={bonusBalance <= 0} />
@@ -104,9 +107,10 @@ export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, is
                                     <FormItem>
                                         <FormLabel>Amount to Withdraw (MWK)</FormLabel>
                                         <FormControl><Input type="number" {...field} /></FormControl>
+                                        <FormDescription>Min: K30,000, Max: K1,000,000</FormDescription>
                                         <FormMessage />
-                                        <div className="text-xs text-muted-foreground flex justify-between">
-                                          <span>Available: K{withdrawableAmount > 0 ? withdrawableAmount.toFixed(2) : '0.00'}</span>
+                                        <div className="text-xs text-muted-foreground flex justify-between pt-1">
+                                          <span>Available: K{withdrawableAmount > 0 ? withdrawableAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}</span>
                                           <span>Fee: K{TRANSACTION_FEE_MWK.toLocaleString()}</span>
                                         </div>
                                     </FormItem>
