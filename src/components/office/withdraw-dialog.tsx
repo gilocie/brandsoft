@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Banknote } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const TRANSACTION_FEE_MWK = 3000;
 
@@ -27,6 +28,40 @@ const withdrawSchema = z.object({
   includeBonus: z.boolean().default(false),
 });
 type WithdrawFormData = z.infer<typeof withdrawSchema>;
+
+const AmountInput = ({ value, onChange, className }: { value: number, onChange: (value: number) => void, className?: string }) => {
+    const [displayValue, setDisplayValue] = useState<string>('');
+
+    useEffect(() => {
+        setDisplayValue(value > 0 ? value.toLocaleString() : '');
+    }, [value]);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const rawValue = e.target.value.replace(/,/g, '');
+        if (/^\d*$/.test(rawValue)) { // Allow only digits
+            const numValue = Number(rawValue);
+            setDisplayValue(numValue > 0 ? numValue.toLocaleString() : '');
+            onChange(numValue);
+        }
+    };
+    
+    return (
+        <div className="relative text-center">
+            <span className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 text-5xl font-bold text-muted-foreground pointer-events-none" style={{ left: `calc(50% - ${((displayValue.length + 2) / 2) * 1.5}rem)` }}>K</span>
+            <input
+                type="text"
+                value={displayValue}
+                onChange={handleInputChange}
+                className={cn(
+                    "w-full bg-transparent border-none text-5xl font-bold text-center focus:outline-none focus:ring-0",
+                    className
+                )}
+                placeholder="0"
+            />
+        </div>
+    );
+};
+
 
 export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, isVerified }: { commissionBalance: number, bonusBalance: number, onWithdraw: (amount: number, source: 'commission' | 'bonus' | 'combined') => void, isVerified: boolean }) => {
     const [step, setStep] = useState(1);
@@ -104,14 +139,11 @@ export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, is
                                     )}
                                 />
                                 <FormField control={form.control} name="amount" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Amount to Withdraw (MWK)</FormLabel>
+                                    <FormItem className="text-center">
                                         <FormControl>
-                                            <Input
-                                                type="number"
-                                                prefix="K"
-                                                className="text-lg font-bold"
-                                                {...field}
+                                            <AmountInput
+                                                value={field.value}
+                                                onChange={field.onChange}
                                             />
                                         </FormControl>
                                         <FormDescription>Min: K30,000, Max: K1,000,000</FormDescription>
