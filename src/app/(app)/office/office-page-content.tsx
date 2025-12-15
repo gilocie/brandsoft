@@ -298,11 +298,18 @@ export function OfficePageContent() {
         <TabsContent value="dashboard" className="pt-6">
             <div className="grid gap-6">
                  <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <StatCard icon={DollarSign} title="Total Sales" value={affiliate.totalSales * USD_TO_MWK} isCurrency />
+                    <StatCard 
+                        icon={DollarSign} 
+                        title="Total Sales" 
+                        value={affiliate.totalSales * USD_TO_MWK} 
+                        isCurrency 
+                        footer="All-time gross sales volume"
+                    />
                     <StatCard 
                         icon={CreditCard} 
                         title="Credit Balance" 
-                        value={`BS${affiliate.creditBalance.toLocaleString()}`} 
+                        value={`${affiliate.creditBalance.toLocaleString()}`}
+                        valuePrefix="BS"
                         footer={`= K${(affiliate.creditBalance * CREDIT_TO_MWK).toLocaleString()}`}
                     >
                         <BuyCreditsDialog walletBalance={affiliate.balance * USD_TO_MWK} />
@@ -501,8 +508,47 @@ export function OfficePageContent() {
                             <TabsTrigger value="verification">Verification</TabsTrigger>
                         </TabsList>
                         <TabsContent value="withdraw" className="p-6">
-                             <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
-                                <p className="text-muted-foreground text-center text-sm">Withdrawal options will be configured here.</p>
+                            <div className="grid grid-cols-2 gap-4">
+                                <Card className="cursor-pointer hover:bg-muted">
+                                    <CardHeader className="flex flex-row items-center gap-4">
+                                        <div className="p-3 rounded-full bg-primary/10">
+                                            <Smartphone className="h-6 w-6 text-primary" />
+                                        </div>
+                                        <div>
+                                            <CardTitle className="text-base">Airtel Money</CardTitle>
+                                        </div>
+                                    </CardHeader>
+                                </Card>
+                                <Card className="cursor-pointer hover:bg-muted">
+                                    <CardHeader className="flex flex-row items-center gap-4">
+                                        <div className="p-3 rounded-full bg-primary/10">
+                                            <Smartphone className="h-6 w-6 text-primary" />
+                                        </div>
+                                        <div>
+                                            <CardTitle className="text-base">TNM Mpamba</CardTitle>
+                                        </div>
+                                    </CardHeader>
+                                </Card>
+                                <Card className="cursor-pointer hover:bg-muted">
+                                    <CardHeader className="flex flex-row items-center gap-4">
+                                        <div className="p-3 rounded-full bg-primary/10">
+                                            <Banknote className="h-6 w-6 text-primary" />
+                                        </div>
+                                        <div>
+                                            <CardTitle className="text-base">Bank Transfer</CardTitle>
+                                        </div>
+                                    </CardHeader>
+                                </Card>
+                                <Card className="cursor-pointer hover:bg-muted">
+                                    <CardHeader className="flex flex-row items-center gap-4">
+                                        <div className="p-3 rounded-full bg-primary/10">
+                                            <Wallet className="h-6 w-6 text-primary" />
+                                        </div>
+                                        <div>
+                                            <CardTitle className="text-base">BS Credits</CardTitle>
+                                        </div>
+                                    </CardHeader>
+                                </Card>
                             </div>
                         </TabsContent>
                         <TabsContent value="security" className="p-6">
