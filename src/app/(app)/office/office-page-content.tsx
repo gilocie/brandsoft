@@ -22,7 +22,7 @@ import { useToast } from '@/hooks/use-toast';
 const affiliateSchema = z.object({
     fullName: z.string().min(2, "Full name is required"),
     username: z.string().min(3, "Username must be at least 3 characters"),
-    phone: z.string().optional(),
+    phone: z.string().min(1, "Phone number is required"),
     profilePic: z.string().optional(),
 });
 
@@ -85,7 +85,7 @@ export function OfficePageContent() {
         form.reset({
             fullName: affiliate.fullName,
             username: affiliate.username,
-            phone: affiliate.phone,
+            phone: affiliate.phone || '',
             profilePic: affiliate.profilePic,
         });
     }
@@ -107,6 +107,12 @@ export function OfficePageContent() {
     });
 
     setIsEditDialogOpen(false);
+  };
+  
+  const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!config || !affiliate) return;
+    const newAffiliateData = { ...affiliate, phone: e.target.value };
+    saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false });
   };
 
   const generateNewStaffId = () => {
@@ -338,9 +344,19 @@ export function OfficePageContent() {
                     </div>
                      <div className="space-y-3 pt-4 border-t">
                         <h3 className="text-sm font-semibold mb-2">Affiliate Phone Number</h3>
-                        <p className="text-xs text-muted-foreground mb-2">This number can be contacted for affiliate-related queries.</p>
+                        <p className="text-xs text-muted-foreground mb-2">This WhatsApp number will be used for top-up notifications and affiliate queries.</p>
                         <div className="flex items-center gap-2">
-                            <Input readOnly value={affiliate.phone || 'Not set'} icon={Phone} />
+                            <Input
+                                value={affiliate.phone || ''}
+                                onChange={(e) => {
+                                    if (!config || !affiliate) return;
+                                    const newAffiliateData = { ...affiliate, phone: e.target.value };
+                                    saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false });
+                                }}
+                                onBlur={() => toast({ title: "Phone Number Saved" })}
+                                icon={Phone}
+                                placeholder="Enter your WhatsApp number..."
+                            />
                         </div>
                     </div>
                 </CardContent>
