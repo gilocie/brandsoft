@@ -173,7 +173,7 @@ export function useSetup(
     phone: '',
     profilePic: 'https://picsum.photos/seed/affiliate/200',
     affiliateLink: 'https://brandsoft.com/join?ref=affiliate_user',
-    securityQuestion: true,
+    securityQuestion: false,
     idUploaded: false,
     isPinSet: false,
     balance: 2500,
@@ -209,6 +209,7 @@ export function useSetup(
         bank: undefined,
         bsCredits: undefined,
     },
+    securityQuestionData: undefined,
   };
 
 

@@ -27,6 +27,7 @@ import { VerificationItem } from '@/components/office/verification-item';
 import { WithdrawDialog } from '@/components/office/withdraw-dialog';
 import { BuyCreditsDialog } from '@/components/office/buy-credits-dialog';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 
 
 const affiliateSchema = z.object({
@@ -65,9 +66,121 @@ const pinSchema = z.object({
 });
 type PinFormData = z.infer<typeof pinSchema>;
 
+const securityQuestionSchema = z.object({
+  question: z.string().min(1, "Please select a question."),
+  customQuestion: z.string().optional(),
+  answer: z.string().min(1, "An answer is required."),
+}).refine(data => data.question !== 'custom' || (data.customQuestion && data.customQuestion.length > 0), {
+    message: "Please enter your custom question.",
+    path: ["customQuestion"],
+});
+
+type SecurityQuestionFormData = z.infer<typeof securityQuestionSchema>;
+
 const USD_TO_MWK = 1700;
 const CREDIT_TO_MWK = 1000;
 const ITEMS_PER_PAGE = 10;
+
+const securityQuestions = [
+    "What was the name of your primary school?",
+    "What was your place of birth?",
+    "What's the first name of your mother?",
+    "What's the first name of your father?",
+    "Who was the name of your family firstborn?",
+    "Food you love most?",
+    "What animal do you love most?",
+    "What is your favourite color?",
+    "What is your father's birthday?",
+    "What's the name of your spouse?",
+    "custom",
+];
+
+const SecurityQuestionsDialog = ({ isOpen, onClose, onSave, currentData }: { isOpen: boolean; onClose: () => void; onSave: (data: SecurityQuestionFormData) => void; currentData?: { question: string; answer: string; } }) => {
+    const form = useForm<SecurityQuestionFormData>({
+        resolver: zodResolver(securityQuestionSchema),
+        defaultValues: {
+            question: currentData?.question || '',
+            customQuestion: currentData && !securityQuestions.includes(currentData.question) ? currentData.question : '',
+            answer: currentData?.answer || '',
+        },
+    });
+
+    const watchedQuestion = form.watch('question');
+
+    const onSubmit = (data: SecurityQuestionFormData) => {
+        onSave(data);
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onClose}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Set Security Question</DialogTitle>
+                    <DialogDescription>This will be used to recover your account or reset your PIN.</DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                        <FormField
+                            control={form.control}
+                            name="question"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Question</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger><SelectValue placeholder="Select a question" /></SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {securityQuestions.map(q => (
+                                                <SelectItem key={q} value={q}>{q === 'custom' ? 'Custom question...' : q}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        {watchedQuestion === 'custom' && (
+                            <FormField
+                                control={form.control}
+                                name="customQuestion"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Your Custom Question</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="e.g., What is my favorite book?" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        )}
+
+                        <FormField
+                            control={form.control}
+                            name="answer"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Your Answer</FormLabel>
+                                    <FormControl>
+                                        <Input type="password" placeholder="Enter your secret answer" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <DialogFooter>
+                            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+                            <Button type="submit">Save Question</Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
 
 const SetPinDialog = ({ isOpen, onClose, onSave, isPinSet }: { isOpen: boolean; onClose: () => void; onSave: () => void; isPinSet: boolean; }) => {
     const form = useForm<PinFormData>({
@@ -308,6 +421,7 @@ export function OfficePageContent() {
   const [isBankDialogOpen, setIsBankDialogOpen] = useState(false);
   const [isBsCreditsDialogOpen, setIsBsCreditsDialogOpen] = useState(false);
   const [isPinDialogOpen, setIsPinDialogOpen] = useState(false);
+  const [isSecurityQuestionsOpen, setIsSecurityQuestionsOpen] = useState(false);
 
   const affiliate = config?.affiliate;
 
@@ -489,6 +603,30 @@ export function OfficePageContent() {
     toast({ title: 'PIN has been set successfully!' });
     setIsPinDialogOpen(false);
   };
+  
+  const handleSaveSecurityQuestions = (data: SecurityQuestionFormData) => {
+      if (!config || !affiliate) return;
+      
+      const questionToSave = data.question === 'custom' ? data.customQuestion : data.question;
+
+      if (!questionToSave) {
+          toast({ variant: 'destructive', title: 'Error', description: 'Question cannot be empty.' });
+          return;
+      }
+
+      const newAffiliateData = {
+          ...affiliate,
+          securityQuestion: true, // Mark as set
+          securityQuestionData: {
+              question: questionToSave,
+              answer: data.answer, // In a real app, this would be hashed
+          },
+      };
+      saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
+      toast({ title: 'Security Question Saved!' });
+      setIsSecurityQuestionsOpen(false);
+  };
+
   
   const MethodCard = ({method, name, description, icon: Icon, onAction, isSetup}: {method?: EditableWithdrawalMethod | 'bsCredits', name: string, description: string, icon: React.ElementType, onAction: () => void, isSetup: boolean}) => {
       return (
@@ -853,7 +991,7 @@ export function OfficePageContent() {
                                 actionText={affiliate.isPinSet ? 'Change PIN' : 'Set PIN'}
                                 onAction={() => setIsPinDialogOpen(true)}
                             />
-                            <VerificationItem title="Security Questions" status={affiliate.securityQuestion} actionText="Set Questions" onAction={() => alert("Navigate to security questions page")} />
+                            <VerificationItem title="Security Questions" status={!!affiliate.securityQuestionData} actionText="Set Questions" onAction={() => setIsSecurityQuestionsOpen(true)} />
                         </TabsContent>
                         <TabsContent value="verification" className="p-6">
                              <VerificationItem title="Identity Verification" status={affiliate.idUploaded} actionText="Upload ID" onAction={() => alert("Open ID upload dialog")} />
@@ -888,6 +1026,12 @@ export function OfficePageContent() {
             onClose={() => setIsPinDialogOpen(false)}
             onSave={handleSavePin}
             isPinSet={affiliate.isPinSet || false}
+        />
+        <SecurityQuestionsDialog
+            isOpen={isSecurityQuestionsOpen}
+            onClose={() => setIsSecurityQuestionsOpen(false)}
+            onSave={handleSaveSecurityQuestions}
+            currentData={affiliate.securityQuestionData}
         />
     </div>
   );

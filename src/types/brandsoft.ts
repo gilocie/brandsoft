@@ -25,6 +25,10 @@ export type Affiliate = {
   profilePic: string;
   affiliateLink: string;
   securityQuestion: boolean; // true if set, false if not
+  securityQuestionData?: {
+    question: string;
+    answer: string; // This would be hashed in a real app
+  };
   idUploaded: boolean; // true if both front and back are uploaded
   isPinSet?: boolean;
   balance: number;
