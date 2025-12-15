@@ -106,6 +106,20 @@ export function OfficePageContent() {
     setIsEditDialogOpen(false);
   };
 
+  const generateNewStaffId = () => {
+    if (!config || !affiliate) return;
+
+    const randomDigits = Math.floor(10000000 + Math.random() * 90000000).toString();
+    const newStaffId = `BS-AFF-${randomDigits}`;
+    
+    saveConfig({ ...config, affiliate: { ...affiliate, staffId: newStaffId } }, { redirect: false });
+    
+    toast({
+        title: "New Staff ID Generated!",
+        description: "Your new staff ID has been saved.",
+    });
+  };
+
   if (!affiliate) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -298,9 +312,12 @@ export function OfficePageContent() {
                         <h3 className="text-sm font-semibold mb-2">Staff ID Code</h3>
                         <p className="text-xs text-muted-foreground mb-2">Provide this code to your staff when they are selling credits on your behalf.</p>
                         <div className="flex items-center gap-2">
-                            <Input readOnly value={affiliate.staffId || 'Not available'} className="font-mono" />
-                             <Button size="sm" variant="outline" onClick={() => navigator.clipboard.writeText(affiliate.staffId || '')}>
+                            <Input readOnly value={affiliate.staffId || 'No code generated'} className="font-mono" />
+                            <Button size="sm" variant="outline" onClick={() => navigator.clipboard.writeText(affiliate.staffId || '')} disabled={!affiliate.staffId}>
                                 <Copy className="h-4 w-4 mr-2"/> Copy ID
+                            </Button>
+                             <Button size="sm" onClick={generateNewStaffId}>
+                                Generate New Code
                             </Button>
                         </div>
                     </div>
