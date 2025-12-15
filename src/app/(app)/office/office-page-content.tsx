@@ -5,10 +5,27 @@ import { useBrandsoft } from '@/hooks/use-brandsoft';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Copy, DollarSign, ExternalLink, ShieldCheck, ShieldOff, UserCheck, Users } from 'lucide-react';
+import { Copy, DollarSign, ExternalLink, ShieldCheck, ShieldOff, UserCheck, Users, Edit } from 'lucide-react';
 import { ClientCard } from '@/components/affiliate/client-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { SimpleImageUploadButton } from '@/components/simple-image-upload-button';
+import { useState, useEffect } from 'react';
+import { useToast } from '@/hooks/use-toast';
+
+const affiliateSchema = z.object({
+    fullName: z.string().min(2, "Full name is required"),
+    username: z.string().min(3, "Username must be at least 3 characters"),
+    profilePic: z.string().optional(),
+});
+
+type AffiliateFormData = z.infer<typeof affiliateSchema>;
+
 
 const StatCard = ({ icon: Icon, title, value, footer, isCurrency = false }: { icon: React.ElementType, title: string, value: string | number, footer: string, isCurrency?: boolean }) => (
   <Card>
@@ -45,8 +62,48 @@ const VerificationItem = ({ title, status, actionText, onAction }: { title: stri
 
 
 export function OfficePageContent() {
-  const { config } = useBrandsoft();
+  const { config, saveConfig } = useBrandsoft();
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const { toast } = useToast();
+
   const affiliate = config?.affiliate;
+
+  const form = useForm<AffiliateFormData>({
+      resolver: zodResolver(affiliateSchema),
+      defaultValues: {
+          fullName: affiliate?.fullName || '',
+          username: affiliate?.username || '',
+          profilePic: affiliate?.profilePic || '',
+      }
+  });
+
+  useEffect(() => {
+    if (affiliate) {
+        form.reset({
+            fullName: affiliate.fullName,
+            username: affiliate.username,
+            profilePic: affiliate.profilePic,
+        });
+    }
+  }, [affiliate, form]);
+
+  const onSubmit = (data: AffiliateFormData) => {
+    if (!config || !affiliate) return;
+
+    const newAffiliateData = {
+        ...affiliate,
+        ...data
+    };
+    
+    saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false });
+    
+    toast({
+        title: "Profile Updated",
+        description: "Your affiliate profile has been successfully updated.",
+    });
+
+    setIsEditDialogOpen(false);
+  };
 
   if (!affiliate) {
     return (
@@ -66,9 +123,77 @@ export function OfficePageContent() {
             <AvatarImage src={affiliate.profilePic} />
             <AvatarFallback>{affiliate.fullName.charAt(0)}</AvatarFallback>
           </Avatar>
-          <div>
-            <h1 className="text-2xl font-bold font-headline">{affiliate.fullName}</h1>
-            <p className="text-muted-foreground">@{affiliate.username}</p>
+          <div className="flex items-center gap-2">
+            <div>
+                <h1 className="text-2xl font-bold font-headline">{affiliate.fullName}</h1>
+                <p className="text-muted-foreground">@{affiliate.username}</p>
+            </div>
+             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                <DialogTrigger asChild>
+                    <Button variant="ghost" size="icon"><Edit className="h-4 w-4"/></Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Edit Affiliate Profile</DialogTitle>
+                        <DialogDescription>Update your public-facing affiliate information here.</DialogDescription>
+                    </DialogHeader>
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
+                            <FormField
+                                control={form.control}
+                                name="profilePic"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Profile Picture</FormLabel>
+                                        <div className="flex items-center gap-4">
+                                            <Avatar className="h-16 w-16">
+                                                <AvatarImage src={field.value} />
+                                                <AvatarFallback>{form.getValues('fullName')?.charAt(0)}</AvatarFallback>
+                                            </Avatar>
+                                            <div className="flex-grow">
+                                                <SimpleImageUploadButton
+                                                    value={field.value}
+                                                    onChange={field.onChange}
+                                                    buttonText="Upload New Picture"
+                                                />
+                                            </div>
+                                        </div>
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
+                                name="fullName"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Full Name</FormLabel>
+                                        <FormControl><Input {...field} /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
+                                name="username"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Username</FormLabel>
+                                        <FormControl><Input {...field} /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            
+                            <div className="flex justify-end gap-2">
+                                <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
+                                <Button type="submit">Save Changes</Button>
+                            </div>
+                        </form>
+                    </Form>
+                </DialogContent>
+            </Dialog>
           </div>
         </div>
         <div className="flex items-center gap-2">
