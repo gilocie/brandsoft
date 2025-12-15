@@ -2,6 +2,7 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ReactNode } from 'react';
 
 export const StatCard = ({ 
     icon: Icon, 
@@ -10,7 +11,8 @@ export const StatCard = ({
     footer, 
     isCurrency = false,
     currencyPrefix = 'K',
-    valuePrefix = ''
+    valuePrefix = '',
+    children
 }: { 
     icon: React.ElementType, 
     title: string, 
@@ -19,6 +21,7 @@ export const StatCard = ({
     isCurrency?: boolean,
     currencyPrefix?: string,
     valuePrefix?: string,
+    children?: ReactNode
 }) => {
     const numericValue = typeof value === 'number' ? value : 0;
 
@@ -34,6 +37,7 @@ export const StatCard = ({
                 {valuePrefix}{isCurrency ? numericValue.toLocaleString() : value}
             </div>
             <p className="text-xs text-muted-foreground mt-1">{footer}</p>
+            {children && <div className="mt-4">{children}</div>}
             </CardContent>
         </Card>
     );

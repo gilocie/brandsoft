@@ -298,7 +298,9 @@ export function OfficePageContent() {
             <div className="grid gap-6">
                  <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <StatCard icon={DollarSign} title="Total Sales" value={affiliate.totalSales * USD_TO_MWK} footer={`Equivalent to $${affiliate.totalSales.toLocaleString()}`} isCurrency />
-                    <StatCard icon={CreditCard} title="Credit Balance" value={`BS${affiliate.creditBalance.toLocaleString()} = K${(affiliate.creditBalance * CREDIT_TO_MWK).toLocaleString()}`} footer="Credits for platform usage" />
+                    <StatCard icon={CreditCard} title="Credit Balance" value={`BS${affiliate.creditBalance.toLocaleString()} = K${(affiliate.creditBalance * CREDIT_TO_MWK).toLocaleString()}`} footer="Credits for platform usage">
+                        <Button>Buy Credits</Button>
+                    </StatCard>
                     <Card>
                         <CardHeader>
                             <div className="flex items-center justify-between">
