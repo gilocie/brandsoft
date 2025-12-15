@@ -6,7 +6,7 @@ import { useBrandsoft, type Transaction } from '@/hooks/use-brandsoft';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Copy, DollarSign, ExternalLink, ShieldCheck, ShieldOff, UserCheck, Users, Edit, CreditCard, Gift, KeyRound, Phone, TrendingUp, TrendingDown, MoreHorizontal, ArrowRight } from 'lucide-react';
+import { Copy, DollarSign, ExternalLink, ShieldCheck, ShieldOff, UserCheck, Users, Edit, CreditCard, Gift, KeyRound, Phone, TrendingUp, TrendingDown, MoreHorizontal, ArrowRight, Wallet } from 'lucide-react';
 import { ClientCard } from '@/components/affiliate/client-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -275,10 +275,10 @@ export function OfficePageContent() {
         <TabsContent value="dashboard" className="pt-6">
             <div className="grid gap-6">
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    <StatCard icon={DollarSign} title="Available Balance" value={affiliate.balance} footer="Ready for withdrawal" isCurrency />
                     <StatCard icon={DollarSign} title="Total Sales" value={affiliate.totalSales} footer="All-time client sales" isCurrency />
                     <StatCard icon={Users} title="Active Clients" value={activeClients} footer={`${affiliate.clients.length - activeClients} expired`} />
                     <StatCard icon={UserCheck} title="Total Referrals" value={affiliate.clients.length} footer="All-time client sign-ups" />
+                    <StatCard icon={Gift} title="Bonus Tier" value={affiliate.bonus} footer="For referring 10+ clients" isCurrency />
                 </div>
                  <div className="grid md:grid-cols-2 gap-6">
                     <Card>
@@ -296,16 +296,16 @@ export function OfficePageContent() {
                             <Button>Request Credits</Button>
                         </CardContent>
                     </Card>
-                     <Card className="bg-gradient-to-br from-yellow-400 to-orange-500 text-white">
+                     <Card className="bg-gradient-to-br from-primary to-orange-500 text-white">
                         <CardHeader>
                             <div className="flex items-center justify-between">
-                                <CardTitle>Bonus Tier</CardTitle>
-                                <Gift className="h-5 w-5" />
+                                <CardTitle>My Wallet</CardTitle>
+                                <Wallet className="h-5 w-5" />
                             </div>
-                            <CardDescription className="text-white/80">Bonus for referring 10+ clients</CardDescription>
+                            <CardDescription className="text-white/80">Available for withdrawal</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-3xl font-bold">${affiliate.bonus.toLocaleString()}</p>
+                            <p className="text-3xl font-bold">${affiliate.balance.toLocaleString()}</p>
                         </CardContent>
                      </Card>
                 </div>
@@ -468,5 +468,6 @@ export function OfficePageContent() {
     </div>
   );
 }
+
 
 
