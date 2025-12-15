@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useBrandsoft } from '@/hooks/use-brandsoft';
 
 const CREDIT_PURCHASE_PRICE = 900; // K900 per credit
+const USD_TO_MWK = 1700;
 
 const buyCreditsSchema = z.object({
   credits: z.coerce.number().int().min(1, "Must purchase at least 1 credit."),
@@ -61,23 +62,25 @@ export const BuyCreditsDialog = ({ walletBalance }: { walletBalance: number }) =
   const onSubmit = (data: BuyCreditsFormData) => {
     if (!config || !config.affiliate) return;
 
-    if (data.pin !== config.affiliate.pin) {
+    if (!data.pin || data.pin !== config.affiliate.pin) {
         toast({ variant: 'destructive', title: "Incorrect PIN" });
-        form.setError('pin', { type: 'manual', message: 'The entered PIN is incorrect.' });
+        if(data.pin) form.setError('pin', { type: 'manual', message: 'The entered PIN is incorrect.' });
         return;
     }
+    
+    const costInUSD = cost / USD_TO_MWK;
 
     const newTransaction = {
       id: `TRN-CREDIT-${Date.now()}`,
       date: new Date().toISOString(),
       description: `Purchased ${data.credits} credits`,
-      amount: cost / 1700, // Store as USD equivalent
+      amount: costInUSD, // Store as USD equivalent
       type: 'debit' as 'debit',
     };
 
     const newAffiliateData = {
       ...config.affiliate,
-      balance: config.affiliate.balance - (cost / 1700), // Deduct USD equivalent from balance
+      balance: config.affiliate.balance - costInUSD, // Deduct USD equivalent from balance
       creditBalance: (config.affiliate.creditBalance || 0) + data.credits,
       transactions: [newTransaction, ...(config.affiliate.transactions || [])],
     };
