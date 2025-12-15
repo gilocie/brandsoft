@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useBrandsoft, type Transaction, type Affiliate } from '@/hooks/use-brandsoft';
@@ -247,15 +246,18 @@ const SetPinDialog = ({ isOpen, onClose, onSave, isPinSet }: { isOpen: boolean; 
         defaultValues: { oldPin: '', pin: '', confirmPin: '' },
     });
     
+    // Form for Step 1: Verify Answer
     const answerForm = useForm<VerifyAnswerFormData>({
         resolver: zodResolver(verifyAnswerSchema),
         defaultValues: { answer: '' },
     });
 
+    // Form for Step 2: Set New PIN
     const newPinForm = useForm<SetNewPinFormData>({
         resolver: zodResolver(setNewPinSchema),
         defaultValues: { newPin: '', confirmNewPin: '' },
     });
+
 
     useEffect(() => {
         if (!isOpen) {
@@ -1002,7 +1004,7 @@ export function OfficePageContent() {
             <div className="grid gap-6">
                  <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <StatCard 
-                        icon={DollarSign} 
+                        icon={TrendingUp} 
                         title="Total Sales" 
                         value={affiliate.totalSales} 
                         isCurrency 
@@ -1276,3 +1278,6 @@ export function OfficePageContent() {
     </div>
   );
 }
+
+
+    
