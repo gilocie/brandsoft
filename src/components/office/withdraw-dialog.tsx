@@ -33,7 +33,7 @@ export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, is
     const [isOpen, setIsOpen] = useState(false);
     const form = useForm<WithdrawFormData>({
         resolver: zodResolver(withdrawSchema),
-        defaultValues: { amount: 0, method: '', details: '', pin: '', includeBonus: false },
+        defaultValues: { amount: 30000, method: '', details: '', pin: '', includeBonus: false },
     });
     
     const { toast } = useToast();
@@ -109,9 +109,11 @@ export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, is
                                         <FormControl><Input type="number" {...field} /></FormControl>
                                         <FormDescription>Min: K30,000, Max: K1,000,000</FormDescription>
                                         <FormMessage />
-                                        <div className="text-xs text-muted-foreground flex justify-between pt-1">
-                                          <span>Available: K{withdrawableAmount > 0 ? withdrawableAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}</span>
-                                          <span>Fee: K{TRANSACTION_FEE_MWK.toLocaleString()}</span>
+                                        <div className="text-xs text-muted-foreground flex justify-between items-end pt-1">
+                                           <div className="text-lg font-bold text-primary">
+                                                <span>Available: K{withdrawableAmount > 0 ? withdrawableAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}</span>
+                                           </div>
+                                            <span className="text-right">Fee: K{TRANSACTION_FEE_MWK.toLocaleString()}</span>
                                         </div>
                                     </FormItem>
                                 )}/>
