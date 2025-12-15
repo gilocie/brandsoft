@@ -20,7 +20,6 @@ const OfficePageContent = dynamic(
 export default function OfficePage() {
   const { config } = useBrandsoft();
 
-  // Wait for config to be loaded before rendering, to ensure ssr: false works correctly
   if (!config) {
      return (
         <div className="flex h-[80vh] w-full items-center justify-center">
@@ -28,6 +27,6 @@ export default function OfficePage() {
         </div>
      )
   }
-
+  
   return <OfficePageContent />;
 }
