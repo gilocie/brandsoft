@@ -2,11 +2,11 @@
 
 'use client';
 
-import { useBrandsoft } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Transaction } from '@/hooks/use-brandsoft';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Copy, DollarSign, ExternalLink, ShieldCheck, ShieldOff, UserCheck, Users, Edit, CreditCard, Gift, KeyRound, Phone } from 'lucide-react';
+import { Copy, DollarSign, ExternalLink, ShieldCheck, ShieldOff, UserCheck, Users, Edit, CreditCard, Gift, KeyRound, Phone, TrendingUp, TrendingDown, MoreHorizontal, ArrowRight } from 'lucide-react';
 import { ClientCard } from '@/components/affiliate/client-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -16,8 +16,10 @@ import * as z from 'zod';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { SimpleImageUploadButton } from '@/components/simple-image-upload-button';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
+import { Separator } from '@/components/ui/separator';
 
 const affiliateSchema = z.object({
     fullName: z.string().min(2, "Full name is required"),
@@ -66,6 +68,7 @@ const VerificationItem = ({ title, status, actionText, onAction }: { title: stri
 export function OfficePageContent() {
   const { config, saveConfig } = useBrandsoft();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('dashboard');
   const { toast } = useToast();
 
   const affiliate = config?.affiliate;
@@ -109,12 +112,6 @@ export function OfficePageContent() {
     setIsEditDialogOpen(false);
   };
   
-  const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!config || !affiliate) return;
-    const newAffiliateData = { ...affiliate, phone: e.target.value };
-    saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false });
-  };
-
   const generateNewStaffId = () => {
     if (!config || !affiliate) return;
 
@@ -128,6 +125,11 @@ export function OfficePageContent() {
         description: "Your new staff ID has been saved.",
     });
   };
+  
+  const recentTransactions = useMemo(() => {
+    if (!affiliate?.transactions) return [];
+    return affiliate.transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
+  }, [affiliate?.transactions]);
 
   if (!affiliate) {
     return (
@@ -243,7 +245,7 @@ export function OfficePageContent() {
         </div>
       </div>
 
-       <Tabs defaultValue="dashboard">
+       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="clients">Clients ({affiliate.clients.length})</TabsTrigger>
@@ -288,14 +290,37 @@ export function OfficePageContent() {
                         </CardContent>
                      </Card>
                 </div>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Account Verification</CardTitle>
-                        <CardDescription>Complete these steps to secure your account and enable withdrawals.</CardDescription>
+                 <Card>
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <div>
+                            <CardTitle>Recent Transactions</CardTitle>
+                            <CardDescription>Your last 5 transactions.</CardDescription>
+                        </div>
+                        <Button variant="outline" size="sm" onClick={() => setActiveTab('transactions')}>
+                            View All <ArrowRight className="h-4 w-4 ml-2" />
+                        </Button>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                        <VerificationItem title="Security Questions" status={affiliate.securityQuestion} actionText="Set Questions" onAction={() => alert("Navigate to security questions page")} />
-                        <VerificationItem title="Identity Verification" status={affiliate.idUploaded} actionText="Upload ID" onAction={() => alert("Open ID upload dialog")} />
+                    <CardContent>
+                        <div className="space-y-4">
+                            {recentTransactions.length > 0 ? recentTransactions.map(t => (
+                                <div key={t.id} className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className={cn("flex h-8 w-8 items-center justify-center rounded-full", t.type === 'credit' ? 'bg-green-100' : 'bg-red-100')}>
+                                            {t.type === 'credit' ? <TrendingUp className="h-4 w-4 text-green-600" /> : <TrendingDown className="h-4 w-4 text-red-600" />}
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-medium">{t.description}</p>
+                                            <p className="text-xs text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
+                                        </div>
+                                    </div>
+                                    <p className={cn("text-sm font-semibold", t.type === 'credit' ? 'text-green-600' : 'text-red-600')}>
+                                        {t.type === 'credit' ? '+' : '-'} ${t.amount.toFixed(2)}
+                                    </p>
+                                </div>
+                            )) : (
+                                <p className="text-sm text-center text-muted-foreground py-4">No recent transactions.</p>
+                            )}
+                        </div>
                     </CardContent>
                 </Card>
                 <div className="flex justify-end">
@@ -322,7 +347,7 @@ export function OfficePageContent() {
                 <p className="text-muted-foreground">Invitation management will be available here.</p>
             </div>
         </TabsContent>
-        <TabsContent value="my-features" className="pt-6">
+        <TabsContent value="my-features" className="pt-6 space-y-6">
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><KeyRound className="h-5 w-5" /> My Features</CardTitle>
@@ -342,7 +367,8 @@ export function OfficePageContent() {
                             </Button>
                         </div>
                     </div>
-                     <div className="space-y-3 pt-4 border-t">
+                     <Separator />
+                     <div className="space-y-3 pt-4">
                         <h3 className="text-sm font-semibold mb-2">Affiliate Phone Number</h3>
                         <p className="text-xs text-muted-foreground mb-2">This WhatsApp number will be used for top-up notifications and affiliate queries.</p>
                         <div className="flex items-center gap-2">
@@ -359,6 +385,16 @@ export function OfficePageContent() {
                             />
                         </div>
                     </div>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Account Verification</CardTitle>
+                    <CardDescription>Complete these steps to secure your account and enable withdrawals.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <VerificationItem title="Security Questions" status={affiliate.securityQuestion} actionText="Set Questions" onAction={() => alert("Navigate to security questions page")} />
+                    <VerificationItem title="Identity Verification" status={affiliate.idUploaded} actionText="Upload ID" onAction={() => alert("Open ID upload dialog")} />
                 </CardContent>
             </Card>
         </TabsContent>

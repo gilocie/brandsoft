@@ -10,6 +10,14 @@ export type AffiliateClient = {
   status: 'active' | 'expired';
 };
 
+export type Transaction = {
+  id: string;
+  date: string;
+  description: string;
+  amount: number;
+  type: 'credit' | 'debit';
+};
+
 export type Affiliate = {
   fullName: string;
   username: string;
@@ -24,6 +32,7 @@ export type Affiliate = {
   bonus: number;
   clients: AffiliateClient[];
   staffId?: string;
+  transactions?: Transaction[];
 };
 
 export type Company = {

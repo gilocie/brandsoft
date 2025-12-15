@@ -32,11 +32,19 @@ const initialAffiliateData: Affiliate = {
     totalSales: 17500.00,
     creditBalance: 50.00,
     bonus: 2500.00,
-    staffId: 'AFF-12345',
+    staffId: 'BS-AFF-12345678',
     clients: [
       { id: 'CLIENT-1', name: 'Client A', avatar: 'https://picsum.photos/seed/client1/100', plan: 'Standard', status: 'active' },
       { id: 'CLIENT-2', name: 'Client B', avatar: 'https://picsum.photos/seed/client2/100', plan: 'Pro', status: 'active' },
       { id: 'CLIENT-3', name: 'Client C', avatar: 'https://picsum.photos/seed/client3/100', plan: 'Standard', status: 'expired' },
+    ],
+    transactions: [
+        { id: 'TRN-1', date: '2024-07-20', description: 'Withdrawal', amount: 500, type: 'debit' },
+        { id: 'TRN-2', date: '2024-07-18', description: 'Commission: Client B', amount: 75.50, type: 'credit' },
+        { id: 'TRN-3', date: '2024-07-15', description: 'Commission: Client A', amount: 50.00, type: 'credit' },
+        { id: 'TRN-4', date: '2024-07-10', description: 'Bonus Payout', amount: 200, type: 'credit' },
+        { id: 'TRN-5', date: '2024-07-05', description: 'Withdrawal', amount: 1000, type: 'debit' },
+        { id: 'TRN-6', date: '2024-06-28', description: 'Commission: Old Client', amount: 30.00, type: 'credit' },
     ],
 };
 
@@ -199,22 +207,13 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
             needsSave = true;
         } else {
              // Ensure all new fields exist
-            if (typeof parsedConfig.affiliate.totalSales === 'undefined') {
-                parsedConfig.affiliate.totalSales = initialAffiliateData.totalSales;
-                needsSave = true;
-            }
-            if (typeof parsedConfig.affiliate.creditBalance === 'undefined') {
-                parsedConfig.affiliate.creditBalance = initialAffiliateData.creditBalance;
-                needsSave = true;
-            }
-            if (typeof parsedConfig.affiliate.bonus === 'undefined') {
-                parsedConfig.affiliate.bonus = initialAffiliateData.bonus;
-                needsSave = true;
-            }
-            if (typeof parsedConfig.affiliate.staffId === 'undefined') {
-                parsedConfig.affiliate.staffId = initialAffiliateData.staffId;
-                needsSave = true;
-            }
+            const fieldsToCheck: (keyof Affiliate)[] = ['totalSales', 'creditBalance', 'bonus', 'staffId', 'phone', 'transactions'];
+            fieldsToCheck.forEach(field => {
+                if (typeof parsedConfig.affiliate[field] === 'undefined') {
+                    parsedConfig.affiliate[field] = initialAffiliateData[field];
+                    needsSave = true;
+                }
+            });
         }
         
         setConfig(parsedConfig);
@@ -316,5 +315,3 @@ export function useBrandsoft() {
   }
   return context;
 }
-
-    
