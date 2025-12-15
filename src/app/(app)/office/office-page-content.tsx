@@ -158,8 +158,8 @@ export function OfficePageContent() {
     );
   }
   
-  const bonusAmount = affiliate.bonus || 20;
-  const displayBalance = affiliate.balance + (affiliate.clients.length >= 10 ? bonusAmount : 0);
+  const bonusAmount = affiliate.clients.length >= 10 ? 20 : 0;
+  const displayBalance = affiliate.balance + bonusAmount;
 
   const activeClients = affiliate.clients.filter(c => c.status === 'active').length;
 
@@ -327,7 +327,6 @@ export function OfficePageContent() {
                         <CardContent>
                            <Button 
                                 variant="secondary"
-                                disabled={!affiliate.securityQuestion || !affiliate.idUploaded || affiliate.balance <= 0}
                             >
                                 Withdraw Balance
                             </Button>
@@ -492,6 +491,7 @@ export function OfficePageContent() {
     </div>
   );
 }
+
 
 
 
