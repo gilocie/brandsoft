@@ -142,7 +142,7 @@ const SecurityQuestionsDialog = ({ isOpen, onClose, onSave, currentData }: { isO
 
     return (
         <>
-            <Dialog open={isOpen} onOpenChange={onClose}>
+            <Dialog open={isOpen} onOpenChange={(open) => !isConfirming && onClose()}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Set Security Question</DialogTitle>
@@ -776,16 +776,16 @@ export function OfficePageContent() {
   const MethodCard = ({method, name, description, icon: Icon, onAction, isSetup}: {method?: EditableWithdrawalMethod | 'bsCredits', name: string, description: string, icon: React.ElementType, onAction: () => void, isSetup: boolean}) => {
       return (
           <Card>
-              <CardHeader>
-                  <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-full bg-primary/10"><Icon className="h-5 w-5 text-primary" /></div>
-                          <CardTitle className="text-base">{name}</CardTitle>
-                      </div>
-                       {isSetup && <CheckCircle className="h-5 w-5 text-green-500" />}
+              <CardHeader className="flex flex-row items-center justify-between">
+                  <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-full bg-primary/10"><Icon className="h-5 w-5 text-primary" /></div>
+                      <CardTitle className="text-base">{name}</CardTitle>
                   </div>
-                  <CardDescription className="pt-2">{description}</CardDescription>
+                   {isSetup && <CheckCircle className="h-5 w-5 text-green-500" />}
               </CardHeader>
+               <CardContent>
+                  <CardDescription>{description}</CardDescription>
+              </CardContent>
               <CardContent className="flex items-center justify-end gap-2">
                  <Button variant={isSetup ? 'secondary' : 'default'} size="sm" onClick={onAction}>
                     {isSetup ? <Pencil className="h-4 w-4 mr-2" /> : null}
@@ -1180,5 +1180,3 @@ export function OfficePageContent() {
     </div>
   );
 }
-
-    
