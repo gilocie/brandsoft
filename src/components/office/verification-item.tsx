@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -14,8 +15,6 @@ export const VerificationItem = ({ title, status, actionText, onAction }: { titl
                 </p>
             </div>
         </div>
-        {!status && (
-            <Button variant="secondary" size="sm" onClick={onAction}>{actionText}</Button>
-        )}
+        <Button variant="secondary" size="sm" onClick={onAction}>{actionText}</Button>
     </div>
 );
