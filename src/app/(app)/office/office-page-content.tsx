@@ -64,11 +64,13 @@ const VerificationItem = ({ title, status, actionText, onAction }: { title: stri
     </div>
 );
 
+const ITEMS_PER_PAGE = 10;
 
 export function OfficePageContent() {
   const { config, saveConfig } = useBrandsoft();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [payoutsPage, setPayoutsPage] = useState(0);
   const { toast } = useToast();
 
   const affiliate = config?.affiliate;
@@ -128,8 +130,25 @@ export function OfficePageContent() {
   
   const recentTransactions = useMemo(() => {
     if (!affiliate?.transactions) return [];
-    return affiliate.transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
+    return affiliate.transactions
+      .filter(t => t.type === 'credit')
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 5);
   }, [affiliate?.transactions]);
+  
+  const payoutTransactions = useMemo(() => {
+    if (!affiliate?.transactions) return [];
+    return affiliate.transactions
+      .filter(t => t.type === 'debit')
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [affiliate?.transactions]);
+  
+  const paginatedPayouts = useMemo(() => {
+    const startIndex = payoutsPage * ITEMS_PER_PAGE;
+    return payoutTransactions.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [payoutTransactions, payoutsPage]);
+
+  const totalPayoutPages = Math.ceil(payoutTransactions.length / ITEMS_PER_PAGE);
 
   if (!affiliate) {
     return (
@@ -293,8 +312,8 @@ export function OfficePageContent() {
                  <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
                         <div>
-                            <CardTitle>Recent Transactions</CardTitle>
-                            <CardDescription>Your last 5 transactions.</CardDescription>
+                            <CardTitle>Recent Sales Transactions</CardTitle>
+                            <CardDescription>Your last 5 sales commissions.</CardDescription>
                         </div>
                         <Button variant="outline" size="sm" onClick={() => setActiveTab('transactions')}>
                             View All <ArrowRight className="h-4 w-4 ml-2" />
@@ -318,7 +337,7 @@ export function OfficePageContent() {
                                     </p>
                                 </div>
                             )) : (
-                                <p className="text-sm text-center text-muted-foreground py-4">No recent transactions.</p>
+                                <p className="text-sm text-center text-muted-foreground py-4">No recent sales transactions.</p>
                             )}
                         </div>
                     </CardContent>
@@ -349,9 +368,43 @@ export function OfficePageContent() {
                     </div>
                 </TabsContent>
                 <TabsContent value="payouts" className="pt-4">
-                    <div className="flex h-60 items-center justify-center rounded-lg border-2 border-dashed">
-                        <p className="text-muted-foreground">Payout transaction history will be shown here.</p>
-                    </div>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Payout History</CardTitle>
+                            <CardDescription>Your history of withdrawals.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                             <div className="space-y-4">
+                                {paginatedPayouts.length > 0 ? paginatedPayouts.map(t => (
+                                    <div key={t.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100">
+                                                <TrendingDown className="h-4 w-4 text-red-600" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-medium">{t.description}</p>
+                                                <p className="text-xs text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
+                                            </div>
+                                        </div>
+                                        <p className="text-sm font-semibold text-red-600">- ${t.amount.toFixed(2)}</p>
+                                    </div>
+                                )) : (
+                                    <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
+                                        <p className="text-muted-foreground">No payout transactions found.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </CardContent>
+                        {totalPayoutPages > 1 && (
+                            <CardContent className="pt-4 flex items-center justify-between">
+                                <span className="text-sm text-muted-foreground">Page {payoutsPage + 1} of {totalPayoutPages}</span>
+                                <div className="flex gap-2">
+                                    <Button variant="outline" size="sm" onClick={() => setPayoutsPage(p => p - 1)} disabled={payoutsPage === 0}>Previous</Button>
+                                    <Button variant="outline" size="sm" onClick={() => setPayoutsPage(p => p + 1)} disabled={payoutsPage >= totalPayoutPages - 1}>Next</Button>
+                                </div>
+                            </CardContent>
+                        )}
+                    </Card>
                 </TabsContent>
             </Tabs>
         </TabsContent>
@@ -415,4 +468,5 @@ export function OfficePageContent() {
     </div>
   );
 }
+
 
