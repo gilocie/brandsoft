@@ -2,6 +2,25 @@
 
 import { Page } from '@/stores/canvas-store';
 
+export type AffiliateClient = {
+  id: string;
+  name: string;
+  avatar: string;
+  plan: string;
+  status: 'active' | 'expired';
+};
+
+export type Affiliate = {
+  fullName: string;
+  username: string;
+  profilePic: string;
+  affiliateLink: string;
+  securityQuestion: boolean; // true if set, false if not
+  idUploaded: boolean; // true if both front and back are uploaded
+  balance: number;
+  clients: AffiliateClient[];
+};
+
 export type Company = {
   id: string;
   name: string; // Contact person's name
@@ -199,6 +218,7 @@ export type BrandsoftConfig = {
     quotation: boolean;
     marketing: boolean;
   };
+  affiliate?: Affiliate;
   companies: Company[];
   customers: Customer[];
   products: Product[];

@@ -2,7 +2,7 @@
 
 'use client';
 
-import type { BrandsoftConfig, Company, Customer, Invoice, Quotation, QuotationRequest } from '@/types/brandsoft';
+import type { BrandsoftConfig, Company, Customer, Invoice, Quotation, QuotationRequest, Affiliate } from '@/types/brandsoft';
 
 const initialCompanies: Omit<Company, 'id'>[] = [
     { 
@@ -167,6 +167,21 @@ export function useSetup(
       { id: 'COMP-DEMO-3', name: 'Grace Moyo', email: 'grace.moyo@buildright.mw', companyName: 'BuildRight Hardware'},
   ];
 
+  const initialAffiliateData: Affiliate = {
+    fullName: 'Your Affiliate Name',
+    username: 'affiliate_user',
+    profilePic: 'https://picsum.photos/seed/affiliate/200',
+    affiliateLink: 'https://brandsoft.com/join?ref=affiliate_user',
+    securityQuestion: true,
+    idUploaded: false,
+    balance: 1250.50,
+    clients: [
+      { id: 'CLIENT-1', name: 'Client A', avatar: 'https://picsum.photos/seed/client1/100', plan: 'Standard', status: 'active' },
+      { id: 'CLIENT-2', name: 'Client B', avatar: 'https://picsum.photos/seed/client2/100', plan: 'Pro', status: 'active' },
+      { id: 'CLIENT-3', name: 'Client C', avatar: 'https://picsum.photos/seed/client3/100', plan: 'Standard', status: 'expired' },
+    ],
+  };
+
 
   async function finalizeSetup(data: any) {
     const userCompanyId = `COMP-ME-${Date.now()}`;
@@ -249,6 +264,7 @@ export function useSetup(
         quotation: data.quotation,
         marketing: data.marketing,
       },
+      affiliate: initialAffiliateData,
       companies: finalCompanies,
       customers: finalCustomers,
       products: [],

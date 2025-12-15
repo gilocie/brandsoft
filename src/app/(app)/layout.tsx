@@ -52,6 +52,7 @@ import { WalletBalance } from '@/components/wallet-balance';
 
 const mainNavItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', enabledKey: null },
+  { href: '/office', icon: BriefcaseBusiness, label: 'Office', enabledKey: null },
   { href: '/invoices', icon: FileText, label: 'Invoices', enabledKey: 'invoice' },
   { href: '/quotations', icon: FileBarChart2, label: 'Quotations', enabledKey: 'quotation' },
   { href: '/quotation-requests', icon: MessageSquareQuote, label: 'Requests', enabledKey: 'quotation' },
