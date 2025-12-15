@@ -259,8 +259,7 @@ const SetPinDialog = ({ isOpen, onClose, onSave, isPinSet }: { isOpen: boolean; 
     }, [isOpen, form, resetForm]);
 
     const onSubmit = (data: PinFormData) => {
-        // In a real app, you'd verify the old PIN securely.
-        if (isPinSet && data.oldPin !== '1234') { // Using a demo old PIN
+        if (isPinSet && data.oldPin !== config?.affiliate?.pin) {
             toast({ variant: 'destructive', title: "Incorrect Old PIN" });
             return;
         }
@@ -269,10 +268,6 @@ const SetPinDialog = ({ isOpen, onClose, onSave, isPinSet }: { isOpen: boolean; 
     };
 
     const handleVerifyAnswer = (data: ResetPinFormData) => {
-        console.log('Verifying answer...');
-        console.log('User answer:', data.answer);
-        console.log('Stored answer:', config?.affiliate?.securityQuestionData?.answer);
-        
         if (!config?.affiliate?.securityQuestionData?.answer) {
             toast({ 
                 variant: 'destructive', 
@@ -827,8 +822,7 @@ export function OfficePageContent() {
 
   const handleSavePin = (pin: string) => {
     if (!config || !affiliate) return;
-    const newAffiliateData = { ...affiliate, isPinSet: true };
-    // In a real app, you'd securely save the hashed PIN. For demo, we just set the flag.
+    const newAffiliateData = { ...affiliate, isPinSet: true, pin: pin };
     saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
     toast({ title: 'PIN has been set successfully!' });
     setIsPinDialogOpen(false);
@@ -849,7 +843,7 @@ export function OfficePageContent() {
           securityQuestion: true, // Mark as set
           securityQuestionData: {
               question: questionToSave,
-              answer: data.answer, // In a real app, this would be hashed
+              answer: data.answer,
           },
       };
       saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
