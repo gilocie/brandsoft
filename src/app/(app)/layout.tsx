@@ -211,8 +211,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </SidebarMenu>
         </SidebarFooter>
       </Sidebar>
-      <SidebarInset className="overflow-x-hidden max-w-full">
-        <header className="flex h-14 items-center gap-4 border-b bg-background/95 backdrop-blur-sm sticky top-0 px-4 md:px-6 z-10 min-w-0">
+      <SidebarInset className="flex flex-col h-screen overflow-hidden">
+        <header className="flex h-14 items-center gap-4 border-b bg-background/95 backdrop-blur-sm sticky top-0 px-4 md:px-6 z-10 min-w-0 flex-shrink-0">
           <SidebarTrigger className="md:hidden flex-shrink-0" />
           <h1 className="text-lg font-semibold font-headline flex-1 truncate">
             {pageTitle}
@@ -238,16 +238,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </Button>
           </div>
         </header>
-        <div className="flex-1 flex flex-col overflow-x-hidden min-w-0">
-            <main className="flex-1 p-4 md:p-6 overflow-x-auto min-w-0">
-              <div className="w-full max-w-full">
-                {children}
-              </div>
-            </main>
-            <footer className="p-4 pb-4 text-center text-sm text-muted-foreground sticky bottom-0 bg-background">
-              © 2025 BrandSoft. All rights reserved.
-            </footer>
-        </div>
+        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+          <div className="w-full max-w-full">
+            {children}
+          </div>
+        </main>
+        <footer className="p-4 text-center text-sm text-muted-foreground border-t bg-background flex-shrink-0">
+          © 2025 BrandSoft. All rights reserved.
+        </footer>
       </SidebarInset>
     </SidebarProvider>
   );
