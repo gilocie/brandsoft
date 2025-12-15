@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Banknote } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useBrandsoft } from '@/hooks/use-brandsoft';
 
 const TRANSACTION_FEE_MWK = 3000;
 
@@ -23,7 +24,7 @@ const withdrawSchema = z.object({
       .min(30000, "Minimum withdrawal is K30,000")
       .max(1000000, "Maximum withdrawal at once is K1,000,000"),
   method: z.string().min(1, "Please select a payment method"),
-  details: z.string().min(1, "Please provide payment details"),
+  details: z.string().min(1, "Payment details are missing."),
   pin: z.string().length(4, "PIN must be 4 digits"),
   includeBonus: z.boolean().default(false),
 });
@@ -66,6 +67,8 @@ const AmountInput = ({ value, onChange, className }: { value: number, onChange: 
 export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, isVerified }: { commissionBalance: number, bonusBalance: number, onWithdraw: (amount: number, source: 'commission' | 'bonus' | 'combined') => void, isVerified: boolean }) => {
     const [step, setStep] = useState(1);
     const [isOpen, setIsOpen] = useState(false);
+    const { config } = useBrandsoft();
+    
     const form = useForm<WithdrawFormData>({
         resolver: zodResolver(withdrawSchema),
         defaultValues: { amount: 30000, method: '', details: '', pin: '', includeBonus: false },
@@ -77,10 +80,35 @@ export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, is
     const availableBalance = includeBonus ? commissionBalance + bonusBalance : commissionBalance;
     const withdrawableAmount = availableBalance - TRANSACTION_FEE_MWK;
 
+    const availableMethods = Object.entries(config?.affiliate?.withdrawalMethods || {})
+      .filter(([, details]) => !!details)
+      .map(([key, details]) => {
+          if (key === 'airtel' && details) return { value: 'airtel', label: 'Airtel Money', details: `${details.name} - ${details.phone}` };
+          if (key === 'tnm' && details) return { value: 'tnm', label: 'TNM Mpamba', details: `${details.name} - ${details.phone}` };
+          if (key === 'bank' && details) return { value: 'bank', label: 'Bank Transfer', details: `${details.bankName} - ${details.accountNumber}` };
+          return null;
+      }).filter(Boolean) as { value: string; label: string; details: string; }[];
+      
+    const handleMethodChange = (value: string) => {
+        const selectedMethod = availableMethods.find(m => m.value === value);
+        if (selectedMethod) {
+            form.setValue('method', value);
+            form.setValue('details', selectedMethod.details);
+            form.trigger('details');
+        }
+    };
+
+
     const handleNext = async () => {
         let isValid = false;
         if (step === 1) isValid = await form.trigger(["amount", "includeBonus"]);
-        if (step === 2) isValid = await form.trigger(["method", "details"]);
+        if (step === 2) {
+             if (availableMethods.length === 0) {
+                toast({ variant: 'destructive', title: "No Payment Methods", description: "Please set up a withdrawal method in 'My Features' first." });
+                return;
+            }
+            isValid = await form.trigger(["method", "details"]);
+        }
         if (isValid) setStep(s => s + 1);
     };
 
@@ -93,7 +121,13 @@ export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, is
             toast({ variant: 'destructive', title: "Insufficient Funds", description: "The amount plus the transaction fee exceeds your available balance." });
             return;
         }
-        if (data.pin !== "1234") { // Demo PIN
+
+        if (!config?.affiliate?.isPinSet) {
+             toast({ variant: 'destructive', title: "PIN Not Set", description: "Please set a withdrawal PIN in My Features > Security." });
+             return;
+        }
+
+        if (data.pin !== config?.affiliate?.pin) { 
             toast({ variant: 'destructive', title: "Incorrect PIN" });
             return;
         }
@@ -107,7 +141,7 @@ export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, is
     };
 
     return (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <Dialog open={isOpen} onOpenChange={(open) => { if (!open) { form.reset(); setStep(1); } setIsOpen(open); }}>
             <DialogTrigger asChild>
                 <Button variant="secondary">
                     <Banknote className="h-4 w-4 mr-2" />
@@ -166,12 +200,12 @@ export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, is
                                  <FormField control={form.control} name="method" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Withdrawal Method</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <Select onValueChange={handleMethodChange} defaultValue={field.value}>
                                             <FormControl><SelectTrigger><SelectValue placeholder="Select a method" /></SelectTrigger></FormControl>
                                             <SelectContent>
-                                                <SelectItem value="airtel">Airtel Money</SelectItem>
-                                                <SelectItem value="tnm">TNM Mpamba</SelectItem>
-                                                <SelectItem value="bank">Bank Transfer</SelectItem>
+                                                {availableMethods.map(method => (
+                                                    <SelectItem key={method.value} value={method.value}>{method.label}</SelectItem>
+                                                ))}
                                             </SelectContent>
                                         </Select>
                                         <FormMessage />
@@ -179,8 +213,8 @@ export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, is
                                 )}/>
                                 <FormField control={form.control} name="details" render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Details (e.g., Phone or Account #)</FormLabel>
-                                        <FormControl><Input {...field} /></FormControl>
+                                        <FormLabel>Details</FormLabel>
+                                        <FormControl><Input {...field} readOnly className="bg-muted" /></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}/>
