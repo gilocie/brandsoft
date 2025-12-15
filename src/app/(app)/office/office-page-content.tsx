@@ -90,7 +90,7 @@ export function OfficePageContent() {
         form.reset({
             fullName: affiliate.fullName,
             username: affiliate.username,
-            phone: affiliate.phone || '',
+            phone: affiliate.phone,
             profilePic: affiliate.profilePic,
         });
     }
@@ -276,7 +276,7 @@ export function OfficePageContent() {
         </TabsList>
         <TabsContent value="dashboard" className="pt-6">
             <div className="grid gap-6">
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                      <StatCard icon={DollarSign} title="Total Sales" value={affiliate.totalSales} footer="All-time client sales" isCurrency />
                      <Card>
                         <CardHeader>
@@ -320,6 +320,7 @@ export function OfficePageContent() {
                      <StatCard icon={Users} title="Active Clients" value={activeClients} footer={`${affiliate.clients.length - activeClients} expired`} />
                 </div>
                  <div className="grid md:grid-cols-2 gap-6">
+                    <StatCard icon={UserCheck} title="Total Referrals" value={affiliate.clients.length} footer="All-time client sign-ups" />
                     <Card>
                         <CardHeader>
                             <div className="flex items-center justify-between">
@@ -335,7 +336,6 @@ export function OfficePageContent() {
                            <Button variant="outline" disabled>View Progress</Button>
                         </CardContent>
                      </Card>
-                     <StatCard icon={UserCheck} title="Total Referrals" value={affiliate.clients.length} footer="All-time client sign-ups" />
                 </div>
                  <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
@@ -491,5 +491,6 @@ export function OfficePageContent() {
     </div>
   );
 }
+
 
 
