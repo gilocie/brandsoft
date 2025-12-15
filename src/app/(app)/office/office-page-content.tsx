@@ -83,8 +83,15 @@ const securityQuestionSchema = z.object({
 
 type SecurityQuestionFormData = z.infer<typeof securityQuestionSchema>;
 
-const resetPinSchema = z.object({
+// Schema for Step 1: Just the answer
+const verifyAnswerSchema = z.object({
   answer: z.string().min(1, "An answer is required."),
+});
+
+type VerifyAnswerFormData = z.infer<typeof verifyAnswerSchema>;
+
+// Schema for Step 2: Just the PINs
+const setNewPinSchema = z.object({
   newPin: z.string().length(4, "New PIN must be 4 digits.").regex(/^\d{4}$/, "New PIN must be 4 digits."),
   confirmNewPin: z.string().length(4, "New PIN must be 4 digits.").regex(/^\d{4}$/, "New PIN must be 4 digits."),
 }).refine(data => data.newPin === data.confirmNewPin, {
@@ -92,7 +99,7 @@ const resetPinSchema = z.object({
     path: ["confirmNewPin"],
 });
 
-type ResetPinFormData = z.infer<typeof resetPinSchema>;
+type SetNewPinFormData = z.infer<typeof setNewPinSchema>;
 
 
 const USD_TO_MWK = 1700;
@@ -236,14 +243,22 @@ const SetPinDialog = ({ isOpen, onClose, onSave, isPinSet }: { isOpen: boolean; 
     const [resetStep, setResetStep] = useState(1);
     const { config } = useBrandsoft();
 
+    // Form for normal PIN change
     const form = useForm<PinFormData>({
         resolver: zodResolver(pinSchema),
         defaultValues: { oldPin: '', pin: '', confirmPin: '' },
     });
     
-    const resetForm = useForm<ResetPinFormData>({
-        resolver: zodResolver(resetPinSchema),
-        defaultValues: { answer: '', newPin: '', confirmNewPin: '' },
+    // Form for Step 1: Verify Answer
+    const answerForm = useForm<VerifyAnswerFormData>({
+        resolver: zodResolver(verifyAnswerSchema),
+        defaultValues: { answer: '' },
+    });
+
+    // Form for Step 2: Set New PIN
+    const newPinForm = useForm<SetNewPinFormData>({
+        resolver: zodResolver(setNewPinSchema),
+        defaultValues: { newPin: '', confirmNewPin: '' },
     });
 
     useEffect(() => {
@@ -254,9 +269,10 @@ const SetPinDialog = ({ isOpen, onClose, onSave, isPinSet }: { isOpen: boolean; 
             setShowPin(false);
             setShowOldPin(false);
             form.reset();
-            resetForm.reset();
+            answerForm.reset(); // Reset separate form 1
+            newPinForm.reset(); // Reset separate form 2
         }
-    }, [isOpen, form, resetForm]);
+    }, [isOpen, form, answerForm, newPinForm]);
 
     const onSubmit = (data: PinFormData) => {
         if (isPinSet && data.oldPin !== config?.affiliate?.pin) {
@@ -267,7 +283,8 @@ const SetPinDialog = ({ isOpen, onClose, onSave, isPinSet }: { isOpen: boolean; 
         onClose();
     };
 
-    const handleVerifyAnswer = (data: ResetPinFormData) => {
+    // Updated to use VerifyAnswerFormData
+    const handleVerifyAnswer = (data: VerifyAnswerFormData) => {
         if (!config?.affiliate?.securityQuestionData?.answer) {
             toast({ 
                 variant: 'destructive', 
@@ -296,7 +313,8 @@ const SetPinDialog = ({ isOpen, onClose, onSave, isPinSet }: { isOpen: boolean; 
         setResetStep(2);
     };
 
-    const handleResetSubmit = (data: ResetPinFormData) => {
+    // Updated to use SetNewPinFormData
+    const handleResetSubmit = (data: SetNewPinFormData) => {
         onSave(data.newPin);
         toast({ 
             title: "PIN Reset Successfully!",
@@ -318,12 +336,13 @@ const SetPinDialog = ({ isOpen, onClose, onSave, isPinSet }: { isOpen: boolean; 
                     </DialogDescription>
                 </DialogHeader>
                 
+                {/* STEP 1: Uses answerForm */}
                 {resetStep === 1 && (
-                    <Form {...resetForm}>
-                        <form onSubmit={resetForm.handleSubmit(handleVerifyAnswer)} className="space-y-4">
+                    <Form {...answerForm}>
+                        <form onSubmit={answerForm.handleSubmit(handleVerifyAnswer)} className="space-y-4">
                             <div className="space-y-2">
                                <p className="text-sm font-medium">{config?.affiliate?.securityQuestionData?.question || 'No security question set'}</p>
-                                <FormField control={resetForm.control} name="answer" render={({ field }) => (
+                                <FormField control={answerForm.control} name="answer" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Your Answer</FormLabel>
                                         <FormControl>
@@ -344,10 +363,11 @@ const SetPinDialog = ({ isOpen, onClose, onSave, isPinSet }: { isOpen: boolean; 
                     </Form>
                 )}
                 
+                {/* STEP 2: Uses newPinForm */}
                 {resetStep === 2 && (
-                    <Form {...resetForm}>
-                        <form onSubmit={resetForm.handleSubmit(handleResetSubmit)} className="space-y-4">
-                            <FormField control={resetForm.control} name="newPin" render={({ field }) => (
+                    <Form {...newPinForm}>
+                        <form onSubmit={newPinForm.handleSubmit(handleResetSubmit)} className="space-y-4">
+                            <FormField control={newPinForm.control} name="newPin" render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>New 4-Digit PIN</FormLabel>
                                     <FormControl>
@@ -356,7 +376,7 @@ const SetPinDialog = ({ isOpen, onClose, onSave, isPinSet }: { isOpen: boolean; 
                                     <FormMessage />
                                 </FormItem>
                             )}/>
-                            <FormField control={resetForm.control} name="confirmNewPin" render={({ field }) => (
+                            <FormField control={newPinForm.control} name="confirmNewPin" render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Confirm New PIN</FormLabel>
                                     <FormControl>
