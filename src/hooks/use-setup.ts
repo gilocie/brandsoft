@@ -206,6 +206,7 @@ export function useSetup(
         airtel: undefined,
         tnm: undefined,
         bank: undefined,
+        bsCredits: undefined,
     },
   };
 

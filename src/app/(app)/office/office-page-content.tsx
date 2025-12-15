@@ -50,35 +50,97 @@ type EditableWithdrawalMethod = 'airtel' | 'tnm';
 const bankWithdrawalSchema = z.object({
     bankName: z.string().min(2, 'Bank name is required'),
     accountNumber: z.string().min(5, 'Account number is required'),
-    branch: z.string().min(1, 'Please select your Staff ID'),
+    accountType: z.enum(['Saving', 'Current', 'Fixed']),
 });
 
 type BankWithdrawalFormData = z.infer<typeof bankWithdrawalSchema>;
+
+const bsCreditsSchema = z.object({
+    staffId: z.string().min(1, 'Please select your Staff ID'),
+});
+type BsCreditsFormData = z.infer<typeof bsCreditsSchema>;
+
 
 const USD_TO_MWK = 1700;
 const CREDIT_TO_MWK = 1000;
 const ITEMS_PER_PAGE = 10;
 
+const BsCreditsDialog = ({ isOpen, onClose, onSave, currentData, staffId }: { isOpen: boolean; onClose: () => void; onSave: (data: BsCreditsFormData) => void; currentData?: { staffId: string }; staffId?: string }) => {
+    const form = useForm<BsCreditsFormData>({
+        resolver: zodResolver(bsCreditsSchema),
+        defaultValues: currentData || { staffId: '' },
+    });
+    
+    useEffect(() => {
+        form.reset(currentData || { staffId: '' });
+    }, [currentData, form]);
+
+    const onSubmit = (data: BsCreditsFormData) => {
+        onSave(data);
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onClose}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Set Up BS Credits Withdrawal</DialogTitle>
+                    <DialogDescription>Select your Staff ID to associate with credit withdrawals.</DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                        <FormField
+                            control={form.control}
+                            name="staffId"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Staff ID</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select Staff ID" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {staffId ? (
+                                                <SelectItem value={staffId}>{staffId}</SelectItem>
+                                            ) : (
+                                                <SelectItem value="none" disabled>No Staff ID generated</SelectItem>
+                                            )}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <DialogFooter>
+                            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+                            <Button type="submit">Save</Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
 const BankWithdrawalDialog = ({
     isOpen,
     onClose,
     onSave,
-    currentData,
-    staffId
+    currentData
 }: {
     isOpen: boolean,
     onClose: () => void,
     onSave: (data: BankWithdrawalFormData) => void,
-    currentData?: { bankName: string; accountNumber: string; branch: string; },
-    staffId?: string
+    currentData?: { bankName: string; accountNumber: string; accountType: 'Saving' | 'Current' | 'Fixed'; }
 }) => {
     const form = useForm<BankWithdrawalFormData>({
         resolver: zodResolver(bankWithdrawalSchema),
-        defaultValues: currentData || { bankName: '', accountNumber: '', branch: '' }
+        defaultValues: currentData || { bankName: '', accountNumber: '', accountType: 'Saving' }
     });
 
     useEffect(() => {
-        form.reset(currentData || { bankName: '', accountNumber: '', branch: '' });
+        form.reset(currentData || { bankName: '', accountNumber: '', accountType: 'Saving' });
     }, [currentData, form]);
 
     const onSubmit = (data: BankWithdrawalFormData) => {
@@ -100,21 +162,19 @@ const BankWithdrawalDialog = ({
                         <FormField control={form.control} name="accountNumber" render={({ field }) => (
                             <FormItem><FormLabel>Account Number</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
-                         <FormField control={form.control} name="branch" render={({ field }) => (
+                         <FormField control={form.control} name="accountType" render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Branch (Staff ID)</FormLabel>
+                                <FormLabel>Account Type</FormLabel>
                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                     <FormControl>
                                         <SelectTrigger>
-                                            <SelectValue placeholder="Select Staff ID" />
+                                            <SelectValue placeholder="Select account type" />
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                        {staffId ? (
-                                            <SelectItem value={staffId}>{staffId}</SelectItem>
-                                        ) : (
-                                            <SelectItem value="none" disabled>No Staff ID available</SelectItem>
-                                        )}
+                                        <SelectItem value="Saving">Saving</SelectItem>
+                                        <SelectItem value="Current">Current</SelectItem>
+                                        <SelectItem value="Fixed">Fixed</SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <FormMessage />
@@ -194,6 +254,7 @@ export function OfficePageContent() {
 
   const [editingMethod, setEditingMethod] = useState<EditableWithdrawalMethod | null>(null);
   const [isBankDialogOpen, setIsBankDialogOpen] = useState(false);
+  const [isBsCreditsDialogOpen, setIsBsCreditsDialogOpen] = useState(false);
 
 
   const affiliate = config?.affiliate;
@@ -356,8 +417,20 @@ export function OfficePageContent() {
     toast({ title: "Bank Details Saved!" });
     setIsBankDialogOpen(false);
   };
+
+  const handleSaveBsCredits = (data: BsCreditsFormData) => {
+    if (!config || !affiliate) return;
+    const newAffiliateData = { ...affiliate };
+    if (!newAffiliateData.withdrawalMethods) {
+        newAffiliateData.withdrawalMethods = {};
+    }
+    newAffiliateData.withdrawalMethods.bsCredits = data;
+    saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
+    toast({ title: "BS Credits Details Saved!" });
+    setIsBsCreditsDialogOpen(false);
+  };
   
-  const MethodCard = ({method, name, icon: Icon, onAction, isSetup}: {method?: EditableWithdrawalMethod, name: string, icon: React.ElementType, onAction: () => void, isSetup: boolean}) => {
+  const MethodCard = ({method, name, icon: Icon, onAction, isSetup}: {method?: EditableWithdrawalMethod | 'bsCredits', name: string, icon: React.ElementType, onAction: () => void, isSetup: boolean}) => {
       return (
           <Card>
               <CardHeader className="flex flex-row items-center justify-between">
@@ -502,9 +575,10 @@ export function OfficePageContent() {
                      <StatCard 
                         icon={CreditCard} 
                         title="Credit Balance" 
-                        value={affiliate.creditBalance}
-                        valuePrefix={`BS ${affiliate.creditBalance.toLocaleString()} `}
-                        footer={`= K${(affiliate.creditBalance * CREDIT_TO_MWK).toLocaleString()}`}
+                        value={affiliate.creditBalance * CREDIT_TO_MWK}
+                        valuePrefix={`BS${affiliate.creditBalance.toLocaleString()} = `}
+                        isCurrency
+                        footer={`Value: K${(affiliate.creditBalance * CREDIT_TO_MWK).toLocaleString()}`}
                     >
                         <BuyCreditsDialog walletBalance={affiliate.balance * USD_TO_MWK} />
                     </StatCard>
@@ -706,10 +780,7 @@ export function OfficePageContent() {
                                 <MethodCard method="airtel" name="Airtel Money" icon={Smartphone} isSetup={!!affiliate.withdrawalMethods?.airtel} onAction={() => setEditingMethod('airtel')} />
                                 <MethodCard method="tnm" name="TNM Mpamba" icon={Smartphone} isSetup={!!affiliate.withdrawalMethods?.tnm} onAction={() => setEditingMethod('tnm')} />
                                 <MethodCard name="Bank Transfer" icon={Banknote} isSetup={!!affiliate.withdrawalMethods?.bank} onAction={() => setIsBankDialogOpen(true)} />
-                                <Card>
-                                    <CardHeader className="flex flex-row items-center gap-3"><div className="p-2 rounded-full bg-muted"><Wallet className="h-5 w-5 text-muted-foreground" /></div><CardTitle className="text-base">BS Credits</CardTitle></CardHeader>
-                                    <CardContent><Button variant="secondary" size="sm" disabled>Set Up</Button></CardContent>
-                                </Card>
+                                <MethodCard method="bsCredits" name="BS Credits" icon={Wallet} isSetup={!!affiliate.withdrawalMethods?.bsCredits} onAction={() => setIsBsCreditsDialogOpen(true)} />
                             </div>
                         </TabsContent>
                         <TabsContent value="security" className="p-6">
@@ -732,9 +803,15 @@ export function OfficePageContent() {
         />
         <BankWithdrawalDialog
             isOpen={isBankDialogOpen}
-            onClose={() => setIsBankDialogOpen(null)}
+            onClose={() => setIsBankDialogOpen(false)}
             onSave={handleSaveBankDetails}
             currentData={affiliate.withdrawalMethods?.bank}
+        />
+         <BsCreditsDialog
+            isOpen={isBsCreditsDialogOpen}
+            onClose={() => setIsBsCreditsDialogOpen(false)}
+            onSave={handleSaveBsCredits}
+            currentData={affiliate.withdrawalMethods?.bsCredits}
             staffId={affiliate.staffId}
         />
     </div>
