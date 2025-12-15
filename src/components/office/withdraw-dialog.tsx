@@ -148,9 +148,9 @@ export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, is
                                         </FormControl>
                                         <FormDescription>Min: K30,000, Max: K1,000,000</FormDescription>
                                         <FormMessage />
-                                         <div className="flex justify-between items-end pt-2">
+                                         <div className="flex justify-between items-end pt-2 border-b pb-2">
                                            <div className="text-left">
-                                                <div className="text-sm font-medium text-primary">Available:</div>
+                                                <div className="text-sm font-medium text-left">Available:</div>
                                                 <div className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-lg font-bold mt-1">
                                                     K{withdrawableAmount > 0 ? withdrawableAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
                                                 </div>
