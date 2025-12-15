@@ -277,9 +277,22 @@ export function OfficePageContent() {
         <TabsContent value="dashboard" className="pt-6">
             <div className="grid gap-6">
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    <StatCard icon={DollarSign} title="Total Sales" value={affiliate.totalSales} footer="All-time client sales" isCurrency />
-                    <StatCard icon={Users} title="Active Clients" value={activeClients} footer={`${affiliate.clients.length - activeClients} expired`} />
-                    <StatCard icon={UserCheck} title="Total Referrals" value={affiliate.clients.length} footer="All-time client sign-ups" />
+                     <StatCard icon={DollarSign} title="Total Sales" value={affiliate.totalSales} footer="All-time client sales" isCurrency />
+                     <Card>
+                        <CardHeader>
+                            <div className="flex items-center justify-between">
+                                <CardTitle>Credit Balance</CardTitle>
+                                <CreditCard className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                            <CardDescription>Credits for platform usage.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-3xl font-bold">{affiliate.creditBalance.toLocaleString()} Credits</p>
+                        </CardContent>
+                        <CardContent>
+                            <Button>Request Credits</Button>
+                        </CardContent>
+                    </Card>
                     <Card className="bg-gradient-to-br from-primary to-orange-500 text-white">
                         <CardHeader>
                             <div className="flex items-center justify-between">
@@ -304,24 +317,10 @@ export function OfficePageContent() {
                             </Button>
                         </CardContent>
                      </Card>
+                     <StatCard icon={Users} title="Active Clients" value={activeClients} footer={`${affiliate.clients.length - activeClients} expired`} />
                 </div>
                  <div className="grid md:grid-cols-2 gap-6">
                     <Card>
-                        <CardHeader>
-                            <div className="flex items-center justify-between">
-                                <CardTitle>Credit Balance</CardTitle>
-                                <CreditCard className="h-5 w-5 text-muted-foreground" />
-                            </div>
-                            <CardDescription>Credits for platform usage.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-3xl font-bold">{affiliate.creditBalance.toLocaleString()} Credits</p>
-                        </CardContent>
-                        <CardContent>
-                            <Button>Request Credits</Button>
-                        </CardContent>
-                    </Card>
-                     <Card>
                         <CardHeader>
                             <div className="flex items-center justify-between">
                                 <CardTitle>Bonus Tier</CardTitle>
@@ -336,6 +335,7 @@ export function OfficePageContent() {
                            <Button variant="outline" disabled>View Progress</Button>
                         </CardContent>
                      </Card>
+                     <StatCard icon={UserCheck} title="Total Referrals" value={affiliate.clients.length} footer="All-time client sign-ups" />
                 </div>
                  <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
@@ -491,4 +491,5 @@ export function OfficePageContent() {
     </div>
   );
 }
+
 
