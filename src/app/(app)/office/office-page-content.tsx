@@ -241,20 +241,22 @@ const SetPinDialog = ({ isOpen, onClose, onSave, isPinSet }: { isOpen: boolean; 
         defaultValues: { oldPin: '', pin: '', confirmPin: '' },
     });
     
-    useEffect(() => {
-        if (!isOpen) {
-            // Reset states when dialog is closed
-            setIsResetting(false);
-            setResetStep(1);
-            form.reset();
-            resetForm.reset();
-        }
-    }, [isOpen, form]);
-
     const resetForm = useForm<ResetPinFormData>({
         resolver: zodResolver(resetPinSchema),
         defaultValues: { answer: '', newPin: '', confirmNewPin: '' },
     });
+
+    useEffect(() => {
+        if (!isOpen) {
+            // Reset all states when dialog closes
+            setIsResetting(false);
+            setResetStep(1);
+            setShowPin(false);
+            setShowOldPin(false);
+            form.reset();
+            resetForm.reset();
+        }
+    }, [isOpen, form, resetForm]);
 
     const onSubmit = (data: PinFormData) => {
         // In a real app, you'd verify the old PIN securely.
@@ -263,24 +265,56 @@ const SetPinDialog = ({ isOpen, onClose, onSave, isPinSet }: { isOpen: boolean; 
             return;
         }
         onSave(data.pin);
+        onClose();
     };
 
     const handleVerifyAnswer = (data: ResetPinFormData) => {
-        if (data.answer.toLowerCase() !== config?.affiliate?.securityQuestionData?.answer.toLowerCase()) {
-            toast({ variant: 'destructive', title: "Incorrect Answer" });
+        console.log('Verifying answer...');
+        console.log('User answer:', data.answer);
+        console.log('Stored answer:', config?.affiliate?.securityQuestionData?.answer);
+        
+        if (!config?.affiliate?.securityQuestionData?.answer) {
+            toast({ 
+                variant: 'destructive', 
+                title: "Error", 
+                description: "No security question set up." 
+            });
             return;
         }
-        setResetStep(2); // Move to the next step
+
+        const userAnswer = data.answer.trim().toLowerCase();
+        const storedAnswer = config.affiliate.securityQuestionData.answer.trim().toLowerCase();
+        
+        if (userAnswer !== storedAnswer) {
+            toast({ 
+                variant: 'destructive', 
+                title: "Incorrect Answer",
+                description: "Please try again." 
+            });
+            return;
+        }
+        
+        toast({ 
+            title: "Answer Verified!",
+            description: "Now set your new PIN." 
+        });
+        setResetStep(2);
     };
 
     const handleResetSubmit = (data: ResetPinFormData) => {
         onSave(data.newPin);
+        toast({ 
+            title: "PIN Reset Successfully!",
+            description: "Your new PIN has been saved." 
+        });
         setIsResetting(false);
+        setResetStep(1);
+        onClose();
     };
     
     if (isResetting) {
       return (
-        <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+        <Dialog open={isOpen} onOpenChange={(open) => { if (!open) { setIsResetting(false); setResetStep(1); onClose(); } }}>
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>Reset PIN</DialogTitle>
@@ -293,13 +327,22 @@ const SetPinDialog = ({ isOpen, onClose, onSave, isPinSet }: { isOpen: boolean; 
                     <Form {...resetForm}>
                         <form onSubmit={resetForm.handleSubmit(handleVerifyAnswer)} className="space-y-4">
                             <div className="space-y-2">
-                               <p className="text-sm font-medium">{config?.affiliate?.securityQuestionData?.question}</p>
+                               <p className="text-sm font-medium">{config?.affiliate?.securityQuestionData?.question || 'No security question set'}</p>
                                 <FormField control={resetForm.control} name="answer" render={({ field }) => (
-                                    <FormItem><FormLabel className="sr-only">Answer</FormLabel><FormControl><Input placeholder="Your answer" {...field} /></FormControl><FormMessage /></FormItem>
+                                    <FormItem>
+                                        <FormLabel>Your Answer</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="Enter your answer" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
                                 )}/>
                             </div>
                             <DialogFooter className="flex-col sm:flex-row gap-2">
-                                <Button type="button" variant="outline" onClick={() => setIsResetting(false)}>Back to Login</Button>
+                                <Button type="button" variant="outline" onClick={() => {
+                                    setIsResetting(false);
+                                    setResetStep(1);
+                                }}>Back to Login</Button>
                                 <Button type="submit">Verify Answer</Button>
                             </DialogFooter>
                         </form>
@@ -310,10 +353,22 @@ const SetPinDialog = ({ isOpen, onClose, onSave, isPinSet }: { isOpen: boolean; 
                     <Form {...resetForm}>
                         <form onSubmit={resetForm.handleSubmit(handleResetSubmit)} className="space-y-4">
                             <FormField control={resetForm.control} name="newPin" render={({ field }) => (
-                                <FormItem><FormLabel>New 4-Digit PIN</FormLabel><FormControl><Input type="password" maxLength={4} {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormItem>
+                                    <FormLabel>New 4-Digit PIN</FormLabel>
+                                    <FormControl>
+                                        <Input type="password" maxLength={4} placeholder="Enter new PIN" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
                             )}/>
                             <FormField control={resetForm.control} name="confirmNewPin" render={({ field }) => (
-                                <FormItem><FormLabel>Confirm New PIN</FormLabel><FormControl><Input type="password" maxLength={4} {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormItem>
+                                    <FormLabel>Confirm New PIN</FormLabel>
+                                    <FormControl>
+                                        <Input type="password" maxLength={4} placeholder="Confirm new PIN" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
                             )}/>
                             <DialogFooter>
                                 <Button type="submit">Reset PIN</Button>
@@ -401,6 +456,7 @@ const SetPinDialog = ({ isOpen, onClose, onSave, isPinSet }: { isOpen: boolean; 
         </Dialog>
     );
 };
+
 
 
 const BsCreditsDialog = ({ isOpen, onClose, onSave, currentData, staffId }: { isOpen: boolean; onClose: () => void; onSave: (data: BsCreditsFormData) => void; currentData?: { staffId: string }; staffId?: string }) => {
