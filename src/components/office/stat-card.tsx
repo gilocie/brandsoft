@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,7 +24,8 @@ export const StatCard = ({
     valuePrefix?: string,
     children?: ReactNode
 }) => {
-    const numericValue = typeof value === 'number' ? value : 0;
+    const numericValue = typeof value === 'number' ? value : parseFloat(String(value).replace(/[^0-9.-]+/g, ""));
+    const displayValue = isCurrency ? numericValue.toLocaleString() : value;
 
     return (
         <Card>
@@ -34,7 +36,7 @@ export const StatCard = ({
             <CardContent>
             <div className="text-2xl font-bold">
                 {isCurrency && <span>{currencyPrefix}</span>}
-                {valuePrefix}{isCurrency ? numericValue.toLocaleString() : value}
+                {valuePrefix}{displayValue}
             </div>
             <p className="text-xs text-muted-foreground mt-1">{footer}</p>
             {children && <div className="mt-4">{children}</div>}

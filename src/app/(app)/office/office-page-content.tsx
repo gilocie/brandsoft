@@ -26,6 +26,7 @@ import { Switch } from '@/components/ui/switch';
 import { StatCard } from '@/components/office/stat-card';
 import { VerificationItem } from '@/components/office/verification-item';
 import { WithdrawDialog } from '@/components/office/withdraw-dialog';
+import { BuyCreditsDialog } from '@/components/office/buy-credits-dialog';
 
 const affiliateSchema = z.object({
     fullName: z.string().min(2, "Full name is required"),
@@ -297,9 +298,14 @@ export function OfficePageContent() {
         <TabsContent value="dashboard" className="pt-6">
             <div className="grid gap-6">
                  <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <StatCard icon={DollarSign} title="Total Sales" value={affiliate.totalSales * USD_TO_MWK} footer={`Equivalent to $${affiliate.totalSales.toLocaleString()}`} isCurrency />
-                    <StatCard icon={CreditCard} title="Credit Balance" value={`BS${affiliate.creditBalance.toLocaleString()} = K${(affiliate.creditBalance * CREDIT_TO_MWK).toLocaleString()}`} footer="Credits for platform usage">
-                        <Button>Buy Credits</Button>
+                    <StatCard icon={DollarSign} title="Total Sales" value={affiliate.totalSales * USD_TO_MWK} isCurrency />
+                    <StatCard 
+                        icon={CreditCard} 
+                        title="Credit Balance" 
+                        value={`BS${affiliate.creditBalance.toLocaleString()}`} 
+                        footer={`= K${(affiliate.creditBalance * CREDIT_TO_MWK).toLocaleString()}`}
+                    >
+                        <BuyCreditsDialog walletBalance={affiliate.balance * USD_TO_MWK} />
                     </StatCard>
                     <Card>
                         <CardHeader>
@@ -328,7 +334,6 @@ export function OfficePageContent() {
                         </CardHeader>
                         <CardContent>
                             <p className="text-3xl font-bold">K{mwkBalance.toLocaleString()}</p>
-                             <p className="text-sm text-white/80">~${displayBalance.toLocaleString()}</p>
                         </CardContent>
                         <CardContent>
                             <WithdrawDialog 
