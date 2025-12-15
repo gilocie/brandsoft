@@ -6,20 +6,21 @@ import { useBrandsoft, type Transaction } from '@/hooks/use-brandsoft';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Copy, DollarSign, ExternalLink, ShieldCheck, ShieldOff, UserCheck, Users, Edit, CreditCard, Gift, KeyRound, Phone, TrendingUp, TrendingDown, MoreHorizontal, ArrowRight, Wallet } from 'lucide-react';
+import { Copy, DollarSign, ExternalLink, ShieldCheck, ShieldOff, UserCheck, Users, Edit, CreditCard, Gift, KeyRound, Phone, TrendingUp, TrendingDown, MoreHorizontal, ArrowRight, Wallet, Banknote, Smartphone } from 'lucide-react';
 import { ClientCard } from '@/components/affiliate/client-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { SimpleImageUploadButton } from '@/components/simple-image-upload-button';
 import { useState, useEffect, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const affiliateSchema = z.object({
     fullName: z.string().min(2, "Full name is required"),
@@ -29,6 +30,118 @@ const affiliateSchema = z.object({
 });
 
 type AffiliateFormData = z.infer<typeof affiliateSchema>;
+
+const withdrawSchema = z.object({
+  amount: z.coerce.number().positive("Amount must be greater than 0"),
+  method: z.string().min(1, "Please select a payment method"),
+  details: z.string().min(1, "Please provide payment details"),
+  pin: z.string().length(4, "PIN must be 4 digits"),
+});
+type WithdrawFormData = z.infer<typeof withdrawSchema>;
+
+
+const WithdrawDialog = ({ balance, onWithdraw }: { balance: number, onWithdraw: (amount: number) => void }) => {
+    const [step, setStep] = useState(1);
+    const [isOpen, setIsOpen] = useState(false);
+    const form = useForm<WithdrawFormData>({
+        resolver: zodResolver(withdrawSchema),
+        defaultValues: { amount: 0, method: '', details: '', pin: '' },
+    });
+    
+    const { toast } = useToast();
+
+    const handleNext = async () => {
+        let isValid = false;
+        if (step === 1) isValid = await form.trigger("amount");
+        if (step === 2) isValid = await form.trigger(["method", "details"]);
+        if (isValid) setStep(s => s + 1);
+    };
+
+    const handleBack = () => setStep(s => s - 1);
+
+    const onSubmit = (data: WithdrawFormData) => {
+        if (data.amount > balance) {
+            toast({ variant: 'destructive', title: "Insufficient Funds" });
+            return;
+        }
+        if (data.pin !== "1234") { // Demo PIN
+            toast({ variant: 'destructive', title: "Incorrect PIN" });
+            return;
+        }
+        onWithdraw(data.amount);
+        toast({ title: 'Withdrawal Successful!', description: `K${data.amount} has been processed.` });
+        setIsOpen(false);
+        form.reset();
+        setStep(1);
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+                <Button variant="secondary">Withdraw Balance</Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Withdraw Funds</DialogTitle>
+                    <DialogDescription>Follow the steps to withdraw from your wallet.</DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                        {step === 1 && (
+                            <FormField control={form.control} name="amount" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Amount to Withdraw</FormLabel>
+                                    <FormControl><Input type="number" {...field} /></FormControl>
+                                    <FormMessage />
+                                    <p className="text-xs text-muted-foreground">Available: K{balance.toLocaleString()}</p>
+                                </FormItem>
+                            )}/>
+                        )}
+                         {step === 2 && (
+                            <div className="space-y-4">
+                                 <FormField control={form.control} name="method" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Withdrawal Method</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl><SelectTrigger><SelectValue placeholder="Select a method" /></SelectTrigger></FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="airtel">Airtel Money</SelectItem>
+                                                <SelectItem value="tnm">TNM Mpamba</SelectItem>
+                                                <SelectItem value="bank">Bank Transfer</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}/>
+                                <FormField control={form.control} name="details" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Details (e.g., Phone or Account #)</FormLabel>
+                                        <FormControl><Input {...field} /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}/>
+                            </div>
+                        )}
+                        {step === 3 && (
+                            <FormField control={form.control} name="pin" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Confirm with PIN</FormLabel>
+                                    <FormControl><Input type="password" {...field} maxLength={4} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}/>
+                        )}
+                        <DialogFooter>
+                            {step > 1 && <Button type="button" variant="outline" onClick={handleBack}>Back</Button>}
+                            {step < 3 && <Button type="button" onClick={handleNext}>Next</Button>}
+                            {step === 3 && <Button type="submit">Confirm Withdrawal</Button>}
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    );
+};
 
 
 const StatCard = ({ icon: Icon, title, value, footer, isCurrency = false }: { icon: React.ElementType, title: string, value: string | number, footer: string, isCurrency?: boolean }) => (
@@ -160,8 +273,27 @@ export function OfficePageContent() {
   
   const bonusAmount = affiliate.clients.length >= 10 ? 20 : 0;
   const displayBalance = affiliate.balance + bonusAmount;
-
   const activeClients = affiliate.clients.filter(c => c.status === 'active').length;
+
+  const handleWithdraw = (amount: number) => {
+    if (!config || !affiliate) return;
+    
+    const newTransaction: Transaction = {
+      id: `TRN-${Date.now()}`,
+      date: new Date().toISOString(),
+      description: "Withdrawal",
+      amount: amount,
+      type: 'debit',
+    };
+
+    const newAffiliateData = {
+        ...affiliate,
+        balance: affiliate.balance - amount,
+        transactions: [newTransaction, ...(affiliate.transactions || [])],
+    };
+    
+    saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
+  }
 
   return (
     <div className="space-y-8">
@@ -325,11 +457,7 @@ export function OfficePageContent() {
                             <p className="text-3xl font-bold">${displayBalance.toLocaleString()}</p>
                         </CardContent>
                         <CardContent>
-                           <Button 
-                                variant="secondary"
-                            >
-                                Withdraw Balance
-                            </Button>
+                            <WithdrawDialog balance={displayBalance} onWithdraw={handleWithdraw} />
                         </CardContent>
                      </Card>
                 </div>
@@ -491,10 +619,4 @@ export function OfficePageContent() {
     </div>
   );
 }
-
-
-
-
-
-
 
