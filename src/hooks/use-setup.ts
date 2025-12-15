@@ -240,6 +240,7 @@ export function useSetup(
         invoiceStartNumber: 101,
         quotationPrefix: 'QUO-',
         quotationStartNumber: 101,
+        walletBalance: 0,
       },
       modules: {
         invoice: data.invoice,

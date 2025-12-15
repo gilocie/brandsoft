@@ -190,6 +190,7 @@ export type BrandsoftConfig = {
     quotationStartNumber?: number;
     defaultInvoiceTemplate?: DesignSettings | string;
     defaultQuotationTemplate?: DesignSettings | string;
+    walletBalance?: number;
   };
   modules: {
     invoice: boolean;

@@ -48,6 +48,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useMemo } from 'react';
+import { WalletBalance } from '@/components/wallet-balance';
 
 const mainNavItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', enabledKey: null },
@@ -215,7 +216,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <h1 className="text-lg font-semibold font-headline flex-1 truncate">
             {pageTitle}
           </h1>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
+            <WalletBalance />
             <Button variant="ghost" size="icon" asChild className="flex-shrink-0 relative">
               <Link href="/quotation-requests?subtab=incoming">
                 <Bell className="h-6 w-6" />
