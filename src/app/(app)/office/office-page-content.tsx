@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Switch } from '@/components/ui/switch';
 
 const affiliateSchema = z.object({
     fullName: z.string().min(2, "Full name is required"),
@@ -32,31 +33,35 @@ const affiliateSchema = z.object({
 
 type AffiliateFormData = z.infer<typeof affiliateSchema>;
 
+const TRANSACTION_FEE = 3000;
+
 const withdrawSchema = z.object({
   amount: z.coerce.number().positive("Amount must be greater than 0"),
   method: z.string().min(1, "Please select a payment method"),
   details: z.string().min(1, "Please provide payment details"),
   pin: z.string().length(4, "PIN must be 4 digits"),
-  source: z.enum(['commission', 'bonus']).default('commission'),
+  includeBonus: z.boolean().default(false),
 });
 type WithdrawFormData = z.infer<typeof withdrawSchema>;
 
 
-const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw }: { commissionBalance: number, bonusBalance: number, onWithdraw: (amount: number, source: 'commission' | 'bonus') => void }) => {
+const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw }: { commissionBalance: number, bonusBalance: number, onWithdraw: (amount: number, source: 'commission' | 'bonus' | 'combined') => void }) => {
     const [step, setStep] = useState(1);
     const [isOpen, setIsOpen] = useState(false);
     const form = useForm<WithdrawFormData>({
         resolver: zodResolver(withdrawSchema),
-        defaultValues: { amount: 0, method: '', details: '', pin: '', source: 'commission' },
+        defaultValues: { amount: 0, method: '', details: '', pin: '', includeBonus: false },
     });
     
     const { toast } = useToast();
-    const selectedSource = form.watch('source');
-    const availableBalance = selectedSource === 'bonus' ? bonusBalance : commissionBalance;
+    const includeBonus = form.watch('includeBonus');
+
+    const availableBalance = includeBonus ? commissionBalance + bonusBalance : commissionBalance;
+    const withdrawableAmount = availableBalance - TRANSACTION_FEE;
 
     const handleNext = async () => {
         let isValid = false;
-        if (step === 1) isValid = await form.trigger(["amount", "source"]);
+        if (step === 1) isValid = await form.trigger(["amount", "includeBonus"]);
         if (step === 2) isValid = await form.trigger(["method", "details"]);
         if (isValid) setStep(s => s + 1);
     };
@@ -64,17 +69,20 @@ const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw }: { commi
     const handleBack = () => setStep(s => s - 1);
 
     const onSubmit = (data: WithdrawFormData) => {
-        const balanceToCheck = data.source === 'bonus' ? bonusBalance : commissionBalance;
-        if (data.amount > balanceToCheck) {
-            toast({ variant: 'destructive', title: "Insufficient Funds" });
+        const totalToWithdraw = data.amount + TRANSACTION_FEE;
+        
+        if (totalToWithdraw > availableBalance) {
+            toast({ variant: 'destructive', title: "Insufficient Funds", description: "The amount plus the transaction fee exceeds your available balance." });
             return;
         }
         if (data.pin !== "1234") { // Demo PIN
             toast({ variant: 'destructive', title: "Incorrect PIN" });
             return;
         }
-        onWithdraw(data.amount, data.source);
-        toast({ title: 'Withdrawal Successful!', description: `K${data.amount} has been processed from your ${data.source} balance.` });
+        
+        onWithdraw(data.amount, data.includeBonus ? 'combined' : 'commission');
+        
+        toast({ title: 'Withdrawal Successful!', description: `K${data.amount.toLocaleString()} has been processed.` });
         setIsOpen(false);
         form.reset();
         setStep(1);
@@ -94,28 +102,30 @@ const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw }: { commi
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                         {step === 1 && (
                              <div className="space-y-4">
-                                 <FormField control={form.control} name="source" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Withdraw From</FormLabel>
-                                        <FormControl>
-                                            <ToggleGroup
-                                                type="single"
-                                                value={field.value}
-                                                onValueChange={field.onChange}
-                                                className="grid grid-cols-2"
-                                            >
-                                                <ToggleGroupItem value="commission">Commission (K{commissionBalance.toLocaleString()})</ToggleGroupItem>
-                                                <ToggleGroupItem value="bonus" disabled={bonusBalance <= 0}>Bonus (K{bonusBalance.toLocaleString()})</ToggleGroupItem>
-                                            </ToggleGroup>
-                                        </FormControl>
-                                    </FormItem>
-                                )}/>
+                                <FormField
+                                    control={form.control}
+                                    name="includeBonus"
+                                    render={({ field }) => (
+                                        <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                                            <div className="space-y-0.5">
+                                                <FormLabel>Include Bonus Balance?</FormLabel>
+                                                <FormMessage>Your bonus balance is K{bonusBalance.toLocaleString()}.</FormMessage>
+                                            </div>
+                                            <FormControl>
+                                                <Switch checked={field.value} onCheckedChange={field.onChange} disabled={bonusBalance <= 0} />
+                                            </FormControl>
+                                        </FormItem>
+                                    )}
+                                />
                                 <FormField control={form.control} name="amount" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Amount to Withdraw</FormLabel>
                                         <FormControl><Input type="number" {...field} /></FormControl>
                                         <FormMessage />
-                                        <p className="text-xs text-muted-foreground">Available in {selectedSource}: K{availableBalance.toLocaleString()}</p>
+                                        <div className="text-xs text-muted-foreground flex justify-between">
+                                          <span>Available: K{withdrawableAmount.toLocaleString()}</span>
+                                          <span>Fee: K{TRANSACTION_FEE.toLocaleString()}</span>
+                                        </div>
                                     </FormItem>
                                 )}/>
                             </div>
@@ -298,25 +308,46 @@ export function OfficePageContent() {
   const displayBalance = affiliate.balance + bonusAmount;
   const activeClients = affiliate.clients.filter(c => c.status === 'active').length;
 
-  const handleWithdraw = (amount: number, source: 'commission' | 'bonus') => {
+  const handleWithdraw = (amount: number, source: 'commission' | 'bonus' | 'combined') => {
     if (!config || !affiliate) return;
     
     const newTransaction: Transaction = {
       id: `TRN-${Date.now()}`,
       date: new Date().toISOString(),
-      description: `Withdrawal from ${source}`,
+      description: `Withdrawal`,
       amount: amount,
       type: 'debit',
     };
+    
+     const feeTransaction: Transaction = {
+      id: `TRN-FEE-${Date.now()}`,
+      date: new Date().toISOString(),
+      description: 'Transaction Fee',
+      amount: TRANSACTION_FEE,
+      type: 'debit',
+    };
+
 
     const newAffiliateData = { ...affiliate };
-    if (source === 'commission') {
-        newAffiliateData.balance -= amount;
-    } else {
-        newAffiliateData.bonus -= amount;
+    
+    if (source === 'combined') {
+        let remainingAmount = amount + TRANSACTION_FEE;
+        
+        // Deduct from bonus first
+        const bonusDeduction = Math.min(newAffiliateData.bonus, remainingAmount);
+        newAffiliateData.bonus -= bonusDeduction;
+        remainingAmount -= bonusDeduction;
+        
+        // Deduct remaining from commission
+        if (remainingAmount > 0) {
+            newAffiliateData.balance -= remainingAmount;
+        }
+
+    } else { // 'commission'
+        newAffiliateData.balance -= (amount + TRANSACTION_FEE);
     }
     
-    newAffiliateData.transactions = [newTransaction, ...(affiliate.transactions || [])];
+    newAffiliateData.transactions = [newTransaction, feeTransaction, ...(affiliate.transactions || [])];
     
     saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
   }
@@ -437,21 +468,7 @@ export function OfficePageContent() {
             <div className="grid gap-6">
                  <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <StatCard icon={DollarSign} title="Total Sales" value={affiliate.totalSales} footer="All-time client sales" isCurrency />
-                    <Card>
-                        <CardHeader>
-                            <div className="flex items-center justify-between">
-                                <CardTitle>Credit Balance</CardTitle>
-                                <CreditCard className="h-5 w-5 text-muted-foreground" />
-                            </div>
-                            <CardDescription>Credits for platform usage.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-3xl font-bold">{affiliate.creditBalance.toLocaleString()} Credits</p>
-                        </CardContent>
-                        <CardContent>
-                            <Button>Request Credits</Button>
-                        </CardContent>
-                    </Card>
+                    <StatCard icon={CreditCard} title="Credit Balance" value={affiliate.creditBalance} footer="Credits for platform usage" />
                     <Card>
                         <CardHeader>
                             <div className="flex items-center justify-between">
@@ -473,11 +490,9 @@ export function OfficePageContent() {
                                 <CardTitle>My Wallet</CardTitle>
                                 <Wallet className="h-5 w-5" />
                             </div>
-                            {affiliate.clients.length >= 10 ? (
-                                <CardDescription className="text-white/80">Balance includes ${bonusAmount} bonus.</CardDescription>
-                            ) : (
-                                <CardDescription className="text-white/80">Available for withdrawal</CardDescription>
-                            )}
+                            <CardDescription className="text-white/80">
+                              {bonusAmount > 0 ? `Includes $${bonusAmount} bonus` : 'Available for withdrawal'}
+                            </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <p className="text-3xl font-bold">${displayBalance.toLocaleString()}</p>
@@ -645,5 +660,6 @@ export function OfficePageContent() {
     </div>
   );
 }
+
 
 

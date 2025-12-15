@@ -175,7 +175,7 @@ export function useSetup(
     affiliateLink: 'https://brandsoft.com/join?ref=affiliate_user',
     securityQuestion: true,
     idUploaded: false,
-    balance: 1250.50,
+    balance: 2500,
     totalSales: 17500.00,
     creditBalance: 50.00,
     bonus: 20.00,
