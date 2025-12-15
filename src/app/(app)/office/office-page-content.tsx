@@ -1,11 +1,12 @@
 
+
 'use client';
 
 import { useBrandsoft, type Transaction, type Affiliate } from '@/hooks/use-brandsoft';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Copy, DollarSign, ExternalLink, ShieldCheck, ShieldOff, UserCheck, Users, Edit, CreditCard, Gift, KeyRound, Phone, TrendingUp, TrendingDown, MoreHorizontal, ArrowRight, Wallet, Banknote, Smartphone, CheckCircle, Pencil, Eye, EyeOff } from 'lucide-react';
+import { Copy, DollarSign, ExternalLink, ShieldCheck, ShieldOff, UserCheck, Users, Edit, CreditCard, Gift, KeyRound, Phone, TrendingUp, TrendingDown, MoreHorizontal, ArrowRight, Wallet, Banknote, Smartphone, CheckCircle, Pencil, Eye, EyeOff, Send } from 'lucide-react';
 import { ClientCard } from '@/components/affiliate/client-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -241,6 +242,7 @@ const SetPinDialog = ({ isOpen, onClose, onSave, isPinSet }: { isOpen: boolean; 
     const [resetStep, setResetStep] = useState(1);
     const { config } = useBrandsoft();
 
+    // Form for normal PIN change
     const form = useForm<PinFormData>({
         resolver: zodResolver(pinSchema),
         defaultValues: { oldPin: '', pin: '', confirmPin: '' },
@@ -258,16 +260,16 @@ const SetPinDialog = ({ isOpen, onClose, onSave, isPinSet }: { isOpen: boolean; 
         defaultValues: { newPin: '', confirmNewPin: '' },
     });
 
-
     useEffect(() => {
         if (!isOpen) {
+            // Reset all states when dialog closes
             setIsResetting(false);
             setResetStep(1);
             setShowPin(false);
             setShowOldPin(false);
             form.reset();
-            answerForm.reset();
-            newPinForm.reset();
+            answerForm.reset(); // Reset separate form 1
+            newPinForm.reset(); // Reset separate form 2
         }
     }, [isOpen, form, answerForm, newPinForm]);
 
@@ -280,6 +282,7 @@ const SetPinDialog = ({ isOpen, onClose, onSave, isPinSet }: { isOpen: boolean; 
         onClose();
     };
 
+    // Updated to use VerifyAnswerFormData
     const handleVerifyAnswer = (data: VerifyAnswerFormData) => {
         if (!config?.affiliate?.securityQuestionData?.answer) {
             toast({ 
@@ -309,6 +312,7 @@ const SetPinDialog = ({ isOpen, onClose, onSave, isPinSet }: { isOpen: boolean; 
         setResetStep(2);
     };
 
+    // Updated to use SetNewPinFormData
     const handleResetSubmit = (data: SetNewPinFormData) => {
         onSave(data.newPin);
         toast({ 
@@ -331,6 +335,7 @@ const SetPinDialog = ({ isOpen, onClose, onSave, isPinSet }: { isOpen: boolean; 
                     </DialogDescription>
                 </DialogHeader>
                 
+                {/* STEP 1: Uses answerForm */}
                 {resetStep === 1 && (
                     <Form {...answerForm}>
                         <form onSubmit={answerForm.handleSubmit(handleVerifyAnswer)} className="space-y-4">
@@ -357,6 +362,7 @@ const SetPinDialog = ({ isOpen, onClose, onSave, isPinSet }: { isOpen: boolean; 
                     </Form>
                 )}
                 
+                {/* STEP 2: Uses newPinForm */}
                 {resetStep === 2 && (
                     <Form {...newPinForm}>
                         <form onSubmit={newPinForm.handleSubmit(handleResetSubmit)} className="space-y-4">
@@ -715,6 +721,32 @@ export function OfficePageContent() {
     });
   };
   
+  const handlePushToWallet = () => {
+    if (!config || !affiliate || affiliate.unclaimedCommission <= 0) return;
+
+    const amountToPush = affiliate.unclaimedCommission;
+    const newAffiliateData = {
+        ...affiliate,
+        balance: affiliate.balance + amountToPush,
+        unclaimedCommission: 0,
+        transactions: [
+            {
+                id: `TRN-PUSH-${Date.now()}`,
+                date: new Date().toISOString(),
+                description: 'Pushed commission to wallet',
+                amount: amountToPush,
+                type: 'credit' as const,
+            },
+            ...(affiliate.transactions || [])
+        ],
+    };
+    saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
+    toast({
+        title: "Funds Transferred!",
+        description: `K${amountToPush.toLocaleString()} has been pushed to your wallet.`,
+    });
+  };
+  
   const recentTransactions = useMemo(() => {
     if (!affiliate?.transactions) return [];
     return affiliate.transactions
@@ -1005,11 +1037,20 @@ export function OfficePageContent() {
                  <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <StatCard 
                         icon={TrendingUp} 
-                        title="Total Sales" 
-                        value={affiliate.totalSales} 
+                        title="Unclaimed Commission" 
+                        value={affiliate.unclaimedCommission} 
                         isCurrency 
-                        footer="All-time gross sales volume"
-                    />
+                        footer="Ready to push to your wallet"
+                    >
+                        <Button 
+                            size="sm" 
+                            className="w-full mt-2" 
+                            disabled={affiliate.unclaimedCommission <= 0}
+                            onClick={handlePushToWallet}
+                        >
+                           <Send className="h-4 w-4 mr-2" /> Push to Wallet
+                        </Button>
+                    </StatCard>
                      <StatCard 
                         icon={CreditCard} 
                         title="Credit Balance" 

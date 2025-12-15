@@ -178,10 +178,11 @@ export function useSetup(
     securityQuestion: false,
     idUploaded: false,
     isPinSet: false,
-    balance: 2500 * USD_TO_MWK_RATE,
-    totalSales: 17500.00 * USD_TO_MWK_RATE,
+    balance: 2500,
+    unclaimedCommission: 17500,
+    totalSales: 17500,
     creditBalance: 50.00,
-    bonus: 20.00 * USD_TO_MWK_RATE,
+    bonus: 20.00,
     staffId: 'BS-AFF-12345678',
     clients: [
       { id: 'CLIENT-1', name: 'Client A', avatar: 'https://picsum.photos/seed/client1/100', plan: 'Standard', status: 'active' },
@@ -189,9 +190,9 @@ export function useSetup(
       { id: 'CLIENT-3', name: 'Client C', avatar: 'https://picsum.photos/seed/client3/100', plan: 'Standard', status: 'expired' },
     ],
     transactions: [
-        { id: 'TRN-1', date: '2024-07-20', description: 'Withdrawal', amount: 500 * USD_TO_MWK_RATE, type: 'debit' },
-        { id: 'TRN-2', date: '2024-07-18', description: 'Commission: Client B', amount: 75.50 * USD_TO_MWK_RATE, type: 'credit' },
-        { id: 'TRN-3', date: '2024-07-15', description: 'Commission: Client A', amount: 50.00 * USD_TO_MWK_RATE, type: 'credit' },
+        { id: 'TRN-1', date: '2024-07-20', description: 'Withdrawal', amount: 500, type: 'debit' },
+        { id: 'TRN-2', date: '2024-07-18', description: 'Commission: Client B', amount: 75.50, type: 'credit' },
+        { id: 'TRN-3', date: '2024-07-15', description: 'Commission: Client A', amount: 50.00, type: 'credit' },
     ],
     withdrawalMethods: {
         airtel: undefined,

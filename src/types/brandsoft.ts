@@ -31,8 +31,10 @@ export type Affiliate = {
   };
   idUploaded: boolean; // true if both front and back are uploaded
   isPinSet?: boolean;
-  balance: number;
-  totalSales: number;
+  pin?: string;
+  balance: number; // This is the main withdrawable wallet balance
+  unclaimedCommission: number; // Commissions from sales, not yet moved to balance
+  totalSales: number; // Lifetime total sales volume
   creditBalance: number;
   bonus: number;
   clients: AffiliateClient[];
