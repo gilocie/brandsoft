@@ -1,18 +1,18 @@
 
-
 'use client';
 
 import { useBrandsoft, type Transaction, type Affiliate } from '@/hooks/use-brandsoft';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Copy, DollarSign, ExternalLink, ShieldCheck, ShieldOff, UserCheck, Users, Edit, CreditCard, Gift, KeyRound, Phone, TrendingUp, TrendingDown, MoreHorizontal, ArrowRight, Wallet, Banknote, Smartphone, CheckCircle, Pencil } from 'lucide-react';
+import { Copy, DollarSign, ExternalLink, ShieldCheck, ShieldOff, UserCheck, Users, Edit, CreditCard, Gift, KeyRound, Phone, TrendingUp, TrendingDown, MoreHorizontal, ArrowRight, Wallet, Banknote, Smartphone, CheckCircle, Pencil, Eye, EyeOff } from 'lucide-react';
 import { ClientCard } from '@/components/affiliate/client-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { SimpleImageUploadButton } from '@/components/simple-image-upload-button';
@@ -62,7 +62,12 @@ const bsCreditsSchema = z.object({
 type BsCreditsFormData = z.infer<typeof bsCreditsSchema>;
 
 const pinSchema = z.object({
+  oldPin: z.string().optional(),
   pin: z.string().length(4, "PIN must be 4 digits.").regex(/^\d{4}$/, "PIN must be 4 digits."),
+  confirmPin: z.string().length(4, "PIN must be 4 digits.").regex(/^\d{4}$/, "PIN must be 4 digits."),
+}).refine(data => data.pin === data.confirmPin, {
+    message: "PINs do not match.",
+    path: ["confirmPin"],
 });
 type PinFormData = z.infer<typeof pinSchema>;
 
@@ -76,6 +81,18 @@ const securityQuestionSchema = z.object({
 });
 
 type SecurityQuestionFormData = z.infer<typeof securityQuestionSchema>;
+
+const resetPinSchema = z.object({
+  answer: z.string().min(1, "An answer is required."),
+  newPin: z.string().length(4, "New PIN must be 4 digits.").regex(/^\d{4}$/, "New PIN must be 4 digits."),
+  confirmNewPin: z.string().length(4, "New PIN must be 4 digits.").regex(/^\d{4}$/, "New PIN must be 4 digits."),
+}).refine(data => data.newPin === data.confirmNewPin, {
+    message: "New PINs do not match.",
+    path: ["confirmNewPin"],
+});
+
+type ResetPinFormData = z.infer<typeof resetPinSchema>;
+
 
 const USD_TO_MWK = 1700;
 const CREDIT_TO_MWK = 1000;
@@ -96,6 +113,9 @@ const securityQuestions = [
 ];
 
 const SecurityQuestionsDialog = ({ isOpen, onClose, onSave, currentData }: { isOpen: boolean; onClose: () => void; onSave: (data: SecurityQuestionFormData) => void; currentData?: { question: string; answer: string; } }) => {
+    const [isConfirming, setIsConfirming] = useState(false);
+    const [formData, setFormData] = useState<SecurityQuestionFormData | null>(null);
+
     const form = useForm<SecurityQuestionFormData>({
         resolver: zodResolver(securityQuestionSchema),
         defaultValues: {
@@ -108,91 +128,174 @@ const SecurityQuestionsDialog = ({ isOpen, onClose, onSave, currentData }: { isO
     const watchedQuestion = form.watch('question');
 
     const onSubmit = (data: SecurityQuestionFormData) => {
-        onSave(data);
+        setFormData(data);
+        setIsConfirming(true);
     };
 
-    return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Set Security Question</DialogTitle>
-                    <DialogDescription>This will be used to recover your account or reset your PIN.</DialogDescription>
-                </DialogHeader>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        <FormField
-                            control={form.control}
-                            name="question"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Question</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                        <FormControl>
-                                            <SelectTrigger><SelectValue placeholder="Select a question" /></SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            {securityQuestions.map(q => (
-                                                <SelectItem key={q} value={q}>{q === 'custom' ? 'Custom question...' : q}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+    const handleConfirmSave = () => {
+        if (formData) {
+            onSave(formData);
+        }
+        setIsConfirming(false);
+        setFormData(null);
+    }
 
-                        {watchedQuestion === 'custom' && (
+    return (
+        <>
+            <Dialog open={isOpen} onOpenChange={onClose}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Set Security Question</DialogTitle>
+                        <DialogDescription>This will be used to recover your account or reset your PIN.</DialogDescription>
+                    </DialogHeader>
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                             <FormField
                                 control={form.control}
-                                name="customQuestion"
+                                name="question"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Your Custom Question</FormLabel>
+                                        <FormLabel>Question</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger><SelectValue placeholder="Select a question" /></SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {securityQuestions.map(q => (
+                                                    <SelectItem key={q} value={q}>{q === 'custom' ? 'Custom question...' : q}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            {watchedQuestion === 'custom' && (
+                                <FormField
+                                    control={form.control}
+                                    name="customQuestion"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Your Custom Question</FormLabel>
+                                            <FormControl>
+                                                <Input placeholder="e.g., What is my favorite book?" {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            )}
+
+                            <FormField
+                                control={form.control}
+                                name="answer"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Your Answer</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="e.g., What is my favorite book?" {...field} />
+                                            <Input type="password" placeholder="Enter your secret answer" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}
                             />
-                        )}
+                            <DialogFooter>
+                                <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+                                <Button type="submit">Save Question</Button>
+                            </DialogFooter>
+                        </form>
+                    </Form>
+                </DialogContent>
+            </Dialog>
+            <AlertDialog open={isConfirming} onOpenChange={setIsConfirming}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This security question cannot be changed later. Make sure it's memorable to you but difficult for others to guess.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleConfirmSave}>Yes, save it</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
+    );
+};
 
-                        <FormField
-                            control={form.control}
-                            name="answer"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Your Answer</FormLabel>
-                                    <FormControl>
-                                        <Input type="password" placeholder="Enter your secret answer" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <DialogFooter>
-                            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-                            <Button type="submit">Save Question</Button>
+
+const SetPinDialog = ({ isOpen, onClose, onSave, isPinSet }: { isOpen: boolean; onClose: () => void; onSave: (pin: string) => void; isPinSet: boolean; }) => {
+    const { toast } = useToast();
+    const [showPin, setShowPin] = useState(false);
+    const [showOldPin, setShowOldPin] = useState(false);
+    const [isResetting, setIsResetting] = useState(false);
+    const { config } = useBrandsoft();
+
+    const form = useForm<PinFormData>({
+        resolver: zodResolver(pinSchema),
+        defaultValues: { oldPin: '', pin: '', confirmPin: '' },
+    });
+
+    const resetForm = useForm<ResetPinFormData>({
+        resolver: zodResolver(resetPinSchema),
+        defaultValues: { answer: '', newPin: '', confirmNewPin: '' },
+    });
+
+    const onSubmit = (data: PinFormData) => {
+        // In a real app, you'd verify the old PIN securely.
+        if (isPinSet && data.oldPin !== '1234') { // Using a demo old PIN
+            toast({ variant: 'destructive', title: "Incorrect Old PIN" });
+            return;
+        }
+        onSave(data.pin);
+    };
+
+    const handleResetSubmit = (data: ResetPinFormData) => {
+        // In a real app, this check would be case-insensitive and secure.
+        if (data.answer !== config?.affiliate?.securityQuestionData?.answer) {
+            toast({ variant: 'destructive', title: "Incorrect Answer" });
+            return;
+        }
+        onSave(data.newPin);
+        setIsResetting(false);
+    };
+    
+    if (isResetting) {
+      return (
+        <Dialog open={isOpen} onOpenChange={onClose}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Reset PIN</DialogTitle>
+                    <DialogDescription>Answer your security question to reset your PIN.</DialogDescription>
+                </DialogHeader>
+                <Form {...resetForm}>
+                    <form onSubmit={resetForm.handleSubmit(handleResetSubmit)} className="space-y-4">
+                        <div className="space-y-2">
+                           <p className="text-sm font-medium">{config?.affiliate?.securityQuestionData?.question}</p>
+                            <FormField control={resetForm.control} name="answer" render={({ field }) => (
+                                <FormItem><FormLabel className="sr-only">Answer</FormLabel><FormControl><Input placeholder="Your answer" {...field} /></FormControl><FormMessage /></FormItem>
+                            )}/>
+                        </div>
+                        <Separator />
+                        <FormField control={resetForm.control} name="newPin" render={({ field }) => (
+                            <FormItem><FormLabel>New 4-Digit PIN</FormLabel><FormControl><Input type="password" maxLength={4} {...field} /></FormControl><FormMessage /></FormItem>
+                        )}/>
+                        <FormField control={resetForm.control} name="confirmNewPin" render={({ field }) => (
+                            <FormItem><FormLabel>Confirm New PIN</FormLabel><FormControl><Input type="password" maxLength={4} {...field} /></FormControl><FormMessage /></FormItem>
+                        )}/>
+                        <DialogFooter className="flex-col sm:flex-row gap-2">
+                            <Button type="button" variant="outline" onClick={() => setIsResetting(false)}>Back to Login</Button>
+                            <Button type="submit">Reset PIN</Button>
                         </DialogFooter>
                     </form>
                 </Form>
             </DialogContent>
         </Dialog>
-    );
-};
-
-
-const SetPinDialog = ({ isOpen, onClose, onSave, isPinSet }: { isOpen: boolean; onClose: () => void; onSave: () => void; isPinSet: boolean; }) => {
-    const form = useForm<PinFormData>({
-        resolver: zodResolver(pinSchema),
-        defaultValues: { pin: '' },
-    });
-
-    const onSubmit = (data: PinFormData) => {
-        // In a real app, you'd securely save this. Here we just simulate.
-        console.log("PIN set:", data.pin);
-        onSave();
-    };
+      )
+    }
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -205,12 +308,53 @@ const SetPinDialog = ({ isOpen, onClose, onSave, isPinSet }: { isOpen: boolean; 
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                        {isPinSet && (
+                           <FormField
+                                control={form.control}
+                                name="oldPin"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Old PIN</FormLabel>
+                                         <div className="relative">
+                                            <FormControl>
+                                                <Input type={showOldPin ? 'text' : 'password'} maxLength={4} {...field} />
+                                            </FormControl>
+                                            <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowOldPin(!showOldPin)}>
+                                                {showOldPin ? <EyeOff className="h-4 w-4"/> : <Eye className="h-4 w-4"/>}
+                                            </Button>
+                                        </div>
+                                        <FormMessage />
+                                         <div className="text-right">
+                                            <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => setIsResetting(true)}>Forgot PIN?</Button>
+                                        </div>
+                                    </FormItem>
+                                )}
+                            />
+                        )}
                         <FormField
                             control={form.control}
                             name="pin"
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>New 4-Digit PIN</FormLabel>
+                                    <div className="relative">
+                                        <FormControl>
+                                            <Input type={showPin ? 'text' : 'password'} maxLength={4} {...field} />
+                                        </FormControl>
+                                        <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowPin(!showPin)}>
+                                            {showPin ? <EyeOff className="h-4 w-4"/> : <Eye className="h-4 w-4"/>}
+                                        </Button>
+                                    </div>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="confirmPin"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Confirm New PIN</FormLabel>
                                     <FormControl>
                                         <Input type="password" maxLength={4} {...field} />
                                     </FormControl>
@@ -596,9 +740,10 @@ export function OfficePageContent() {
     setIsBsCreditsDialogOpen(false);
   };
 
-  const handleSavePin = () => {
+  const handleSavePin = (pin: string) => {
     if (!config || !affiliate) return;
     const newAffiliateData = { ...affiliate, isPinSet: true };
+    // In a real app, you'd securely save the hashed PIN. For demo, we just set the flag.
     saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
     toast({ title: 'PIN has been set successfully!' });
     setIsPinDialogOpen(false);
@@ -776,9 +921,8 @@ export function OfficePageContent() {
                      <StatCard 
                         icon={CreditCard} 
                         title="Credit Balance" 
-                        value={affiliate.creditBalance * CREDIT_TO_MWK}
-                        valuePrefix={`BS${affiliate.creditBalance.toLocaleString()} = `}
-                        isCurrency
+                        value={affiliate.creditBalance}
+                        valuePrefix={`BS`}
                         footer={`Value: K${(affiliate.creditBalance * CREDIT_TO_MWK).toLocaleString()}`}
                     >
                         <BuyCreditsDialog walletBalance={affiliate.balance * USD_TO_MWK} />
@@ -1036,3 +1180,5 @@ export function OfficePageContent() {
     </div>
   );
 }
+
+    
