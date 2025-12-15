@@ -149,7 +149,7 @@ export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, is
                                         <FormDescription>Min: K30,000, Max: K1,000,000</FormDescription>
                                         <FormMessage />
                                          <div className="flex justify-between items-end pt-2">
-                                           <div className="text-center">
+                                           <div className="text-left">
                                                 <div className="text-sm font-medium text-primary">Available:</div>
                                                 <div className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-lg font-bold mt-1">
                                                     K{withdrawableAmount > 0 ? withdrawableAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
@@ -195,10 +195,14 @@ export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, is
                                 </FormItem>
                             )}/>
                         )}
-                        <DialogFooter>
-                            {step > 1 && <Button type="button" variant="outline" onClick={handleBack}>Back</Button>}
-                            {step < 3 && <Button type="button" onClick={handleNext}>Next</Button>}
-                            {step === 3 && <Button type="submit">Confirm Withdrawal</Button>}
+                        <DialogFooter className="sm:justify-between">
+                            <div>
+                                {step > 1 && <Button type="button" variant="outline" onClick={handleBack}>Back</Button>}
+                            </div>
+                            <div>
+                                {step < 3 && <Button type="button" onClick={handleNext}>Next</Button>}
+                                {step === 3 && <Button type="submit">Confirm Withdrawal</Button>}
+                            </div>
                         </DialogFooter>
                     </form>
                 </Form>
