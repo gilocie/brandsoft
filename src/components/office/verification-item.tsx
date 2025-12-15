@@ -1,10 +1,11 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
 import { ShieldCheck, ShieldOff } from 'lucide-react';
 
-export const VerificationItem = ({ title, status, actionText, onAction }: { title: string, status: boolean, actionText: string, onAction: () => void }) => (
+export const VerificationItem = ({ title, status, actionText, onAction, actionDisabled = false }: { title: string, status: boolean, actionText: string, onAction: () => void, actionDisabled?: boolean }) => (
     <div className="flex items-center justify-between p-3 border rounded-lg">
         <div className="flex items-center gap-3">
             {status ? <ShieldCheck className="h-5 w-5 text-green-500" /> : <ShieldOff className="h-5 w-5 text-destructive" />}
@@ -15,6 +16,6 @@ export const VerificationItem = ({ title, status, actionText, onAction }: { titl
                 </p>
             </div>
         </div>
-        <Button variant="secondary" size="sm" onClick={onAction}>{actionText}</Button>
+        <Button variant="secondary" size="sm" onClick={onAction} disabled={actionDisabled}>{actionText}</Button>
     </div>
 );

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useBrandsoft, type Transaction, type Affiliate } from '@/hooks/use-brandsoft';
@@ -1135,7 +1136,13 @@ export function OfficePageContent() {
                                 actionText={affiliate.isPinSet ? 'Change PIN' : 'Set PIN'}
                                 onAction={() => setIsPinDialogOpen(true)}
                             />
-                            <VerificationItem title="Security Questions" status={!!affiliate.securityQuestionData} actionText="Set Questions" onAction={() => setIsSecurityQuestionsOpen(true)} />
+                            <VerificationItem
+                                title="Security Questions"
+                                status={!!affiliate.securityQuestionData}
+                                actionText={!!affiliate.securityQuestionData ? 'Verified' : 'Set Questions'}
+                                onAction={() => setIsSecurityQuestionsOpen(true)}
+                                actionDisabled={!!affiliate.securityQuestionData}
+                            />
                         </TabsContent>
                         <TabsContent value="verification" className="p-6">
                              <VerificationItem title="Identity Verification" status={affiliate.idUploaded} actionText="Upload ID" onAction={() => alert("Open ID upload dialog")} />
