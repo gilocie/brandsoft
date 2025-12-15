@@ -34,6 +34,7 @@ const affiliateSchema = z.object({
 type AffiliateFormData = z.infer<typeof affiliateSchema>;
 
 const TRANSACTION_FEE = 3000;
+const USD_TO_MWK = 1700;
 
 const withdrawSchema = z.object({
   amount: z.coerce.number().positive("Amount must be greater than 0"),
@@ -306,6 +307,7 @@ export function OfficePageContent() {
   
   const bonusAmount = affiliate.clients.length >= 10 ? 20 : 0;
   const displayBalance = affiliate.balance + bonusAmount;
+  const mwkBalance = displayBalance * USD_TO_MWK;
   const activeClients = affiliate.clients.filter(c => c.status === 'active').length;
 
   const handleWithdraw = (amount: number, source: 'commission' | 'bonus' | 'combined') => {
@@ -496,6 +498,7 @@ export function OfficePageContent() {
                         </CardHeader>
                         <CardContent>
                             <p className="text-3xl font-bold">${displayBalance.toLocaleString()}</p>
+                            <p className="text-sm text-white/80">~K{mwkBalance.toLocaleString()}</p>
                         </CardContent>
                         <CardContent>
                             <WithdrawDialog commissionBalance={affiliate.balance} bonusBalance={bonusAmount} onWithdraw={handleWithdraw} />
@@ -660,6 +663,7 @@ export function OfficePageContent() {
     </div>
   );
 }
+
 
 
 
