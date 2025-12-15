@@ -60,10 +60,62 @@ const bsCreditsSchema = z.object({
 });
 type BsCreditsFormData = z.infer<typeof bsCreditsSchema>;
 
+const pinSchema = z.object({
+  pin: z.string().length(4, "PIN must be 4 digits.").regex(/^\d{4}$/, "PIN must be 4 digits."),
+});
+type PinFormData = z.infer<typeof pinSchema>;
 
 const USD_TO_MWK = 1700;
 const CREDIT_TO_MWK = 1000;
 const ITEMS_PER_PAGE = 10;
+
+const SetPinDialog = ({ isOpen, onClose, onSave, isPinSet }: { isOpen: boolean; onClose: () => void; onSave: () => void; isPinSet: boolean; }) => {
+    const form = useForm<PinFormData>({
+        resolver: zodResolver(pinSchema),
+        defaultValues: { pin: '' },
+    });
+
+    const onSubmit = (data: PinFormData) => {
+        // In a real app, you'd securely save this. Here we just simulate.
+        console.log("PIN set:", data.pin);
+        onSave();
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onClose}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>{isPinSet ? 'Change' : 'Set'} Withdrawal PIN</DialogTitle>
+                    <DialogDescription>
+                        This 4-digit PIN will be required for all withdrawals and credit transfers. Keep it secure.
+                    </DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                        <FormField
+                            control={form.control}
+                            name="pin"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>New 4-Digit PIN</FormLabel>
+                                    <FormControl>
+                                        <Input type="password" maxLength={4} {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <DialogFooter>
+                            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+                            <Button type="submit">Save PIN</Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
 
 const BsCreditsDialog = ({ isOpen, onClose, onSave, currentData, staffId }: { isOpen: boolean; onClose: () => void; onSave: (data: BsCreditsFormData) => void; currentData?: { staffId: string }; staffId?: string }) => {
     const form = useForm<BsCreditsFormData>({
@@ -255,7 +307,7 @@ export function OfficePageContent() {
   const [editingMethod, setEditingMethod] = useState<EditableWithdrawalMethod | null>(null);
   const [isBankDialogOpen, setIsBankDialogOpen] = useState(false);
   const [isBsCreditsDialogOpen, setIsBsCreditsDialogOpen] = useState(false);
-
+  const [isPinDialogOpen, setIsPinDialogOpen] = useState(false);
 
   const affiliate = config?.affiliate;
 
@@ -428,6 +480,14 @@ export function OfficePageContent() {
     saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
     toast({ title: "BS Credits Details Saved!" });
     setIsBsCreditsDialogOpen(false);
+  };
+
+  const handleSavePin = () => {
+    if (!config || !affiliate) return;
+    const newAffiliateData = { ...affiliate, isPinSet: true };
+    saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
+    toast({ title: 'PIN has been set successfully!' });
+    setIsPinDialogOpen(false);
   };
   
   const MethodCard = ({method, name, description, icon: Icon, onAction, isSetup}: {method?: EditableWithdrawalMethod | 'bsCredits', name: string, description: string, icon: React.ElementType, onAction: () => void, isSetup: boolean}) => {
@@ -786,7 +846,13 @@ export function OfficePageContent() {
                                 <MethodCard method="bsCredits" name="BS Credits" description="No fees" icon={Wallet} isSetup={!!affiliate.withdrawalMethods?.bsCredits} onAction={() => setIsBsCreditsDialogOpen(true)} />
                             </div>
                         </TabsContent>
-                        <TabsContent value="security" className="p-6">
+                         <TabsContent value="security" className="p-6 space-y-4">
+                           <VerificationItem
+                                title="Withdrawal PIN"
+                                status={affiliate.isPinSet || false}
+                                actionText={affiliate.isPinSet ? 'Change PIN' : 'Set PIN'}
+                                onAction={() => setIsPinDialogOpen(true)}
+                            />
                             <VerificationItem title="Security Questions" status={affiliate.securityQuestion} actionText="Set Questions" onAction={() => alert("Navigate to security questions page")} />
                         </TabsContent>
                         <TabsContent value="verification" className="p-6">
@@ -816,6 +882,12 @@ export function OfficePageContent() {
             onSave={handleSaveBsCredits}
             currentData={affiliate.withdrawalMethods?.bsCredits}
             staffId={affiliate.staffId}
+        />
+         <SetPinDialog
+            isOpen={isPinDialogOpen}
+            onClose={() => setIsPinDialogOpen(false)}
+            onSave={handleSavePin}
+            isPinSet={affiliate.isPinSet || false}
         />
     </div>
   );

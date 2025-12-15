@@ -26,6 +26,7 @@ export type Affiliate = {
   affiliateLink: string;
   securityQuestion: boolean; // true if set, false if not
   idUploaded: boolean; // true if both front and back are uploaded
+  isPinSet?: boolean;
   balance: number;
   totalSales: number;
   creditBalance: number;

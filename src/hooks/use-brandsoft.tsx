@@ -28,6 +28,7 @@ const initialAffiliateData: Affiliate = {
     affiliateLink: 'https://brandsoft.com/join?ref=affiliate_user',
     securityQuestion: true,
     idUploaded: false,
+    isPinSet: false,
     balance: 1250.50,
     totalSales: 17500.00,
     creditBalance: 50.00,
@@ -216,7 +217,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
             needsSave = true;
         } else {
              // Ensure all new fields exist
-            const fieldsToCheck: (keyof Affiliate)[] = ['totalSales', 'creditBalance', 'bonus', 'staffId', 'phone', 'transactions'];
+            const fieldsToCheck: (keyof Affiliate)[] = ['totalSales', 'creditBalance', 'bonus', 'staffId', 'phone', 'transactions', 'isPinSet'];
             fieldsToCheck.forEach(field => {
                 if (typeof parsedConfig.affiliate[field] === 'undefined') {
                     parsedConfig.affiliate[field] = initialAffiliateData[field];
