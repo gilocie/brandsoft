@@ -87,6 +87,9 @@ const resetPinSchema = z.object({
   answer: z.string().min(1, "An answer is required."),
   newPin: z.string().length(4, "New PIN must be 4 digits.").regex(/^\d{4}$/, "New PIN must be 4 digits."),
   confirmNewPin: z.string().length(4, "New PIN must be 4 digits.").regex(/^\d{4}$/, "New PIN must be 4 digits."),
+}).refine(data => data.newPin === data.confirmNewPin, {
+    message: "New PINs do not match.",
+    path: ["confirmNewPin"],
 });
 
 type ResetPinFormData = z.infer<typeof resetPinSchema>;
@@ -262,7 +265,7 @@ const SetPinDialog = ({ isOpen, onClose, onSave, isPinSet }: { isOpen: boolean; 
         onSave(data.pin);
     };
 
-    const handleVerifyAnswer = (data: Pick<ResetPinFormData, 'answer'>) => {
+    const handleVerifyAnswer = (data: ResetPinFormData) => {
         if (data.answer.toLowerCase() !== config?.affiliate?.securityQuestionData?.answer.toLowerCase()) {
             toast({ variant: 'destructive', title: "Incorrect Answer" });
             return;
