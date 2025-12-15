@@ -12,13 +12,28 @@ import { useQuotations } from './use-quotations';
 import { useQuotationRequests } from './use-quotation-requests';
 import { usePurchases } from './use-purchases';
 import { useCurrencies } from './use-currencies';
-import type { BrandsoftConfig, Company, Product, Invoice, Quotation, QuotationRequest, Purchase, Customer, Review } from '@/types/brandsoft';
+import type { BrandsoftConfig, Company, Product, Invoice, Quotation, QuotationRequest, Purchase, Customer, Review, Affiliate } from '@/types/brandsoft';
 
 export * from '@/types/brandsoft';
 
 const LICENSE_KEY = 'brandsoft_license';
 const CONFIG_KEY = 'brandsoft_config';
 const VALID_SERIAL = 'BRANDSOFT-2024';
+
+const initialAffiliateData: Affiliate = {
+    fullName: 'Your Affiliate Name',
+    username: 'affiliate_user',
+    profilePic: 'https://picsum.photos/seed/affiliate/200',
+    affiliateLink: 'https://brandsoft.com/join?ref=affiliate_user',
+    securityQuestion: true,
+    idUploaded: false,
+    balance: 1250.50,
+    clients: [
+      { id: 'CLIENT-1', name: 'Client A', avatar: 'https://picsum.photos/seed/client1/100', plan: 'Standard', status: 'active' },
+      { id: 'CLIENT-2', name: 'Client B', avatar: 'https://picsum.photos/seed/client2/100', plan: 'Pro', status: 'active' },
+      { id: 'CLIENT-3', name: 'Client C', avatar: 'https://picsum.photos/seed/client3/100', plan: 'Standard', status: 'expired' },
+    ],
+};
 
 interface BrandsoftContextType {
   isActivated: boolean | null;
@@ -160,16 +175,31 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       setIsConfigured(!!storedConfig);
       if (storedConfig) {
         let parsedConfig = JSON.parse(storedConfig);
-        // Migration logic
+        
+        let needsSave = false;
+
+        // Migration logic for quotation requests
         if (parsedConfig.quotationRequests && !parsedConfig.outgoingRequests) {
           const myUserId = parsedConfig.customers.find((c: Customer) => c.companyName === parsedConfig.brand.businessName)?.id || 'CUST-DEMO-ME';
           parsedConfig.outgoingRequests = parsedConfig.quotationRequests.filter((r: QuotationRequest) => r.requesterId === myUserId);
           parsedConfig.incomingRequests = parsedConfig.quotationRequests.filter((r: QuotationRequest) => r.requesterId !== myUserId);
           parsedConfig.requestResponses = parsedConfig.quotations?.filter((q: Quotation) => q.isRequest) || [];
           delete parsedConfig.quotationRequests;
+          needsSave = true;
+        }
+
+        // Migration logic for affiliate data
+        if (!parsedConfig.affiliate) {
+            parsedConfig.affiliate = initialAffiliateData;
+            needsSave = true;
+        }
+        
+        setConfig(parsedConfig);
+
+        if (needsSave) {
           localStorage.setItem(CONFIG_KEY, JSON.stringify(parsedConfig));
         }
-        setConfig(parsedConfig);
+
       }
     } catch (error) {
       console.error("Error accessing localStorage", error);
