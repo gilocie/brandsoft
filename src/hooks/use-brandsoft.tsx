@@ -28,6 +28,9 @@ const initialAffiliateData: Affiliate = {
     securityQuestion: true,
     idUploaded: false,
     balance: 1250.50,
+    totalSales: 17500.00,
+    creditBalance: 50.00,
+    bonus: 2500.00,
     clients: [
       { id: 'CLIENT-1', name: 'Client A', avatar: 'https://picsum.photos/seed/client1/100', plan: 'Standard', status: 'active' },
       { id: 'CLIENT-2', name: 'Client B', avatar: 'https://picsum.photos/seed/client2/100', plan: 'Pro', status: 'active' },

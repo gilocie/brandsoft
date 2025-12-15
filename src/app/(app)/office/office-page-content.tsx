@@ -1,11 +1,12 @@
 
+
 'use client';
 
 import { useBrandsoft } from '@/hooks/use-brandsoft';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Copy, DollarSign, ExternalLink, ShieldCheck, ShieldOff, UserCheck, Users, Edit } from 'lucide-react';
+import { Copy, DollarSign, ExternalLink, ShieldCheck, ShieldOff, UserCheck, Users, Edit, CreditCard, Gift } from 'lucide-react';
 import { ClientCard } from '@/components/affiliate/client-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -216,10 +217,40 @@ export function OfficePageContent() {
         </TabsList>
         <TabsContent value="dashboard" className="pt-6">
             <div className="grid gap-6">
-                <div className="grid md:grid-cols-3 gap-6">
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     <StatCard icon={DollarSign} title="Available Balance" value={affiliate.balance} footer="Ready for withdrawal" isCurrency />
+                    <StatCard icon={DollarSign} title="Total Sales" value={affiliate.totalSales} footer="All-time client sales" isCurrency />
                     <StatCard icon={Users} title="Active Clients" value={activeClients} footer={`${affiliate.clients.length - activeClients} expired`} />
                     <StatCard icon={UserCheck} title="Total Referrals" value={affiliate.clients.length} footer="All-time client sign-ups" />
+                </div>
+                 <div className="grid md:grid-cols-2 gap-6">
+                    <Card>
+                        <CardHeader>
+                            <div className="flex items-center justify-between">
+                                <CardTitle>Credit Balance</CardTitle>
+                                <CreditCard className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                            <CardDescription>Credits for platform usage.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-3xl font-bold">{affiliate.creditBalance.toLocaleString()} Credits</p>
+                        </CardContent>
+                        <CardContent>
+                            <Button>Request Credits</Button>
+                        </CardContent>
+                    </Card>
+                     <Card className="bg-gradient-to-br from-yellow-400 to-orange-500 text-white">
+                        <CardHeader>
+                            <div className="flex items-center justify-between">
+                                <CardTitle>Bonus Tier</CardTitle>
+                                <Gift className="h-5 w-5" />
+                            </div>
+                            <CardDescription className="text-white/80">Bonus for referring 10+ clients</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-3xl font-bold">${affiliate.bonus.toLocaleString()}</p>
+                        </CardContent>
+                     </Card>
                 </div>
                 <Card>
                     <CardHeader>

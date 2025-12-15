@@ -18,6 +18,9 @@ export type Affiliate = {
   securityQuestion: boolean; // true if set, false if not
   idUploaded: boolean; // true if both front and back are uploaded
   balance: number;
+  totalSales: number;
+  creditBalance: number;
+  bonus: number;
   clients: AffiliateClient[];
 };
 
