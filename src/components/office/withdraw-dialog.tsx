@@ -14,9 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Banknote } from 'lucide-react';
 
-const USD_TO_MWK = 1700;
 const TRANSACTION_FEE_MWK = 3000;
-const TRANSACTION_FEE_USD = TRANSACTION_FEE_MWK / USD_TO_MWK;
 
 const withdrawSchema = z.object({
   amount: z.coerce.number().positive("Amount must be greater than 0"),
@@ -39,7 +37,7 @@ export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, is
     const includeBonus = form.watch('includeBonus');
 
     const availableBalance = includeBonus ? commissionBalance + bonusBalance : commissionBalance;
-    const withdrawableAmount = availableBalance - TRANSACTION_FEE_USD;
+    const withdrawableAmount = availableBalance - TRANSACTION_FEE_MWK;
 
     const handleNext = async () => {
         let isValid = false;
@@ -51,7 +49,7 @@ export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, is
     const handleBack = () => setStep(s => s - 1);
 
     const onSubmit = (data: WithdrawFormData) => {
-        const totalToWithdraw = data.amount + TRANSACTION_FEE_USD;
+        const totalToWithdraw = data.amount + TRANSACTION_FEE_MWK;
         
         if (totalToWithdraw > availableBalance) {
             toast({ variant: 'destructive', title: "Insufficient Funds", description: "The amount plus the transaction fee exceeds your available balance." });
@@ -64,7 +62,7 @@ export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, is
         
         onWithdraw(data.amount, data.includeBonus ? 'combined' : 'commission');
         
-        toast({ title: 'Withdrawal Successful!', description: `$${data.amount.toLocaleString()} has been processed.` });
+        toast({ title: 'Withdrawal Successful!', description: `K${data.amount.toLocaleString()} has been processed.` });
         setIsOpen(false);
         form.reset();
         setStep(1);
@@ -94,7 +92,7 @@ export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, is
                                         <FormItem className="flex items-center justify-between rounded-lg border p-3">
                                             <div className="space-y-0.5">
                                                 <FormLabel>Include Bonus Balance?</FormLabel>
-                                                <FormMessage>Your bonus balance is ${bonusBalance.toLocaleString()}.</FormMessage>
+                                                <FormMessage>Your bonus balance is K{bonusBalance.toLocaleString()}.</FormMessage>
                                             </div>
                                             <FormControl>
                                                 <Switch checked={field.value} onCheckedChange={field.onChange} disabled={bonusBalance <= 0} />
@@ -104,12 +102,12 @@ export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, is
                                 />
                                 <FormField control={form.control} name="amount" render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Amount to Withdraw (USD)</FormLabel>
+                                        <FormLabel>Amount to Withdraw (MWK)</FormLabel>
                                         <FormControl><Input type="number" {...field} /></FormControl>
                                         <FormMessage />
                                         <div className="text-xs text-muted-foreground flex justify-between">
-                                          <span>Available: ${withdrawableAmount > 0 ? withdrawableAmount.toFixed(2) : '0.00'}</span>
-                                          <span>Fee: ~K{TRANSACTION_FEE_MWK.toLocaleString()} (${TRANSACTION_FEE_USD.toFixed(2)})</span>
+                                          <span>Available: K{withdrawableAmount > 0 ? withdrawableAmount.toFixed(2) : '0.00'}</span>
+                                          <span>Fee: K{TRANSACTION_FEE_MWK.toLocaleString()}</span>
                                         </div>
                                     </FormItem>
                                 )}/>

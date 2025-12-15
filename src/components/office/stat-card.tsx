@@ -9,19 +9,18 @@ export const StatCard = ({
     value, 
     footer, 
     isCurrency = false,
-    showMwk = false,
-    usdToMwkRate = 1700
+    currencyPrefix = 'K',
+    valuePrefix = ''
 }: { 
     icon: React.ElementType, 
     title: string, 
     value: string | number, 
     footer: string, 
     isCurrency?: boolean,
-    showMwk?: boolean,
-    usdToMwkRate?: number
+    currencyPrefix?: string,
+    valuePrefix?: string,
 }) => {
     const numericValue = typeof value === 'number' ? value : 0;
-    const mwkValue = numericValue * usdToMwkRate;
 
     return (
         <Card>
@@ -31,12 +30,9 @@ export const StatCard = ({
             </CardHeader>
             <CardContent>
             <div className="text-2xl font-bold">
-                {isCurrency && <span className="text-muted-foreground">$</span>}
-                {isCurrency ? numericValue.toLocaleString() : value}
+                {isCurrency && <span>{currencyPrefix}</span>}
+                {valuePrefix}{isCurrency ? numericValue.toLocaleString() : value}
             </div>
-            {showMwk && isCurrency && (
-                <p className="text-xs text-muted-foreground">~K{mwkValue.toLocaleString()}</p>
-            )}
             <p className="text-xs text-muted-foreground mt-1">{footer}</p>
             </CardContent>
         </Card>

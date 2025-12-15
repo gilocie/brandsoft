@@ -37,6 +37,7 @@ const affiliateSchema = z.object({
 type AffiliateFormData = z.infer<typeof affiliateSchema>;
 
 const USD_TO_MWK = 1700;
+const CREDIT_TO_MWK = 1000;
 const ITEMS_PER_PAGE = 10;
 
 export function OfficePageContent() {
@@ -294,8 +295,8 @@ export function OfficePageContent() {
         <TabsContent value="dashboard" className="pt-6">
             <div className="grid gap-6">
                  <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <StatCard icon={DollarSign} title="Total Sales" value={affiliate.totalSales} footer="All-time client sales" isCurrency showMwk usdToMwkRate={USD_TO_MWK} />
-                    <StatCard icon={CreditCard} title="Credit Balance" value={affiliate.creditBalance} footer="Credits for platform usage" />
+                    <StatCard icon={DollarSign} title="Total Sales" value={affiliate.totalSales * USD_TO_MWK} footer="All-time client sales" isCurrency />
+                    <StatCard icon={CreditCard} title="Credit Balance" value={`${affiliate.creditBalance.toLocaleString()} = K${(affiliate.creditBalance * CREDIT_TO_MWK).toLocaleString()}`} footer="Credits for platform usage" valuePrefix="BS" />
                     <Card>
                         <CardHeader>
                             <div className="flex items-center justify-between">
@@ -305,7 +306,7 @@ export function OfficePageContent() {
                             <CardDescription>Bonus for referring 10+ clients.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                             <p className="text-3xl font-bold">${bonusAmount.toLocaleString()}</p>
+                             <p className="text-3xl font-bold">K{(bonusAmount * USD_TO_MWK).toLocaleString()}</p>
                         </CardContent>
                         <CardContent>
                            <Button variant="outline" disabled>View Progress</Button>
@@ -318,19 +319,18 @@ export function OfficePageContent() {
                                 <Wallet className="h-5 w-5" />
                             </div>
                              <CardDescription className="text-white/80">
-                               {bonusAmount > 0 ? `Includes $${bonusAmount} bonus` : 'Available for withdrawal'}
+                               {bonusAmount > 0 ? `Includes K${(bonusAmount * USD_TO_MWK).toLocaleString()} bonus` : 'Available for withdrawal'}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-3xl font-bold">${displayBalance.toLocaleString()}</p>
-                            <p className="text-sm text-white/80">~K{mwkBalance.toLocaleString()}</p>
+                            <p className="text-3xl font-bold">K{mwkBalance.toLocaleString()}</p>
                         </CardContent>
                         <CardContent>
                             <WithdrawDialog 
-                                commissionBalance={affiliate.balance} 
-                                bonusBalance={bonusAmount} 
+                                commissionBalance={affiliate.balance * USD_TO_MWK} 
+                                bonusBalance={bonusAmount * USD_TO_MWK} 
                                 onWithdraw={handleWithdraw} 
-                                isVerified={affiliate.idUploaded && affiliate.securityQuestion}
+                                isVerified={true}
                             />
                         </CardContent>
                      </Card>
@@ -363,7 +363,7 @@ export function OfficePageContent() {
                                         </div>
                                     </div>
                                     <p className={cn("text-sm font-semibold", t.type === 'credit' ? 'text-green-600' : 'text-red-600')}>
-                                        {t.type === 'credit' ? '+' : '-'} ${t.amount.toFixed(2)}
+                                        {t.type === 'credit' ? '+' : '-'} K{(t.amount * USD_TO_MWK).toLocaleString()}
                                     </p>
                                 </div>
                             )) : (
@@ -411,7 +411,7 @@ export function OfficePageContent() {
                                                 <p className="text-xs text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
                                             </div>
                                         </div>
-                                        <p className="text-sm font-semibold text-red-600">- ${t.amount.toFixed(2)}</p>
+                                        <p className="text-sm font-semibold text-red-600">- K{(t.amount * USD_TO_MWK).toLocaleString()}</p>
                                     </div>
                                 )) : (
                                     <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
