@@ -23,6 +23,7 @@ const VALID_SERIAL = 'BRANDSOFT-2024';
 const initialAffiliateData: Affiliate = {
     fullName: 'Your Affiliate Name',
     username: 'affiliate_user',
+    phone: '0999000111',
     profilePic: 'https://picsum.photos/seed/affiliate/200',
     affiliateLink: 'https://brandsoft.com/join?ref=affiliate_user',
     securityQuestion: true,

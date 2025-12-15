@@ -6,7 +6,7 @@ import { useBrandsoft } from '@/hooks/use-brandsoft';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Copy, DollarSign, ExternalLink, ShieldCheck, ShieldOff, UserCheck, Users, Edit, CreditCard, Gift, KeyRound } from 'lucide-react';
+import { Copy, DollarSign, ExternalLink, ShieldCheck, ShieldOff, UserCheck, Users, Edit, CreditCard, Gift, KeyRound, Phone } from 'lucide-react';
 import { ClientCard } from '@/components/affiliate/client-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -22,6 +22,7 @@ import { useToast } from '@/hooks/use-toast';
 const affiliateSchema = z.object({
     fullName: z.string().min(2, "Full name is required"),
     username: z.string().min(3, "Username must be at least 3 characters"),
+    phone: z.string().optional(),
     profilePic: z.string().optional(),
 });
 
@@ -74,6 +75,7 @@ export function OfficePageContent() {
       defaultValues: {
           fullName: affiliate?.fullName || '',
           username: affiliate?.username || '',
+          phone: affiliate?.phone || '',
           profilePic: affiliate?.profilePic || '',
       }
   });
@@ -83,6 +85,7 @@ export function OfficePageContent() {
         form.reset({
             fullName: affiliate.fullName,
             username: affiliate.username,
+            phone: affiliate.phone,
             profilePic: affiliate.profilePic,
         });
     }
@@ -201,6 +204,18 @@ export function OfficePageContent() {
                                 )}
                             />
                             
+                            <FormField
+                                control={form.control}
+                                name="phone"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Phone Number</FormLabel>
+                                        <FormControl><Input {...field} /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
                             <div className="flex justify-end gap-2">
                                 <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
                                 <Button type="submit">Save Changes</Button>
@@ -308,7 +323,7 @@ export function OfficePageContent() {
                     <CardDescription>Unique codes and features for your affiliate account.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div>
+                    <div className="space-y-3">
                         <h3 className="text-sm font-semibold mb-2">Staff ID Code</h3>
                         <p className="text-xs text-muted-foreground mb-2">Provide this code to your staff when they are selling credits on your behalf.</p>
                         <div className="flex items-center gap-2">
@@ -319,6 +334,13 @@ export function OfficePageContent() {
                              <Button size="sm" onClick={generateNewStaffId}>
                                 Generate New Code
                             </Button>
+                        </div>
+                    </div>
+                     <div className="space-y-3 pt-4 border-t">
+                        <h3 className="text-sm font-semibold mb-2">Affiliate Phone Number</h3>
+                        <p className="text-xs text-muted-foreground mb-2">This number can be contacted for affiliate-related queries.</p>
+                        <div className="flex items-center gap-2">
+                            <Input readOnly value={affiliate.phone || 'Not set'} icon={Phone} />
                         </div>
                     </div>
                 </CardContent>

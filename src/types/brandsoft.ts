@@ -13,6 +13,7 @@ export type AffiliateClient = {
 export type Affiliate = {
   fullName: string;
   username: string;
+  phone?: string;
   profilePic: string;
   affiliateLink: string;
   securityQuestion: boolean; // true if set, false if not
