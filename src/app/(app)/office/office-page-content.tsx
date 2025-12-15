@@ -722,9 +722,10 @@ export function OfficePageContent() {
   };
   
   const handlePushToWallet = () => {
-    if (!config || !affiliate || affiliate.unclaimedCommission <= 0) return;
+    if (!config || !affiliate) return;
+    const amountToPush = affiliate.unclaimedCommission || 0;
+    if (amountToPush <= 0) return;
 
-    const amountToPush = affiliate.unclaimedCommission;
     const newAffiliateData = {
         ...affiliate,
         balance: affiliate.balance + amountToPush,
@@ -1038,14 +1039,14 @@ export function OfficePageContent() {
                     <StatCard 
                         icon={TrendingUp} 
                         title="Unclaimed Commission" 
-                        value={affiliate.unclaimedCommission} 
+                        value={affiliate.unclaimedCommission || 0} 
                         isCurrency 
                         footer="Ready to push to your wallet"
                     >
                         <Button 
                             size="sm" 
                             className="w-full mt-2" 
-                            disabled={affiliate.unclaimedCommission <= 0}
+                            disabled={(affiliate.unclaimedCommission || 0) <= 0}
                             onClick={handlePushToWallet}
                         >
                            <Send className="h-4 w-4 mr-2" /> Push to Wallet
@@ -1322,3 +1323,4 @@ export function OfficePageContent() {
 
 
     
+
