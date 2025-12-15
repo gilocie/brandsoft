@@ -195,6 +195,20 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
         if (!parsedConfig.affiliate) {
             parsedConfig.affiliate = initialAffiliateData;
             needsSave = true;
+        } else {
+             // Ensure all new fields exist
+            if (typeof parsedConfig.affiliate.totalSales === 'undefined') {
+                parsedConfig.affiliate.totalSales = initialAffiliateData.totalSales;
+                needsSave = true;
+            }
+            if (typeof parsedConfig.affiliate.creditBalance === 'undefined') {
+                parsedConfig.affiliate.creditBalance = initialAffiliateData.creditBalance;
+                needsSave = true;
+            }
+            if (typeof parsedConfig.affiliate.bonus === 'undefined') {
+                parsedConfig.affiliate.bonus = initialAffiliateData.bonus;
+                needsSave = true;
+            }
         }
         
         setConfig(parsedConfig);
