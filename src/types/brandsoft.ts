@@ -36,6 +36,7 @@ export type Affiliate = {
   withdrawalMethods?: {
     airtel?: { name: string; phone: string };
     tnm?: { name: string; phone: string };
+    bank?: { bankName: string; accountNumber: string; branch: string; };
   };
 };
 

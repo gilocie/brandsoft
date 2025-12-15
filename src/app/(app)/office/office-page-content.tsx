@@ -26,6 +26,8 @@ import { StatCard } from '@/components/office/stat-card';
 import { VerificationItem } from '@/components/office/verification-item';
 import { WithdrawDialog } from '@/components/office/withdraw-dialog';
 import { BuyCreditsDialog } from '@/components/office/buy-credits-dialog';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+
 
 const affiliateSchema = z.object({
     fullName: z.string().min(2, "Full name is required"),
@@ -45,9 +47,89 @@ type WithdrawalMethodFormData = z.infer<typeof withdrawalMethodSchema>;
 
 type EditableWithdrawalMethod = 'airtel' | 'tnm';
 
+const bankWithdrawalSchema = z.object({
+    bankName: z.string().min(2, 'Bank name is required'),
+    accountNumber: z.string().min(5, 'Account number is required'),
+    branch: z.string().min(1, 'Please select your Staff ID'),
+});
+
+type BankWithdrawalFormData = z.infer<typeof bankWithdrawalSchema>;
+
 const USD_TO_MWK = 1700;
 const CREDIT_TO_MWK = 1000;
 const ITEMS_PER_PAGE = 10;
+
+const BankWithdrawalDialog = ({
+    isOpen,
+    onClose,
+    onSave,
+    currentData,
+    staffId
+}: {
+    isOpen: boolean,
+    onClose: () => void,
+    onSave: (data: BankWithdrawalFormData) => void,
+    currentData?: { bankName: string; accountNumber: string; branch: string; },
+    staffId?: string
+}) => {
+    const form = useForm<BankWithdrawalFormData>({
+        resolver: zodResolver(bankWithdrawalSchema),
+        defaultValues: currentData || { bankName: '', accountNumber: '', branch: '' }
+    });
+
+    useEffect(() => {
+        form.reset(currentData || { bankName: '', accountNumber: '', branch: '' });
+    }, [currentData, form]);
+
+    const onSubmit = (data: BankWithdrawalFormData) => {
+        onSave(data);
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onClose}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Set Up Bank Transfer</DialogTitle>
+                    <DialogDescription>Enter your bank account details below.</DialogDescription>
+                </DialogHeader>
+                 <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                        <FormField control={form.control} name="bankName" render={({ field }) => (
+                            <FormItem><FormLabel>Bank Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                        <FormField control={form.control} name="accountNumber" render={({ field }) => (
+                            <FormItem><FormLabel>Account Number</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                        )} />
+                         <FormField control={form.control} name="branch" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Branch (Staff ID)</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select Staff ID" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {staffId ? (
+                                            <SelectItem value={staffId}>{staffId}</SelectItem>
+                                        ) : (
+                                            <SelectItem value="none" disabled>No Staff ID available</SelectItem>
+                                        )}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )} />
+                        <DialogFooter>
+                            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+                            <Button type="submit">Save Details</Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    );
+};
 
 const WithdrawalMethodDialog = ({
     method,
@@ -111,6 +193,8 @@ export function OfficePageContent() {
   const { toast } = useToast();
 
   const [editingMethod, setEditingMethod] = useState<EditableWithdrawalMethod | null>(null);
+  const [isBankDialogOpen, setIsBankDialogOpen] = useState(false);
+
 
   const affiliate = config?.affiliate;
 
@@ -260,11 +344,20 @@ export function OfficePageContent() {
     toast({ title: `${method.toUpperCase()} Details Saved!`});
     setEditingMethod(null);
   };
-  
-  const MethodCard = ({method, name, icon: Icon}: {method: EditableWithdrawalMethod, name: string, icon: React.ElementType}) => {
-      const details = affiliate.withdrawalMethods?.[method];
-      const isSetup = !!details;
 
+  const handleSaveBankDetails = (data: BankWithdrawalFormData) => {
+    if (!config || !affiliate) return;
+    const newAffiliateData = { ...affiliate };
+    if (!newAffiliateData.withdrawalMethods) {
+        newAffiliateData.withdrawalMethods = {};
+    }
+    newAffiliateData.withdrawalMethods.bank = data;
+    saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
+    toast({ title: "Bank Details Saved!" });
+    setIsBankDialogOpen(false);
+  };
+  
+  const MethodCard = ({method, name, icon: Icon, onAction, isSetup}: {method?: EditableWithdrawalMethod, name: string, icon: React.ElementType, onAction: () => void, isSetup: boolean}) => {
       return (
           <Card>
               <CardHeader className="flex flex-row items-center justify-between">
@@ -275,7 +368,7 @@ export function OfficePageContent() {
                    {isSetup && <CheckCircle className="h-5 w-5 text-green-500" />}
               </CardHeader>
               <CardContent className="flex items-center justify-end gap-2">
-                 <Button variant={isSetup ? 'secondary' : 'default'} size="sm" onClick={() => setEditingMethod(method)}>
+                 <Button variant={isSetup ? 'secondary' : 'default'} size="sm" onClick={onAction}>
                     {isSetup ? <Pencil className="h-4 w-4 mr-2" /> : null}
                     {isSetup ? 'Edit' : 'Set Up'}
                 </Button>
@@ -410,7 +503,7 @@ export function OfficePageContent() {
                         icon={CreditCard} 
                         title="Credit Balance" 
                         value={affiliate.creditBalance}
-                        valuePrefix={`BS ${affiliate.creditBalance.toLocaleString()}`}
+                        valuePrefix={`BS ${affiliate.creditBalance.toLocaleString()} `}
                         footer={`= K${(affiliate.creditBalance * CREDIT_TO_MWK).toLocaleString()}`}
                     >
                         <BuyCreditsDialog walletBalance={affiliate.balance * USD_TO_MWK} />
@@ -610,12 +703,9 @@ export function OfficePageContent() {
                         </TabsList>
                         <TabsContent value="withdraw" className="p-6">
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <MethodCard method="airtel" name="Airtel Money" icon={Smartphone} />
-                                <MethodCard method="tnm" name="TNM Mpamba" icon={Smartphone} />
-                                <Card>
-                                    <CardHeader className="flex flex-row items-center gap-3"><div className="p-2 rounded-full bg-muted"><Banknote className="h-5 w-5 text-muted-foreground" /></div><CardTitle className="text-base">Bank Transfer</CardTitle></CardHeader>
-                                    <CardContent><Button variant="secondary" size="sm" disabled>Set Up</Button></CardContent>
-                                </Card>
+                                <MethodCard method="airtel" name="Airtel Money" icon={Smartphone} isSetup={!!affiliate.withdrawalMethods?.airtel} onAction={() => setEditingMethod('airtel')} />
+                                <MethodCard method="tnm" name="TNM Mpamba" icon={Smartphone} isSetup={!!affiliate.withdrawalMethods?.tnm} onAction={() => setEditingMethod('tnm')} />
+                                <MethodCard name="Bank Transfer" icon={Banknote} isSetup={!!affiliate.withdrawalMethods?.bank} onAction={() => setIsBankDialogOpen(true)} />
                                 <Card>
                                     <CardHeader className="flex flex-row items-center gap-3"><div className="p-2 rounded-full bg-muted"><Wallet className="h-5 w-5 text-muted-foreground" /></div><CardTitle className="text-base">BS Credits</CardTitle></CardHeader>
                                     <CardContent><Button variant="secondary" size="sm" disabled>Set Up</Button></CardContent>
@@ -639,6 +729,13 @@ export function OfficePageContent() {
             onClose={() => setEditingMethod(null)}
             onSave={handleSaveWithdrawalMethod}
             currentData={editingMethod ? affiliate.withdrawalMethods?.[editingMethod] : undefined}
+        />
+        <BankWithdrawalDialog
+            isOpen={isBankDialogOpen}
+            onClose={() => setIsBankDialogOpen(null)}
+            onSave={handleSaveBankDetails}
+            currentData={affiliate.withdrawalMethods?.bank}
+            staffId={affiliate.staffId}
         />
     </div>
   );

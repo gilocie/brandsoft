@@ -202,7 +202,11 @@ export function useSetup(
         { id: 'TRN-5', date: '2024-07-05', description: 'Withdrawal', amount: 1000, type: 'debit' },
         { id: 'TRN-6', date: '2024-06-28', description: 'Commission: Old Client', amount: 30.00, type: 'credit' },
     ],
-    withdrawalMethods: {},
+    withdrawalMethods: {
+        airtel: undefined,
+        tnm: undefined,
+        bank: undefined,
+    },
   };
 
 
