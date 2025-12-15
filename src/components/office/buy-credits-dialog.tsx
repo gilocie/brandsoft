@@ -38,6 +38,14 @@ export const BuyCreditsDialog = ({ walletBalance }: { walletBalance: number }) =
   const handleNextStep = async () => {
       const isValid = await form.trigger(['credits']);
       if (isValid) {
+          if (!config?.affiliate?.isPinSet) {
+              toast({
+                  variant: 'destructive',
+                  title: "PIN Not Set",
+                  description: "Please set up your withdrawal PIN in the 'My Features' tab before purchasing credits.",
+              });
+              return;
+          }
           if (cost > walletBalance) {
               toast({
                 variant: 'destructive',
@@ -53,7 +61,7 @@ export const BuyCreditsDialog = ({ walletBalance }: { walletBalance: number }) =
   const onSubmit = (data: BuyCreditsFormData) => {
     if (!config || !config.affiliate) return;
 
-    if (data.pin !== '1234') { // Demo PIN check
+    if (data.pin !== config.affiliate.pin) {
         toast({ variant: 'destructive', title: "Incorrect PIN" });
         form.setError('pin', { type: 'manual', message: 'The entered PIN is incorrect.' });
         return;
@@ -87,7 +95,7 @@ export const BuyCreditsDialog = ({ walletBalance }: { walletBalance: number }) =
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if(!open) setStep(1); }}>
+    <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if(!open) { form.reset(); setStep(1); } }}>
       <DialogTrigger asChild>
         <Button>Buy Credits</Button>
       </DialogTrigger>
