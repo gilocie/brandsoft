@@ -140,13 +140,13 @@ export function OfficePageContent() {
   const handleWithdraw = (amount: number, source: 'commission' | 'bonus' | 'combined') => {
     if (!config || !affiliate) return;
     
-    const TRANSACTION_FEE = 3000 / USD_TO_MWK; // Convert fee to USD
+    const TRANSACTION_FEE_USD = 3000 / USD_TO_MWK; // Convert fee to USD
 
     const newTransaction: Transaction = {
       id: `TRN-${Date.now()}`,
       date: new Date().toISOString(),
       description: `Withdrawal`,
-      amount: amount,
+      amount: amount / USD_TO_MWK, // Store as USD
       type: 'debit',
     };
     
@@ -154,25 +154,27 @@ export function OfficePageContent() {
       id: `TRN-FEE-${Date.now()}`,
       date: new Date().toISOString(),
       description: 'Transaction Fee',
-      amount: TRANSACTION_FEE,
+      amount: TRANSACTION_FEE_USD,
       type: 'debit',
     };
 
     const newAffiliateData = { ...affiliate };
     
+    const amountToWithdrawUSD = amount / USD_TO_MWK;
+
     if (source === 'combined') {
-        let remainingAmount = amount + TRANSACTION_FEE;
+        let remainingAmountUSD = amountToWithdrawUSD + TRANSACTION_FEE_USD;
         
-        const bonusDeduction = Math.min(newAffiliateData.bonus || 0, remainingAmount);
+        const bonusDeduction = Math.min(newAffiliateData.bonus || 0, remainingAmountUSD);
         newAffiliateData.bonus = (newAffiliateData.bonus || 0) - bonusDeduction;
-        remainingAmount -= bonusDeduction;
+        remainingAmountUSD -= bonusDeduction;
         
-        if (remainingAmount > 0) {
-            newAffiliateData.balance -= remainingAmount;
+        if (remainingAmountUSD > 0) {
+            newAffiliateData.balance -= remainingAmountUSD;
         }
 
     } else { // 'commission'
-        newAffiliateData.balance -= (amount + TRANSACTION_FEE);
+        newAffiliateData.balance -= (amountToWithdrawUSD + TRANSACTION_FEE_USD);
     }
     
     newAffiliateData.transactions = [newTransaction, feeTransaction, ...(affiliate.transactions || [])];
@@ -295,8 +297,8 @@ export function OfficePageContent() {
         <TabsContent value="dashboard" className="pt-6">
             <div className="grid gap-6">
                  <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <StatCard icon={DollarSign} title="Total Sales" value={affiliate.totalSales * USD_TO_MWK} footer="All-time client sales" isCurrency />
-                    <StatCard icon={CreditCard} title="Credit Balance" value={`${affiliate.creditBalance.toLocaleString()} = K${(affiliate.creditBalance * CREDIT_TO_MWK).toLocaleString()}`} footer="Credits for platform usage" valuePrefix="BS" />
+                    <StatCard icon={DollarSign} title="Total Sales" value={affiliate.totalSales * USD_TO_MWK} footer={`Equivalent to $${affiliate.totalSales.toLocaleString()}`} isCurrency />
+                    <StatCard icon={CreditCard} title="Credit Balance" value={`BS${affiliate.creditBalance.toLocaleString()} = K${(affiliate.creditBalance * CREDIT_TO_MWK).toLocaleString()}`} footer="Credits for platform usage" />
                     <Card>
                         <CardHeader>
                             <div className="flex items-center justify-between">
@@ -324,6 +326,7 @@ export function OfficePageContent() {
                         </CardHeader>
                         <CardContent>
                             <p className="text-3xl font-bold">K{mwkBalance.toLocaleString()}</p>
+                             <p className="text-sm text-white/80">~${displayBalance.toLocaleString()}</p>
                         </CardContent>
                         <CardContent>
                             <WithdrawDialog 
@@ -480,12 +483,28 @@ export function OfficePageContent() {
             </Card>
             <Card>
                 <CardHeader>
-                    <CardTitle>Account Verification</CardTitle>
-                    <CardDescription>Complete these steps to secure your account and enable withdrawals.</CardDescription>
+                    <CardTitle>Account Settings</CardTitle>
+                    <CardDescription>Manage your withdrawal and security preferences.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                    <VerificationItem title="Security Questions" status={affiliate.securityQuestion} actionText="Set Questions" onAction={() => alert("Navigate to security questions page")} />
-                    <VerificationItem title="Identity Verification" status={affiliate.idUploaded} actionText="Upload ID" onAction={() => alert("Open ID upload dialog")} />
+                <CardContent className="p-0">
+                    <Tabs defaultValue="withdraw" className="w-full">
+                        <TabsList className="grid w-full grid-cols-3">
+                            <TabsTrigger value="withdraw">Withdraw Options</TabsTrigger>
+                            <TabsTrigger value="security">Security</TabsTrigger>
+                            <TabsTrigger value="verification">Verification</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="withdraw" className="p-6">
+                             <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
+                                <p className="text-muted-foreground text-center text-sm">Withdrawal options will be configured here.</p>
+                            </div>
+                        </TabsContent>
+                        <TabsContent value="security" className="p-6">
+                            <VerificationItem title="Security Questions" status={affiliate.securityQuestion} actionText="Set Questions" onAction={() => alert("Navigate to security questions page")} />
+                        </TabsContent>
+                        <TabsContent value="verification" className="p-6">
+                             <VerificationItem title="Identity Verification" status={affiliate.idUploaded} actionText="Upload ID" onAction={() => alert("Open ID upload dialog")} />
+                        </TabsContent>
+                    </Tabs>
                 </CardContent>
             </Card>
         </TabsContent>
