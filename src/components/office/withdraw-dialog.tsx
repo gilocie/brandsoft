@@ -106,7 +106,14 @@ export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, is
                                 <FormField control={form.control} name="amount" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Amount to Withdraw (MWK)</FormLabel>
-                                        <FormControl><Input type="number" {...field} /></FormControl>
+                                        <FormControl>
+                                            <Input
+                                                type="number"
+                                                prefix="K"
+                                                className="text-lg font-bold"
+                                                {...field}
+                                            />
+                                        </FormControl>
                                         <FormDescription>Min: K30,000, Max: K1,000,000</FormDescription>
                                         <FormMessage />
                                         <div className="text-xs text-muted-foreground flex justify-between items-end pt-1">
