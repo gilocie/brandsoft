@@ -118,7 +118,9 @@ export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, is
     const onSubmit = (data: WithdrawFormData) => {
         const totalToWithdraw = data.amount + TRANSACTION_FEE_MWK;
         
-        if (totalToWithdraw > availableBalance) {
+        const balanceToCheck = data.includeBonus ? commissionBalance + bonusBalance : commissionBalance;
+
+        if (totalToWithdraw > balanceToCheck) {
             toast({ variant: 'destructive', title: "Insufficient Funds", description: "The amount plus the transaction fee exceeds your available balance." });
             return;
         }
