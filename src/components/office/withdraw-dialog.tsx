@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -64,7 +65,7 @@ const AmountInput = ({ value, onChange, className }: { value: number, onChange: 
 };
 
 
-export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, isVerified }: { commissionBalance: number, bonusBalance: number, onWithdraw: (amount: number, source: 'commission' | 'bonus' | 'combined') => void, isVerified: boolean }) => {
+export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, isVerified }: { commissionBalance: number, bonusBalance: number, onWithdraw: (amount: number, source: 'commission' | 'combined' | 'bonus') => void, isVerified: boolean }) => {
     const [step, setStep] = useState(1);
     const [isOpen, setIsOpen] = useState(false);
     const { config } = useBrandsoft();

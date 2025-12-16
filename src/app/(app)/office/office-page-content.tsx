@@ -171,7 +171,7 @@ export function OfficePageContent() {
   
   const bonusAmount = affiliate.bonus || 0;
   const unclaimedCommission = affiliate.unclaimedCommission || 0;
-  const mwkBalance = (affiliate.myWallet || 0) + bonusAmount;
+  const mwkBalance = affiliate.myWallet || 0;
   const activeClients = affiliate.clients.filter(c => c.status === 'active').length;
   const totalSales = affiliate.totalSales || 0;
 
