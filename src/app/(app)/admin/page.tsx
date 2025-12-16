@@ -215,7 +215,7 @@ export default function AdminPage() {
     }, [affiliates]);
     
     const creditsInReserve = (affiliateSettings.availableCredits || 0);
-    const availableToSell = creditsInReserve;
+    const availableToSell = creditsInReserve - totalCirculatingCredits;
 
 
     const availableCreditsPercentage = useMemo(() => {
