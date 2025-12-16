@@ -32,7 +32,7 @@ const CREDIT_TO_MWK = 1000;
 
 const manageBalanceSchema = z.object({
   action: z.enum(['add', 'deduct']),
-  amount: z.coerce.number().min(1, "Amount must be at least 1."),
+  amount: z.coerce.number().min(0.01, "Amount must be a positive number."),
   reason: z.string().min(5, "A reason is required for this action."),
 });
 
@@ -105,7 +105,7 @@ const ManageBalanceDialog = ({
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Amount</FormLabel>
-                                    <FormControl><Input type="number" {...field} /></FormControl>
+                                    <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
@@ -544,4 +544,5 @@ export default function AffiliateDetailsPage() {
             )}
         </div>
     );
-}
+
+    
