@@ -38,7 +38,7 @@ export default function AffiliateDetailsPage() {
     const allTransactions = useMemo(() => {
         if (!affiliate?.transactions) return [];
         // Default status to 'completed' for old transactions, 'pending' for new ones.
-        return affiliate.transactions.map(t => ({...t, status: (t as any).status || 'pending' }));
+        return affiliate.transactions.map(t => ({...t, status: (t as any).status || 'completed' }));
     }, [affiliate?.transactions]);
     
     // Filter for actual withdrawal debits (not fees or credit purchases)
@@ -188,7 +188,7 @@ export default function AffiliateDetailsPage() {
 
              <div className="space-y-2">
                 <h2 className="text-lg font-semibold tracking-tight">Performance</h2>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 md:grid-cols-3">
                     <StatCard title="Total Clients" value={totalClients} icon={Users} footer="All referred clients" />
                     <StatCard title="Active Clients" value={activeClients} icon={UserCheck} footer={`${totalClients > 0 ? ((activeClients/totalClients) * 100).toFixed(0) : 0}% retention`} />
                     <StatCard title="Total Sales" value={totalSales} isCurrency icon={TrendingUp} footer="Lifetime sales volume" />
@@ -347,3 +347,4 @@ export default function AffiliateDetailsPage() {
         </div>
     );
 }
+
