@@ -2,6 +2,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -60,7 +61,9 @@ export const AffiliateCard = ({ affiliate, onSelectAction }: AffiliateCardProps)
         <Stat label="Expired" value={expiredClients} />
       </CardContent>
       <CardFooter className="p-3">
-         <Button variant="outline" className="w-full">View Details</Button>
+         <Button variant="outline" className="w-full" asChild>
+            <Link href={`/admin/affiliates/${affiliate.username}`}>View Details</Link>
+         </Button>
       </CardFooter>
     </Card>
   );
