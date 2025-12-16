@@ -1,5 +1,4 @@
 
-
 import { Page } from '@/stores/canvas-store';
 
 export type AffiliateClient = {
@@ -8,6 +7,7 @@ export type AffiliateClient = {
   avatar: string;
   plan: string;
   status: 'active' | 'expired';
+  joinDate?: string;
 };
 
 export type Transaction = {
@@ -38,6 +38,7 @@ export type Affiliate = {
   creditBalance: number;
   bonus: number;
   staffId?: string;
+  clients: AffiliateClient[];
   transactions?: Transaction[];
   withdrawalMethods?: {
     airtel?: { name: string; phone: string };
@@ -250,6 +251,7 @@ export type BrandsoftConfig = {
     buyPrice?: number;
     sellPrice?: number;
     exchangeValue?: number;
+    availableCredits?: number;
   };
   companies: Company[];
   customers: Customer[];

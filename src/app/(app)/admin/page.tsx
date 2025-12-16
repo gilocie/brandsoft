@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Users, BarChart, Clock, CheckCircle, RefreshCw, Briefcase, UserX, Trash2, Wallet, TrendingUp, TrendingDown, PackagePlus } from 'lucide-react';
+import { MoreHorizontal, Users, BarChart, Clock, CheckCircle, RefreshCw, Briefcase, UserX, Trash2, Wallet, TrendingUp, TrendingDown, PackagePlus, Banknote } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -22,6 +22,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
+import { Progress } from '@/components/ui/progress';
 
 const StatCard = ({ title, value, icon: Icon, description, children }: { title: string, value: string | number, icon: React.ElementType, description?: string, children?: React.ReactNode }) => (
     <Card>
@@ -171,19 +172,32 @@ export default function AdminPage() {
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [isManageReserveOpen, setIsManageReserveOpen] = useState(false);
     
+    const affiliateSettings = useMemo(() => config?.affiliateSettings || {
+        maxCredits: 100000,
+        buyPrice: 850,
+        sellPrice: 900,
+        exchangeValue: 1000,
+        availableCredits: 0,
+    }, [config?.affiliateSettings]);
+
     const form = useForm<CreditSettingsFormData>({
         resolver: zodResolver(creditSettingsSchema),
         defaultValues: {
-            maxCredits: config?.affiliateSettings?.maxCredits || 100000,
-            buyPrice: config?.affiliateSettings?.buyPrice || 850,
-            sellPrice: config?.affiliateSettings?.sellPrice || 900,
-            exchangeValue: config?.affiliateSettings?.exchangeValue || 1000,
+            maxCredits: affiliateSettings.maxCredits,
+            buyPrice: affiliateSettings.buyPrice,
+            sellPrice: affiliateSettings.sellPrice,
+            exchangeValue: affiliateSettings.exchangeValue,
         }
     });
     
-    const affiliateSettings = config?.affiliateSettings || {};
-
     const watchedExchangeValue = form.watch('exchangeValue');
+    const watchedSellPrice = form.watch('sellPrice');
+    const watchedMaxCredits = form.watch('maxCredits');
+
+    const availableCreditsPercentage = useMemo(() => {
+        if (!affiliateSettings.maxCredits || affiliateSettings.maxCredits === 0) return 0;
+        return ((affiliateSettings.availableCredits || 0) / affiliateSettings.maxCredits) * 100;
+    }, [affiliateSettings]);
 
     const onCreditSettingsSubmit = (data: CreditSettingsFormData) => {
         if (!config) return;
@@ -191,8 +205,6 @@ export default function AdminPage() {
         toast({ title: "Credit Settings Saved", description: "Your BS Credit settings have been updated." });
     };
 
-    // In a real multi-affiliate app, this would be a list of affiliates.
-    // For this structure, we have one affiliate object.
     const affiliates = useMemo(() => (config?.affiliate ? [config.affiliate] : []), [config?.affiliate]);
     
     const allClients = useMemo(() => {
@@ -206,7 +218,7 @@ export default function AdminPage() {
     const withdrawalRequests = useMemo(() => {
         if (!config?.affiliate?.transactions) return [];
         return config.affiliate.transactions
-            .filter(t => t.type === 'debit' && !t.description.toLowerCase().includes('fee') && !t.description.toLowerCase().includes('manual'))
+            .filter(t => t.type === 'debit' && !t.description.toLowerCase().includes('fee') && !t.description.toLowerCase().includes('manual') && !t.description.toLowerCase().includes('purchase'))
             .map(t => ({
                 ...t,
                 status: (t as any).status || 'pending',
@@ -396,6 +408,26 @@ export default function AdminPage() {
                                             <CardDescription>Set the economic parameters for your affiliate credit system.</CardDescription>
                                         </CardHeader>
                                         <CardContent>
+                                            <Card className="mb-6">
+                                                <CardHeader>
+                                                    <CardTitle className="flex items-center justify-between text-base">
+                                                        <span>Credit Reserve Status</span>
+                                                        <span className="text-sm font-normal text-muted-foreground">{availableCreditsPercentage.toFixed(1)}% Full</span>
+                                                    </CardTitle>
+                                                </CardHeader>
+                                                <CardContent>
+                                                    <div className="space-y-1">
+                                                        <div className="flex justify-between font-mono text-sm">
+                                                            <span>BS {(affiliateSettings.availableCredits || 0).toLocaleString()}</span>
+                                                            <span className="font-sans text-muted-foreground">/ BS {(watchedMaxCredits || 0).toLocaleString()}</span>
+                                                        </div>
+                                                        <Progress value={availableCreditsPercentage} />
+                                                        <div className="text-xs text-muted-foreground pt-1">
+                                                            Value at Sell Price: K{((affiliateSettings.availableCredits || 0) * (watchedSellPrice || 0)).toLocaleString()}
+                                                        </div>
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
                                             <Form {...form}>
                                                 <form onSubmit={form.handleSubmit(onCreditSettingsSubmit)} className="space-y-4">
                                                     <FormField control={form.control} name="maxCredits" render={({ field }) => (
