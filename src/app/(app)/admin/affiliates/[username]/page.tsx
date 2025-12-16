@@ -38,7 +38,7 @@ export default function AffiliateDetailsPage() {
     const allTransactions = useMemo(() => {
         if (!affiliate?.transactions) return [];
         // Default status to 'completed' for old transactions, 'pending' for new ones.
-        return affiliate.transactions.map(t => ({...t, status: (t as any).status || 'completed' }));
+        return affiliate.transactions.map(t => ({...t, status: (t as any).status || 'pending' }));
     }, [affiliate?.transactions]);
     
     // Filter for actual withdrawal debits (not fees or credit purchases)
@@ -58,7 +58,7 @@ export default function AffiliateDetailsPage() {
         // This includes commissions (credit) and credit purchases (debit)
         return allTransactions.filter(t => 
             t.type === 'credit' || 
-            (t.type === 'debit' && t.description.toLowerCase().includes('credit'))
+            (t.type === 'debit' && t.description.toLowerCase().includes('credit purchase'))
         );
     }, [allTransactions]);
 
@@ -346,5 +346,4 @@ export default function AffiliateDetailsPage() {
             </AlertDialog>
         </div>
     );
-
-    
+}
