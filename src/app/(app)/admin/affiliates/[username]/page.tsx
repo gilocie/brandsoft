@@ -220,17 +220,35 @@ export default function AffiliateDetailsPage() {
                         </CardContent>
                     </Card>
                 </TabsContent>
-                 <TabsContent value="team" className="pt-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5"/> Referred Clients</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-2">
-                            {affiliate.clients.map(client => (
-                                <ClientCard key={client.id} client={client} />
-                            ))}
-                        </CardContent>
-                    </Card>
+                <TabsContent value="team" className="pt-6">
+                   <Tabs defaultValue="clients">
+                       <TabsList>
+                           <TabsTrigger value="clients">Clients</TabsTrigger>
+                           <TabsTrigger value="invites">Invites</TabsTrigger>
+                       </TabsList>
+                       <TabsContent value="clients" className="pt-4">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5"/> Referred Clients</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-2">
+                                    {affiliate.clients.map(client => (
+                                        <ClientCard key={client.id} client={client} />
+                                    ))}
+                                </CardContent>
+                            </Card>
+                       </TabsContent>
+                       <TabsContent value="invites" className="pt-4">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Sent Invites</CardTitle>
+                                </CardHeader>
+                                <CardContent className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
+                                    <p className="text-muted-foreground">Invitation tracking coming soon.</p>
+                                </CardContent>
+                            </Card>
+                       </TabsContent>
+                   </Tabs>
                 </TabsContent>
                  <TabsContent value="security" className="pt-6">
                     <div className="grid gap-6 md:grid-cols-2">
@@ -311,4 +329,3 @@ export default function AffiliateDetailsPage() {
         </div>
     );
 }
-
