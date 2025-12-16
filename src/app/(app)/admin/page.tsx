@@ -74,12 +74,14 @@ const ManageReserveDialog = ({
     onSubmit,
     totalReserve,
     circulatingCredits,
+    maxCredits
 }: {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
     onSubmit: (data: ManageReserveFormData) => void;
     totalReserve: number;
     circulatingCredits: number;
+    maxCredits: number;
 }) => {
     const form = useForm<ManageReserveFormData>({
       resolver: zodResolver(manageReserveSchema),
@@ -93,7 +95,7 @@ const ManageReserveDialog = ({
         form.reset({ action: 'add', amount: 1, reason: '' });
     }, [isOpen, form]);
 
-    const availableToAdjust = totalReserve - circulatingCredits;
+    const availableToAdjust = maxCredits - totalReserve;
     
     const finalReserve = watchedAction === 'add' 
         ? totalReserve + (Number(watchedAmount) || 0)
@@ -106,7 +108,7 @@ const ManageReserveDialog = ({
                     <DialogTitle>Manage Credits Reserve</DialogTitle>
                      <DialogDescription>
                         Manually adjust the total credits in your central reserve.
-                        You have <span className="font-bold">{availableToAdjust.toLocaleString()}</span> credits available before you reach your max limit of {(totalReserve).toLocaleString()}.
+                        You have <span className="font-bold">{availableToAdjust.toLocaleString()}</span> credits available before you reach your max limit of {(maxCredits).toLocaleString()}.
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -213,7 +215,7 @@ export default function AdminPage() {
     }, [affiliates]);
     
     const creditsInReserve = (affiliateSettings.availableCredits || 0);
-    const availableToSell = creditsInReserve - totalCirculatingCredits;
+    const availableToSell = creditsInReserve;
 
 
     const availableCreditsPercentage = useMemo(() => {
@@ -340,6 +342,7 @@ export default function AdminPage() {
                     title="Available Credits" 
                     value={`BS ${availableToSell.toLocaleString()}`} 
                     icon={Wallet}
+                    description={`Value: K${(availableToSell * (affiliateSettings.sellPrice || 0)).toLocaleString()}`}
                     className={cn(availableToSell <= 100 && 'bg-destructive text-destructive-foreground')}
                  >
                     <Button size="sm" className="w-full mt-2" onClick={() => setIsManageReserveOpen(true)}>Manage</Button>
@@ -585,6 +588,7 @@ export default function AdminPage() {
                 onSubmit={handleManageReserve}
                 totalReserve={affiliateSettings.availableCredits || 0}
                 circulatingCredits={totalCirculatingCredits}
+                maxCredits={affiliateSettings.maxCredits || 0}
             />
         </div>
     );
