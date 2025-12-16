@@ -423,7 +423,7 @@ export default function AdminPage() {
                                                         </div>
                                                         <Progress value={availableCreditsPercentage} />
                                                         <div className="text-xs text-muted-foreground pt-1">
-                                                            Value at Sell Price: K{((affiliateSettings.availableCredits || 0) * (watchedSellPrice || 0)).toLocaleString()}
+                                                            Value at Sell Price: K{((watchedMaxCredits || 0) * (watchedSellPrice || 0)).toLocaleString()}
                                                         </div>
                                                     </div>
                                                 </CardContent>
