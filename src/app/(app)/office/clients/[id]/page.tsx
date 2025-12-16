@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -6,7 +7,7 @@ import { useBrandsoft, type AffiliateClient } from '@/hooks/use-brandsoft';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Ban, Briefcase, User, Wallet, CirclePlus } from 'lucide-react';
+import { ArrowLeft, Ban, Briefcase, User, Wallet, CirclePlus, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { StatCard } from '@/components/office/stat-card';
 import { useToast } from '@/hooks/use-toast';
@@ -74,8 +75,11 @@ export default function ClientDetailsPage() {
           </Avatar>
           <div className="flex-1 space-y-1 text-center md:text-left">
             <CardTitle className="text-3xl font-headline">{client.name}</CardTitle>
-            <CardDescription className="text-base text-muted-foreground flex items-center justify-center md:justify-start gap-2">
-              <Briefcase className="h-4 w-4" /> Plan: {client.plan}
+            <CardDescription className="text-base text-muted-foreground flex items-center justify-center md:justify-start gap-4">
+              <span className="flex items-center gap-2"><Briefcase className="h-4 w-4" /> Plan: {client.plan}</span>
+              {client.status === 'active' && client.remainingDays !== undefined && (
+                <span className="flex items-center gap-2"><Clock className="h-4 w-4" /> {client.remainingDays} days left</span>
+              )}
             </CardDescription>
              <div className="pt-2">
                 <span className={`px-3 py-1 text-xs font-semibold rounded-full ${client.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
@@ -141,3 +145,4 @@ export default function ClientDetailsPage() {
     </div>
   );
 }
+
