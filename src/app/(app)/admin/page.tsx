@@ -356,7 +356,7 @@ export default function AdminPage() {
 
             <div className="grid gap-4 md:grid-cols-3">
                 <StatCard title="Total Affiliates" value={totalAffiliates} icon={Users} />
-                <StatCard title="BS Withdraw Requests" value={`K${totalPendingBsCreditAmount.toLocaleString()}`} icon={Banknote} />
+                 <StatCard title="BS Withdraw Requests" value={`BS ${(totalPendingBsCreditAmount / (affiliateSettings.exchangeValue || 1000)).toLocaleString()}`} icon={Banknote} />
                 <StatCard title="Pending Withdrawals" value={`K${totalPendingAmount.toLocaleString()}`} icon={Clock} />
             </div>
 
