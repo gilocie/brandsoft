@@ -1,4 +1,5 @@
 
+
 import { Page } from '@/stores/canvas-store';
 
 export type AffiliateClient = {
@@ -8,6 +9,7 @@ export type AffiliateClient = {
   plan: string;
   status: 'active' | 'expired';
   joinDate?: string;
+  remainingDays?: number;
 };
 
 export type Transaction = {
