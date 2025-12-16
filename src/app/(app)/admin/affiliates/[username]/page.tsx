@@ -544,5 +544,4 @@ export default function AffiliateDetailsPage() {
             )}
         </div>
     );
-
-    
+}
