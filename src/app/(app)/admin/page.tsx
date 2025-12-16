@@ -151,31 +151,33 @@ const ManageReserveDialog = ({
                             </FormItem>
                             )}
                         />
-                        <FormField
-                            control={form.control}
-                            name="amount"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Amount</FormLabel>
-                                    <FormControl><Input type="number" step="1" {...field} /></FormControl>
-                                    <FormDescription>
-                                        Total reserve will be <span className="font-bold">{finalReserve.toLocaleString()}</span> after this change.
-                                    </FormDescription>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                         <FormField
-                            control={form.control}
-                            name="reason"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Reason</FormLabel>
-                                    <FormControl><Textarea placeholder="e.g., Initial stock, correction..." {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                        <div className="grid grid-cols-2 gap-4">
+                            <FormField
+                                control={form.control}
+                                name="amount"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Amount</FormLabel>
+                                        <FormControl><Input type="number" step="1" {...field} /></FormControl>
+                                        <FormDescription>
+                                            Total reserve will be <span className="font-bold">{finalReserve.toLocaleString()}</span> after this change.
+                                        </FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="reason"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Reason</FormLabel>
+                                        <FormControl><Textarea placeholder="e.g., Initial stock, correction..." {...field} /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
                         <DialogFooter>
                             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
                             <Button type="submit">Save Changes</Button>
@@ -246,7 +248,7 @@ export default function AdminPage() {
     const totalPendingBsCreditAmount = pendingBsCreditWithdrawals.reduce((sum, req) => sum + req.amount, 0);
     const totalPendingBsCredits = totalPendingBsCreditAmount / (affiliateSettings.exchangeValue || 1000);
 
-    const availableToSell = creditsInReserve - totalCirculatingCredits - totalPendingBsCredits;
+    const availableToSell = creditsInReserve - totalPendingBsCredits;
 
 
     const availableCreditsPercentage = useMemo(() => {
