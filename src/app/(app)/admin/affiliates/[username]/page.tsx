@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { ArrowLeft, AtSign, BadgeCheck, Phone, User, Calendar, ShieldAlert, KeyRound, Camera, UserCheck, CreditCard, Users, Shield, TrendingDown, TrendingUp, UserX, Trash2 } from 'lucide-react';
+import { ArrowLeft, AtSign, BadgeCheck, Phone, User, Calendar, ShieldAlert, KeyRound, Camera, UserCheck, CreditCard, Users, Shield, TrendingDown, TrendingUp, UserX, Trash2, Gift, Wallet } from 'lucide-react';
 import { StatCard } from '@/components/office/stat-card';
 import { toast } from '@/hooks/use-toast';
 import Link from 'next/link';
@@ -114,6 +114,9 @@ export default function AffiliateDetailsPage() {
     const activeClients = affiliate.clients.filter(c => c.status === 'active').length;
     const totalSales = affiliate.totalSales || 0;
     const unclaimedCommission = affiliate.unclaimedCommission || 0;
+    const bonusAmount = affiliate.bonus || 0;
+    const creditBalance = affiliate.creditBalance || 0;
+    const walletBalance = affiliate.myWallet || 0;
 
     const renderTransactionTable = (transactions: DisplayTransaction[], emptyMessage: string) => (
          <Table>
@@ -171,12 +174,25 @@ export default function AffiliateDetailsPage() {
                 </CardHeader>
             </Card>
 
-             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <StatCard title="Total Clients" value={totalClients} icon={User} footer="All referred clients" />
-                <StatCard title="Active Clients" value={activeClients} icon={UserCheck} footer={`${totalClients > 0 ? ((activeClients/totalClients) * 100).toFixed(0) : 0}% retention`} />
-                <StatCard title="Total Sales" value={totalSales} isCurrency icon={User} footer="Lifetime sales volume" />
-                <StatCard title="Unclaimed" value={unclaimedCommission} isCurrency icon={User} footer="Awaiting push to wallet" />
+            <div className="space-y-2">
+                <h2 className="text-lg font-semibold tracking-tight">Financials</h2>
+                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <StatCard title="Unclaimed" value={unclaimedCommission} isCurrency icon={User} footer="Awaiting push to wallet" />
+                    <StatCard title="Bonus Amount" value={bonusAmount} isCurrency icon={Gift} footer="Performance bonus" />
+                    <StatCard title="Credit Balance" value={creditBalance} valuePrefix="BS " icon={CreditCard} footer="Platform credits" />
+                    <StatCard title="Wallet Balance" value={walletBalance} isCurrency icon={Wallet} footer="Withdrawable amount" />
+                </div>
             </div>
+
+             <div className="space-y-2">
+                <h2 className="text-lg font-semibold tracking-tight">Performance</h2>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <StatCard title="Total Clients" value={totalClients} icon={Users} footer="All referred clients" />
+                    <StatCard title="Active Clients" value={activeClients} icon={UserCheck} footer={`${totalClients > 0 ? ((activeClients/totalClients) * 100).toFixed(0) : 0}% retention`} />
+                    <StatCard title="Total Sales" value={totalSales} isCurrency icon={TrendingUp} footer="Lifetime sales volume" />
+                </div>
+            </div>
+
 
             <Tabs defaultValue="transactions">
                 <TabsList>
