@@ -3,12 +3,12 @@
 
 import { useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useBrandsoft, type Transaction } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Transaction, type Affiliate } from '@/hooks/use-brandsoft';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { ArrowLeft, AtSign, BadgeCheck, Phone, User, Calendar, ShieldAlert, KeyRound, Camera, UserCheck, CreditCard, Users, Shield, TrendingDown, TrendingUp } from 'lucide-react';
+import { ArrowLeft, AtSign, BadgeCheck, Phone, User, Calendar, ShieldAlert, KeyRound, Camera, UserCheck, CreditCard, Users, Shield, TrendingDown, TrendingUp, UserX, Trash2 } from 'lucide-react';
 import { StatCard } from '@/components/office/stat-card';
 import { toast } from '@/hooks/use-toast';
 import Link from 'next/link';
@@ -25,6 +25,8 @@ export default function AffiliateDetailsPage() {
     const router = useRouter();
     const { config, saveConfig } = useBrandsoft();
     const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+    const [isDeactivateOpen, setIsDeactivateOpen] = useState(false);
+    const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
     const affiliate = useMemo(() => {
         // As we only have one affiliate in the current data structure, we find it.
@@ -90,6 +92,23 @@ export default function AffiliateDetailsPage() {
         
         setIsResetConfirmOpen(false);
     };
+    
+    const handleDeactivateAffiliate = () => {
+        // Placeholder for deactivation logic
+        console.log(`Deactivating ${affiliate.fullName}`);
+        toast({ title: 'Affiliate Deactivated' });
+        setIsDeactivateOpen(false);
+    };
+
+    const handleDeleteAffiliate = () => {
+        // This is a destructive action.
+        if (config) {
+             saveConfig({ ...config, affiliate: undefined }, { redirect: false });
+             toast({ title: 'Affiliate Deleted' });
+             setIsDeleteOpen(false);
+             router.push('/admin');
+        }
+    };
 
     const totalClients = affiliate.clients.length;
     const activeClients = affiliate.clients.filter(c => c.status === 'active').length;
@@ -137,6 +156,9 @@ export default function AffiliateDetailsPage() {
                         <div className="flex items-center gap-2">
                             <CardTitle className="text-3xl font-headline">{affiliate.fullName}</CardTitle>
                              <BadgeCheck className="h-6 w-6 text-green-500" />
+                             <div className="flex-grow" />
+                             <Button variant="outline" size="sm" onClick={() => setIsDeactivateOpen(true)}><UserX className="mr-2 h-4 w-4"/> Deactivate</Button>
+                             <Button variant="destructive" size="sm" onClick={() => setIsDeleteOpen(true)}><Trash2 className="mr-2 h-4 w-4"/> Delete</Button>
                         </div>
                         <CardDescription className="text-base text-muted-foreground flex items-center gap-2">
                            <AtSign className="h-4 w-4" /> {affiliate.username}
@@ -256,6 +278,37 @@ export default function AffiliateDetailsPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+            
+            <AlertDialog open={isDeactivateOpen} onOpenChange={setIsDeactivateOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Deactivate {affiliate?.fullName}?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will temporarily suspend their account and prevent them from earning commissions. Are you sure?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeactivateAffiliate}>Deactivate</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete {affiliate?.fullName}?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action is irreversible and will permanently remove this affiliate from your system.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteAffiliate} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
+
