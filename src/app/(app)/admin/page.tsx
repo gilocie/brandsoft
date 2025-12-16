@@ -93,7 +93,6 @@ const ManageReserveDialog = ({
         form.reset({ action: 'add', amount: 1, reason: '' });
     }, [isOpen, form]);
 
-    const remainingCapacity = totalReserve - circulatingCredits;
     const availableToAdjust = totalReserve - circulatingCredits;
     
     const finalReserve = watchedAction === 'add' 
@@ -239,7 +238,6 @@ export default function AdminPage() {
     }, [config?.affiliate?.clients]);
 
     const totalAffiliates = affiliates.length;
-    const totalSales = affiliates.reduce((sum, aff) => sum + (aff.totalSales || 0), 0);
     
     const withdrawalRequests = useMemo(() => {
         if (!config?.affiliate?.transactions) return [];
@@ -254,6 +252,11 @@ export default function AdminPage() {
 
     const pendingWithdrawals = withdrawalRequests.filter(w => w.status === 'pending');
     const totalPendingAmount = pendingWithdrawals.reduce((sum, req) => sum + req.amount, 0);
+
+    const pendingBsCreditWithdrawals = useMemo(() => {
+        return withdrawalRequests.filter(req => req.status === 'pending' && (req as any).method === 'bsCredits');
+    }, [withdrawalRequests]);
+    const totalPendingBsCreditAmount = pendingBsCreditWithdrawals.reduce((sum, req) => sum + req.amount, 0);
 
     const handleStatusChange = (transactionId: string, newStatus: 'pending' | 'processing' | 'completed') => {
         if (!config?.affiliate) return;
@@ -353,7 +356,7 @@ export default function AdminPage() {
 
             <div className="grid gap-4 md:grid-cols-3">
                 <StatCard title="Total Affiliates" value={totalAffiliates} icon={Users} />
-                <StatCard title="Total Sales Volume" value={`K${totalSales.toLocaleString()}`} icon={BarChart} />
+                <StatCard title="BS Withdraw Requests" value={`K${totalPendingBsCreditAmount.toLocaleString()}`} icon={Banknote} />
                 <StatCard title="Pending Withdrawals" value={`K${totalPendingAmount.toLocaleString()}`} icon={Clock} />
             </div>
 
