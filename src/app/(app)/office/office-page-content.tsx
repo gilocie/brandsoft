@@ -779,11 +779,11 @@ export function OfficePageContent() {
   }
   
   const bonusAmount = affiliate.bonus || 0;
-  const unclaimedCommission = affiliate.totalSales || 0;
-  const mwkBalance = unclaimedCommission + bonusAmount;
+  const unclaimedCommission = affiliate.unclaimedCommission || 0;
+  const mwkBalance = affiliate.balance + bonusAmount;
   const activeClients = affiliate.clients.filter(c => c.status === 'active').length;
 
-  const handleWithdraw = (amount: number, source: 'commission' | 'bonus' | 'combined') => {
+  const handleWithdraw = (amount: number, source: 'commission' | 'combined') => {
     if (!config || !affiliate) return;
     
     const TRANSACTION_FEE = 3000;
@@ -1323,5 +1323,6 @@ export function OfficePageContent() {
 
 
     
+
 
 
