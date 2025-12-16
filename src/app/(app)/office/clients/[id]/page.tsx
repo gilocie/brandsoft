@@ -87,16 +87,17 @@ export default function ClientDetailsPage() {
       </Card>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <StatCard title="Client Wallet" value={client.walletBalance || 0} isCurrency icon={Wallet} footer="Funds available to the client" />
+        <StatCard title="Client Wallet" value={client.walletBalance || 0} isCurrency icon={Wallet} footer="Funds available to the client">
+            <Button onClick={() => setIsTopUpOpen(true)} className="w-full">
+                <CirclePlus className="mr-2 h-4 w-4" /> Top Up Wallet
+            </Button>
+        </StatCard>
         <Card>
             <CardHeader>
                 <CardTitle>Actions</CardTitle>
                 <CardDescription>Manage this client's account.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col sm:flex-row gap-2">
-                 <Button onClick={() => setIsTopUpOpen(true)} className="w-full">
-                    <CirclePlus className="mr-2 h-4 w-4" /> Top Up Wallet
-                </Button>
                 <Button variant="destructive" onClick={() => setIsSuspendOpen(true)} className="w-full">
                     <Ban className="mr-2 h-4 w-4" /> Suspend Client
                 </Button>
