@@ -62,9 +62,15 @@ export default function AdminPage() {
     
     const withdrawalRequests = useMemo(() => {
         if (!config?.affiliate?.transactions) return [];
+        // Assuming a single affiliate structure, we map their transactions.
+        // In a multi-affiliate app, you'd iterate over all affiliates.
         return config.affiliate.transactions
-            .filter(t => t.type === 'debit' && !t.description.includes('Fee'))
-            .map(t => ({...t, status: t.status || 'pending', affiliateName: config.affiliate?.fullName || 'N/A' }));
+            .filter(t => t.type === 'debit' && !t.description.includes('Fee')) // Filter for actual withdrawals
+            .map(t => ({
+                ...t,
+                status: (t as any).status || 'pending', // Default to pending if status is missing
+                affiliateName: config.affiliate?.fullName || 'N/A'
+            }));
     }, [config?.affiliate]);
 
     const pendingWithdrawals = withdrawalRequests.filter(w => w.status === 'pending');
@@ -236,7 +242,7 @@ export default function AdminPage() {
                                     <TableCell>{req.affiliateName}</TableCell>
                                     <TableCell>{new Date(req.date).toLocaleDateString()}</TableCell>
                                     <TableCell>K{req.amount.toLocaleString()}</TableCell>
-                                    <TableCell>{req.method || 'Not specified'}</TableCell>
+                                    <TableCell>{(req as any).method || 'Not specified'}</TableCell>
                                     <TableCell><Badge variant={statusVariantMap[req.status] || 'default'} className="capitalize">{req.status}</Badge></TableCell>
                                     <TableCell className="text-right">
                                          <DropdownMenu>
