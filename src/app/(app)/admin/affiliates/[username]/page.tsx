@@ -54,7 +54,7 @@ export default function AffiliateDetailsPage() {
         // This includes commissions (credit) and credit purchases (debit)
         return allTransactions.filter(t => 
             t.type === 'credit' || 
-            t.description.toLowerCase().includes('credit')
+            (t.type === 'debit' && t.description.toLowerCase().includes('credit'))
         );
     }, [allTransactions]);
 
