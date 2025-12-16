@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useBrandsoft, type Transaction, type Affiliate } from '@/hooks/use-brandsoft';
@@ -68,6 +67,28 @@ export function OfficePageContent() {
           profilePic: affiliate?.profilePic || '',
       }
   });
+
+  // NEW: Create a synchronized list of clients
+  // This merges the Affiliate Client entry with the latest real Company Data
+  const syncedClients = useMemo(() => {
+    if (!affiliate?.clients || !config?.companies) return [];
+
+    return affiliate.clients.map(client => {
+        // Find the actual company record
+        const realCompany = config.companies.find(c => c.id === client.id);
+        
+        if (realCompany) {
+            // Return the client data, but override name/avatar with real company data
+            return {
+                ...client,
+                name: realCompany.companyName,
+                avatar: realCompany.logo || client.avatar,
+                // You could also sync email/phone here if needed
+            };
+        }
+        return client;
+    });
+  }, [affiliate?.clients, config?.companies]);
 
   useEffect(() => {
     if (affiliate) {
@@ -172,7 +193,7 @@ export function OfficePageContent() {
   const bonusAmount = affiliate.bonus || 0;
   const unclaimedCommission = affiliate.unclaimedCommission || 0;
   const mwkBalance = affiliate.myWallet || 0;
-  const activeClients = affiliate.clients.filter(c => c.status === 'active').length;
+  const activeClients = syncedClients.filter(c => c.status === 'active').length;
   const totalSales = affiliate.totalSales || 0;
 
   const handleWithdraw = (amount: number, source: 'commission' | 'combined' | 'bonus') => {
@@ -396,7 +417,7 @@ export function OfficePageContent() {
        <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="clients">Clients ({affiliate.clients.length})</TabsTrigger>
+            <TabsTrigger value="clients">Clients ({syncedClients.length})</TabsTrigger>
             <TabsTrigger value="transactions">Transactions</TabsTrigger>
             <TabsTrigger value="invitations">Invitations</TabsTrigger>
             <TabsTrigger value="my-features">My Features</TabsTrigger>
@@ -471,8 +492,8 @@ export function OfficePageContent() {
                      </Card>
                 </div>
                  <div className="grid md:grid-cols-2 gap-6">
-                    <StatCard icon={Users} title="Active Clients" value={activeClients} footer={`${affiliate.clients.length - activeClients} expired`} />
-                    <StatCard icon={TrendingUp} title="Total Sales" value={totalSales} isCurrency footer="All-time gross sales volume" />
+                    <StatCard icon={Users} title="Active Clients" value={activeClients} footer={`${syncedClients.length - activeClients} expired`} />
+                    <StatCard icon={UserCheck} title="Total Referrals" value={syncedClients.length} footer="All-time client sign-ups" />
                 </div>
                  <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
@@ -511,9 +532,16 @@ export function OfficePageContent() {
         </TabsContent>
          <TabsContent value="clients" className="pt-6">
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {affiliate.clients.map(client => (
-                    <ClientCard key={client.id} client={client} />
-                ))}
+                {syncedClients.length > 0 ? (
+                    syncedClients.map(client => (
+                        <ClientCard key={client.id} client={client} />
+                    ))
+                ) : (
+                    <div className="col-span-full flex flex-col items-center justify-center h-40 border-2 border-dashed rounded-lg text-muted-foreground">
+                        <p>No clients yet.</p>
+                        <p className="text-sm">Register a company with your Staff ID to see them here.</p>
+                    </div>
+                )}
             </div>
         </TabsContent>
          <TabsContent value="transactions" className="pt-6">
@@ -691,4 +719,3 @@ export function OfficePageContent() {
     </div>
   );
 }
-

@@ -28,21 +28,14 @@ const initialAffiliateData: Affiliate = {
     securityQuestion: true,
     idUploaded: false,
     isPinSet: false,
-    myWallet: 1250.50,
-    unclaimedCommission: 17500,
-    totalSales: 17500.00,
-    creditBalance: 50.00,
-    bonus: 20.00,
+    myWallet: 0,
+    unclaimedCommission: 0,
+    totalSales: 0,
+    creditBalance: 0,
+    bonus: 0,
     staffId: 'BS-AFF-12345678',
-    clients: [],
-    transactions: [
-        { id: 'TRN-1', date: '2024-07-20', description: 'Withdrawal from commission', amount: 500, type: 'debit' },
-        { id: 'TRN-2', date: '2024-07-18', description: 'Commission: Client B', amount: 75.50, type: 'credit' },
-        { id: 'TRN-3', date: '2024-07-15', description: 'Commission: Client A', amount: 50.00, type: 'credit' },
-        { id: 'TRN-4', date: '2024-07-10', description: 'Bonus Payout', amount: 200, type: 'credit' },
-        { id: 'TRN-5', date: '2024-07-05', description: 'Withdrawal from commission', amount: 1000, type: 'debit' },
-        { id: 'TRN-6', date: '2024-06-28', description: 'Commission: Old Client', amount: 30.00, type: 'credit' },
-    ],
+    clients: [], // Demo data removed
+    transactions: [], // Demo data removed
 };
 
 interface BrandsoftContextType {
@@ -321,5 +314,3 @@ export function useBrandsoft() {
   }
   return context;
 }
-
-    

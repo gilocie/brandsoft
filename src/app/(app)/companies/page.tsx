@@ -200,11 +200,15 @@ export default function CompaniesPage() {
   const onSubmit = (data: CompanyFormData) => {
     if (!config) return;
 
-    const companyToSave: Partial<Company> = {
+    // 1. Prepare Company Data
+    // We add 'referredBy' to the company object to permanently link it to the affiliate
+    const companyToSave: any = { // using 'any' or Partial<Company> & { referredBy?: string }
         ...data,
         customerType: 'company',
+        referredBy: data.activationKey || undefined, // FOREVER LINK: Store the affiliate ID in the company record
     };
     
+    // 2. Save/Update Company in Global State
     let savedCompany: Company;
     if (data.id) {
         updateCompany(data.id, companyToSave);
@@ -213,39 +217,51 @@ export default function CompaniesPage() {
         savedCompany = addCompany(companyToSave as Omit<Company, 'id'>);
     }
     
-    // Affiliate linking logic
+    // 3. Affiliate Linking Logic
+    // We check if the entered key matches the CURRENT logged-in affiliate's ID
     if (data.activationKey && config.affiliate && data.activationKey === config.affiliate.staffId) {
-        const newClient: AffiliateClient = {
-            id: savedCompany.id,
-            name: savedCompany.companyName,
-            avatar: savedCompany.logo || `https://picsum.photos/seed/${savedCompany.id}/100`,
-            plan: 'Free Trial', // Default plan
-            status: 'active', // Default status
-            joinDate: new Date().toISOString(),
-            remainingDays: 30, // Default trial period
-            walletBalance: 0,
-        };
-
+        
         const affiliateClients = config.affiliate.clients || [];
-        if (!affiliateClients.some(c => c.id === newClient.id)) {
+        
+        // Check if this company is already in the client list to prevent duplicates
+        const isAlreadyClient = affiliateClients.some(c => c.id === savedCompany.id);
+
+        if (!isAlreadyClient) {
+            const newClient: AffiliateClient = {
+                id: savedCompany.id, // This links back to the Company ID
+                name: savedCompany.companyName,
+                avatar: savedCompany.logo || `https://picsum.photos/seed/${savedCompany.id}/100`,
+                plan: 'Free Trial', // Default starting plan
+                status: 'active',
+                joinDate: new Date().toISOString(),
+                remainingDays: 30,
+                walletBalance: 0,
+            };
+
+            // Update the configuration with the new client added to the affiliate
             const newConfig = {
                 ...config,
+                // We also need to update the company list in config to ensure 'referredBy' is persisted if addCompany didn't handle it
+                companies: config.companies.map(c => c.id === savedCompany.id ? {...c, referredBy: data.activationKey} : c),
                 affiliate: {
                     ...config.affiliate,
-                    clients: [...affiliateClients, newClient],
+                    clients: [newClient, ...affiliateClients], // Add to top of list
                 },
             };
+
             saveConfig(newConfig, { redirect: false });
+            
             toast({
-              title: "Company Linked to Affiliate",
-              description: `${savedCompany.companyName} has been added as a client.`
+              title: "New Client Acquired!",
+              description: `${savedCompany.companyName} has been linked to your affiliate account.`
             });
         }
     } else if (data.activationKey) {
-        toast({
-          variant: "destructive",
-          title: "Invalid Activation Key",
-          description: "The company was saved, but the activation key is invalid. The client was not linked."
+        // Optional: Handle case where key exists but doesn't match current user (if multiple affiliates existed)
+        // For this single-user demo, we just warn if it doesn't match the current user
+         toast({
+          title: "Company Saved",
+          description: "Company saved, but Activation Key did not match your Staff ID."
         });
     }
     
