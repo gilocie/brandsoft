@@ -73,14 +73,14 @@ const ManageReserveDialog = ({
     isOpen,
     onOpenChange,
     onSubmit,
-    availableCredits,
-    maxCredits
+    totalReserve,
+    circulatingCredits,
 }: {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
     onSubmit: (data: ManageReserveFormData) => void;
-    availableCredits: number;
-    maxCredits: number;
+    totalReserve: number;
+    circulatingCredits: number;
 }) => {
     const form = useForm<ManageReserveFormData>({
       resolver: zodResolver(manageReserveSchema),
@@ -94,20 +94,21 @@ const ManageReserveDialog = ({
         form.reset({ action: 'add', amount: 1, reason: '' });
     }, [isOpen, form]);
 
-    const remainingCapacity = maxCredits - availableCredits;
+    const remainingCapacity = totalReserve - circulatingCredits;
+    const availableToAdjust = totalReserve - circulatingCredits;
     
     const finalReserve = watchedAction === 'add' 
-        ? availableCredits + (Number(watchedAmount) || 0)
-        : availableCredits - (Number(watchedAmount) || 0);
+        ? totalReserve + (Number(watchedAmount) || 0)
+        : totalReserve - (Number(watchedAmount) || 0);
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>Manage Credits Reserve</DialogTitle>
-                    <DialogDescription>
-                        Manually adjust the available credits in your central reserve.
-                        You have <span className="font-bold">{remainingCapacity.toLocaleString()}</span> credits remaining before you reach your max limit of {maxCredits.toLocaleString()}.
+                     <DialogDescription>
+                        Manually adjust the total credits in your central reserve.
+                        You have <span className="font-bold">{availableToAdjust.toLocaleString()}</span> credits available before you reach your max limit of {(totalReserve).toLocaleString()}.
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -146,7 +147,7 @@ const ManageReserveDialog = ({
                                     <FormLabel>Amount</FormLabel>
                                     <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
                                     <FormDescription>
-                                        Reserve will be <span className="font-bold">{finalReserve.toLocaleString()}</span> after this change.
+                                        Total reserve will be <span className="font-bold">{finalReserve.toLocaleString()}</span> after this change.
                                     </FormDescription>
                                     <FormMessage />
                                 </FormItem>
@@ -185,11 +186,11 @@ export default function AdminPage() {
     const [isManageReserveOpen, setIsManageReserveOpen] = useState(false);
     
     const affiliateSettings = useMemo(() => config?.affiliateSettings || {
-        maxCredits: 100000,
+        maxCredits: 1000000,
         buyPrice: 850,
         sellPrice: 900,
         exchangeValue: 1000,
-        availableCredits: 0,
+        availableCredits: 100000,
     }, [config?.affiliateSettings]);
 
     const form = useForm<CreditSettingsFormData>({
@@ -207,10 +208,20 @@ export default function AdminPage() {
     const watchedSellPrice = form.watch('sellPrice');
     const watchedMaxCredits = form.watch('maxCredits');
 
+     const affiliates = useMemo(() => (config?.affiliate ? [config.affiliate] : []), [config?.affiliate]);
+    
+    const totalCirculatingCredits = useMemo(() => {
+        return affiliates.reduce((sum, aff) => sum + (aff.creditBalance || 0), 0);
+    }, [affiliates]);
+    
+    const creditsInReserve = (affiliateSettings.availableCredits || 0);
+    const availableToSell = creditsInReserve - totalCirculatingCredits;
+
+
     const availableCreditsPercentage = useMemo(() => {
         if (!watchedMaxCredits || watchedMaxCredits === 0) return 0;
-        return ((affiliateSettings.availableCredits || 0) / watchedMaxCredits) * 100;
-    }, [affiliateSettings, watchedMaxCredits]);
+        return (creditsInReserve / watchedMaxCredits) * 100;
+    }, [creditsInReserve, watchedMaxCredits]);
 
     const onCreditSettingsSubmit = (data: CreditSettingsFormData) => {
         if (!config) return;
@@ -222,12 +233,7 @@ export default function AdminPage() {
         toast({ title: "Credit Settings Saved", description: "Your BS Credit settings have been updated." });
     };
 
-    const affiliates = useMemo(() => (config?.affiliate ? [config.affiliate] : []), [config?.affiliate]);
-    
-    const totalCirculatingCredits = useMemo(() => {
-        return affiliates.reduce((sum, aff) => sum + (aff.creditBalance || 0), 0);
-    }, [affiliates]);
-
+   
     const allClients = useMemo(() => {
         if (!config?.affiliate?.clients) return [];
         return config.affiliate.clients;
@@ -330,9 +336,9 @@ export default function AdminPage() {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                  <StatCard 
                     title="Available Credits" 
-                    value={`BS ${(affiliateSettings.availableCredits || 0).toLocaleString()}`} 
+                    value={`BS ${availableToSell.toLocaleString()}`} 
                     icon={Wallet}
-                    className={cn((affiliateSettings.availableCredits || 0) <= 100 && 'bg-destructive text-destructive-foreground')}
+                    className={cn(availableToSell <= 100 && 'bg-destructive text-destructive-foreground')}
                  >
                     <Button size="sm" className="w-full mt-2" onClick={() => setIsManageReserveOpen(true)}>Manage</Button>
                 </StatCard>
@@ -449,7 +455,7 @@ export default function AdminPage() {
                                                 <CardContent>
                                                     <div className="space-y-1">
                                                         <div className="flex justify-between font-mono text-sm">
-                                                            <span>BS {(affiliateSettings.availableCredits || 0).toLocaleString()}</span>
+                                                            <span>BS {creditsInReserve.toLocaleString()}</span>
                                                             <span className="font-sans text-primary-foreground/80">/ BS {(watchedMaxCredits || 0).toLocaleString()}</span>
                                                         </div>
                                                         <Progress value={availableCreditsPercentage} className="bg-primary-foreground/20 [&>div]:bg-primary-foreground"/>
@@ -462,16 +468,16 @@ export default function AdminPage() {
                                             <Form {...form}>
                                                 <form onSubmit={form.handleSubmit(onCreditSettingsSubmit)} className="space-y-4">
                                                     <FormField control={form.control} name="maxCredits" render={({ field }) => (
-                                                        <FormItem><FormLabel>Max BS Credits in Circulation</FormLabel><FormControl><Input type="text" {...field} onChange={(e) => field.onChange(parseInt(e.target.value.replace(/,/g, ''), 10) || 0)} value={field.value.toLocaleString()} /></FormControl><FormMessage /></FormItem>
+                                                        <FormItem><FormLabel>Max BS Credits in Circulation</FormLabel><FormControl><Input type="text" {...field} onChange={(e) => field.onChange(parseInt(e.target.value.replace(/,/g, ''), 10) || 0)} value={(field.value || 0).toLocaleString()} /></FormControl><FormMessage /></FormItem>
                                                     )} />
                                                     <FormField control={form.control} name="buyPrice" render={({ field }) => (
-                                                        <FormItem><FormLabel>BS Credit Buying Price (from affiliates)</FormLabel><FormControl><Input type="text" {...field} onChange={(e) => field.onChange(parseInt(e.target.value.replace(/,/g, ''), 10) || 0)} value={field.value.toLocaleString()} /></FormControl><FormMessage /></FormItem>
+                                                        <FormItem><FormLabel>BS Credit Buying Price (from affiliates)</FormLabel><FormControl><Input type="text" {...field} onChange={(e) => field.onChange(parseInt(e.target.value.replace(/,/g, ''), 10) || 0)} value={(field.value || 0).toLocaleString()} /></FormControl><FormMessage /></FormItem>
                                                     )} />
                                                     <FormField control={form.control} name="sellPrice" render={({ field }) => (
-                                                        <FormItem><FormLabel>BS Credit Selling Price (to affiliates)</FormLabel><FormControl><Input type="text" {...field} onChange={(e) => field.onChange(parseInt(e.target.value.replace(/,/g, ''), 10) || 0)} value={field.value.toLocaleString()} /></FormControl><FormMessage /></FormItem>
+                                                        <FormItem><FormLabel>BS Credit Selling Price (to affiliates)</FormLabel><FormControl><Input type="text" {...field} onChange={(e) => field.onChange(parseInt(e.target.value.replace(/,/g, ''), 10) || 0)} value={(field.value || 0).toLocaleString()} /></FormControl><FormMessage /></FormItem>
                                                     )} />
                                                     <FormField control={form.control} name="exchangeValue" render={({ field }) => (
-                                                        <FormItem><FormLabel>BS Credit Exchange Value (1 Credit = K{watchedExchangeValue ? watchedExchangeValue.toLocaleString() : 0})</FormLabel><FormControl><Input type="text" {...field} onChange={(e) => field.onChange(parseInt(e.target.value.replace(/,/g, ''), 10) || 0)} value={field.value.toLocaleString()} /></FormControl><FormMessage /></FormItem>
+                                                        <FormItem><FormLabel>BS Credit Exchange Value (1 Credit = K{watchedExchangeValue ? watchedExchangeValue.toLocaleString() : 0})</FormLabel><FormControl><Input type="text" {...field} onChange={(e) => field.onChange(parseInt(e.target.value.replace(/,/g, ''), 10) || 0)} value={(field.value || 0).toLocaleString()} /></FormControl><FormMessage /></FormItem>
                                                     )} />
                                                     <Button type="submit">Save Credit Settings</Button>
                                                 </form>
@@ -575,8 +581,8 @@ export default function AdminPage() {
                 isOpen={isManageReserveOpen}
                 onOpenChange={setIsManageReserveOpen}
                 onSubmit={handleManageReserve}
-                availableCredits={affiliateSettings.availableCredits || 0}
-                maxCredits={affiliateSettings.maxCredits || 0}
+                totalReserve={affiliateSettings.availableCredits || 0}
+                circulatingCredits={totalCirculatingCredits}
             />
         </div>
     );
