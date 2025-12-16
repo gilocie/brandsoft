@@ -182,26 +182,31 @@ export default function AdminPage() {
 
     const form = useForm<CreditSettingsFormData>({
         resolver: zodResolver(creditSettingsSchema),
-        defaultValues: {
-            maxCredits: affiliateSettings.maxCredits,
-            buyPrice: affiliateSettings.buyPrice,
-            sellPrice: affiliateSettings.sellPrice,
-            exchangeValue: affiliateSettings.exchangeValue,
-        }
+        defaultValues: affiliateSettings,
     });
+
+    useEffect(() => {
+        if (config?.affiliateSettings) {
+            form.reset(config.affiliateSettings);
+        }
+    }, [config?.affiliateSettings, form]);
     
     const watchedExchangeValue = form.watch('exchangeValue');
     const watchedSellPrice = form.watch('sellPrice');
     const watchedMaxCredits = form.watch('maxCredits');
 
     const availableCreditsPercentage = useMemo(() => {
-        if (!affiliateSettings.maxCredits || affiliateSettings.maxCredits === 0) return 0;
-        return ((affiliateSettings.availableCredits || 0) / affiliateSettings.maxCredits) * 100;
-    }, [affiliateSettings]);
+        if (!watchedMaxCredits || watchedMaxCredits === 0) return 0;
+        return ((affiliateSettings.availableCredits || 0) / watchedMaxCredits) * 100;
+    }, [affiliateSettings, watchedMaxCredits]);
 
     const onCreditSettingsSubmit = (data: CreditSettingsFormData) => {
         if (!config) return;
-        saveConfig({ ...config, affiliateSettings: { ...config.affiliateSettings, ...data } }, { redirect: false });
+        const newSettings = {
+          ...affiliateSettings,
+          ...data,
+        };
+        saveConfig({ ...config, affiliateSettings: newSettings }, { redirect: false });
         toast({ title: "Credit Settings Saved", description: "Your BS Credit settings have been updated." });
     };
 
@@ -408,21 +413,21 @@ export default function AdminPage() {
                                             <CardDescription>Set the economic parameters for your affiliate credit system.</CardDescription>
                                         </CardHeader>
                                         <CardContent>
-                                            <Card className="mb-6">
+                                            <Card className="mb-6 bg-primary text-primary-foreground">
                                                 <CardHeader>
                                                     <CardTitle className="flex items-center justify-between text-base">
                                                         <span>Credit Reserve Status</span>
-                                                        <span className="text-sm font-normal text-muted-foreground">{availableCreditsPercentage.toFixed(1)}% Full</span>
+                                                        <span className="text-sm font-normal text-primary-foreground/80">{availableCreditsPercentage.toFixed(1)}% Full</span>
                                                     </CardTitle>
                                                 </CardHeader>
                                                 <CardContent>
                                                     <div className="space-y-1">
                                                         <div className="flex justify-between font-mono text-sm">
                                                             <span>BS {(affiliateSettings.availableCredits || 0).toLocaleString()}</span>
-                                                            <span className="font-sans text-muted-foreground">/ BS {(watchedMaxCredits || 0).toLocaleString()}</span>
+                                                            <span className="font-sans text-primary-foreground/80">/ BS {(watchedMaxCredits || 0).toLocaleString()}</span>
                                                         </div>
-                                                        <Progress value={availableCreditsPercentage} />
-                                                        <div className="text-xs text-muted-foreground pt-1">
+                                                        <Progress value={availableCreditsPercentage} className="bg-primary-foreground/20 [&>div]:bg-primary-foreground"/>
+                                                        <div className="text-xs text-primary-foreground/80 pt-1">
                                                             Value at Sell Price: K{((watchedMaxCredits || 0) * (watchedSellPrice || 0)).toLocaleString()}
                                                         </div>
                                                     </div>
