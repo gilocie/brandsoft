@@ -117,7 +117,7 @@ export function OfficePageContent() {
     const amountToPush = affiliate.unclaimedCommission || 0;
     if (amountToPush <= 0) return;
 
-    const newAffiliateData = {
+    const newAffiliateData: Affiliate = {
         ...affiliate,
         balance: (affiliate.balance || 0) + amountToPush,
         unclaimedCommission: 0,
@@ -173,6 +173,7 @@ export function OfficePageContent() {
   const unclaimedCommission = affiliate.unclaimedCommission || 0;
   const mwkBalance = (affiliate.balance || 0) + bonusAmount;
   const activeClients = affiliate.clients.filter(c => c.status === 'active').length;
+  const totalSales = affiliate.totalSales || 0;
 
   const handleWithdraw = (amount: number, source: 'commission' | 'combined') => {
     if (!config || !affiliate) return;
@@ -404,7 +405,7 @@ export function OfficePageContent() {
             <div className="grid gap-6">
                  <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <StatCard 
-                        icon={TrendingUp} 
+                        icon={DollarSign} 
                         title="Unclaimed Commission" 
                         value={unclaimedCommission} 
                         isCurrency 
@@ -437,7 +438,7 @@ export function OfficePageContent() {
                             <CardDescription>Bonus for referring 10+ clients.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                             <p className="text-3xl font-bold">K{(bonusAmount).toLocaleString()}</p>
+                             <p className="text-3xl font-bold">K{bonusAmount.toLocaleString()}</p>
                         </CardContent>
                         <CardContent>
                            <Button variant="outline" disabled>View Progress</Button>
@@ -450,7 +451,7 @@ export function OfficePageContent() {
                                 <Wallet className="h-5 w-5" />
                             </div>
                              <CardDescription className="text-white/80">
-                               {bonusAmount > 0 ? `Includes K${(bonusAmount).toLocaleString()} bonus` : 'Available for withdrawal'}
+                               {bonusAmount > 0 ? `Includes K${bonusAmount.toLocaleString()} bonus` : 'Available for withdrawal'}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -468,7 +469,7 @@ export function OfficePageContent() {
                 </div>
                  <div className="grid md:grid-cols-2 gap-6">
                     <StatCard icon={Users} title="Active Clients" value={activeClients} footer={`${affiliate.clients.length - activeClients} expired`} />
-                    <StatCard icon={UserCheck} title="Total Referrals" value={affiliate.clients.length} footer="All-time client sign-ups" />
+                    <StatCard icon={TrendingUp} title="Total Sales" value={totalSales} isCurrency footer="All-time gross sales volume" />
                 </div>
                  <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
