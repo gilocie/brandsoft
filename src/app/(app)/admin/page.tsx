@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -13,14 +13,17 @@ import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Users, BarChart, Clock, CheckCircle, RefreshCw, Briefcase, UserX, Trash2, Wallet, TrendingUp, TrendingDown, PackagePlus } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ClientCard } from '@/components/affiliate/client-card';
 import { AffiliateCard } from '@/components/affiliate/affiliate-card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Textarea } from '@/components/ui/textarea';
 
-const StatCard = ({ title, value, icon: Icon, description }: { title: string, value: string | number, icon: React.ElementType, description?: string }) => (
+const StatCard = ({ title, value, icon: Icon, description, children }: { title: string, value: string | number, icon: React.ElementType, description?: string, children?: React.ReactNode }) => (
     <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{title}</CardTitle>
@@ -29,6 +32,7 @@ const StatCard = ({ title, value, icon: Icon, description }: { title: string, va
         <CardContent>
             <div className="text-2xl font-bold">{value}</div>
             {description && <p className="text-xs text-muted-foreground">{description}</p>}
+            {children && <div className="mt-2">{children}</div>}
         </CardContent>
     </Card>
 );
@@ -54,6 +58,110 @@ const creditSettingsSchema = z.object({
 });
 type CreditSettingsFormData = z.infer<typeof creditSettingsSchema>;
 
+const manageReserveSchema = z.object({
+  action: z.enum(['add', 'deduct']),
+  amount: z.coerce.number().min(0.01, "Amount must be a positive number."),
+  reason: z.string().min(5, "A reason is required for this action."),
+});
+
+type ManageReserveFormData = z.infer<typeof manageReserveSchema>;
+
+const ManageReserveDialog = ({
+    isOpen,
+    onOpenChange,
+    onSubmit,
+    availableCredits,
+    maxCredits
+}: {
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
+    onSubmit: (data: ManageReserveFormData) => void;
+    availableCredits: number;
+    maxCredits: number;
+}) => {
+    const form = useForm<ManageReserveFormData>({
+      resolver: zodResolver(manageReserveSchema),
+      defaultValues: { action: 'add', amount: 1, reason: '' },
+    });
+
+    useEffect(() => {
+        form.reset({ action: 'add', amount: 1, reason: '' });
+    }, [isOpen, form]);
+
+    const remainingCapacity = maxCredits - availableCredits;
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Manage Credits Reserve</DialogTitle>
+                    <DialogDescription>
+                        Manually adjust the available credits in your central reserve.
+                        You have <span className="font-bold">{remainingCapacity.toLocaleString()}</span> credits remaining before you reach your max limit of {maxCredits.toLocaleString()}.
+                    </DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
+                        <FormField
+                            control={form.control}
+                            name="action"
+                            render={({ field }) => (
+                            <FormItem className="space-y-3">
+                                <FormLabel>Action</FormLabel>
+                                <FormControl>
+                                <RadioGroup
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                    className="flex gap-4"
+                                >
+                                    <FormItem className="flex items-center space-x-2 space-y-0">
+                                        <FormControl><RadioGroupItem value="add" /></FormControl>
+                                        <FormLabel className="font-normal">Add to Reserve</FormLabel>
+                                    </FormItem>
+                                    <FormItem className="flex items-center space-x-2 space-y-0">
+                                        <FormControl><RadioGroupItem value="deduct" /></FormControl>
+                                        <FormLabel className="font-normal">Deduct from Reserve</FormLabel>
+                                    </FormItem>
+                                </RadioGroup>
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="amount"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Amount</FormLabel>
+                                    <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="reason"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Reason</FormLabel>
+                                    <FormControl><Textarea placeholder="e.g., Initial stock, correction..." {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <DialogFooter>
+                            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                            <Button type="submit">Save Changes</Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
+
 export default function AdminPage() {
     const { config, saveConfig } = useBrandsoft();
     const { toast } = useToast();
@@ -61,6 +169,7 @@ export default function AdminPage() {
     const [affiliateToActOn, setAffiliateToActOn] = useState<Affiliate | null>(null);
     const [isDeactivateOpen, setIsDeactivateOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+    const [isManageReserveOpen, setIsManageReserveOpen] = useState(false);
     
     const form = useForm<CreditSettingsFormData>({
         resolver: zodResolver(creditSettingsSchema),
@@ -71,6 +180,8 @@ export default function AdminPage() {
             exchangeValue: config?.affiliateSettings?.exchangeValue || 1000,
         }
     });
+    
+    const affiliateSettings = config?.affiliateSettings || {};
 
     const watchedExchangeValue = form.watch('exchangeValue');
 
@@ -94,13 +205,11 @@ export default function AdminPage() {
     
     const withdrawalRequests = useMemo(() => {
         if (!config?.affiliate?.transactions) return [];
-        // Assuming a single affiliate structure, we map their transactions.
-        // In a multi-affiliate app, you'd iterate over all affiliates.
         return config.affiliate.transactions
-            .filter(t => t.type === 'debit' && !t.description.toLowerCase().includes('fee') && !t.description.toLowerCase().includes('manual')) // Filter for actual withdrawals
+            .filter(t => t.type === 'debit' && !t.description.toLowerCase().includes('fee') && !t.description.toLowerCase().includes('manual'))
             .map(t => ({
                 ...t,
-                status: (t as any).status || 'pending', // Default to pending if status is missing
+                status: (t as any).status || 'pending',
                 affiliateName: config.affiliate?.fullName || 'N/A'
             }));
     }, [config?.affiliate]);
@@ -135,8 +244,6 @@ export default function AdminPage() {
     };
 
     const handleDeactivateAffiliate = () => {
-        // In a multi-affiliate setup, you'd find the affiliate and update their status.
-        // For now, this is a placeholder.
         if (affiliateToActOn) {
             console.log(`Deactivating ${affiliateToActOn.fullName}`);
             toast({ title: 'Affiliate Deactivated' });
@@ -145,14 +252,39 @@ export default function AdminPage() {
     };
 
     const handleDeleteAffiliate = () => {
-        // This is a destructive action. In a real app, you might just mark as 'deleted'.
-        // Since we only have one affiliate in the config, this will effectively remove the affiliate data.
         if (config && affiliateToActOn) {
              const newConfig = { ...config, affiliate: undefined };
              saveConfig(newConfig, { redirect: false });
              toast({ title: 'Affiliate Deleted' });
              setIsDeleteOpen(false);
         }
+    };
+
+    const handleManageReserve = (data: ManageReserveFormData) => {
+        if (!config) return;
+        const currentCredits = affiliateSettings.availableCredits || 0;
+        const maxCredits = affiliateSettings.maxCredits || 0;
+        let newCredits = currentCredits;
+
+        if (data.action === 'add') {
+            if (currentCredits + data.amount > maxCredits) {
+                toast({ variant: 'destructive', title: 'Limit Exceeded', description: `Cannot add more than the max limit of ${maxCredits}.`});
+                return;
+            }
+            newCredits += data.amount;
+        } else {
+             if (data.amount > currentCredits) {
+                toast({ variant: 'destructive', title: 'Insufficient Credits', description: `Cannot deduct more than the available ${currentCredits} credits.`});
+                return;
+            }
+            newCredits -= data.amount;
+        }
+        
+        const newAffiliateSettings = { ...affiliateSettings, availableCredits: newCredits };
+        saveConfig({ ...config, affiliateSettings: newAffiliateSettings }, { redirect: false });
+        
+        toast({ title: "Reserve Updated", description: `Credit reserve is now ${newCredits.toLocaleString()}.` });
+        setIsManageReserveOpen(false);
     };
 
     return (
@@ -163,16 +295,9 @@ export default function AdminPage() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Available Credits</CardTitle>
-                        <Wallet className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">BS0</div>
-                         <Button size="sm" className="w-full mt-2">Manage</Button>
-                    </CardContent>
-                </Card>
+                 <StatCard title="Available Credits" value={`BS ${(affiliateSettings.availableCredits || 0).toLocaleString()}`} icon={Wallet}>
+                    <Button size="sm" className="w-full mt-2" onClick={() => setIsManageReserveOpen(true)}>Manage</Button>
+                </StatCard>
                  <StatCard title="Sold Credits" value="0" description="Value: K0" icon={TrendingUp} />
                  <StatCard title="Bought Credits" value="0" description="Paid: K0" icon={TrendingDown} />
                  <StatCard title="Net Profit" value="K0" description="Overall credit profit" icon={BarChart} />
@@ -382,8 +507,14 @@ export default function AdminPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+            
+            <ManageReserveDialog
+                isOpen={isManageReserveOpen}
+                onOpenChange={setIsManageReserveOpen}
+                onSubmit={handleManageReserve}
+                availableCredits={affiliateSettings.availableCredits || 0}
+                maxCredits={affiliateSettings.maxCredits || 0}
+            />
         </div>
     );
 }
-
-    
