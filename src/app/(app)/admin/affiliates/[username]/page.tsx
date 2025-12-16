@@ -16,7 +16,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { ArrowLeft, AtSign, BadgeCheck, Phone, User, Calendar, ShieldAlert, KeyRound, Camera, UserCheck, CreditCard, Users, Shield, TrendingDown, TrendingUp, UserX, Trash2, Gift, Wallet, Banknote, Repeat, SlidersHorizontal, Send } from 'lucide-react';
+import { ArrowLeft, AtSign, BadgeCheck, Phone, User, Calendar, ShieldAlert, KeyRound, Camera, UserCheck, CreditCard, Users, Shield, TrendingDown, TrendingUp, UserX, Trash2, Gift, Wallet, Banknote, Repeat, SlidersHorizontal, Send, MoreHorizontal, RefreshCw, CheckCircle } from 'lucide-react';
 import { StatCard } from '@/components/office/stat-card';
 import { toast } from '@/hooks/use-toast';
 import Link from 'next/link';
@@ -25,6 +25,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { cn } from '@/lib/utils';
 import { ClientCard } from '@/components/affiliate/client-card';
 import { WithdrawDialog } from '@/components/office/withdraw-dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
 
 // Extend transaction to include optional status
 type DisplayTransaction = Transaction & { status?: 'pending' | 'processing' | 'completed' };
@@ -38,6 +40,13 @@ const manageBalanceSchema = z.object({
 
 type ManageBalanceFormData = z.infer<typeof manageBalanceSchema>;
 type BalanceType = 'unclaimedCommission' | 'bonus' | 'creditBalance' | 'myWallet';
+
+const statusVariantMap: { [key: string]: 'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'accent' | 'primary' } = {
+  pending: 'accent',
+  processing: 'primary',
+  completed: 'success',
+};
+
 
 const ManageBalanceDialog = ({
     isOpen,
@@ -157,11 +166,12 @@ export default function AffiliateDetailsPage() {
         return affiliate.transactions.map(t => ({...t, status: (t as any).status || 'completed' }));
     }, [affiliate?.transactions]);
     
-    // Filter for actual withdrawal debits (not fees or credit purchases)
+    // Filter for actual withdrawal debits (not fees or credit purchases or manual)
     const withdrawalTransactions = useMemo(() => {
         return allTransactions.filter(t => 
             t.type === 'debit' && 
-            !t.description.toLowerCase().includes('fee') && 
+            !t.description.toLowerCase().includes('fee') &&
+            !t.description.toLowerCase().includes('manual') && 
             !t.description.toLowerCase().includes('purchase')
         );
     }, [allTransactions]);
@@ -178,6 +188,25 @@ export default function AffiliateDetailsPage() {
         );
     }, [allTransactions]);
 
+    const handleStatusChange = (transactionId: string, newStatus: 'pending' | 'processing' | 'completed') => {
+        if (!config?.affiliate) return;
+
+        const updatedTransactions = config.affiliate.transactions?.map(t => 
+            t.id === transactionId ? { ...t, status: newStatus } : t
+        );
+        
+        const newAffiliateData = {
+            ...config.affiliate,
+            transactions: updatedTransactions,
+        };
+
+        saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
+        
+        toast({
+            title: "Status Updated",
+            description: `Withdrawal status set to ${newStatus}.`,
+        });
+    };
 
     if (!affiliate) {
         return (
@@ -321,6 +350,47 @@ export default function AffiliateDetailsPage() {
         </Table>
     );
 
+    const renderPendingWithdrawals = (transactions: DisplayTransaction[]) => (
+         <Table>
+            <TableHeader>
+                <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Method</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                 {transactions.length > 0 ? transactions.map(req => (
+                    <TableRow key={req.id}>
+                        <TableCell>{new Date(req.date).toLocaleDateString()}</TableCell>
+                        <TableCell>K{req.amount.toLocaleString()}</TableCell>
+                        <TableCell>{(req as any).method || 'Not specified'}</TableCell>
+                        <TableCell><Badge variant={statusVariantMap[req.status || 'pending'] || 'default'} className="capitalize">{req.status}</Badge></TableCell>
+                        <TableCell className="text-right">
+                                <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4"/></Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <DropdownMenuItem onClick={() => handleStatusChange(req.id, 'processing')} disabled={req.status === 'processing'}>
+                                        <RefreshCw className="mr-2 h-4 w-4" /> Mark as Processing
+                                    </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleStatusChange(req.id, 'completed')} disabled={req.status === 'completed'}>
+                                        <CheckCircle className="mr-2 h-4 w-4" /> Mark as Completed
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </TableCell>
+                    </TableRow>
+                )) : (
+                    <TableRow><TableCell colSpan={5} className="text-center h-24">No pending withdrawals.</TableCell></TableRow>
+                )}
+            </TableBody>
+        </Table>
+    );
+
     return (
         <div className="container mx-auto space-y-6">
             <Button variant="ghost" asChild>
@@ -403,7 +473,7 @@ export default function AffiliateDetailsPage() {
                                 <TabsTrigger value="completed">Completed</TabsTrigger>
                             </TabsList>
                             <TabsContent value="pending" className="pt-4">
-                                {renderTransactionTable(pendingWithdrawals, "No pending withdrawals.")}
+                                {renderPendingWithdrawals(pendingWithdrawals)}
                             </TabsContent>
                             <TabsContent value="processing" className="pt-4">
                                 {renderTransactionTable(processingWithdrawals, "No withdrawals being processed.")}
@@ -545,4 +615,6 @@ export default function AffiliateDetailsPage() {
         </div>
     );
 }
+    
+
     
