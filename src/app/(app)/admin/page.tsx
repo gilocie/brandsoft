@@ -124,16 +124,27 @@ const ManageReserveDialog = ({
                                 <RadioGroup
                                     onValueChange={field.onChange}
                                     defaultValue={field.value}
-                                    className="flex gap-4"
+                                    className="grid grid-cols-2 gap-4"
                                 >
-                                    <FormItem className="flex items-center space-x-2 space-y-0">
-                                        <FormControl><RadioGroupItem value="add" /></FormControl>
-                                        <FormLabel className="font-normal">Add to Reserve</FormLabel>
-                                    </FormItem>
-                                    <FormItem className="flex items-center space-x-2 space-y-0">
-                                        <FormControl><RadioGroupItem value="deduct" /></FormControl>
-                                        <FormLabel className="font-normal">Deduct from Reserve</FormLabel>
-                                    </FormItem>
+                                    <div className="flex flex-col gap-2 rounded-lg border p-3">
+                                        <div className="flex items-center justify-between">
+                                            <FormLabel className="font-normal flex items-center gap-2">
+                                                 <FormControl><RadioGroupItem value="add" /></FormControl>
+                                                 Add to Reserve
+                                            </FormLabel>
+                                             <div className="text-right">
+                                                <p className="text-xs text-muted-foreground">Current</p>
+                                                <p className="text-lg font-bold">{totalReserve.toLocaleString()}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="rounded-lg border p-3">
+                                        <FormItem className="flex items-center space-x-2 space-y-0">
+                                            <FormControl><RadioGroupItem value="deduct" /></FormControl>
+                                            <FormLabel className="font-normal">Deduct from Reserve</FormLabel>
+                                        </FormItem>
+                                    </div>
                                 </RadioGroup>
                                 </FormControl>
                                 <FormMessage />
