@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -349,7 +348,7 @@ export default function AdminPage() {
                     icon={TrendingUp} 
                  />
                  <StatCard title="Bought Credits" value="0" description="Paid: K0" icon={TrendingDown} />
-                 <StatCard title="Net Profit" value="K0" description="Overall credit profit" icon={BarChart} />
+                 <StatCard title="Net Profit" value={`K${(totalCirculatingCredits * (affiliateSettings.sellPrice || 0)).toLocaleString()}`} description="Overall credit profit" icon={BarChart} />
             </div>
 
             <div className="grid gap-4 md:grid-cols-3">
@@ -588,3 +587,4 @@ export default function AdminPage() {
     );
 }
 
+    
