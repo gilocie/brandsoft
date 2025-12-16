@@ -170,6 +170,7 @@ export default function AffiliateDetailsPage() {
                         <div className="flex flex-wrap gap-x-4 gap-y-2 pt-2 text-sm text-muted-foreground">
                             <div className="flex items-center gap-2"><Phone className="h-4 w-4" /> {affiliate.phone || 'Not provided'}</div>
                             <div className="flex items-center gap-2"><Calendar className="h-4 w-4" /> Joined: {new Date(affiliate.clients[0]?.joinDate || Date.now()).toLocaleDateString()}</div>
+                            <div className="flex items-center gap-2"><KeyRound className="h-4 w-4" /> {affiliate.staffId || 'Not set'}</div>
                         </div>
                     </div>
                 </CardHeader>
@@ -345,4 +346,5 @@ export default function AffiliateDetailsPage() {
             </AlertDialog>
         </div>
     );
-}
+
+    
