@@ -431,16 +431,16 @@ export default function AdminPage() {
                                             <Form {...form}>
                                                 <form onSubmit={form.handleSubmit(onCreditSettingsSubmit)} className="space-y-4">
                                                     <FormField control={form.control} name="maxCredits" render={({ field }) => (
-                                                        <FormItem><FormLabel>Max BS Credits in Circulation</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                                        <FormItem><FormLabel>Max BS Credits in Circulation</FormLabel><FormControl><Input type="text" {...field} onChange={(e) => field.onChange(parseInt(e.target.value.replace(/,/g, ''), 10) || 0)} value={field.value.toLocaleString()} /></FormControl><FormMessage /></FormItem>
                                                     )} />
                                                     <FormField control={form.control} name="buyPrice" render={({ field }) => (
-                                                        <FormItem><FormLabel>BS Credit Buying Price (from affiliates)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                                        <FormItem><FormLabel>BS Credit Buying Price (from affiliates)</FormLabel><FormControl><Input type="text" {...field} onChange={(e) => field.onChange(parseInt(e.target.value.replace(/,/g, ''), 10) || 0)} value={field.value.toLocaleString()} /></FormControl><FormMessage /></FormItem>
                                                     )} />
                                                     <FormField control={form.control} name="sellPrice" render={({ field }) => (
-                                                        <FormItem><FormLabel>BS Credit Selling Price (to affiliates)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                                        <FormItem><FormLabel>BS Credit Selling Price (to affiliates)</FormLabel><FormControl><Input type="text" {...field} onChange={(e) => field.onChange(parseInt(e.target.value.replace(/,/g, ''), 10) || 0)} value={field.value.toLocaleString()} /></FormControl><FormMessage /></FormItem>
                                                     )} />
                                                     <FormField control={form.control} name="exchangeValue" render={({ field }) => (
-                                                        <FormItem><FormLabel>BS Credit Exchange Value (1 Credit = K{watchedExchangeValue || 0})</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                                        <FormItem><FormLabel>BS Credit Exchange Value (1 Credit = K{watchedExchangeValue ? watchedExchangeValue.toLocaleString() : 0})</FormLabel><FormControl><Input type="text" {...field} onChange={(e) => field.onChange(parseInt(e.target.value.replace(/,/g, ''), 10) || 0)} value={field.value.toLocaleString()} /></FormControl><FormMessage /></FormItem>
                                                     )} />
                                                     <Button type="submit">Save Credit Settings</Button>
                                                 </form>
