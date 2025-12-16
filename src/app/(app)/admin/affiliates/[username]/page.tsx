@@ -34,7 +34,8 @@ export default function AffiliateDetailsPage() {
 
     const allTransactions = useMemo(() => {
         if (!affiliate?.transactions) return [];
-        return affiliate.transactions.map(t => ({...t, status: (t as any).status || 'pending' }));
+        // Default status to 'completed' for old transactions, 'pending' for new ones.
+        return affiliate.transactions.map(t => ({...t, status: (t as any).status || 'completed' }));
     }, [affiliate?.transactions]);
     
     // Filter for actual withdrawal debits (not fees or credit purchases)
@@ -107,7 +108,7 @@ export default function AffiliateDetailsPage() {
             <TableBody>
                 {transactions.length > 0 ? transactions.map(t => (
                     <TableRow key={t.id}>
-                        <TableCell>{new Date(t.date).toLocaleString()}</TableCell>
+                        <TableCell>{new Date(t.date).toLocaleDateString()}</TableCell>
                         <TableCell>{t.description}</TableCell>
                         <TableCell className={cn("text-right font-medium", t.type === 'credit' ? 'text-green-600' : 'text-red-600')}>
                             {t.type === 'credit' ? '+' : '-'} K{t.amount.toLocaleString()}
