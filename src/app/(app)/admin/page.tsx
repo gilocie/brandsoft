@@ -211,9 +211,22 @@ export default function AdminPage() {
                             <CardDescription>Manage affiliate program settings.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
-                                <p className="text-muted-foreground">More settings coming soon.</p>
-                            </div>
+                            <Tabs defaultValue="credits-reserve">
+                                <TabsList>
+                                    <TabsTrigger value="credits-reserve">Credits Reserve</TabsTrigger>
+                                    <TabsTrigger value="system-tools">System Tools</TabsTrigger>
+                                </TabsList>
+                                <TabsContent value="credits-reserve" className="pt-4">
+                                    <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
+                                        <p className="text-muted-foreground">Credits Reserve settings coming soon.</p>
+                                    </div>
+                                </TabsContent>
+                                <TabsContent value="system-tools" className="pt-4">
+                                    <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
+                                        <p className="text-muted-foreground">System Tools coming soon.</p>
+                                    </div>
+                                </TabsContent>
+                            </Tabs>
                         </CardContent>
                     </Card>
                 </TabsContent>
