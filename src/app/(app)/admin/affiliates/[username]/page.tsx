@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useBrandsoft, type Transaction, type Affiliate } from '@/hooks/use-brandsoft';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -37,6 +37,100 @@ const manageBalanceSchema = z.object({
 });
 
 type ManageBalanceFormData = z.infer<typeof manageBalanceSchema>;
+type BalanceType = 'unclaimedCommission' | 'bonus' | 'creditBalance' | 'myWallet';
+
+const ManageBalanceDialog = ({
+    isOpen,
+    onOpenChange,
+    title,
+    description,
+    balanceType,
+    onSubmit,
+}: {
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
+    title: string;
+    description: string;
+    balanceType: BalanceType;
+    onSubmit: (balanceType: BalanceType, data: ManageBalanceFormData) => void;
+}) => {
+    const form = useForm<ManageBalanceFormData>({
+      resolver: zodResolver(manageBalanceSchema),
+      defaultValues: { action: 'add', amount: 1, reason: '' },
+    });
+
+    // Reset form when dialog opens/closes
+    useEffect(() => {
+        form.reset({ action: 'add', amount: 1, reason: '' });
+    }, [isOpen, form]);
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>{title}</DialogTitle>
+                    <DialogDescription>{description}</DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit((data) => onSubmit(balanceType, data))} className="space-y-4 pt-4">
+                        <FormField
+                            control={form.control}
+                            name="action"
+                            render={({ field }) => (
+                            <FormItem className="space-y-3">
+                                <FormLabel>Action</FormLabel>
+                                <FormControl>
+                                <RadioGroup
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                    className="flex gap-4"
+                                >
+                                    <FormItem className="flex items-center space-x-2 space-y-0">
+                                        <FormControl><RadioGroupItem value="add" /></FormControl>
+                                        <FormLabel className="font-normal">Add to Balance</FormLabel>
+                                    </FormItem>
+                                    <FormItem className="flex items-center space-x-2 space-y-0">
+                                        <FormControl><RadioGroupItem value="deduct" /></FormControl>
+                                        <FormLabel className="font-normal">Deduct from Balance</FormLabel>
+                                    </FormItem>
+                                </RadioGroup>
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="amount"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Amount</FormLabel>
+                                    <FormControl><Input type="number" {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="reason"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Reason</FormLabel>
+                                    <FormControl><Textarea placeholder="e.g., Initial bonus, correction for transaction #123" {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <DialogFooter>
+                            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                            <Button type="submit">Save Changes</Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    );
+};
 
 export default function AffiliateDetailsPage() {
     const params = useParams();
@@ -46,16 +140,11 @@ export default function AffiliateDetailsPage() {
     const [isDeactivateOpen, setIsDeactivateOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
-    const [isManageUnclaimedOpen, setIsManageUnclaimedOpen] = useState(false);
-    const [isManageBonusOpen, setIsManageBonusOpen] = useState(false);
-    const [isManageCreditsOpen, setIsManageCreditsOpen] = useState(false);
-    const [isManageWalletOpen, setIsManageWalletOpen] = useState(false);
-
-    const form = useForm<ManageBalanceFormData>({
-      resolver: zodResolver(manageBalanceSchema),
-      defaultValues: { action: 'add', amount: 1, reason: '' },
-    });
-
+    const [manageDialogState, setManageDialogState] = useState<{
+        isOpen: boolean;
+        balanceType: BalanceType | null;
+    }>({ isOpen: false, balanceType: null });
+    
     const affiliate = useMemo(() => {
         // As we only have one affiliate in the current data structure, we find it.
         // In a real multi-affiliate app, you'd find by username param.
@@ -138,20 +227,31 @@ export default function AffiliateDetailsPage() {
         }
     };
     
+    const openManageDialog = (balanceType: BalanceType) => {
+        setManageDialogState({ isOpen: true, balanceType });
+    };
+
     const handleManageBalance = (
-        balanceType: 'unclaimedCommission' | 'bonus' | 'creditBalance' | 'myWallet',
+        balanceType: BalanceType,
         data: ManageBalanceFormData
     ) => {
         if (!config || !affiliate) return;
 
         const { action, amount, reason } = data;
-        let newBalance = affiliate[balanceType] || 0;
+        let currentBalance = affiliate[balanceType] || 0;
+        let newBalance = currentBalance;
         
         if (action === 'add') {
             newBalance += amount;
         } else {
             if (amount > newBalance) {
-                form.setError('amount', { message: 'Cannot deduct more than the user has.' });
+                // This error should ideally be handled within the dialog's form state
+                // but for now, we'll show a toast as a fallback.
+                 toast({
+                    variant: 'destructive',
+                    title: 'Invalid Amount',
+                    description: 'Cannot deduct more than the user has.',
+                });
                 return;
             }
             newBalance -= amount;
@@ -178,12 +278,7 @@ export default function AffiliateDetailsPage() {
             description: `Successfully updated ${balanceType}.`,
         });
         
-        // Close all dialogs
-        setIsManageUnclaimedOpen(false);
-        setIsManageBonusOpen(false);
-        setIsManageCreditsOpen(false);
-        setIsManageWalletOpen(false);
-        form.reset();
+        setManageDialogState({ isOpen: false, balanceType: null });
     };
 
     const totalClients = affiliate.clients.length;
@@ -193,6 +288,13 @@ export default function AffiliateDetailsPage() {
     const bonusAmount = affiliate.bonus || 0;
     const creditBalance = affiliate.creditBalance || 0;
     const walletBalance = affiliate.myWallet || 0;
+    
+    const balanceTypeTitles: Record<BalanceType, string> = {
+        unclaimedCommission: 'Unclaimed Commission',
+        bonus: 'Bonus Amount',
+        creditBalance: 'Credit Balance',
+        myWallet: 'Wallet Balance',
+    };
 
     const renderTransactionTable = (transactions: DisplayTransaction[], emptyMessage: string) => (
          <Table>
@@ -217,85 +319,6 @@ export default function AffiliateDetailsPage() {
                 )}
             </TableBody>
         </Table>
-    );
-
-    const ManageBalanceDialog = ({
-        isOpen,
-        onOpenChange,
-        title,
-        description,
-        balanceType,
-    }: {
-        isOpen: boolean;
-        onOpenChange: (open: boolean) => void;
-        title: string;
-        description: string;
-        balanceType: 'unclaimedCommission' | 'bonus' | 'creditBalance' | 'myWallet';
-    }) => (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>{title}</DialogTitle>
-                    <DialogDescription>{description}</DialogDescription>
-                </DialogHeader>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit((data) => handleManageBalance(balanceType, data))} className="space-y-4 pt-4">
-                        <FormField
-                            control={form.control}
-                            name="action"
-                            render={({ field }) => (
-                            <FormItem className="space-y-3">
-                                <FormLabel>Action</FormLabel>
-                                <FormControl>
-                                <RadioGroup
-                                    onValueChange={field.onChange}
-                                    defaultValue={field.value}
-                                    className="flex gap-4"
-                                >
-                                    <FormItem className="flex items-center space-x-2 space-y-0">
-                                        <FormControl><RadioGroupItem value="add" /></FormControl>
-                                        <FormLabel className="font-normal">Add to Balance</FormLabel>
-                                    </FormItem>
-                                    <FormItem className="flex items-center space-x-2 space-y-0">
-                                        <FormControl><RadioGroupItem value="deduct" /></FormControl>
-                                        <FormLabel className="font-normal">Deduct from Balance</FormLabel>
-                                    </FormItem>
-                                </RadioGroup>
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="amount"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Amount</FormLabel>
-                                    <FormControl><Input type="number" {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                         <FormField
-                            control={form.control}
-                            name="reason"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Reason</FormLabel>
-                                    <FormControl><Textarea placeholder="e.g., Initial bonus, correction for transaction #123" {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <DialogFooter>
-                            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                            <Button type="submit">Save Changes</Button>
-                        </DialogFooter>
-                    </form>
-                </Form>
-            </DialogContent>
-        </Dialog>
     );
 
     return (
@@ -334,18 +357,18 @@ export default function AffiliateDetailsPage() {
                 <h2 className="text-lg font-semibold tracking-tight">Financials</h2>
                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <StatCard title="Unclaimed" value={unclaimedCommission} isCurrency icon={User} footer="Awaiting push to wallet" variant="primary">
-                         <Button size="sm" className="w-full mt-2" onClick={() => setIsManageUnclaimedOpen(true)}>Manage</Button>
+                         <Button size="sm" className="w-full mt-2" onClick={() => openManageDialog('unclaimedCommission')}>Manage</Button>
                     </StatCard>
                     <StatCard title="Bonus Amount" value={bonusAmount} isCurrency icon={Gift} footer="Performance bonus" variant="primary">
-                        <Button size="sm" className="w-full mt-2" onClick={() => setIsManageBonusOpen(true)}>Manage Bonus</Button>
+                        <Button size="sm" className="w-full mt-2" onClick={() => openManageDialog('bonus')}>Manage Bonus</Button>
                     </StatCard>
                     <StatCard title="Credit Balance" value={creditBalance} valuePrefix="BS " icon={CreditCard} footer={`Value: K${(creditBalance * CREDIT_TO_MWK).toLocaleString()}`} variant="primary">
-                       <Button size="sm" className="w-full mt-2" onClick={() => setIsManageCreditsOpen(true)}>
+                       <Button size="sm" className="w-full mt-2" onClick={() => openManageDialog('creditBalance')}>
                             Manage Credits
                        </Button>
                     </StatCard>
                     <StatCard title="Wallet Balance" value={walletBalance} isCurrency icon={Wallet} footer="Withdrawable amount" variant="primary">
-                         <Button size="sm" className="w-full mt-2" onClick={() => setIsManageWalletOpen(true)}>Manage</Button>
+                         <Button size="sm" className="w-full mt-2" onClick={() => openManageDialog('myWallet')}>Manage</Button>
                     </StatCard>
                 </div>
             </div>
@@ -508,35 +531,17 @@ export default function AffiliateDetailsPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-
-            <ManageBalanceDialog
-                isOpen={isManageUnclaimedOpen}
-                onOpenChange={setIsManageUnclaimedOpen}
-                title="Manage Unclaimed Commission"
-                description={`Manually adjust ${affiliate.fullName}'s unclaimed commission balance.`}
-                balanceType="unclaimedCommission"
-            />
-            <ManageBalanceDialog
-                isOpen={isManageBonusOpen}
-                onOpenChange={setIsManageBonusOpen}
-                title="Manage Bonus Amount"
-                description={`Manually adjust ${affiliate.fullName}'s bonus balance.`}
-                balanceType="bonus"
-            />
-            <ManageBalanceDialog
-                isOpen={isManageCreditsOpen}
-                onOpenChange={setIsManageCreditsOpen}
-                title="Manage Credit Balance"
-                description={`Manually add or deduct credits from ${affiliate.fullName}'s account.`}
-                balanceType="creditBalance"
-            />
-            <ManageBalanceDialog
-                isOpen={isManageWalletOpen}
-                onOpenChange={setIsManageWalletOpen}
-                title="Manage Wallet Balance"
-                description={`Manually adjust ${affiliate.fullName}'s withdrawable wallet balance.`}
-                balanceType="myWallet"
-            />
+            
+            {manageDialogState.isOpen && manageDialogState.balanceType && (
+                <ManageBalanceDialog
+                    isOpen={manageDialogState.isOpen}
+                    onOpenChange={(open) => setManageDialogState({ isOpen: open, balanceType: null })}
+                    title={`Manage ${balanceTypeTitles[manageDialogState.balanceType]}`}
+                    description={`Manually adjust ${affiliate.fullName}'s ${balanceTypeTitles[manageDialogState.balanceType].toLowerCase()} balance.`}
+                    balanceType={manageDialogState.balanceType}
+                    onSubmit={handleManageBalance}
+                />
+            )}
         </div>
     );
 }
