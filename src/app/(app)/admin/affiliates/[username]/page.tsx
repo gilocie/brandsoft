@@ -30,14 +30,13 @@ import { WithdrawDialog } from '@/components/office/withdraw-dialog';
 type DisplayTransaction = Transaction & { status?: 'pending' | 'processing' | 'completed' };
 const CREDIT_TO_MWK = 1000;
 
-const manageCreditsSchema = z.object({
+const manageBalanceSchema = z.object({
   action: z.enum(['add', 'deduct']),
-  amount: z.coerce.number().min(1, "Amount must be at least 1 credit."),
+  amount: z.coerce.number().min(1, "Amount must be at least 1."),
   reason: z.string().min(5, "A reason is required for this action."),
 });
 
-type ManageCreditsFormData = z.infer<typeof manageCreditsSchema>;
-
+type ManageBalanceFormData = z.infer<typeof manageBalanceSchema>;
 
 export default function AffiliateDetailsPage() {
     const params = useParams();
@@ -46,10 +45,14 @@ export default function AffiliateDetailsPage() {
     const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
     const [isDeactivateOpen, setIsDeactivateOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-    const [isManageCreditsOpen, setIsManageCreditsOpen] = useState(false);
 
-    const form = useForm<ManageCreditsFormData>({
-      resolver: zodResolver(manageCreditsSchema),
+    const [isManageUnclaimedOpen, setIsManageUnclaimedOpen] = useState(false);
+    const [isManageBonusOpen, setIsManageBonusOpen] = useState(false);
+    const [isManageCreditsOpen, setIsManageCreditsOpen] = useState(false);
+    const [isManageWalletOpen, setIsManageWalletOpen] = useState(false);
+
+    const form = useForm<ManageBalanceFormData>({
+      resolver: zodResolver(manageBalanceSchema),
       defaultValues: { action: 'add', amount: 1, reason: '' },
     });
 
@@ -135,50 +138,51 @@ export default function AffiliateDetailsPage() {
         }
     };
     
-    const onManageCredits = (data: ManageCreditsFormData) => {
+    const handleManageBalance = (
+        balanceType: 'unclaimedCommission' | 'bonus' | 'creditBalance' | 'myWallet',
+        data: ManageBalanceFormData
+    ) => {
         if (!config || !affiliate) return;
-        
-        const { action, amount, reason } = data;
-        let newCreditBalance = affiliate.creditBalance || 0;
-        let transactionType: 'credit' | 'debit';
-        let transactionDescription: string;
 
+        const { action, amount, reason } = data;
+        let newBalance = affiliate[balanceType] || 0;
+        
         if (action === 'add') {
-            newCreditBalance += amount;
-            transactionType = 'credit';
-            transactionDescription = `Manual credit addition: ${reason}`;
+            newBalance += amount;
         } else {
-            if (amount > newCreditBalance) {
-                form.setError('amount', { message: 'Cannot deduct more credits than the user has.'});
+            if (amount > newBalance) {
+                form.setError('amount', { message: 'Cannot deduct more than the user has.' });
                 return;
             }
-            newCreditBalance -= amount;
-            transactionType = 'debit';
-            transactionDescription = `Manual credit deduction: ${reason}`;
+            newBalance -= amount;
         }
 
         const newTransaction: Transaction = {
-            id: `TRN-MANUAL-${Date.now()}`,
+            id: `TRN-MANUAL-${balanceType.toUpperCase()}-${Date.now()}`,
             date: new Date().toISOString(),
-            description: transactionDescription,
+            description: `Manual ${balanceType} ${action}: ${reason}`,
             amount: amount,
-            type: transactionType,
+            type: action === 'add' ? 'credit' : 'debit',
         };
 
         const newAffiliateData = {
             ...affiliate,
-            creditBalance: newCreditBalance,
+            [balanceType]: newBalance,
             transactions: [newTransaction, ...(affiliate.transactions || [])],
         };
 
         saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
         
         toast({
-            title: 'Credits Updated!',
-            description: `Successfully ${action === 'add' ? 'added' : 'deducted'} ${amount} credits.`,
+            title: 'Balance Updated!',
+            description: `Successfully updated ${balanceType}.`,
         });
         
+        // Close all dialogs
+        setIsManageUnclaimedOpen(false);
+        setIsManageBonusOpen(false);
         setIsManageCreditsOpen(false);
+        setIsManageWalletOpen(false);
         form.reset();
     };
 
@@ -213,6 +217,85 @@ export default function AffiliateDetailsPage() {
                 )}
             </TableBody>
         </Table>
+    );
+
+    const ManageBalanceDialog = ({
+        isOpen,
+        onOpenChange,
+        title,
+        description,
+        balanceType,
+    }: {
+        isOpen: boolean;
+        onOpenChange: (open: boolean) => void;
+        title: string;
+        description: string;
+        balanceType: 'unclaimedCommission' | 'bonus' | 'creditBalance' | 'myWallet';
+    }) => (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>{title}</DialogTitle>
+                    <DialogDescription>{description}</DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit((data) => handleManageBalance(balanceType, data))} className="space-y-4 pt-4">
+                        <FormField
+                            control={form.control}
+                            name="action"
+                            render={({ field }) => (
+                            <FormItem className="space-y-3">
+                                <FormLabel>Action</FormLabel>
+                                <FormControl>
+                                <RadioGroup
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                    className="flex gap-4"
+                                >
+                                    <FormItem className="flex items-center space-x-2 space-y-0">
+                                        <FormControl><RadioGroupItem value="add" /></FormControl>
+                                        <FormLabel className="font-normal">Add to Balance</FormLabel>
+                                    </FormItem>
+                                    <FormItem className="flex items-center space-x-2 space-y-0">
+                                        <FormControl><RadioGroupItem value="deduct" /></FormControl>
+                                        <FormLabel className="font-normal">Deduct from Balance</FormLabel>
+                                    </FormItem>
+                                </RadioGroup>
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="amount"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Amount</FormLabel>
+                                    <FormControl><Input type="number" {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="reason"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Reason</FormLabel>
+                                    <FormControl><Textarea placeholder="e.g., Initial bonus, correction for transaction #123" {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <DialogFooter>
+                            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                            <Button type="submit">Save Changes</Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
     );
 
     return (
@@ -251,10 +334,10 @@ export default function AffiliateDetailsPage() {
                 <h2 className="text-lg font-semibold tracking-tight">Financials</h2>
                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <StatCard title="Unclaimed" value={unclaimedCommission} isCurrency icon={User} footer="Awaiting push to wallet" variant="primary">
-                         <Button size="sm" className="w-full mt-2" disabled>Manage</Button>
+                         <Button size="sm" className="w-full mt-2" onClick={() => setIsManageUnclaimedOpen(true)}>Manage</Button>
                     </StatCard>
                     <StatCard title="Bonus Amount" value={bonusAmount} isCurrency icon={Gift} footer="Performance bonus" variant="primary">
-                        <Button size="sm" className="w-full mt-2" disabled>Manage Bonus</Button>
+                        <Button size="sm" className="w-full mt-2" onClick={() => setIsManageBonusOpen(true)}>Manage Bonus</Button>
                     </StatCard>
                     <StatCard title="Credit Balance" value={creditBalance} valuePrefix="BS " icon={CreditCard} footer={`Value: K${(creditBalance * CREDIT_TO_MWK).toLocaleString()}`} variant="primary">
                        <Button size="sm" className="w-full mt-2" onClick={() => setIsManageCreditsOpen(true)}>
@@ -262,7 +345,7 @@ export default function AffiliateDetailsPage() {
                        </Button>
                     </StatCard>
                     <StatCard title="Wallet Balance" value={walletBalance} isCurrency icon={Wallet} footer="Withdrawable amount" variant="primary">
-                         <Button size="sm" className="w-full mt-2" disabled>Manage</Button>
+                         <Button size="sm" className="w-full mt-2" onClick={() => setIsManageWalletOpen(true)}>Manage</Button>
                     </StatCard>
                 </div>
             </div>
@@ -426,70 +509,34 @@ export default function AffiliateDetailsPage() {
                 </AlertDialogContent>
             </AlertDialog>
 
-            <Dialog open={isManageCreditsOpen} onOpenChange={setIsManageCreditsOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Manage Credit Balance</DialogTitle>
-                        <DialogDescription>Manually add or deduct credits from {affiliate.fullName}'s account.</DialogDescription>
-                    </DialogHeader>
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onManageCredits)} className="space-y-4 pt-4">
-                            <FormField
-                                control={form.control}
-                                name="action"
-                                render={({ field }) => (
-                                <FormItem className="space-y-3">
-                                    <FormLabel>Action</FormLabel>
-                                    <FormControl>
-                                    <RadioGroup
-                                        onValueChange={field.onChange}
-                                        defaultValue={field.value}
-                                        className="flex gap-4"
-                                    >
-                                        <FormItem className="flex items-center space-x-2 space-y-0">
-                                            <FormControl><RadioGroupItem value="add" /></FormControl>
-                                            <FormLabel className="font-normal">Add Credits</FormLabel>
-                                        </FormItem>
-                                        <FormItem className="flex items-center space-x-2 space-y-0">
-                                            <FormControl><RadioGroupItem value="deduct" /></FormControl>
-                                            <FormLabel className="font-normal">Deduct Credits</FormLabel>
-                                        </FormItem>
-                                    </RadioGroup>
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="amount"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Amount (Credits)</FormLabel>
-                                        <FormControl><Input type="number" {...field} /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                             <FormField
-                                control={form.control}
-                                name="reason"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Reason</FormLabel>
-                                        <FormControl><Textarea placeholder="e.g., Initial bonus, correction for transaction #123" {...field} /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <DialogFooter>
-                                <Button type="button" variant="outline" onClick={() => setIsManageCreditsOpen(false)}>Cancel</Button>
-                                <Button type="submit">Save Changes</Button>
-                            </DialogFooter>
-                        </form>
-                    </Form>
-                </DialogContent>
-            </Dialog>
+            <ManageBalanceDialog
+                isOpen={isManageUnclaimedOpen}
+                onOpenChange={setIsManageUnclaimedOpen}
+                title="Manage Unclaimed Commission"
+                description={`Manually adjust ${affiliate.fullName}'s unclaimed commission balance.`}
+                balanceType="unclaimedCommission"
+            />
+            <ManageBalanceDialog
+                isOpen={isManageBonusOpen}
+                onOpenChange={setIsManageBonusOpen}
+                title="Manage Bonus Amount"
+                description={`Manually adjust ${affiliate.fullName}'s bonus balance.`}
+                balanceType="bonus"
+            />
+            <ManageBalanceDialog
+                isOpen={isManageCreditsOpen}
+                onOpenChange={setIsManageCreditsOpen}
+                title="Manage Credit Balance"
+                description={`Manually add or deduct credits from ${affiliate.fullName}'s account.`}
+                balanceType="creditBalance"
+            />
+            <ManageBalanceDialog
+                isOpen={isManageWalletOpen}
+                onOpenChange={setIsManageWalletOpen}
+                title="Manage Wallet Balance"
+                description={`Manually adjust ${affiliate.fullName}'s withdrawable wallet balance.`}
+                balanceType="myWallet"
+            />
         </div>
     );
 }
