@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -145,7 +146,7 @@ const ManageReserveDialog = ({
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Amount</FormLabel>
-                                    <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                                    <FormControl><Input type="number" step="1" {...field} /></FormControl>
                                     <FormDescription>
                                         Total reserve will be <span className="font-bold">{finalReserve.toLocaleString()}</span> after this change.
                                     </FormDescription>
@@ -215,7 +216,7 @@ export default function AdminPage() {
     }, [affiliates]);
     
     const creditsInReserve = (affiliateSettings.availableCredits || 0);
-    const availableToSell = creditsInReserve - totalCirculatingCredits;
+    const availableToSell = creditsInReserve;
 
 
     const availableCreditsPercentage = useMemo(() => {
@@ -263,16 +264,24 @@ export default function AdminPage() {
     const handleStatusChange = (transactionId: string, newStatus: 'pending' | 'processing' | 'completed') => {
         if (!config?.affiliate) return;
 
-        const updatedTransactions = config.affiliate.transactions?.map(t => 
+        const transaction = config.affiliate.transactions?.find(t => t.id === transactionId);
+        if (!transaction) return;
+
+        let newAffiliateData = { ...config.affiliate };
+        let newAffiliateSettings = { ...config.affiliateSettings };
+
+        // Update transaction status
+        newAffiliateData.transactions = newAffiliateData.transactions?.map(t => 
             t.id === transactionId ? { ...t, status: newStatus } : t
         );
-        
-        const newAffiliateData = {
-            ...config.affiliate,
-            transactions: updatedTransactions,
-        };
 
-        saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
+        // If a BS Credit withdrawal is completed, return credits to the reserve
+        if (newStatus === 'completed' && (transaction as any).method === 'bsCredits') {
+            const creditAmount = transaction.amount / (affiliateSettings.exchangeValue || 1000);
+            newAffiliateSettings.availableCredits = (newAffiliateSettings.availableCredits || 0) + creditAmount;
+        }
+
+        saveConfig({ ...config, affiliate: newAffiliateData, affiliateSettings: newAffiliateSettings }, { redirect: false, revalidate: true });
         
         toast({
             title: "Status Updated",
