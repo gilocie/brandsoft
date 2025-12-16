@@ -37,11 +37,26 @@ export default function AffiliateDetailsPage() {
         return affiliate.transactions.map(t => ({...t, status: (t as any).status || 'pending' }));
     }, [affiliate?.transactions]);
     
-    const pendingWithdrawals = useMemo(() => allTransactions.filter(t => t.type === 'debit' && t.status === 'pending'), [allTransactions]);
-    const processingWithdrawals = useMemo(() => allTransactions.filter(t => t.type === 'debit' && t.status === 'processing'), [allTransactions]);
-    const completedWithdrawals = useMemo(() => allTransactions.filter(t => t.type === 'debit' && t.status === 'completed'), [allTransactions]);
+    // Filter for actual withdrawal debits (not fees or credit purchases)
+    const withdrawalTransactions = useMemo(() => {
+        return allTransactions.filter(t => 
+            t.type === 'debit' && 
+            !t.description.toLowerCase().includes('fee') && 
+            !t.description.toLowerCase().includes('credit')
+        );
+    }, [allTransactions]);
 
-    const creditTransactions = useMemo(() => allTransactions.filter(t => t.type === 'credit'), [allTransactions]);
+    const pendingWithdrawals = useMemo(() => withdrawalTransactions.filter(t => t.status === 'pending'), [withdrawalTransactions]);
+    const processingWithdrawals = useMemo(() => withdrawalTransactions.filter(t => t.status === 'processing'), [withdrawalTransactions]);
+    const completedWithdrawals = useMemo(() => withdrawalTransactions.filter(t => t.status === 'completed'), [withdrawalTransactions]);
+
+    const creditTransactions = useMemo(() => {
+        // This includes commissions (credit) and credit purchases (debit)
+        return allTransactions.filter(t => 
+            t.type === 'credit' || 
+            t.description.toLowerCase().includes('credit')
+        );
+    }, [allTransactions]);
 
 
     if (!affiliate) {
@@ -175,10 +190,10 @@ export default function AffiliateDetailsPage() {
                  <TabsContent value="credits" className="pt-6">
                      <Card>
                         <CardHeader>
-                            <CardTitle>Credit History</CardTitle>
+                            <CardTitle>Credit & Commission History</CardTitle>
                         </CardHeader>
                         <CardContent>
-                             {renderTransactionTable(creditTransactions, "No credit transactions.")}
+                             {renderTransactionTable(creditTransactions, "No credit or commission transactions.")}
                         </CardContent>
                     </Card>
                 </TabsContent>
