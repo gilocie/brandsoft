@@ -178,7 +178,7 @@ export function useSetup(
     securityQuestion: false,
     idUploaded: false,
     isPinSet: false,
-    balance: 2500,
+    myWallet: 2500,
     unclaimedCommission: 17500,
     totalSales: 17500,
     creditBalance: 50.00,

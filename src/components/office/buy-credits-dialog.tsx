@@ -79,7 +79,7 @@ export const BuyCreditsDialog = ({ walletBalance }: { walletBalance: number }) =
 
     const newAffiliateData = {
       ...config.affiliate,
-      balance: config.affiliate.balance - costInMWK,
+      myWallet: (config.affiliate.myWallet || 0) - costInMWK,
       creditBalance: (config.affiliate.creditBalance || 0) + data.credits,
       transactions: [newTransaction, ...(config.affiliate.transactions || [])],
     };

@@ -29,7 +29,8 @@ const initialAffiliateData: Affiliate = {
     securityQuestion: true,
     idUploaded: false,
     isPinSet: false,
-    balance: 1250.50,
+    myWallet: 1250.50,
+    unclaimedCommission: 17500,
     totalSales: 17500.00,
     creditBalance: 50.00,
     bonus: 20.00,
@@ -217,13 +218,22 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
             needsSave = true;
         } else {
              // Ensure all new fields exist
-            const fieldsToCheck: (keyof Affiliate)[] = ['totalSales', 'creditBalance', 'bonus', 'staffId', 'phone', 'transactions', 'isPinSet'];
+            const fieldsToCheck: (keyof Affiliate)[] = ['totalSales', 'creditBalance', 'bonus', 'staffId', 'phone', 'transactions', 'isPinSet', 'unclaimedCommission', 'myWallet'];
             fieldsToCheck.forEach(field => {
                 if (typeof parsedConfig.affiliate[field] === 'undefined') {
-                    parsedConfig.affiliate[field] = initialAffiliateData[field];
+                    if (field === 'myWallet' && typeof parsedConfig.affiliate.balance !== 'undefined') {
+                        parsedConfig.affiliate.myWallet = parsedConfig.affiliate.balance;
+                        delete parsedConfig.affiliate.balance;
+                    } else {
+                         parsedConfig.affiliate[field] = initialAffiliateData[field];
+                    }
                     needsSave = true;
                 }
             });
+            if (typeof parsedConfig.affiliate.balance !== 'undefined') {
+                delete parsedConfig.affiliate.balance;
+                needsSave = true;
+            }
         }
         
         setConfig(parsedConfig);

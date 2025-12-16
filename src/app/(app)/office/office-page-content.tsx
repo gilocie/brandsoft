@@ -119,7 +119,7 @@ export function OfficePageContent() {
 
     const newAffiliateData: Affiliate = {
         ...affiliate,
-        balance: (affiliate.balance || 0) + amountToPush,
+        myWallet: (affiliate.myWallet || 0) + amountToPush,
         unclaimedCommission: 0,
         transactions: [
             {
@@ -171,7 +171,7 @@ export function OfficePageContent() {
   
   const bonusAmount = affiliate.bonus || 0;
   const unclaimedCommission = affiliate.unclaimedCommission || 0;
-  const mwkBalance = (affiliate.balance || 0) + bonusAmount;
+  const mwkBalance = (affiliate.myWallet || 0) + bonusAmount;
   const activeClients = affiliate.clients.filter(c => c.status === 'active').length;
   const totalSales = affiliate.totalSales || 0;
 
@@ -208,11 +208,11 @@ export function OfficePageContent() {
         remainingAmount -= bonusDeduction;
         
         if (remainingAmount > 0) {
-            newAffiliateData.balance = (newAffiliateData.balance || 0) - remainingAmount;
+            newAffiliateData.myWallet = (newAffiliateData.myWallet || 0) - remainingAmount;
         }
 
     } else { // 'commission'
-        newAffiliateData.balance = (newAffiliateData.balance || 0) - (amountToWithdraw + TRANSACTION_FEE);
+        newAffiliateData.myWallet = (newAffiliateData.myWallet || 0) - (amountToWithdraw + TRANSACTION_FEE);
     }
     
     newAffiliateData.transactions = [newTransaction, feeTransaction, ...(affiliate.transactions || [])];
@@ -427,7 +427,7 @@ export function OfficePageContent() {
                         valuePrefix={`BS `}
                         footer={`Value: K${(affiliate.creditBalance * CREDIT_TO_MWK).toLocaleString()}`}
                     >
-                        <BuyCreditsDialog walletBalance={affiliate.balance || 0} />
+                        <BuyCreditsDialog walletBalance={affiliate.myWallet || 0} />
                     </StatCard>
                     <Card>
                         <CardHeader>
@@ -459,7 +459,7 @@ export function OfficePageContent() {
                         </CardContent>
                         <CardContent>
                             <WithdrawDialog 
-                                commissionBalance={affiliate.balance || 0} 
+                                commissionBalance={affiliate.myWallet || 0} 
                                 bonusBalance={bonusAmount} 
                                 onWithdraw={handleWithdraw} 
                                 isVerified={true}
