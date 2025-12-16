@@ -290,12 +290,15 @@ export default function AffiliateDetailsPage() {
                 <h2 className="text-lg font-semibold tracking-tight">Financials</h2>
                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <StatCard title="Unclaimed" value={unclaimedCommission} isCurrency icon={User} footer="Awaiting push to wallet" variant="primary">
-                        <Button size="sm" className="w-full mt-2" onClick={handlePushToWallet} disabled={unclaimedCommission <= 0}>
-                           <Send className="h-4 w-4 mr-2" /> Push to Wallet
-                        </Button>
+                         <div className="flex gap-2 w-full mt-2">
+                            <Button size="sm" className="flex-1" onClick={handlePushToWallet} disabled={unclaimedCommission <= 0}>
+                               <Send className="h-4 w-4 mr-2" /> Push
+                            </Button>
+                             <Button size="sm" className="flex-1" variant="secondary" disabled>Manage</Button>
+                        </div>
                     </StatCard>
                     <StatCard title="Bonus Amount" value={bonusAmount} isCurrency icon={Gift} footer="Performance bonus" variant="primary">
-                        <Button size="sm" className="w-full mt-2" variant="secondary" disabled>View Details</Button>
+                        <Button size="sm" className="w-full mt-2" variant="secondary" disabled>Manage Bonus</Button>
                     </StatCard>
                     <StatCard title="Credit Balance" value={creditBalance} valuePrefix="BS " icon={CreditCard} footer={`Value: K${(creditBalance * CREDIT_TO_MWK).toLocaleString()}`} variant="primary">
                        <Button size="sm" className="w-full mt-2" onClick={() => setIsManageCreditsOpen(true)}>
@@ -304,12 +307,15 @@ export default function AffiliateDetailsPage() {
                        </Button>
                     </StatCard>
                     <StatCard title="Wallet Balance" value={walletBalance} isCurrency icon={Wallet} footer="Withdrawable amount" variant="primary">
-                        <WithdrawDialog
-                            commissionBalance={walletBalance}
-                            bonusBalance={bonusAmount}
-                            onWithdraw={handleWithdraw}
-                            isVerified={true}
-                        />
+                         <div className="flex gap-2 w-full mt-2">
+                            <WithdrawDialog
+                                commissionBalance={walletBalance}
+                                bonusBalance={bonusAmount}
+                                onWithdraw={handleWithdraw}
+                                isVerified={true}
+                            />
+                             <Button size="sm" className="flex-1" variant="secondary" disabled>Manage</Button>
+                        </div>
                     </StatCard>
                 </div>
             </div>
@@ -540,3 +546,4 @@ export default function AffiliateDetailsPage() {
         </div>
     );
 }
+
