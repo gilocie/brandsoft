@@ -16,7 +16,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { ArrowLeft, AtSign, BadgeCheck, Phone, User, Calendar, ShieldAlert, KeyRound, Camera, UserCheck, CreditCard, Users, Shield, TrendingDown, TrendingUp, UserX, Trash2, Gift, Wallet, Banknote, Repeat, SlidersHorizontal } from 'lucide-react';
+import { ArrowLeft, AtSign, BadgeCheck, Phone, User, Calendar, ShieldAlert, KeyRound, Camera, UserCheck, CreditCard, Users, Shield, TrendingDown, TrendingUp, UserX, Trash2, Gift, Wallet, Banknote, Repeat, SlidersHorizontal, Send } from 'lucide-react';
 import { StatCard } from '@/components/office/stat-card';
 import { toast } from '@/hooks/use-toast';
 import Link from 'next/link';
@@ -24,6 +24,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import { ClientCard } from '@/components/affiliate/client-card';
+import { WithdrawDialog } from '@/components/office/withdraw-dialog';
 
 // Extend transaction to include optional status
 type DisplayTransaction = Transaction & { status?: 'pending' | 'processing' | 'completed' };
@@ -56,7 +57,7 @@ export default function AffiliateDetailsPage() {
         // As we only have one affiliate in the current data structure, we find it.
         // In a real multi-affiliate app, you'd find by username param.
         return config?.affiliate;
-    }, [config?.affiliate, params.username]);
+    }, [config?.affiliate]);
 
     const allTransactions = useMemo(() => {
         if (!affiliate?.transactions) return [];
@@ -181,6 +182,45 @@ export default function AffiliateDetailsPage() {
         form.reset();
     };
 
+    const handlePushToWallet = () => {
+      if (!config || !affiliate) return;
+      const amountToPush = affiliate.unclaimedCommission || 0;
+      if (amountToPush <= 0) {
+        toast({
+            variant: "destructive",
+            title: "No Unclaimed Commission",
+            description: "There is no commission to push to the wallet.",
+        });
+        return;
+      }
+
+      const newAffiliateData: Affiliate = {
+          ...affiliate,
+          myWallet: (affiliate.myWallet || 0) + amountToPush,
+          unclaimedCommission: 0,
+          transactions: [
+              {
+                  id: `TRN-PUSH-${Date.now()}`,
+                  date: new Date().toISOString(),
+                  description: 'Pushed commission to wallet',
+                  amount: amountToPush,
+                  type: 'credit' as const,
+              },
+              ...(affiliate.transactions || [])
+          ],
+      };
+      saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
+      toast({
+          title: "Funds Transferred!",
+          description: `K${amountToPush.toLocaleString()} has been pushed to the wallet.`,
+      });
+    };
+
+    const handleWithdraw = (amount: number, source: 'commission' | 'combined' | 'bonus') => {
+        // Placeholder for admin withdrawal logic
+        toast({ title: 'Action Required', description: 'Admin withdrawal functionality to be implemented.' });
+    };
+
     const totalClients = affiliate.clients.length;
     const activeClients = affiliate.clients.filter(c => c.status === 'active').length;
     const totalSales = affiliate.totalSales || 0;
@@ -249,15 +289,28 @@ export default function AffiliateDetailsPage() {
             <div className="space-y-2">
                 <h2 className="text-lg font-semibold tracking-tight">Financials</h2>
                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    <StatCard title="Unclaimed" value={unclaimedCommission} isCurrency icon={User} footer="Awaiting push to wallet" variant="primary" />
-                    <StatCard title="Bonus Amount" value={bonusAmount} isCurrency icon={Gift} footer="Performance bonus" variant="primary" />
+                    <StatCard title="Unclaimed" value={unclaimedCommission} isCurrency icon={User} footer="Awaiting push to wallet" variant="primary">
+                        <Button size="sm" className="w-full mt-2" onClick={handlePushToWallet} disabled={unclaimedCommission <= 0}>
+                           <Send className="h-4 w-4 mr-2" /> Push to Wallet
+                        </Button>
+                    </StatCard>
+                    <StatCard title="Bonus Amount" value={bonusAmount} isCurrency icon={Gift} footer="Performance bonus" variant="primary">
+                        <Button size="sm" className="w-full mt-2" variant="secondary" disabled>View Details</Button>
+                    </StatCard>
                     <StatCard title="Credit Balance" value={creditBalance} valuePrefix="BS " icon={CreditCard} footer={`Value: K${(creditBalance * CREDIT_TO_MWK).toLocaleString()}`} variant="primary">
                        <Button size="sm" className="w-full mt-2" onClick={() => setIsManageCreditsOpen(true)}>
                             <SlidersHorizontal className="h-4 w-4 mr-2" />
                             Manage Credits
                        </Button>
                     </StatCard>
-                    <StatCard title="Wallet Balance" value={walletBalance} isCurrency icon={Wallet} footer="Withdrawable amount" variant="primary" />
+                    <StatCard title="Wallet Balance" value={walletBalance} isCurrency icon={Wallet} footer="Withdrawable amount" variant="primary">
+                        <WithdrawDialog
+                            commissionBalance={walletBalance}
+                            bonusBalance={bonusAmount}
+                            onWithdraw={handleWithdraw}
+                            isVerified={true}
+                        />
+                    </StatCard>
                 </div>
             </div>
 
