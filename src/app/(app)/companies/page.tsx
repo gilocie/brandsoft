@@ -5,7 +5,7 @@ import { useState, useMemo, useRef, ChangeEvent, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useBrandsoft, type Company, type Review } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Company, type Review, type AffiliateClient } from '@/hooks/use-brandsoft';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -34,7 +34,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { PlusCircle, Trash2, UploadCloud, Download, Search, Building, MapPin, Globe, Phone, Mail, Star } from 'lucide-react';
+import { PlusCircle, Trash2, UploadCloud, Download, Search, Building, MapPin, Globe, Phone, Mail, Star, KeyRound } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
@@ -56,6 +56,7 @@ const formSchema = z.object({
   logo: z.string().optional(),
   coverImage: z.string().optional(),
   website: z.string().url("Invalid URL").optional().or(z.literal('')),
+  activationKey: z.string().optional(),
 });
 
 type CompanyFormData = z.infer<typeof formSchema>;
@@ -122,7 +123,7 @@ const ImageUploadField = ({
 };
 
 export default function CompaniesPage() {
-  const { config, addCompany, updateCompany, deleteCompany } = useBrandsoft();
+  const { config, addCompany, updateCompany, deleteCompany, saveConfig } = useBrandsoft();
   const { toast } = useToast();
   const router = useRouter();
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -183,7 +184,7 @@ export default function CompaniesPage() {
     } else {
       form.reset({
         id: undefined, name: '', companyName: '', email: '', phone: '',
-        address: '', town: '', industry: '', description: '', logo: '', coverImage: '', website: ''
+        address: '', town: '', industry: '', description: '', logo: '', coverImage: '', website: '', activationKey: ''
       });
     }
     setIsFormOpen(true);
@@ -197,15 +198,54 @@ export default function CompaniesPage() {
   };
 
   const onSubmit = (data: CompanyFormData) => {
+    if (!config) return;
+
     const companyToSave: Partial<Company> = {
         ...data,
         customerType: 'company',
     };
     
+    let savedCompany: Company;
     if (data.id) {
         updateCompany(data.id, companyToSave);
+        savedCompany = { ...config.companies.find(c => c.id === data.id)!, ...companyToSave };
     } else {
-        addCompany(companyToSave as Omit<Company, 'id'>);
+        savedCompany = addCompany(companyToSave as Omit<Company, 'id'>);
+    }
+    
+    // Affiliate linking logic
+    if (data.activationKey && config.affiliate && data.activationKey === config.affiliate.staffId) {
+        const newClient: AffiliateClient = {
+            id: savedCompany.id,
+            name: savedCompany.companyName,
+            avatar: savedCompany.logo || `https://picsum.photos/seed/${savedCompany.id}/100`,
+            plan: 'Free Trial', // Default plan
+            status: 'active', // Default status
+            joinDate: new Date().toISOString(),
+            remainingDays: 30, // Default trial period
+        };
+
+        const affiliateClients = config.affiliate.clients || [];
+        if (!affiliateClients.some(c => c.id === newClient.id)) {
+            const newConfig = {
+                ...config,
+                affiliate: {
+                    ...config.affiliate,
+                    clients: [...affiliateClients, newClient],
+                },
+            };
+            saveConfig(newConfig, { redirect: false });
+            toast({
+              title: "Company Linked to Affiliate",
+              description: `${savedCompany.companyName} has been added as a client.`
+            });
+        }
+    } else if (data.activationKey) {
+        toast({
+          variant: "destructive",
+          title: "Invalid Activation Key",
+          description: "The company was saved, but the activation key is invalid. The client was not linked."
+        });
     }
     
     setIsFormOpen(false);
@@ -320,9 +360,20 @@ export default function CompaniesPage() {
                     <Separator />
                     
                     <div className="space-y-4">
-                        <h3 className="text-sm font-medium text-muted-foreground">Location</h3>
-                        <FormField control={form.control} name="address" render={({ field }) => ( <FormItem><FormLabel>Address</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem> )}/>
-                        <FormField control={form.control} name="town" render={({ field }) => ( <FormItem><FormLabel>Town</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                        <h3 className="text-sm font-medium text-muted-foreground">Location & Activation</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField control={form.control} name="address" render={({ field }) => ( <FormItem><FormLabel>Address</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                            <FormField control={form.control} name="town" render={({ field }) => ( <FormItem><FormLabel>Town</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
+                        </div>
+                        <FormField control={form.control} name="activationKey" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Activation Key (Affiliate Staff ID)</FormLabel>
+                            <FormControl>
+                              <Input icon={KeyRound} placeholder="Enter affiliate Staff ID to link client" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
                     </div>
 
 
