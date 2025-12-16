@@ -177,18 +177,37 @@ export default function AffiliateDetailsPage() {
                     </Card>
                 </TabsContent>
                  <TabsContent value="team" className="pt-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5"/> Referred Clients</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                            {affiliate.clients.map(client => (
+                                <ClientCard key={client.id} client={client} />
+                            ))}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                 <TabsContent value="security" className="pt-6">
                     <div className="grid gap-6 md:grid-cols-2">
                         <Card>
                             <CardHeader>
-                                <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5"/> Referred Clients</CardTitle>
+                                <CardTitle className="flex items-center gap-2"><ShieldAlert className="h-5 w-5"/> Admin Actions</CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-2">
-                                {affiliate.clients.map(client => (
-                                    <ClientCard key={client.id} client={client} />
-                                ))}
+                            <CardContent className="space-y-4">
+                                <div className="flex items-center justify-between rounded-lg border p-3">
+                                    <div>
+                                        <p className="font-medium text-sm">Reset Security Question</p>
+                                        <p className="text-xs text-muted-foreground">Allows user to set a new question and answer.</p>
+                                    </div>
+                                    <Button variant="destructive" onClick={() => setIsResetConfirmOpen(true)}>
+                                        <KeyRound className="h-4 w-4 mr-2"/>
+                                        Reset
+                                    </Button>
+                                </div>
                             </CardContent>
                         </Card>
-                         <Card>
+                        <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2"><Camera className="h-5 w-5"/> ID Photos</CardTitle>
                             </CardHeader>
@@ -198,25 +217,6 @@ export default function AffiliateDetailsPage() {
                             </CardContent>
                         </Card>
                     </div>
-                </TabsContent>
-                 <TabsContent value="security" className="pt-6">
-                     <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><ShieldAlert className="h-5 w-5"/> Admin Actions</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex items-center justify-between rounded-lg border p-3">
-                                <div>
-                                    <p className="font-medium text-sm">Reset Security Question</p>
-                                    <p className="text-xs text-muted-foreground">Allows user to set a new question and answer.</p>
-                                </div>
-                                <Button variant="destructive" onClick={() => setIsResetConfirmOpen(true)}>
-                                    <KeyRound className="h-4 w-4 mr-2"/>
-                                    Reset
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
                 </TabsContent>
             </Tabs>
             
@@ -237,4 +237,3 @@ export default function AffiliateDetailsPage() {
         </div>
     );
 }
-
