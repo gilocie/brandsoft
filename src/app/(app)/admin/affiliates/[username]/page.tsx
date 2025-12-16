@@ -17,6 +17,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { cn } from '@/lib/utils';
 import { ClientCard } from '@/components/affiliate/client-card';
 
+// Extend transaction to include optional status
+type DisplayTransaction = Transaction & { status?: 'pending' | 'processing' | 'completed' };
+
 export default function AffiliateDetailsPage() {
     const params = useParams();
     const router = useRouter();
@@ -28,16 +31,17 @@ export default function AffiliateDetailsPage() {
         // In a real multi-affiliate app, you'd find by username param.
         return config?.affiliate;
     }, [config?.affiliate, params.username]);
-    
-    const withdrawalTransactions = useMemo(() => {
-        if (!affiliate?.transactions) return [];
-        return affiliate.transactions.filter(t => t.type === 'debit');
-    }, [affiliate?.transactions]);
 
-    const creditTransactions = useMemo(() => {
+    const allTransactions = useMemo(() => {
         if (!affiliate?.transactions) return [];
-        return affiliate.transactions.filter(t => t.type === 'credit');
+        return affiliate.transactions.map(t => ({...t, status: (t as any).status || 'pending' }));
     }, [affiliate?.transactions]);
+    
+    const pendingWithdrawals = useMemo(() => allTransactions.filter(t => t.type === 'debit' && t.status === 'pending'), [allTransactions]);
+    const processingWithdrawals = useMemo(() => allTransactions.filter(t => t.type === 'debit' && t.status === 'processing'), [allTransactions]);
+    const completedWithdrawals = useMemo(() => allTransactions.filter(t => t.type === 'debit' && t.status === 'completed'), [allTransactions]);
+
+    const creditTransactions = useMemo(() => allTransactions.filter(t => t.type === 'credit'), [allTransactions]);
 
 
     if (!affiliate) {
@@ -75,6 +79,31 @@ export default function AffiliateDetailsPage() {
     const activeClients = affiliate.clients.filter(c => c.status === 'active').length;
     const totalSales = affiliate.totalSales || 0;
     const unclaimedCommission = affiliate.unclaimedCommission || 0;
+
+    const renderTransactionTable = (transactions: DisplayTransaction[], emptyMessage: string) => (
+         <Table>
+            <TableHeader>
+                <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {transactions.length > 0 ? transactions.map(t => (
+                    <TableRow key={t.id}>
+                        <TableCell>{new Date(t.date).toLocaleString()}</TableCell>
+                        <TableCell>{t.description}</TableCell>
+                        <TableCell className={cn("text-right font-medium", t.type === 'credit' ? 'text-green-600' : 'text-red-600')}>
+                            {t.type === 'credit' ? '+' : '-'} K{t.amount.toLocaleString()}
+                        </TableCell>
+                    </TableRow>
+                )) : (
+                    <TableRow><TableCell colSpan={3} className="text-center h-24">{emptyMessage}</TableCell></TableRow>
+                )}
+            </TableBody>
+        </Table>
+    );
 
     return (
         <div className="container mx-auto space-y-6">
@@ -124,26 +153,22 @@ export default function AffiliateDetailsPage() {
                             <CardTitle>Withdrawal History</CardTitle>
                         </CardHeader>
                         <CardContent>
-                             <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Date</TableHead>
-                                        <TableHead>Description</TableHead>
-                                        <TableHead className="text-right">Amount</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {withdrawalTransactions.length > 0 ? withdrawalTransactions.map(t => (
-                                        <TableRow key={t.id}>
-                                            <TableCell>{new Date(t.date).toLocaleDateString()}</TableCell>
-                                            <TableCell>{t.description}</TableCell>
-                                            <TableCell className="text-right font-medium text-red-600">- K{t.amount.toLocaleString()}</TableCell>
-                                        </TableRow>
-                                    )) : (
-                                        <TableRow><TableCell colSpan={3} className="text-center h-24">No withdrawal transactions.</TableCell></TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
+                           <Tabs defaultValue="pending">
+                            <TabsList>
+                                <TabsTrigger value="pending">Pending</TabsTrigger>
+                                <TabsTrigger value="processing">Processing</TabsTrigger>
+                                <TabsTrigger value="completed">Completed</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="pending" className="pt-4">
+                                {renderTransactionTable(pendingWithdrawals, "No pending withdrawals.")}
+                            </TabsContent>
+                            <TabsContent value="processing" className="pt-4">
+                                {renderTransactionTable(processingWithdrawals, "No withdrawals being processed.")}
+                            </TabsContent>
+                            <TabsContent value="completed" className="pt-4">
+                                {renderTransactionTable(completedWithdrawals, "No completed withdrawals.")}
+                            </TabsContent>
+                           </Tabs>
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -153,26 +178,7 @@ export default function AffiliateDetailsPage() {
                             <CardTitle>Credit History</CardTitle>
                         </CardHeader>
                         <CardContent>
-                             <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Date</TableHead>
-                                        <TableHead>Description</TableHead>
-                                        <TableHead className="text-right">Amount</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {creditTransactions.length > 0 ? creditTransactions.map(t => (
-                                        <TableRow key={t.id}>
-                                            <TableCell>{new Date(t.date).toLocaleDateString()}</TableCell>
-                                            <TableCell>{t.description}</TableCell>
-                                            <TableCell className="text-right font-medium text-green-600">+ K{t.amount.toLocaleString()}</TableCell>
-                                        </TableRow>
-                                    )) : (
-                                        <TableRow><TableCell colSpan={3} className="text-center h-24">No credit transactions.</TableCell></TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
+                             {renderTransactionTable(creditTransactions, "No credit transactions.")}
                         </CardContent>
                     </Card>
                 </TabsContent>
