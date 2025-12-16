@@ -216,7 +216,26 @@ export default function AdminPage() {
     }, [affiliates]);
     
     const creditsInReserve = (affiliateSettings.availableCredits || 0);
-    const availableToSell = creditsInReserve;
+
+    const withdrawalRequests = useMemo(() => {
+        if (!config?.affiliate?.transactions) return [];
+        return config.affiliate.transactions
+            .filter(t => t.type === 'debit' && !t.description.toLowerCase().includes('fee') && !t.description.toLowerCase().includes('manual') && !t.description.toLowerCase().includes('purchase'))
+            .map(t => ({
+                ...t,
+                status: (t as any).status || 'pending',
+                affiliateName: config.affiliate?.fullName || 'N/A'
+            }));
+    }, [config?.affiliate]);
+
+    const pendingBsCreditWithdrawals = useMemo(() => {
+        return withdrawalRequests.filter(req => req.status === 'pending' && (req as any).method === 'bsCredits');
+    }, [withdrawalRequests]);
+
+    const totalPendingBsCreditAmount = pendingBsCreditWithdrawals.reduce((sum, req) => sum + req.amount, 0);
+    const totalPendingBsCredits = totalPendingBsCreditAmount / (affiliateSettings.exchangeValue || 1000);
+
+    const availableToSell = creditsInReserve - totalCirculatingCredits - totalPendingBsCredits;
 
 
     const availableCreditsPercentage = useMemo(() => {
@@ -242,24 +261,9 @@ export default function AdminPage() {
 
     const totalAffiliates = affiliates.length;
     
-    const withdrawalRequests = useMemo(() => {
-        if (!config?.affiliate?.transactions) return [];
-        return config.affiliate.transactions
-            .filter(t => t.type === 'debit' && !t.description.toLowerCase().includes('fee') && !t.description.toLowerCase().includes('manual') && !t.description.toLowerCase().includes('purchase'))
-            .map(t => ({
-                ...t,
-                status: (t as any).status || 'pending',
-                affiliateName: config.affiliate?.fullName || 'N/A'
-            }));
-    }, [config?.affiliate]);
-
     const pendingWithdrawals = withdrawalRequests.filter(w => w.status === 'pending');
     const totalPendingAmount = pendingWithdrawals.reduce((sum, req) => sum + req.amount, 0);
 
-    const pendingBsCreditWithdrawals = useMemo(() => {
-        return withdrawalRequests.filter(req => req.status === 'pending' && (req as any).method === 'bsCredits');
-    }, [withdrawalRequests]);
-    const totalPendingBsCreditAmount = pendingBsCreditWithdrawals.reduce((sum, req) => sum + req.amount, 0);
 
     const handleStatusChange = (transactionId: string, newStatus: 'pending' | 'processing' | 'completed') => {
         if (!config?.affiliate) return;
@@ -368,7 +372,7 @@ export default function AdminPage() {
 
             <div className="grid gap-4 md:grid-cols-3">
                 <StatCard title="Total Affiliates" value={totalAffiliates} icon={Users} />
-                 <StatCard title="BS Withdraw Requests" value={`BS ${(totalPendingBsCreditAmount / (affiliateSettings.exchangeValue || 1000)).toLocaleString()}`} icon={Banknote} />
+                 <StatCard title="BS Withdraw Requests" value={`BS ${(totalPendingBsCredits).toLocaleString()}`} icon={Banknote} />
                 <StatCard title="Pending Withdrawals" value={`K${totalPendingAmount.toLocaleString()}`} icon={Clock} />
             </div>
 
