@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -223,6 +224,10 @@ export default function AdminPage() {
 
     const affiliates = useMemo(() => (config?.affiliate ? [config.affiliate] : []), [config?.affiliate]);
     
+    const totalCirculatingCredits = useMemo(() => {
+        return affiliates.reduce((sum, aff) => sum + (aff.creditBalance || 0), 0);
+    }, [affiliates]);
+
     const allClients = useMemo(() => {
         if (!config?.affiliate?.clients) return [];
         return config.affiliate.clients;
@@ -331,7 +336,12 @@ export default function AdminPage() {
                  >
                     <Button size="sm" className="w-full mt-2" onClick={() => setIsManageReserveOpen(true)}>Manage</Button>
                 </StatCard>
-                 <StatCard title="Sold Credits" value="0" description="Value: K0" icon={TrendingUp} />
+                 <StatCard 
+                    title="Sold Credits" 
+                    value={`BS ${totalCirculatingCredits.toLocaleString()}`} 
+                    description={`Value: K${(totalCirculatingCredits * (affiliateSettings.sellPrice || 0)).toLocaleString()}`} 
+                    icon={TrendingUp} 
+                 />
                  <StatCard title="Bought Credits" value="0" description="Paid: K0" icon={TrendingDown} />
                  <StatCard title="Net Profit" value="K0" description="Overall credit profit" icon={BarChart} />
             </div>
