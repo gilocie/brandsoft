@@ -54,6 +54,14 @@ export const BuyCreditsDialog = ({ walletBalance }: { walletBalance: number }) =
               });
               return;
           }
+           if (config?.affiliateSettings?.availableCredits && creditsToBuy > config.affiliateSettings.availableCredits) {
+              toast({
+                variant: 'destructive',
+                title: "Not Enough Credits in Reserve",
+                description: `The admin only has ${config.affiliateSettings.availableCredits.toLocaleString()} credits available for sale.`,
+              });
+              return;
+          }
           setStep(2);
       }
   }
@@ -84,7 +92,12 @@ export const BuyCreditsDialog = ({ walletBalance }: { walletBalance: number }) =
       transactions: [newTransaction, ...(config.affiliate.transactions || [])],
     };
 
-    saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
+    const newAffiliateSettings = {
+        ...(config.affiliateSettings || {}),
+        availableCredits: (config.affiliateSettings?.availableCredits || 0) - data.credits,
+    };
+
+    saveConfig({ ...config, affiliate: newAffiliateData, affiliateSettings: newAffiliateSettings }, { redirect: false, revalidate: true });
     
     toast({
       title: 'Purchase Successful!',

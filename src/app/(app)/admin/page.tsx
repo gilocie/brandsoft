@@ -23,9 +23,10 @@ import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
+import { cn } from '@/lib/utils';
 
-const StatCard = ({ title, value, icon: Icon, description, children }: { title: string, value: string | number, icon: React.ElementType, description?: string, children?: React.ReactNode }) => (
-    <Card>
+const StatCard = ({ title, value, icon: Icon, description, children, className }: { title: string, value: string | number, icon: React.ElementType, description?: string, children?: React.ReactNode, className?: string }) => (
+    <Card className={className}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{title}</CardTitle>
             <Icon className="h-4 w-4 text-muted-foreground" />
@@ -322,7 +323,12 @@ export default function AdminPage() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                 <StatCard title="Available Credits" value={`BS ${(affiliateSettings.availableCredits || 0).toLocaleString()}`} icon={Wallet}>
+                 <StatCard 
+                    title="Available Credits" 
+                    value={`BS ${(affiliateSettings.availableCredits || 0).toLocaleString()}`} 
+                    icon={Wallet}
+                    className={cn((affiliateSettings.availableCredits || 0) <= 100 && 'bg-destructive text-destructive-foreground')}
+                 >
                     <Button size="sm" className="w-full mt-2" onClick={() => setIsManageReserveOpen(true)}>Manage</Button>
                 </StatCard>
                  <StatCard title="Sold Credits" value="0" description="Value: K0" icon={TrendingUp} />
