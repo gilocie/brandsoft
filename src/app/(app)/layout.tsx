@@ -39,6 +39,7 @@ import {
   Store,
   MessageSquareQuote,
   Bell,
+  Shield,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -59,6 +60,7 @@ const mainNavItems = [
   { href: '/products', icon: Package, label: 'Products', enabledKey: 'invoice' },
   { href: '/companies', icon: Users, label: 'Companies', enabledKey: null },
   { href: '/marketplace', icon: Store, label: 'Suppliers', enabledKey: null },
+  { href: '/admin', icon: Shield, label: 'Admin', enabledKey: null },
 ];
 
 const upcomingNavItems = [
