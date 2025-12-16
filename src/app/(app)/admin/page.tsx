@@ -71,6 +71,8 @@ export default function AdminPage() {
         }
     });
 
+    const watchedExchangeValue = form.watch('exchangeValue');
+
     const onCreditSettingsSubmit = (data: CreditSettingsFormData) => {
         if (!config) return;
         saveConfig({ ...config, affiliateSettings: { ...config.affiliateSettings, ...data } }, { redirect: false });
@@ -264,7 +266,7 @@ export default function AdminPage() {
                                                         <FormItem><FormLabel>BS Credit Selling Price (to affiliates)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
                                                     )} />
                                                     <FormField control={form.control} name="exchangeValue" render={({ field }) => (
-                                                        <FormItem><FormLabel>BS Credit Exchange Value (1 Credit = X MWK)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                                        <FormItem><FormLabel>BS Credit Exchange Value (1 Credit = K{watchedExchangeValue || 0})</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
                                                     )} />
                                                     <Button type="submit">Save Credit Settings</Button>
                                                 </form>
