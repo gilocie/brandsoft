@@ -248,7 +248,7 @@ export default function AdminPage() {
     const totalPendingBsCreditAmount = pendingBsCreditWithdrawals.reduce((sum, req) => sum + req.amount, 0);
     const totalPendingBsCredits = totalPendingBsCreditAmount / (affiliateSettings.exchangeValue || 1000);
 
-    const availableToSell = creditsInReserve - totalPendingBsCredits;
+    const availableToSell = creditsInReserve - totalCirculatingCredits - totalPendingBsCredits;
 
 
     const availableCreditsPercentage = useMemo(() => {
