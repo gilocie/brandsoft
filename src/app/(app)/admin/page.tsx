@@ -8,11 +8,12 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Users, BarChart, Clock, CheckCircle, RefreshCw, Briefcase } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { MoreHorizontal, Users, BarChart, Clock, CheckCircle, RefreshCw, Briefcase, UserX, Trash2 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ClientCard } from '@/components/affiliate/client-card';
+import { AffiliateCard } from '@/components/affiliate/affiliate-card';
 
 const StatCard = ({ title, value, icon: Icon }: { title: string, value: string | number, icon: React.ElementType }) => (
     <Card>
@@ -42,6 +43,10 @@ const plans = [
 export default function AdminPage() {
     const { config, saveConfig } = useBrandsoft();
     const { toast } = useToast();
+    
+    const [affiliateToActOn, setAffiliateToActOn] = useState<Affiliate | null>(null);
+    const [isDeactivateOpen, setIsDeactivateOpen] = useState(false);
+    const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
     // In a real multi-affiliate app, this would be a list of affiliates.
     // For this structure, we have one affiliate object.
@@ -84,6 +89,33 @@ export default function AdminPage() {
             description: `Withdrawal status set to ${newStatus}.`,
         });
     };
+    
+     const handleSelectAction = (action: 'deactivate' | 'delete', affiliate: Affiliate) => {
+        setAffiliateToActOn(affiliate);
+        if (action === 'deactivate') setIsDeactivateOpen(true);
+        if (action === 'delete') setIsDeleteOpen(true);
+    };
+
+    const handleDeactivateAffiliate = () => {
+        // In a multi-affiliate setup, you'd find the affiliate and update their status.
+        // For now, this is a placeholder.
+        if (affiliateToActOn) {
+            console.log(`Deactivating ${affiliateToActOn.fullName}`);
+            toast({ title: 'Affiliate Deactivated' });
+            setIsDeactivateOpen(false);
+        }
+    };
+
+    const handleDeleteAffiliate = () => {
+        // This is a destructive action. In a real app, you might just mark as 'deleted'.
+        // Since we only have one affiliate in the config, this will effectively remove the affiliate data.
+        if (config && affiliateToActOn) {
+             const newConfig = { ...config, affiliate: undefined };
+             saveConfig(newConfig, { redirect: false });
+             toast({ title: 'Affiliate Deleted' });
+             setIsDeleteOpen(false);
+        }
+    };
 
     return (
         <div className="container mx-auto space-y-8">
@@ -111,20 +143,13 @@ export default function AdminPage() {
                             <CardTitle>Affiliates</CardTitle>
                             <CardDescription>Your registered affiliate partners.</CardDescription>
                         </CardHeader>
-                        <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        <CardContent className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                             {affiliates.map(affiliate => (
-                                <Card key={affiliate.username}>
-                                    <CardContent className="p-4 flex items-center gap-4">
-                                        <Avatar className="h-12 w-12">
-                                            <AvatarImage src={affiliate.profilePic} />
-                                            <AvatarFallback>{affiliate.fullName.charAt(0)}</AvatarFallback>
-                                        </Avatar>
-                                        <div>
-                                            <p className="font-semibold">{affiliate.fullName}</p>
-                                            <p className="text-sm text-muted-foreground">@{affiliate.username}</p>
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                                <AffiliateCard 
+                                    key={affiliate.username} 
+                                    affiliate={affiliate} 
+                                    onSelectAction={(action) => handleSelectAction(action, affiliate)}
+                                />
                             ))}
                         </CardContent>
                     </Card>
@@ -238,6 +263,36 @@ export default function AdminPage() {
                     </Table>
                 </CardContent>
             </Card>
+
+            <AlertDialog open={isDeactivateOpen} onOpenChange={setIsDeactivateOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Deactivate {affiliateToActOn?.fullName}?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will temporarily suspend their account and prevent them from earning commissions. Are you sure?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeactivateAffiliate}>Deactivate</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete {affiliateToActOn?.fullName}?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action is irreversible and will permanently remove this affiliate from your system.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteAffiliate} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
