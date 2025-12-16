@@ -19,6 +19,7 @@ import { ClientCard } from '@/components/affiliate/client-card';
 
 // Extend transaction to include optional status
 type DisplayTransaction = Transaction & { status?: 'pending' | 'processing' | 'completed' };
+const CREDIT_TO_MWK = 1000;
 
 export default function AffiliateDetailsPage() {
     const params = useParams();
@@ -179,7 +180,7 @@ export default function AffiliateDetailsPage() {
                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <StatCard title="Unclaimed" value={unclaimedCommission} isCurrency icon={User} footer="Awaiting push to wallet" />
                     <StatCard title="Bonus Amount" value={bonusAmount} isCurrency icon={Gift} footer="Performance bonus" />
-                    <StatCard title="Credit Balance" value={creditBalance} valuePrefix="BS " icon={CreditCard} footer="Platform credits" />
+                    <StatCard title="Credit Balance" value={creditBalance} valuePrefix="BS " icon={CreditCard} footer={`Value: K${(creditBalance * CREDIT_TO_MWK).toLocaleString()}`} />
                     <StatCard title="Wallet Balance" value={walletBalance} isCurrency icon={Wallet} footer="Withdrawable amount" />
                 </div>
             </div>
