@@ -13,23 +13,23 @@ import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { SimpleImageUploadButton } from '@/components/simple-image-upload-button';
 import { useState, useEffect, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Switch } from '@/components/ui/switch';
 import { StatCard } from '@/components/office/stat-card';
 import { VerificationItem } from '@/components/office/verification-item';
 import { WithdrawDialog } from '@/components/office/withdraw-dialog';
 import { BuyCreditsDialog } from '@/components/office/buy-credits-dialog';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { SimpleImageUploadButton } from '@/components/simple-image-upload-button';
+import { MethodCard } from '@/components/office/method-card';
+import { SetPinDialog } from '@/components/office/dialogs/set-pin-dialog';
+import { SecurityQuestionsDialog, type SecurityQuestionFormData } from '@/components/office/dialogs/security-questions-dialog';
+import { WithdrawalMethodDialog, type WithdrawalMethodFormData, type EditableWithdrawalMethod } from '@/components/office/dialogs/withdrawal-method-dialog';
+import { BankWithdrawalDialog, type BankWithdrawalFormData } from '@/components/office/dialogs/bank-withdrawal-dialog';
+import { BsCreditsDialog, type BsCreditsFormData } from '@/components/office/dialogs/bs-credits-dialog';
 
 const affiliateSchema = z.object({
     fullName: z.string().min(2, "Full name is required"),
@@ -40,618 +40,9 @@ const affiliateSchema = z.object({
 
 type AffiliateFormData = z.infer<typeof affiliateSchema>;
 
-const withdrawalMethodSchema = z.object({
-    name: z.string().min(2, 'Name is required'),
-    phone: z.string().min(9, 'Phone number is required'),
-});
-
-type WithdrawalMethodFormData = z.infer<typeof withdrawalMethodSchema>;
-
-type EditableWithdrawalMethod = 'airtel' | 'tnm';
-
-const bankWithdrawalSchema = z.object({
-    bankName: z.string().min(2, 'Bank name is required'),
-    accountNumber: z.string().min(5, 'Account number is required'),
-    accountType: z.enum(['Saving', 'Current', 'Fixed']),
-});
-
-type BankWithdrawalFormData = z.infer<typeof bankWithdrawalSchema>;
-
-const bsCreditsSchema = z.object({
-    staffId: z.string().min(1, 'Please select your Staff ID'),
-});
-type BsCreditsFormData = z.infer<typeof bsCreditsSchema>;
-
-const pinSchema = z.object({
-  oldPin: z.string().optional(),
-  pin: z.string().length(4, "PIN must be 4 digits.").regex(/^\d{4}$/, "PIN must be 4 digits."),
-  confirmPin: z.string().length(4, "PIN must be 4 digits.").regex(/^\d{4}$/, "PIN must be 4 digits."),
-}).refine(data => data.pin === data.confirmPin, {
-    message: "PINs do not match.",
-    path: ["confirmPin"],
-});
-type PinFormData = z.infer<typeof pinSchema>;
-
-const securityQuestionSchema = z.object({
-  question: z.string().min(1, "Please select a question."),
-  customQuestion: z.string().optional(),
-  answer: z.string().min(1, "An answer is required."),
-}).refine(data => data.question !== 'custom' || (data.customQuestion && data.customQuestion.length > 0), {
-    message: "Please enter your custom question.",
-    path: ["customQuestion"],
-});
-
-type SecurityQuestionFormData = z.infer<typeof securityQuestionSchema>;
-
-// Schema for Step 1: Just the answer
-const verifyAnswerSchema = z.object({
-  answer: z.string().min(1, "An answer is required."),
-});
-
-type VerifyAnswerFormData = z.infer<typeof verifyAnswerSchema>;
-
-// Schema for Step 2: Just the PINs
-const setNewPinSchema = z.object({
-  newPin: z.string().length(4, "New PIN must be 4 digits.").regex(/^\d{4}$/, "New PIN must be 4 digits."),
-  confirmNewPin: z.string().length(4, "New PIN must be 4 digits.").regex(/^\d{4}$/, "New PIN must be 4 digits."),
-}).refine(data => data.newPin === data.confirmNewPin, {
-    message: "New PINs do not match.",
-    path: ["confirmNewPin"],
-});
-
-type SetNewPinFormData = z.infer<typeof setNewPinSchema>;
-
-
 const CREDIT_TO_MWK = 1000;
 const ITEMS_PER_PAGE = 10;
 
-const securityQuestions = [
-    "What was the name of your primary school?",
-    "What was your place of birth?",
-    "What's the first name of your mother?",
-    "What's the first name of your father?",
-    "Who was the name of your family firstborn?",
-    "Food you love most?",
-    "What animal do you love most?",
-    "What is your favourite color?",
-    "What is your father's birthday?",
-    "What's the name of your spouse?",
-    "custom",
-];
-
-const SecurityQuestionsDialog = ({ isOpen, onClose, onSave, currentData }: { isOpen: boolean; onClose: () => void; onSave: (data: SecurityQuestionFormData) => void; currentData?: { question: string; answer: string; } }) => {
-    const [isConfirming, setIsConfirming] = useState(false);
-    const [formData, setFormData] = useState<SecurityQuestionFormData | null>(null);
-
-    const form = useForm<SecurityQuestionFormData>({
-        resolver: zodResolver(securityQuestionSchema),
-        defaultValues: {
-            question: currentData?.question || '',
-            customQuestion: currentData && !securityQuestions.includes(currentData.question) ? currentData.question : '',
-            answer: currentData?.answer || '',
-        },
-    });
-
-    const watchedQuestion = form.watch('question');
-
-    const onSubmit = (data: SecurityQuestionFormData) => {
-        setFormData(data);
-        setIsConfirming(true);
-    };
-
-    const handleConfirmSave = () => {
-        if (formData) {
-            onSave(formData);
-        }
-        setIsConfirming(false);
-        setFormData(null);
-    }
-
-    return (
-        <>
-            <Dialog open={isOpen} onOpenChange={(open) => !isConfirming && onClose()}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Set Security Question</DialogTitle>
-                        <DialogDescription>This will be used to recover your account or reset your PIN.</DialogDescription>
-                    </DialogHeader>
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                            <FormField
-                                control={form.control}
-                                name="question"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Question</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                            <FormControl>
-                                                <SelectTrigger><SelectValue placeholder="Select a question" /></SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                {securityQuestions.map(q => (
-                                                    <SelectItem key={q} value={q}>{q === 'custom' ? 'Custom question...' : q}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-
-                            {watchedQuestion === 'custom' && (
-                                <FormField
-                                    control={form.control}
-                                    name="customQuestion"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Your Custom Question</FormLabel>
-                                            <FormControl>
-                                                <Input placeholder="e.g., What is my favorite book?" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            )}
-
-                            <FormField
-                                control={form.control}
-                                name="answer"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Your Answer</FormLabel>
-                                        <FormControl>
-                                            <Input type="password" placeholder="Enter your secret answer" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <DialogFooter>
-                                <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-                                <Button type="submit">Save Question</Button>
-                            </DialogFooter>
-                        </form>
-                    </Form>
-                </DialogContent>
-            </Dialog>
-            <AlertDialog open={isConfirming} onOpenChange={setIsConfirming}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This security question cannot be changed later. Make sure it's memorable to you but difficult for others to guess.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleConfirmSave}>Yes, save it</AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-        </>
-    );
-};
-
-
-const SetPinDialog = ({ isOpen, onClose, onSave, isPinSet }: { isOpen: boolean; onClose: () => void; onSave: (pin: string) => void; isPinSet: boolean; }) => {
-    const { toast } = useToast();
-    const [showPin, setShowPin] = useState(false);
-    const [showOldPin, setShowOldPin] = useState(false);
-    const [isResetting, setIsResetting] = useState(false);
-    const [resetStep, setResetStep] = useState(1);
-    const { config } = useBrandsoft();
-
-    // Form for normal PIN change
-    const form = useForm<PinFormData>({
-        resolver: zodResolver(pinSchema),
-        defaultValues: { oldPin: '', pin: '', confirmPin: '' },
-    });
-    
-    // Form for Step 1: Verify Answer
-    const answerForm = useForm<VerifyAnswerFormData>({
-        resolver: zodResolver(verifyAnswerSchema),
-        defaultValues: { answer: '' },
-    });
-
-    // Form for Step 2: Set New PIN
-    const newPinForm = useForm<SetNewPinFormData>({
-        resolver: zodResolver(setNewPinSchema),
-        defaultValues: { newPin: '', confirmNewPin: '' },
-    });
-
-    useEffect(() => {
-        if (!isOpen) {
-            // Reset all states when dialog closes
-            setIsResetting(false);
-            setResetStep(1);
-            setShowPin(false);
-            setShowOldPin(false);
-            form.reset();
-            answerForm.reset(); // Reset separate form 1
-            newPinForm.reset(); // Reset separate form 2
-        }
-    }, [isOpen, form, answerForm, newPinForm]);
-
-    const onSubmit = (data: PinFormData) => {
-        if (isPinSet && data.oldPin !== config?.affiliate?.pin) {
-            toast({ variant: 'destructive', title: "Incorrect Old PIN" });
-            return;
-        }
-        onSave(data.pin);
-        onClose();
-    };
-
-    // Updated to use VerifyAnswerFormData
-    const handleVerifyAnswer = (data: VerifyAnswerFormData) => {
-        if (!config?.affiliate?.securityQuestionData?.answer) {
-            toast({ 
-                variant: 'destructive', 
-                title: "Error", 
-                description: "No security question set up." 
-            });
-            return;
-        }
-
-        const userAnswer = data.answer.trim().toLowerCase();
-        const storedAnswer = config.affiliate.securityQuestionData.answer.trim().toLowerCase();
-        
-        if (userAnswer !== storedAnswer) {
-            toast({ 
-                variant: 'destructive', 
-                title: "Incorrect Answer",
-                description: "Please try again." 
-            });
-            return;
-        }
-        
-        toast({ 
-            title: "Answer Verified!",
-            description: "Now set your new PIN." 
-        });
-        setResetStep(2);
-    };
-
-    // Updated to use SetNewPinFormData
-    const handleResetSubmit = (data: SetNewPinFormData) => {
-        onSave(data.newPin);
-        toast({ 
-            title: "PIN Reset Successfully!",
-            description: "Your new PIN has been saved." 
-        });
-        setIsResetting(false);
-        setResetStep(1);
-        onClose();
-    };
-    
-    if (isResetting) {
-      return (
-        <Dialog open={isOpen} onOpenChange={(open) => { if (!open) { setIsResetting(false); setResetStep(1); onClose(); } }}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Reset PIN</DialogTitle>
-                    <DialogDescription>
-                        {resetStep === 1 ? 'Answer your security question to reset your PIN.' : 'Set your new PIN.'}
-                    </DialogDescription>
-                </DialogHeader>
-                
-                {/* STEP 1: Uses answerForm */}
-                {resetStep === 1 && (
-                    <Form {...answerForm}>
-                        <form onSubmit={answerForm.handleSubmit(handleVerifyAnswer)} className="space-y-4">
-                            <div className="space-y-2">
-                               <p className="text-sm font-medium">{config?.affiliate?.securityQuestionData?.question || 'No security question set'}</p>
-                                <FormField control={answerForm.control} name="answer" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Your Answer</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="Enter your answer" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}/>
-                            </div>
-                            <DialogFooter className="flex-col sm:flex-row gap-2">
-                                <Button type="button" variant="outline" onClick={() => {
-                                    setIsResetting(false);
-                                    setResetStep(1);
-                                }}>Back to Login</Button>
-                                <Button type="submit">Verify Answer</Button>
-                            </DialogFooter>
-                        </form>
-                    </Form>
-                )}
-                
-                {/* STEP 2: Uses newPinForm */}
-                {resetStep === 2 && (
-                    <Form {...newPinForm}>
-                        <form onSubmit={newPinForm.handleSubmit(handleResetSubmit)} className="space-y-4">
-                            <FormField control={newPinForm.control} name="newPin" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>New 4-Digit PIN</FormLabel>
-                                    <FormControl>
-                                        <Input type="password" maxLength={4} placeholder="Enter new PIN" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}/>
-                            <FormField control={newPinForm.control} name="confirmNewPin" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Confirm New PIN</FormLabel>
-                                    <FormControl>
-                                        <Input type="password" maxLength={4} placeholder="Confirm new PIN" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}/>
-                            <DialogFooter>
-                                <Button type="submit">Reset PIN</Button>
-                            </DialogFooter>
-                        </form>
-                    </Form>
-                )}
-            </DialogContent>
-        </Dialog>
-      )
-    }
-
-    return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>{isPinSet ? 'Change' : 'Set'} Withdrawal PIN</DialogTitle>
-                    <DialogDescription>
-                        This 4-digit PIN will be required for all withdrawals and credit transfers. Keep it secure.
-                    </DialogDescription>
-                </DialogHeader>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        {isPinSet && (
-                           <FormField
-                                control={form.control}
-                                name="oldPin"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Old PIN</FormLabel>
-                                         <div className="relative">
-                                            <FormControl>
-                                                <Input type={showOldPin ? 'text' : 'password'} maxLength={4} {...field} />
-                                            </FormControl>
-                                            <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowOldPin(!showOldPin)}>
-                                                {showOldPin ? <EyeOff className="h-4 w-4"/> : <Eye className="h-4 w-4"/>}
-                                            </Button>
-                                        </div>
-                                        <FormMessage />
-                                         <div className="text-right">
-                                            <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => setIsResetting(true)}>Forgot PIN?</Button>
-                                        </div>
-                                    </FormItem>
-                                )}
-                            />
-                        )}
-                        <FormField
-                            control={form.control}
-                            name="pin"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>New 4-Digit PIN</FormLabel>
-                                    <div className="relative">
-                                        <FormControl>
-                                            <Input type={showPin ? 'text' : 'password'} maxLength={4} {...field} />
-                                        </FormControl>
-                                        <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowPin(!showPin)}>
-                                            {showPin ? <EyeOff className="h-4 w-4"/> : <Eye className="h-4 w-4"/>}
-                                        </Button>
-                                    </div>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="confirmPin"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Confirm New PIN</FormLabel>
-                                    <FormControl>
-                                        <Input type="password" maxLength={4} {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <DialogFooter>
-                            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-                            <Button type="submit">Save PIN</Button>
-                        </DialogFooter>
-                    </form>
-                </Form>
-            </DialogContent>
-        </Dialog>
-    );
-};
-
-
-
-const BsCreditsDialog = ({ isOpen, onClose, onSave, currentData, staffId }: { isOpen: boolean; onClose: () => void; onSave: (data: BsCreditsFormData) => void; currentData?: { staffId: string }; staffId?: string }) => {
-    const form = useForm<BsCreditsFormData>({
-        resolver: zodResolver(bsCreditsSchema),
-        defaultValues: currentData || { staffId: '' },
-    });
-    
-    useEffect(() => {
-        form.reset(currentData || { staffId: '' });
-    }, [currentData, form]);
-
-    const onSubmit = (data: BsCreditsFormData) => {
-        onSave(data);
-    };
-
-    return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Set Up BS Credits Withdrawal</DialogTitle>
-                    <DialogDescription>Select your Staff ID to associate with credit withdrawals.</DialogDescription>
-                </DialogHeader>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        <FormField
-                            control={form.control}
-                            name="staffId"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Staff ID</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                        <FormControl>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select Staff ID" />
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            {staffId ? (
-                                                <SelectItem value={staffId}>{staffId}</SelectItem>
-                                            ) : (
-                                                <SelectItem value="none" disabled>No Staff ID generated</SelectItem>
-                                            )}
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <DialogFooter>
-                            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-                            <Button type="submit">Save</Button>
-                        </DialogFooter>
-                    </form>
-                </Form>
-            </DialogContent>
-        </Dialog>
-    );
-};
-
-const BankWithdrawalDialog = ({
-    isOpen,
-    onClose,
-    onSave,
-    currentData
-}: {
-    isOpen: boolean,
-    onClose: () => void,
-    onSave: (data: BankWithdrawalFormData) => void,
-    currentData?: { bankName: string; accountNumber: string; accountType: 'Saving' | 'Current' | 'Fixed'; }
-}) => {
-    const form = useForm<BankWithdrawalFormData>({
-        resolver: zodResolver(bankWithdrawalSchema),
-        defaultValues: currentData || { bankName: '', accountNumber: '', accountType: 'Saving' }
-    });
-
-    useEffect(() => {
-        form.reset(currentData || { bankName: '', accountNumber: '', accountType: 'Saving' });
-    }, [currentData, form]);
-
-    const onSubmit = (data: BankWithdrawalFormData) => {
-        onSave(data);
-    };
-
-    return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Set Up Bank Transfer</DialogTitle>
-                    <DialogDescription>Enter your bank account details below.</DialogDescription>
-                </DialogHeader>
-                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        <FormField control={form.control} name="bankName" render={({ field }) => (
-                            <FormItem><FormLabel>Bank Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                        )} />
-                        <FormField control={form.control} name="accountNumber" render={({ field }) => (
-                            <FormItem><FormLabel>Account Number</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                        )} />
-                         <FormField control={form.control} name="accountType" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Account Type</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <FormControl>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select account type" />
-                                        </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        <SelectItem value="Saving">Saving</SelectItem>
-                                        <SelectItem value="Current">Current</SelectItem>
-                                        <SelectItem value="Fixed">Fixed</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                        )} />
-                        <DialogFooter>
-                            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-                            <Button type="submit">Save Details</Button>
-                        </DialogFooter>
-                    </form>
-                </Form>
-            </DialogContent>
-        </Dialog>
-    );
-};
-
-const WithdrawalMethodDialog = ({
-    method,
-    isOpen,
-    onClose,
-    onSave,
-    currentData
-}: {
-    method: EditableWithdrawalMethod,
-    isOpen: boolean,
-    onClose: () => void,
-    onSave: (method: EditableWithdrawalMethod, data: WithdrawalMethodFormData) => void,
-    currentData?: { name: string; phone: string }
-}) => {
-    const form = useForm<WithdrawalMethodFormData>({
-        resolver: zodResolver(withdrawalMethodSchema),
-        defaultValues: currentData || { name: '', phone: '' }
-    });
-
-    useEffect(() => {
-        form.reset(currentData || { name: '', phone: '' });
-    }, [currentData, form]);
-
-    const onSubmit = (data: WithdrawalMethodFormData) => {
-        onSave(method, data);
-    };
-    
-    const methodName = method === 'airtel' ? 'Airtel Money' : 'TNM Mpamba';
-
-    return (
-         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Set Up {methodName}</DialogTitle>
-                    <DialogDescription>Enter your {methodName} details below.</DialogDescription>
-                </DialogHeader>
-                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        <FormField control={form.control} name="name" render={({ field }) => (
-                            <FormItem><FormLabel>Account Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                        )} />
-                        <FormField control={form.control} name="phone" render={({ field }) => (
-                            <FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input type="tel" {...field} /></FormControl><FormMessage /></FormItem>
-                        )} />
-                        <DialogFooter>
-                            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-                            <Button type="submit">Save Details</Button>
-                        </DialogFooter>
-                    </form>
-                </Form>
-            </DialogContent>
-        </Dialog>
-    )
-};
 
 export function OfficePageContent() {
   const { config, saveConfig } = useBrandsoft();
@@ -728,7 +119,7 @@ export function OfficePageContent() {
 
     const newAffiliateData = {
         ...affiliate,
-        balance: affiliate.balance + amountToPush,
+        balance: (affiliate.balance || 0) + amountToPush,
         unclaimedCommission: 0,
         transactions: [
             {
@@ -780,7 +171,7 @@ export function OfficePageContent() {
   
   const bonusAmount = affiliate.bonus || 0;
   const unclaimedCommission = affiliate.unclaimedCommission || 0;
-  const mwkBalance = affiliate.balance + bonusAmount;
+  const mwkBalance = (affiliate.balance || 0) + bonusAmount;
   const activeClients = affiliate.clients.filter(c => c.status === 'active').length;
 
   const handleWithdraw = (amount: number, source: 'commission' | 'combined') => {
@@ -816,11 +207,11 @@ export function OfficePageContent() {
         remainingAmount -= bonusDeduction;
         
         if (remainingAmount > 0) {
-            newAffiliateData.balance -= remainingAmount;
+            newAffiliateData.balance = (newAffiliateData.balance || 0) - remainingAmount;
         }
 
     } else { // 'commission'
-        newAffiliateData.balance -= (amountToWithdraw + TRANSACTION_FEE);
+        newAffiliateData.balance = (newAffiliateData.balance || 0) - (amountToWithdraw + TRANSACTION_FEE);
     }
     
     newAffiliateData.transactions = [newTransaction, feeTransaction, ...(affiliate.transactions || [])];
@@ -896,30 +287,6 @@ export function OfficePageContent() {
       toast({ title: 'Security Question Saved!' });
       setIsSecurityQuestionsOpen(false);
   };
-
-  
-  const MethodCard = ({method, name, description, icon: Icon, onAction, isSetup}: {method?: EditableWithdrawalMethod | 'bsCredits', name: string, description: string, icon: React.ElementType, onAction: () => void, isSetup: boolean}) => {
-      return (
-          <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                  <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-full bg-primary/10"><Icon className="h-5 w-5 text-primary" /></div>
-                      <CardTitle className="text-base">{name}</CardTitle>
-                  </div>
-                   {isSetup && <CheckCircle className="h-5 w-5 text-green-500" />}
-              </CardHeader>
-               <CardContent>
-                  <CardDescription>{description}</CardDescription>
-              </CardContent>
-              <CardContent className="flex items-center justify-end gap-2">
-                 <Button variant={isSetup ? 'secondary' : 'default'} size="sm" onClick={onAction}>
-                    {isSetup ? <Pencil className="h-4 w-4 mr-2" /> : null}
-                    {isSetup ? 'Edit' : 'Set Up'}
-                </Button>
-              </CardContent>
-          </Card>
-      );
-  }
 
   return (
     <div className="space-y-8">
@@ -1046,7 +413,7 @@ export function OfficePageContent() {
                         <Button 
                             size="sm" 
                             className="w-full mt-2" 
-                            disabled={(affiliate.unclaimedCommission || 0) <= 0}
+                            disabled={unclaimedCommission <= 0}
                             onClick={handlePushToWallet}
                         >
                            <Send className="h-4 w-4 mr-2" /> Push to Wallet
@@ -1056,10 +423,10 @@ export function OfficePageContent() {
                         icon={CreditCard} 
                         title="Credit Balance" 
                         value={affiliate.creditBalance}
-                        valuePrefix={`BS`}
+                        valuePrefix={`BS `}
                         footer={`Value: K${(affiliate.creditBalance * CREDIT_TO_MWK).toLocaleString()}`}
                     >
-                        <BuyCreditsDialog walletBalance={affiliate.balance} />
+                        <BuyCreditsDialog walletBalance={affiliate.balance || 0} />
                     </StatCard>
                     <Card>
                         <CardHeader>
@@ -1091,7 +458,7 @@ export function OfficePageContent() {
                         </CardContent>
                         <CardContent>
                             <WithdrawDialog 
-                                commissionBalance={affiliate.balance} 
+                                commissionBalance={affiliate.balance || 0} 
                                 bonusBalance={bonusAmount} 
                                 onWithdraw={handleWithdraw} 
                                 isVerified={true}
@@ -1320,9 +687,3 @@ export function OfficePageContent() {
     </div>
   );
 }
-
-
-    
-
-
-
