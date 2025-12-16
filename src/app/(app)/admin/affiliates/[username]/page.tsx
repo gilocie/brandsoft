@@ -178,10 +178,10 @@ export default function AffiliateDetailsPage() {
             <div className="space-y-2">
                 <h2 className="text-lg font-semibold tracking-tight">Financials</h2>
                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    <StatCard title="Unclaimed" value={unclaimedCommission} isCurrency icon={User} footer="Awaiting push to wallet" />
-                    <StatCard title="Bonus Amount" value={bonusAmount} isCurrency icon={Gift} footer="Performance bonus" />
-                    <StatCard title="Credit Balance" value={creditBalance} valuePrefix="BS " icon={CreditCard} footer={`Value: K${(creditBalance * CREDIT_TO_MWK).toLocaleString()}`} />
-                    <StatCard title="Wallet Balance" value={walletBalance} isCurrency icon={Wallet} footer="Withdrawable amount" />
+                    <StatCard title="Unclaimed" value={unclaimedCommission} isCurrency icon={User} footer="Awaiting push to wallet" variant="primary" />
+                    <StatCard title="Bonus Amount" value={bonusAmount} isCurrency icon={Gift} footer="Performance bonus" variant="primary" />
+                    <StatCard title="Credit Balance" value={creditBalance} valuePrefix="BS " icon={CreditCard} footer={`Value: K${(creditBalance * CREDIT_TO_MWK).toLocaleString()}`} variant="primary" />
+                    <StatCard title="Wallet Balance" value={walletBalance} isCurrency icon={Wallet} footer="Withdrawable amount" variant="primary" />
                 </div>
             </div>
 
