@@ -184,11 +184,7 @@ export function useSetup(
     creditBalance: 50.00,
     bonus: 2500,
     staffId: 'BS-AFF-12345678',
-    clients: [
-      { id: 'CLIENT-1', name: 'Client A', avatar: 'https://picsum.photos/seed/client1/100', plan: 'Standard', status: 'active', remainingDays: 25, walletBalance: 50 },
-      { id: 'CLIENT-2', name: 'Client B', avatar: 'https://picsum.photos/seed/client2/100', plan: 'Pro', status: 'active', remainingDays: 88, walletBalance: 120 },
-      { id: 'CLIENT-3', name: 'Client C', avatar: 'https://picsum.photos/seed/client3/100', plan: 'Standard', status: 'expired', walletBalance: 0 },
-    ],
+    clients: [],
     transactions: [
         { id: 'TRN-1', date: '2024-07-20', description: 'Withdrawal', amount: 500 * USD_TO_MWK_RATE, type: 'debit' },
         { id: 'TRN-2', date: '2024-07-18', description: 'Commission: Client B', amount: 75.50 * USD_TO_MWK_RATE, type: 'credit' },
