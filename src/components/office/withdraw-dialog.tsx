@@ -12,11 +12,17 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Banknote } from 'lucide-react';
+import { Banknote, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBrandsoft } from '@/hooks/use-brandsoft';
+import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 
-const TRANSACTION_FEE_MWK = 3000;
+const METHOD_FEES: Record<string, number> = {
+    airtel: 3000,
+    tnm: 3000,
+    bank: 5000,
+    bsCredits: 0,
+};
 
 const withdrawSchema = z.object({
   amount: z.coerce.number()
@@ -24,7 +30,7 @@ const withdrawSchema = z.object({
       .min(30000, "Minimum withdrawal is K30,000")
       .max(1000000, "Maximum withdrawal at once is K1,000,000"),
   method: z.string().min(1, "Please select a payment method"),
-  details: z.string().min(1, "Payment details are missing."),
+  details: z.string().optional(),
   pin: z.string().length(4, "PIN must be 4 digits"),
   includeBonus: z.boolean().default(false),
 });
@@ -76,6 +82,7 @@ export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, is
     
     const { toast } = useToast();
     const includeBonus = form.watch('includeBonus');
+    const selectedMethod = form.watch('method');
 
     const safeCommission = Number(commissionBalance) || 0;
     const safeBonus = Number(bonusBalance) || 0;
@@ -94,10 +101,10 @@ export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, is
       }).filter(Boolean) as { value: string; label: string; details: string; }[];
       
     const handleMethodChange = (value: string) => {
-        const selectedMethod = availableMethods.find(m => m.value === value);
-        if (selectedMethod) {
+        const selected = availableMethods.find(m => m.value === value);
+        if (selected) {
             form.setValue('method', value);
-            form.setValue('details', selectedMethod.details);
+            form.setValue('details', selected.details);
             form.trigger('details');
         }
     };
@@ -111,7 +118,7 @@ export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, is
                 toast({ variant: 'destructive', title: "No Payment Methods", description: "Please set up a withdrawal method in 'My Features' first." });
                 return;
             }
-            isValid = await form.trigger(["method", "details"]);
+            isValid = await form.trigger(["method"]);
         }
         if (isValid) setStep(s => s + 1);
     };
@@ -119,7 +126,8 @@ export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, is
     const handleBack = () => setStep(s => s - 1);
 
     const onSubmit = (data: WithdrawFormData) => {
-        const totalToWithdraw = data.amount + TRANSACTION_FEE_MWK;
+        const fee = METHOD_FEES[data.method] ?? 0;
+        const totalToWithdraw = data.amount + fee;
         
         const balanceToCheck = data.includeBonus ? commissionBalance + bonusBalance : commissionBalance;
 
@@ -191,11 +199,7 @@ export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, is
                                         <FormDescription>Min: K30,000, Max: K1,000,000</FormDescription>
                                         <FormMessage />
                                          <div className="flex flex-col gap-1 pt-2 border-t mt-4 bg-muted/30 p-3 rounded-md">
-                                            <div className="flex justify-between text-sm">
-                                                <span className="text-muted-foreground">Available Balance:</span>
-                                                <span>K{grossBalance.toLocaleString()}</span>
-                                            </div>
-                                            <div className="flex justify-between items-center pt-2 border-t mt-1">
+                                            <div className="flex justify-between items-center pt-2">
                                                 <span className="font-bold">Max Withdrawable:</span>
                                                 <span className="text-xl font-bold text-primary">
                                                     K{withdrawableAmount > 0 ? withdrawableAmount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) : '0.00'}
@@ -222,13 +226,15 @@ export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, is
                                         <FormMessage />
                                     </FormItem>
                                 )}/>
-                                <FormField control={form.control} name="details" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Details</FormLabel>
-                                        <FormControl><Input {...field} readOnly className="bg-muted" /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}/>
+                                {selectedMethod && (
+                                     <Alert>
+                                        <Info className="h-4 w-4" />
+                                        <AlertTitle>Service Fee</AlertTitle>
+                                        <AlertDescription>
+                                            A fee of <strong>K{METHOD_FEES[selectedMethod]?.toLocaleString() || 0}</strong> will be applied for this transaction.
+                                        </AlertDescription>
+                                    </Alert>
+                                )}
                             </div>
                         )}
                         {step === 3 && (
