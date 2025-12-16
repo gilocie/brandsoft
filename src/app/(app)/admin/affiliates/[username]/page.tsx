@@ -3,15 +3,19 @@
 
 import { useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useBrandsoft } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Transaction } from '@/hooks/use-brandsoft';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { ArrowLeft, AtSign, BadgeCheck, Phone, User, Calendar, ShieldAlert, KeyRound, Camera, UserCheck } from 'lucide-react';
+import { ArrowLeft, AtSign, BadgeCheck, Phone, User, Calendar, ShieldAlert, KeyRound, Camera, UserCheck, CreditCard, Users, Shield, TrendingDown, TrendingUp } from 'lucide-react';
 import { StatCard } from '@/components/office/stat-card';
 import { toast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { cn } from '@/lib/utils';
+import { ClientCard } from '@/components/affiliate/client-card';
 
 export default function AffiliateDetailsPage() {
     const params = useParams();
@@ -24,6 +28,17 @@ export default function AffiliateDetailsPage() {
         // In a real multi-affiliate app, you'd find by username param.
         return config?.affiliate;
     }, [config?.affiliate, params.username]);
+    
+    const withdrawalTransactions = useMemo(() => {
+        if (!affiliate?.transactions) return [];
+        return affiliate.transactions.filter(t => t.type === 'debit');
+    }, [affiliate?.transactions]);
+
+    const creditTransactions = useMemo(() => {
+        if (!affiliate?.transactions) return [];
+        return affiliate.transactions.filter(t => t.type === 'credit');
+    }, [affiliate?.transactions]);
+
 
     if (!affiliate) {
         return (
@@ -91,40 +106,119 @@ export default function AffiliateDetailsPage() {
 
              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <StatCard title="Total Clients" value={totalClients} icon={User} footer="All referred clients" />
-                <StatCard title="Active Clients" value={activeClients} icon={UserCheck} footer={`${((activeClients/totalClients) * 100).toFixed(0)}% retention`} />
+                <StatCard title="Active Clients" value={activeClients} icon={UserCheck} footer={`${totalClients > 0 ? ((activeClients/totalClients) * 100).toFixed(0) : 0}% retention`} />
                 <StatCard title="Total Sales" value={totalSales} isCurrency icon={User} footer="Lifetime sales volume" />
                 <StatCard title="Unclaimed" value={unclaimedCommission} isCurrency icon={User} footer="Awaiting push to wallet" />
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
-                 <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Camera className="h-5 w-5"/> ID Photos</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-2 gap-4">
-                         <div className="h-40 rounded-lg border-2 border-dashed flex items-center justify-center text-muted-foreground">Front of ID</div>
-                         <div className="h-40 rounded-lg border-2 border-dashed flex items-center justify-center text-muted-foreground">Back of ID</div>
-                    </CardContent>
-                </Card>
-
-                 <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><ShieldAlert className="h-5 w-5"/> Admin Actions</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="flex items-center justify-between rounded-lg border p-3">
-                            <div>
-                                <p className="font-medium text-sm">Reset Security Question</p>
-                                <p className="text-xs text-muted-foreground">Allows user to set a new question and answer.</p>
+            <Tabs defaultValue="transactions">
+                <TabsList>
+                    <TabsTrigger value="transactions">Withdraw Transactions</TabsTrigger>
+                    <TabsTrigger value="credits">Credit Transactions</TabsTrigger>
+                    <TabsTrigger value="team">Team Members</TabsTrigger>
+                    <TabsTrigger value="security">Security</TabsTrigger>
+                </TabsList>
+                <TabsContent value="transactions" className="pt-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Withdrawal History</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                             <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Date</TableHead>
+                                        <TableHead>Description</TableHead>
+                                        <TableHead className="text-right">Amount</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {withdrawalTransactions.length > 0 ? withdrawalTransactions.map(t => (
+                                        <TableRow key={t.id}>
+                                            <TableCell>{new Date(t.date).toLocaleDateString()}</TableCell>
+                                            <TableCell>{t.description}</TableCell>
+                                            <TableCell className="text-right font-medium text-red-600">- K{t.amount.toLocaleString()}</TableCell>
+                                        </TableRow>
+                                    )) : (
+                                        <TableRow><TableCell colSpan={3} className="text-center h-24">No withdrawal transactions.</TableCell></TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                 <TabsContent value="credits" className="pt-6">
+                     <Card>
+                        <CardHeader>
+                            <CardTitle>Credit History</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                             <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Date</TableHead>
+                                        <TableHead>Description</TableHead>
+                                        <TableHead className="text-right">Amount</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {creditTransactions.length > 0 ? creditTransactions.map(t => (
+                                        <TableRow key={t.id}>
+                                            <TableCell>{new Date(t.date).toLocaleDateString()}</TableCell>
+                                            <TableCell>{t.description}</TableCell>
+                                            <TableCell className="text-right font-medium text-green-600">+ K{t.amount.toLocaleString()}</TableCell>
+                                        </TableRow>
+                                    )) : (
+                                        <TableRow><TableCell colSpan={3} className="text-center h-24">No credit transactions.</TableCell></TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                 <TabsContent value="team" className="pt-6">
+                    <div className="grid gap-6 md:grid-cols-2">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5"/> Referred Clients</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-2">
+                                {affiliate.clients.map(client => (
+                                    <ClientCard key={client.id} client={client} />
+                                ))}
+                            </CardContent>
+                        </Card>
+                         <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2"><Camera className="h-5 w-5"/> ID Photos</CardTitle>
+                            </CardHeader>
+                            <CardContent className="grid grid-cols-2 gap-4">
+                                <div className="h-40 rounded-lg border-2 border-dashed flex items-center justify-center text-muted-foreground">Front of ID</div>
+                                <div className="h-40 rounded-lg border-2 border-dashed flex items-center justify-center text-muted-foreground">Back of ID</div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </TabsContent>
+                 <TabsContent value="security" className="pt-6">
+                     <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><ShieldAlert className="h-5 w-5"/> Admin Actions</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex items-center justify-between rounded-lg border p-3">
+                                <div>
+                                    <p className="font-medium text-sm">Reset Security Question</p>
+                                    <p className="text-xs text-muted-foreground">Allows user to set a new question and answer.</p>
+                                </div>
+                                <Button variant="destructive" onClick={() => setIsResetConfirmOpen(true)}>
+                                    <KeyRound className="h-4 w-4 mr-2"/>
+                                    Reset
+                                </Button>
                             </div>
-                            <Button variant="destructive" onClick={() => setIsResetConfirmOpen(true)}>
-                                <KeyRound className="h-4 w-4 mr-2"/>
-                                Reset
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
             
             <AlertDialog open={isResetConfirmOpen} onOpenChange={setIsResetConfirmOpen}>
                 <AlertDialogContent>
