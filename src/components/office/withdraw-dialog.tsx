@@ -81,7 +81,7 @@ export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, is
     const safeBonus = Number(bonusBalance) || 0;
 
     const grossBalance = includeBonus ? safeCommission + safeBonus : safeCommission;
-    const withdrawableAmount = grossBalance - TRANSACTION_FEE_MWK;
+    const withdrawableAmount = grossBalance;
 
     const availableMethods = Object.entries(config?.affiliate?.withdrawalMethods || {})
       .filter(([, details]) => !!details)
@@ -192,12 +192,8 @@ export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, is
                                         <FormMessage />
                                          <div className="flex flex-col gap-1 pt-2 border-t mt-4 bg-muted/30 p-3 rounded-md">
                                             <div className="flex justify-between text-sm">
-                                                <span className="text-muted-foreground">Wallet Balance:</span>
+                                                <span className="text-muted-foreground">Available Balance:</span>
                                                 <span>K{grossBalance.toLocaleString()}</span>
-                                            </div>
-                                            <div className="flex justify-between text-sm text-red-500">
-                                                <span>Service Fee:</span>
-                                                <span>- K{TRANSACTION_FEE_MWK.toLocaleString()}</span>
                                             </div>
                                             <div className="flex justify-between items-center pt-2 border-t mt-1">
                                                 <span className="font-bold">Max Withdrawable:</span>
