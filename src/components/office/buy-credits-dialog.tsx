@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -21,7 +22,7 @@ const buyCreditsSchema = z.object({
 
 type BuyCreditsFormData = z.infer<typeof buyCreditsSchema>;
 
-export const BuyCreditsDialog = ({ walletBalance }: { walletBalance: number }) => {
+export const BuyCreditsDialog = ({ walletBalance, adminAvailableCredits }: { walletBalance: number, adminAvailableCredits: number }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState(1);
   const { config, saveConfig } = useBrandsoft();
@@ -54,11 +55,11 @@ export const BuyCreditsDialog = ({ walletBalance }: { walletBalance: number }) =
               });
               return;
           }
-           if (config?.affiliateSettings?.availableCredits && creditsToBuy > config.affiliateSettings.availableCredits) {
+           if (creditsToBuy > adminAvailableCredits) {
               toast({
                 variant: 'destructive',
-                title: "Not Enough Credits in Reserve",
-                description: `The admin only has ${config.affiliateSettings.availableCredits.toLocaleString()} credits available for sale.`,
+                title: "Apology",
+                description: "We have a low Credit Reserve. Please Try Again Later.",
               });
               return;
           }

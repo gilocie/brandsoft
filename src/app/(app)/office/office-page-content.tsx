@@ -427,7 +427,10 @@ export function OfficePageContent() {
                         valuePrefix={`BS `}
                         footer={`Value: K${((affiliate.creditBalance || 0) * CREDIT_TO_MWK).toLocaleString()}`}
                     >
-                        <BuyCreditsDialog walletBalance={affiliate.myWallet || 0} />
+                        <BuyCreditsDialog 
+                            walletBalance={affiliate.myWallet || 0}
+                            adminAvailableCredits={config?.affiliateSettings?.availableCredits || 0}
+                         />
                     </StatCard>
                     <Card>
                         <CardHeader>
