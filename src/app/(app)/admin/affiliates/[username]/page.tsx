@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { ArrowLeft, AtSign, BadgeCheck, Phone, User, Calendar, ShieldAlert, KeyRound, Camera, UserCheck, CreditCard, Users, Shield, TrendingDown, TrendingUp, UserX, Trash2, Gift, Wallet } from 'lucide-react';
+import { ArrowLeft, AtSign, BadgeCheck, Phone, User, Calendar, ShieldAlert, KeyRound, Camera, UserCheck, CreditCard, Users, Shield, TrendingDown, TrendingUp, UserX, Trash2, Gift, Wallet, Banknote, Repeat } from 'lucide-react';
 import { StatCard } from '@/components/office/stat-card';
 import { toast } from '@/hooks/use-toast';
 import Link from 'next/link';
@@ -198,10 +198,10 @@ export default function AffiliateDetailsPage() {
 
             <Tabs defaultValue="transactions">
                 <TabsList>
-                    <TabsTrigger value="transactions">Withdraw Transactions</TabsTrigger>
-                    <TabsTrigger value="credits">Credit Transactions</TabsTrigger>
-                    <TabsTrigger value="team">Team Members</TabsTrigger>
-                    <TabsTrigger value="security">Security</TabsTrigger>
+                    <TabsTrigger value="transactions"><Banknote className="mr-2 h-4 w-4"/>Withdrawals</TabsTrigger>
+                    <TabsTrigger value="credits"><Repeat className="mr-2 h-4 w-4"/>Credits</TabsTrigger>
+                    <TabsTrigger value="team"><Users className="mr-2 h-4 w-4"/>Team</TabsTrigger>
+                    <TabsTrigger value="security"><Shield className="mr-2 h-4 w-4"/>Security</TabsTrigger>
                 </TabsList>
                 <TabsContent value="transactions" className="pt-6">
                     <Card>
@@ -347,4 +347,3 @@ export default function AffiliateDetailsPage() {
         </div>
     );
 }
-
