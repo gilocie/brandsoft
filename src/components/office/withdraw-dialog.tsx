@@ -24,17 +24,23 @@ const METHOD_FEES: Record<string, number> = {
     bsCredits: 0,
 };
 
-const withdrawSchema = z.object({
+const createWithdrawSchema = (commissionBalance: number, bonusBalance: number) => z.object({
   amount: z.coerce.number()
       .positive("Amount must be greater than 0")
       .min(30000, "Minimum withdrawal is K30,000")
       .max(1000000, "Maximum withdrawal at once is K1,000,000"),
   method: z.string().min(1, "Please select a payment method"),
-  details: z.string().optional(),
   pin: z.string().length(4, "PIN must be 4 digits"),
   includeBonus: z.boolean().default(false),
+}).refine(data => {
+    const balance = data.includeBonus ? commissionBalance + bonusBalance : commissionBalance;
+    return data.amount <= balance;
+}, {
+    message: "Amount cannot exceed your available balance.",
+    path: ["amount"],
 });
-type WithdrawFormData = z.infer<typeof withdrawSchema>;
+
+type WithdrawFormData = z.infer<ReturnTypeOf<typeof createWithdrawSchema>>;
 
 const AmountInput = ({ value, onChange, className }: { value: number, onChange: (value: number) => void, className?: string }) => {
     const [displayValue, setDisplayValue] = useState<string>('');
@@ -75,9 +81,11 @@ export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, is
     const [isOpen, setIsOpen] = useState(false);
     const { config } = useBrandsoft();
     
+    const withdrawSchema = createWithdrawSchema(commissionBalance, bonusBalance);
+
     const form = useForm<WithdrawFormData>({
         resolver: zodResolver(withdrawSchema),
-        defaultValues: { amount: 30000, method: '', details: '', pin: '', includeBonus: false },
+        defaultValues: { amount: 30000, method: '', pin: '', includeBonus: false },
     });
     
     const { toast } = useToast();
@@ -101,12 +109,8 @@ export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, is
       }).filter(Boolean) as { value: string; label: string; details: string; }[];
       
     const handleMethodChange = (value: string) => {
-        const selected = availableMethods.find(m => m.value === value);
-        if (selected) {
-            form.setValue('method', value);
-            form.setValue('details', selected.details);
-            form.trigger('details');
-        }
+        form.setValue('method', value);
+        form.trigger('method');
     };
 
 
