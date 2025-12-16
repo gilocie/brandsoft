@@ -175,7 +175,7 @@ export function OfficePageContent() {
   const activeClients = affiliate.clients.filter(c => c.status === 'active').length;
   const totalSales = affiliate.totalSales || 0;
 
-  const handleWithdraw = (amount: number, source: 'commission' | 'combined') => {
+  const handleWithdraw = (amount: number, source: 'commission' | 'combined' | 'bonus') => {
     if (!config || !affiliate) return;
     
     const TRANSACTION_FEE = 3000;
