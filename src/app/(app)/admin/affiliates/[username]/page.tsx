@@ -8,7 +8,15 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { ArrowLeft, AtSign, BadgeCheck, Phone, User, Calendar, ShieldAlert, KeyRound, Camera, UserCheck, CreditCard, Users, Shield, TrendingDown, TrendingUp, UserX, Trash2, Gift, Wallet, Banknote, Repeat } from 'lucide-react';
+import { Dialog, DialogContent as ShadcnDialogContent, DialogHeader as ShadcnDialogHeader, DialogTitle as ShadcnDialogTitle, DialogDescription as ShadcnDialogDescription, DialogFooter as ShadcnDialogFooter } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { ArrowLeft, AtSign, BadgeCheck, Phone, User, Calendar, ShieldAlert, KeyRound, Camera, UserCheck, CreditCard, Users, Shield, TrendingDown, TrendingUp, UserX, Trash2, Gift, Wallet, Banknote, Repeat, SlidersHorizontal } from 'lucide-react';
 import { StatCard } from '@/components/office/stat-card';
 import { toast } from '@/hooks/use-toast';
 import Link from 'next/link';
@@ -21,6 +29,15 @@ import { ClientCard } from '@/components/affiliate/client-card';
 type DisplayTransaction = Transaction & { status?: 'pending' | 'processing' | 'completed' };
 const CREDIT_TO_MWK = 1000;
 
+const manageCreditsSchema = z.object({
+  action: z.enum(['add', 'deduct']),
+  amount: z.coerce.number().min(1, "Amount must be at least 1 credit."),
+  reason: z.string().min(5, "A reason is required for this action."),
+});
+
+type ManageCreditsFormData = z.infer<typeof manageCreditsSchema>;
+
+
 export default function AffiliateDetailsPage() {
     const params = useParams();
     const router = useRouter();
@@ -28,6 +45,12 @@ export default function AffiliateDetailsPage() {
     const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
     const [isDeactivateOpen, setIsDeactivateOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+    const [isManageCreditsOpen, setIsManageCreditsOpen] = useState(false);
+
+    const form = useForm<ManageCreditsFormData>({
+      resolver: zodResolver(manageCreditsSchema),
+      defaultValues: { action: 'add', amount: 1, reason: '' },
+    });
 
     const affiliate = useMemo(() => {
         // As we only have one affiliate in the current data structure, we find it.
@@ -46,7 +69,8 @@ export default function AffiliateDetailsPage() {
         return allTransactions.filter(t => 
             t.type === 'debit' && 
             !t.description.toLowerCase().includes('fee') && 
-            !t.description.toLowerCase().includes('credit')
+            !t.description.toLowerCase().includes('credit purchase') &&
+            !t.description.toLowerCase().includes('manual deduction')
         );
     }, [allTransactions]);
 
@@ -57,8 +81,8 @@ export default function AffiliateDetailsPage() {
     const creditTransactions = useMemo(() => {
         // This includes commissions (credit) and credit purchases (debit)
         return allTransactions.filter(t => 
-            t.type === 'credit' || 
-            (t.type === 'debit' && t.description.toLowerCase().includes('credit purchase'))
+            t.description.toLowerCase().includes('commission') || 
+            t.description.toLowerCase().includes('credit')
         );
     }, [allTransactions]);
 
@@ -110,6 +134,53 @@ export default function AffiliateDetailsPage() {
              router.push('/admin');
         }
     };
+    
+    const onManageCredits = (data: ManageCreditsFormData) => {
+        if (!config || !affiliate) return;
+        
+        const { action, amount, reason } = data;
+        let newCreditBalance = affiliate.creditBalance || 0;
+        let transactionType: 'credit' | 'debit';
+        let transactionDescription: string;
+
+        if (action === 'add') {
+            newCreditBalance += amount;
+            transactionType = 'credit';
+            transactionDescription = `Manual credit addition: ${reason}`;
+        } else {
+            if (amount > newCreditBalance) {
+                form.setError('amount', { message: 'Cannot deduct more credits than the user has.'});
+                return;
+            }
+            newCreditBalance -= amount;
+            transactionType = 'debit';
+            transactionDescription = `Manual credit deduction: ${reason}`;
+        }
+
+        const newTransaction: Transaction = {
+            id: `TRN-MANUAL-${Date.now()}`,
+            date: new Date().toISOString(),
+            description: transactionDescription,
+            amount: amount,
+            type: transactionType,
+        };
+
+        const newAffiliateData = {
+            ...affiliate,
+            creditBalance: newCreditBalance,
+            transactions: [newTransaction, ...(affiliate.transactions || [])],
+        };
+
+        saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
+        
+        toast({
+            title: 'Credits Updated!',
+            description: `Successfully ${action === 'add' ? 'added' : 'deducted'} ${amount} credits.`,
+        });
+        
+        setIsManageCreditsOpen(false);
+        form.reset();
+    };
 
     const totalClients = affiliate.clients.length;
     const activeClients = affiliate.clients.filter(c => c.status === 'active').length;
@@ -134,7 +205,7 @@ export default function AffiliateDetailsPage() {
                         <TableCell>{new Date(t.date).toLocaleDateString()}</TableCell>
                         <TableCell>{t.description}</TableCell>
                         <TableCell className={cn("text-right font-medium", t.type === 'credit' ? 'text-green-600' : 'text-red-600')}>
-                            {t.type === 'credit' ? '+' : '-'} K{t.amount.toLocaleString()}
+                            {t.type === 'credit' ? '+' : '-'} {t.description.toLowerCase().includes('credit') ? '' : 'K'}{t.amount.toLocaleString()} {t.description.toLowerCase().includes('credit') && !t.description.toLowerCase().includes('purchase') ? 'Credits' : ''}
                         </TableCell>
                     </TableRow>
                 )) : (
@@ -181,7 +252,12 @@ export default function AffiliateDetailsPage() {
                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <StatCard title="Unclaimed" value={unclaimedCommission} isCurrency icon={User} footer="Awaiting push to wallet" variant="primary" />
                     <StatCard title="Bonus Amount" value={bonusAmount} isCurrency icon={Gift} footer="Performance bonus" variant="primary" />
-                    <StatCard title="Credit Balance" value={creditBalance} valuePrefix="BS " icon={CreditCard} footer={`Value: K${(creditBalance * CREDIT_TO_MWK).toLocaleString()}`} variant="primary" />
+                    <StatCard title="Credit Balance" value={creditBalance} valuePrefix="BS " icon={CreditCard} footer={`Value: K${(creditBalance * CREDIT_TO_MWK).toLocaleString()}`} variant="primary">
+                       <Button size="sm" className="w-full mt-2" onClick={() => setIsManageCreditsOpen(true)}>
+                            <SlidersHorizontal className="h-4 w-4 mr-2" />
+                            Manage Credits
+                       </Button>
+                    </StatCard>
                     <StatCard title="Wallet Balance" value={walletBalance} isCurrency icon={Wallet} footer="Withdrawable amount" variant="primary" />
                 </div>
             </div>
@@ -344,6 +420,71 @@ export default function AffiliateDetailsPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            <ShadcnDialog open={isManageCreditsOpen} onOpenChange={setIsManageCreditsOpen}>
+                <ShadcnDialogContent>
+                    <ShadcnDialogHeader>
+                        <ShadcnDialogTitle>Manage Credit Balance</ShadcnDialogTitle>
+                        <ShadcnDialogDescription>Manually add or deduct credits from {affiliate.fullName}'s account.</ShadcnDialogDescription>
+                    </ShadcnDialogHeader>
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(onManageCredits)} className="space-y-4 pt-4">
+                            <FormField
+                                control={form.control}
+                                name="action"
+                                render={({ field }) => (
+                                <FormItem className="space-y-3">
+                                    <FormLabel>Action</FormLabel>
+                                    <FormControl>
+                                    <RadioGroup
+                                        onValueChange={field.onChange}
+                                        defaultValue={field.value}
+                                        className="flex gap-4"
+                                    >
+                                        <FormItem className="flex items-center space-x-2 space-y-0">
+                                            <FormControl><RadioGroupItem value="add" /></FormControl>
+                                            <FormLabel className="font-normal">Add Credits</FormLabel>
+                                        </FormItem>
+                                        <FormItem className="flex items-center space-x-2 space-y-0">
+                                            <FormControl><RadioGroupItem value="deduct" /></FormControl>
+                                            <FormLabel className="font-normal">Deduct Credits</FormLabel>
+                                        </FormItem>
+                                    </RadioGroup>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="amount"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Amount (Credits)</FormLabel>
+                                        <FormControl><Input type="number" {...field} /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                             <FormField
+                                control={form.control}
+                                name="reason"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Reason</FormLabel>
+                                        <FormControl><Textarea placeholder="e.g., Initial bonus, correction for transaction #123" {...field} /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <ShadcnDialogFooter>
+                                <Button type="button" variant="outline" onClick={() => setIsManageCreditsOpen(false)}>Cancel</Button>
+                                <Button type="submit">Save Changes</Button>
+                            </ShadcnDialogFooter>
+                        </form>
+                    </Form>
+                </ShadcnDialogContent>
+            </ShadcnDialog>
         </div>
     );
 }
