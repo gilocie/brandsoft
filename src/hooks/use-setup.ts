@@ -218,7 +218,7 @@ export function useSetup(
     };
 
     const userAsCustomer: Customer = {
-        id: 'CUST-DEMO-ME',
+        id: userCompanyId,
         name: data.businessName,
         email: data.email,
         phone: data.phone,
@@ -236,7 +236,7 @@ export function useSetup(
     const finalOutgoingQuotationRequests: QuotationRequest[] = initialQuotationRequests.map((req, i) => ({
       ...req,
       id: `QR-${Date.now() + i}`,
-      requesterId: userAsCustomer.id,
+      requesterId: userAsCompany.id,
       requesterName: data.businessName,
       requesterLogo: data.logo,
       date: new Date(Date.now() - (i + 1) * 3 * 24 * 60 * 60 * 1000).toISOString(),

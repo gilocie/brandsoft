@@ -223,6 +223,7 @@ export default function CompaniesPage() {
             status: 'active', // Default status
             joinDate: new Date().toISOString(),
             remainingDays: 30, // Default trial period
+            walletBalance: 0,
         };
 
         const affiliateClients = config.affiliate.clients || [];
