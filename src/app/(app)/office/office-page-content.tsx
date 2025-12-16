@@ -778,9 +778,9 @@ export function OfficePageContent() {
     );
   }
   
-  const bonusAmount = affiliate.clients.length >= 10 ? affiliate.bonus : 0;
-  const displayBalance = affiliate.balance + bonusAmount;
-  const mwkBalance = displayBalance;
+  const bonusAmount = affiliate.bonus || 0;
+  const unclaimedCommission = affiliate.totalSales || 0;
+  const mwkBalance = unclaimedCommission + bonusAmount;
   const activeClients = affiliate.clients.filter(c => c.status === 'active').length;
 
   const handleWithdraw = (amount: number, source: 'commission' | 'bonus' | 'combined') => {
@@ -1039,7 +1039,7 @@ export function OfficePageContent() {
                     <StatCard 
                         icon={TrendingUp} 
                         title="Unclaimed Commission" 
-                        value={affiliate.unclaimedCommission || 0} 
+                        value={unclaimedCommission} 
                         isCurrency 
                         footer="Ready to push to your wallet"
                     >
@@ -1323,4 +1323,5 @@ export function OfficePageContent() {
 
 
     
+
 
