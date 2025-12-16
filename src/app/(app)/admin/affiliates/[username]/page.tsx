@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent as ShadcnDialogContent, DialogHeader as ShadcnDialogHeader, DialogTitle as ShadcnDialogTitle, DialogDescription as ShadcnDialogDescription, DialogFooter as ShadcnDialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from '@/components/ui/textarea';
@@ -69,8 +69,7 @@ export default function AffiliateDetailsPage() {
         return allTransactions.filter(t => 
             t.type === 'debit' && 
             !t.description.toLowerCase().includes('fee') && 
-            !t.description.toLowerCase().includes('credit purchase') &&
-            !t.description.toLowerCase().includes('manual deduction')
+            !t.description.toLowerCase().includes('purchase')
         );
     }, [allTransactions]);
 
@@ -79,10 +78,10 @@ export default function AffiliateDetailsPage() {
     const completedWithdrawals = useMemo(() => withdrawalTransactions.filter(t => t.status === 'completed'), [withdrawalTransactions]);
 
     const creditTransactions = useMemo(() => {
-        // This includes commissions (credit) and credit purchases (debit)
         return allTransactions.filter(t => 
-            t.description.toLowerCase().includes('commission') || 
-            t.description.toLowerCase().includes('credit')
+            t.description.toLowerCase().includes('commission') ||
+            t.description.toLowerCase().includes('credit') ||
+            t.description.toLowerCase().includes('purchase')
         );
     }, [allTransactions]);
 
@@ -421,12 +420,12 @@ export default function AffiliateDetailsPage() {
                 </AlertDialogContent>
             </AlertDialog>
 
-            <ShadcnDialog open={isManageCreditsOpen} onOpenChange={setIsManageCreditsOpen}>
-                <ShadcnDialogContent>
-                    <ShadcnDialogHeader>
-                        <ShadcnDialogTitle>Manage Credit Balance</ShadcnDialogTitle>
-                        <ShadcnDialogDescription>Manually add or deduct credits from {affiliate.fullName}'s account.</ShadcnDialogDescription>
-                    </ShadcnDialogHeader>
+            <Dialog open={isManageCreditsOpen} onOpenChange={setIsManageCreditsOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Manage Credit Balance</DialogTitle>
+                        <DialogDescription>Manually add or deduct credits from {affiliate.fullName}'s account.</DialogDescription>
+                    </DialogHeader>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onManageCredits)} className="space-y-4 pt-4">
                             <FormField
@@ -477,14 +476,14 @@ export default function AffiliateDetailsPage() {
                                     </FormItem>
                                 )}
                             />
-                            <ShadcnDialogFooter>
+                            <DialogFooter>
                                 <Button type="button" variant="outline" onClick={() => setIsManageCreditsOpen(false)}>Cancel</Button>
                                 <Button type="submit">Save Changes</Button>
-                            </ShadcnDialogFooter>
+                            </DialogFooter>
                         </form>
                     </Form>
-                </ShadcnDialogContent>
-            </ShadcnDialog>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
