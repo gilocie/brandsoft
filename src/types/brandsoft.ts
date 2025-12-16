@@ -10,6 +10,7 @@ export type AffiliateClient = {
   status: 'active' | 'expired';
   joinDate?: string;
   remainingDays?: number;
+  walletBalance?: number;
 };
 
 export type Transaction = {

@@ -8,6 +8,7 @@ import type { AffiliateClient } from "@/hooks/use-brandsoft";
 import { Button } from "../ui/button";
 import { Clock, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 interface ClientCardProps {
   client: AffiliateClient;
@@ -45,9 +46,11 @@ export const ClientCard = ({ client }: ClientCardProps) => {
         )}
       </CardContent>
       <CardContent className="p-4 pt-0">
-        <Button variant="outline" size="sm" className="w-full">
-            <Eye className="h-4 w-4 mr-2" />
-            View Client
+        <Button variant="outline" size="sm" className="w-full" asChild>
+            <Link href={`/office/clients/${client.id}`}>
+                <Eye className="h-4 w-4 mr-2" />
+                View Client
+            </Link>
         </Button>
       </CardContent>
     </Card>
