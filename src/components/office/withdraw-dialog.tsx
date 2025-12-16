@@ -77,8 +77,11 @@ export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, is
     const { toast } = useToast();
     const includeBonus = form.watch('includeBonus');
 
-    const availableBalance = includeBonus ? commissionBalance + bonusBalance : commissionBalance;
-    const withdrawableAmount = availableBalance - TRANSACTION_FEE_MWK;
+    const safeCommission = Number(commissionBalance) || 0;
+    const safeBonus = Number(bonusBalance) || 0;
+
+    const grossBalance = includeBonus ? safeCommission + safeBonus : safeCommission;
+    const withdrawableAmount = grossBalance - TRANSACTION_FEE_MWK;
 
     const availableMethods = Object.entries(config?.affiliate?.withdrawalMethods || {})
       .filter(([, details]) => !!details)
@@ -167,10 +170,12 @@ export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, is
                                         <FormItem className="flex items-center justify-between rounded-lg border p-3">
                                             <div className="space-y-0.5">
                                                 <FormLabel>Include Bonus Balance?</FormLabel>
-                                                <FormDescription>Your bonus balance is K{bonusBalance.toLocaleString()}.</FormDescription>
+                                                <FormDescription>
+                                                    Available Bonus: <span className="font-bold text-green-600">+K{safeBonus.toLocaleString()}</span>
+                                                </FormDescription>
                                             </div>
                                             <FormControl>
-                                                <Switch checked={field.value} onCheckedChange={field.onChange} disabled={bonusBalance <= 0} />
+                                                <Switch checked={field.value} onCheckedChange={field.onChange} disabled={safeBonus <= 0} />
                                             </FormControl>
                                         </FormItem>
                                     )}
@@ -185,14 +190,21 @@ export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, is
                                         </FormControl>
                                         <FormDescription>Min: K30,000, Max: K1,000,000</FormDescription>
                                         <FormMessage />
-                                         <div className="flex justify-between items-end pt-2 border-b pb-2">
-                                           <div className="text-left">
-                                                <div className="text-sm font-medium text-left">Available:</div>
-                                                <div className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-lg font-bold mt-1">
-                                                    K{withdrawableAmount > 0 ? withdrawableAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
-                                                </div>
-                                           </div>
-                                            <span className="text-xs text-muted-foreground">Fee: K{TRANSACTION_FEE_MWK.toLocaleString()}</span>
+                                         <div className="flex flex-col gap-1 pt-2 border-t mt-4 bg-muted/30 p-3 rounded-md">
+                                            <div className="flex justify-between text-sm">
+                                                <span className="text-muted-foreground">Wallet Balance:</span>
+                                                <span>K{grossBalance.toLocaleString()}</span>
+                                            </div>
+                                            <div className="flex justify-between text-sm text-red-500">
+                                                <span>Service Fee:</span>
+                                                <span>- K{TRANSACTION_FEE_MWK.toLocaleString()}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center pt-2 border-t mt-1">
+                                                <span className="font-bold">Max Withdrawable:</span>
+                                                <span className="text-xl font-bold text-primary">
+                                                    K{withdrawableAmount > 0 ? withdrawableAmount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) : '0.00'}
+                                                </span>
+                                            </div>
                                         </div>
                                     </FormItem>
                                 )}/>

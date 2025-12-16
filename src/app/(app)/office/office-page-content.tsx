@@ -171,7 +171,7 @@ export function OfficePageContent() {
   
   const bonusAmount = affiliate.bonus || 0;
   const unclaimedCommission = affiliate.unclaimedCommission || 0;
-  const mwkBalance = affiliate.myWallet || 0;
+  const mwkBalance = (affiliate.myWallet || 0) + bonusAmount;
   const activeClients = affiliate.clients.filter(c => c.status === 'active').length;
   const totalSales = affiliate.totalSales || 0;
 
@@ -423,9 +423,9 @@ export function OfficePageContent() {
                      <StatCard 
                         icon={CreditCard} 
                         title="Credit Balance" 
-                        value={affiliate.creditBalance}
+                        value={affiliate.creditBalance || 0}
                         valuePrefix={`BS `}
-                        footer={`Value: K${(affiliate.creditBalance * CREDIT_TO_MWK).toLocaleString()}`}
+                        footer={`Value: K${((affiliate.creditBalance || 0) * CREDIT_TO_MWK).toLocaleString()}`}
                     >
                         <BuyCreditsDialog walletBalance={affiliate.myWallet || 0} />
                     </StatCard>
