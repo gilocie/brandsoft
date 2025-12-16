@@ -13,12 +13,12 @@ import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Users, BarChart, Clock, CheckCircle, RefreshCw, Briefcase, UserX, Trash2, Wallet, TrendingUp, TrendingDown, PackagePlus, Banknote } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ClientCard } from '@/components/affiliate/client-card';
 import { AffiliateCard } from '@/components/affiliate/affiliate-card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
@@ -85,11 +85,18 @@ const ManageReserveDialog = ({
       defaultValues: { action: 'add', amount: 1, reason: '' },
     });
 
+    const watchedAmount = form.watch('amount');
+    const watchedAction = form.watch('action');
+
     useEffect(() => {
         form.reset({ action: 'add', amount: 1, reason: '' });
     }, [isOpen, form]);
 
     const remainingCapacity = maxCredits - availableCredits;
+    
+    const finalReserve = watchedAction === 'add' 
+        ? availableCredits + (Number(watchedAmount) || 0)
+        : availableCredits - (Number(watchedAmount) || 0);
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -136,6 +143,9 @@ const ManageReserveDialog = ({
                                 <FormItem>
                                     <FormLabel>Amount</FormLabel>
                                     <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                                    <FormDescription>
+                                        Reserve will be <span className="font-bold">{finalReserve.toLocaleString()}</span> after this change.
+                                    </FormDescription>
                                     <FormMessage />
                                 </FormItem>
                             )}
@@ -555,3 +565,4 @@ export default function AdminPage() {
         </div>
     );
 }
+
