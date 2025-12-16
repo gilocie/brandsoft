@@ -65,7 +65,7 @@ export default function AdminPage() {
         // Assuming a single affiliate structure, we map their transactions.
         // In a multi-affiliate app, you'd iterate over all affiliates.
         return config.affiliate.transactions
-            .filter(t => t.type === 'debit' && !t.description.includes('Fee')) // Filter for actual withdrawals
+            .filter(t => t.type === 'debit' && !t.description.toLowerCase().includes('fee') && !t.description.toLowerCase().includes('manual')) // Filter for actual withdrawals
             .map(t => ({
                 ...t,
                 status: (t as any).status || 'pending', // Default to pending if status is missing
