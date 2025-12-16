@@ -37,7 +37,6 @@ export type Affiliate = {
   totalSales: number; // Lifetime total sales volume
   creditBalance: number;
   bonus: number;
-  clients: AffiliateClient[];
   staffId?: string;
   transactions?: Transaction[];
   withdrawalMethods?: {
@@ -246,6 +245,12 @@ export type BrandsoftConfig = {
     marketing: boolean;
   };
   affiliate?: Affiliate;
+  affiliateSettings?: {
+    maxCredits?: number;
+    buyPrice?: number;
+    sellPrice?: number;
+    exchangeValue?: number;
+  };
   companies: Company[];
   customers: Customer[];
   products: Product[];

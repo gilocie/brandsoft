@@ -2,6 +2,9 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { useBrandsoft, type Affiliate, type Transaction, type AffiliateClient } from '@/hooks/use-brandsoft';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,6 +17,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ClientCard } from '@/components/affiliate/client-card';
 import { AffiliateCard } from '@/components/affiliate/affiliate-card';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 
 const StatCard = ({ title, value, icon: Icon }: { title: string, value: string | number, icon: React.ElementType }) => (
     <Card>
@@ -40,6 +45,14 @@ const plans = [
     { name: 'Enterprise', price: 'Custom', features: ['All Pro features', 'Dedicated support', 'Custom integrations', 'On-premise option'] },
 ];
 
+const creditSettingsSchema = z.object({
+  maxCredits: z.coerce.number().min(0, "Max credits cannot be negative."),
+  buyPrice: z.coerce.number().min(0, "Buy price cannot be negative."),
+  sellPrice: z.coerce.number().min(0, "Sell price cannot be negative."),
+  exchangeValue: z.coerce.number().min(0, "Exchange value cannot be negative."),
+});
+type CreditSettingsFormData = z.infer<typeof creditSettingsSchema>;
+
 export default function AdminPage() {
     const { config, saveConfig } = useBrandsoft();
     const { toast } = useToast();
@@ -47,6 +60,22 @@ export default function AdminPage() {
     const [affiliateToActOn, setAffiliateToActOn] = useState<Affiliate | null>(null);
     const [isDeactivateOpen, setIsDeactivateOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+    
+    const form = useForm<CreditSettingsFormData>({
+        resolver: zodResolver(creditSettingsSchema),
+        defaultValues: {
+            maxCredits: config?.affiliateSettings?.maxCredits || 100000,
+            buyPrice: config?.affiliateSettings?.buyPrice || 850,
+            sellPrice: config?.affiliateSettings?.sellPrice || 900,
+            exchangeValue: config?.affiliateSettings?.exchangeValue || 1000,
+        }
+    });
+
+    const onCreditSettingsSubmit = (data: CreditSettingsFormData) => {
+        if (!config) return;
+        saveConfig({ ...config, affiliateSettings: { ...config.affiliateSettings, ...data } }, { redirect: false });
+        toast({ title: "Credit Settings Saved", description: "Your BS Credit settings have been updated." });
+    };
 
     // In a real multi-affiliate app, this would be a list of affiliates.
     // For this structure, we have one affiliate object.
@@ -217,9 +246,31 @@ export default function AdminPage() {
                                     <TabsTrigger value="system-tools">System Tools</TabsTrigger>
                                 </TabsList>
                                 <TabsContent value="credits-reserve" className="pt-4">
-                                    <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
-                                        <p className="text-muted-foreground">Credits Reserve settings coming soon.</p>
-                                    </div>
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle>BS Credits Configuration</CardTitle>
+                                            <CardDescription>Set the economic parameters for your affiliate credit system.</CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <Form {...form}>
+                                                <form onSubmit={form.handleSubmit(onCreditSettingsSubmit)} className="space-y-4">
+                                                    <FormField control={form.control} name="maxCredits" render={({ field }) => (
+                                                        <FormItem><FormLabel>Max BS Credits in Circulation</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                                    )} />
+                                                    <FormField control={form.control} name="buyPrice" render={({ field }) => (
+                                                        <FormItem><FormLabel>BS Credit Buying Price (from affiliates)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                                    )} />
+                                                    <FormField control={form.control} name="sellPrice" render={({ field }) => (
+                                                        <FormItem><FormLabel>BS Credit Selling Price (to affiliates)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                                    )} />
+                                                    <FormField control={form.control} name="exchangeValue" render={({ field }) => (
+                                                        <FormItem><FormLabel>BS Credit Exchange Value (1 Credit = X MWK)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                                    )} />
+                                                    <Button type="submit">Save Credit Settings</Button>
+                                                </form>
+                                            </Form>
+                                        </CardContent>
+                                    </Card>
                                 </TabsContent>
                                 <TabsContent value="system-tools" className="pt-4">
                                     <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
