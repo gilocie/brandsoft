@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Users, BarChart, Clock, CheckCircle, RefreshCw, Briefcase, UserX, Trash2, Wallet, TrendingUp, TrendingDown, PackagePlus, Banknote, Shield, Lock, Unlock } from 'lucide-react';
+import { MoreHorizontal, Users, BarChart, Clock, CheckCircle, RefreshCw, Briefcase, UserX, Trash2, Wallet, TrendingUp, TrendingDown, PackagePlus, Banknote, Shield, Lock, Unlock, AlertTriangle } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from '@/hooks/use-toast';
@@ -198,6 +198,7 @@ export default function AdminPage() {
     const [isDeactivateOpen, setIsDeactivateOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [isManageReserveOpen, setIsManageReserveOpen] = useState(false);
+    const [isResetFinancialsOpen, setIsResetFinancialsOpen] = useState(false);
     
     const adminSettings: AdminSettings = useMemo(() => config?.admin || {
         maxCredits: 1000000,
@@ -387,6 +388,19 @@ export default function AdminPage() {
         toast({ title: "Reserve Updated", description: `Credit reserve is now ${newCredits.toLocaleString()}.` });
         setIsManageReserveOpen(false);
     };
+    
+    const handleResetFinancials = () => {
+        if (!config || !config.admin) return;
+
+        const newAdminSettings: AdminSettings = {
+            ...config.admin,
+            soldCredits: 0,
+            availableCredits: config.admin.maxCredits,
+        };
+        saveConfig({ ...config, admin: newAdminSettings }, { redirect: false, revalidate: true });
+        toast({ title: 'Financial Records Reset!', description: 'Credit sales have been reset to zero.' });
+        setIsResetFinancialsOpen(false);
+    };
 
     return (
         <div className="container mx-auto space-y-8">
@@ -417,7 +431,7 @@ export default function AdminPage() {
 
             <div className="grid gap-4 md:grid-cols-3">
                 <StatCard title="Total Affiliates" value={totalAffiliates} icon={Users} />
-                 <StatCard title="BS Withdraw Requests" value={`BS ${(totalPendingBsCredits).toLocaleString()}`} icon={Banknote} />
+                 <StatCard title="BS Withdraw Requests" value={`BS ${(totalPendingBsCreditAmount).toLocaleString()}`} icon={Banknote} />
                 <StatCard title="Pending Withdrawals" value={`K${totalPendingAmount.toLocaleString()}`} icon={Clock} />
             </div>
 
@@ -569,9 +583,21 @@ export default function AdminPage() {
                                     </Card>
                                 </TabsContent>
                                 <TabsContent value="system-tools" className="pt-4">
-                                    <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
-                                        <p className="text-muted-foreground">System Tools coming soon.</p>
-                                    </div>
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-destructive" />Danger Zone</CardTitle>
+                                            <CardDescription>These are destructive actions. Use with caution.</CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <div className="flex items-center justify-between p-4 border border-destructive/50 bg-destructive/5 rounded-lg">
+                                                <div>
+                                                    <h3 className="font-semibold">Reset Financial Records</h3>
+                                                    <p className="text-sm text-muted-foreground">This will reset all credit sales records to zero.</p>
+                                                </div>
+                                                <Button variant="destructive" onClick={() => setIsResetFinancialsOpen(true)}>Reset Records</Button>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
                                 </TabsContent>
                             </Tabs>
                         </CardContent>
@@ -667,6 +693,21 @@ export default function AdminPage() {
                 distributionReserve={adminSettings.availableCredits || 0}
                 maxCredits={adminSettings.maxCredits || 0}
             />
+            
+            <AlertDialog open={isResetFinancialsOpen} onOpenChange={setIsResetFinancialsOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Reset Financial Records?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                           This will reset all credit sales records to zero and restore your distribution reserve to its maximum capacity. This action cannot be undone. Are you sure?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleResetFinancials} className="bg-destructive hover:bg-destructive/90">Yes, Reset Records</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
