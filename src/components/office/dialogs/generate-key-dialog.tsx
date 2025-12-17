@@ -2,6 +2,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -10,8 +13,16 @@ import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
 import { PurchaseDialog, type PlanDetails } from '@/components/purchase-dialog';
 import { useBrandsoft } from '@/hooks/use-brandsoft';
 import { cn } from '@/lib/utils';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 
-const KEY_PRICE = 5000; // Hardcoded for now
+const KEY_PRICE = 5000;
+
+const pinSchema = z.object({
+  pin: z.string().length(4, "Your PIN must be 4 digits."),
+});
+type PinFormData = z.infer<typeof pinSchema>;
+
 
 interface GenerateKeyDialogProps {
   isOpen: boolean;
@@ -24,12 +35,18 @@ interface GenerateKeyDialogProps {
 export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, creditBalance }: GenerateKeyDialogProps) => {
   const [step, setStep] = useState(1);
   const [generatedKey, setGeneratedKey] = useState('');
-  const { config } = useBrandsoft();
+  const { config, saveConfig } = useBrandsoft();
   const { toast } = useToast();
   const [purchaseDetails, setPurchaseDetails] = useState<PlanDetails | null>(null);
+  const [pinConfirmation, setPinConfirmation] = useState<{method: 'wallet' | 'credits'} | null>(null);
 
   const exchangeValue = config?.admin?.exchangeValue || 1000;
   const creditCost = KEY_PRICE / exchangeValue;
+
+  const pinForm = useForm<PinFormData>({
+    resolver: zodResolver(pinSchema),
+    defaultValues: { pin: '' },
+  });
 
   useEffect(() => {
     if (isOpen && step === 1) {
@@ -45,28 +62,61 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
     }
   };
   
-  const handlePayment = (method: 'wallet' | 'credits') => {
-      if (method === 'wallet' && walletBalance < KEY_PRICE) {
-        toast({
-          variant: 'destructive',
-          title: 'Insufficient Wallet Balance',
-          description: `You need K${KEY_PRICE.toLocaleString()} to purchase this key.`,
-        });
-        return;
-      }
+  const handlePayment = (pin: string) => {
+      if (!pinConfirmation) return;
 
-      if (method === 'credits' && creditBalance < creditCost) {
-        toast({
-          variant: 'destructive',
-          title: 'Insufficient Credits',
-          description: `You need BS ${creditCost.toLocaleString()} to purchase this key.`,
-        });
-        return;
+      if (!config?.affiliate?.isPinSet) {
+          toast({ variant: 'destructive', title: "PIN Not Set", description: "Please set your withdrawal PIN in 'My Features' first." });
+          return;
+      }
+      if (pin !== config.affiliate.pin) {
+          toast({ variant: 'destructive', title: "Incorrect PIN" });
+          pinForm.setError('pin', { message: "The PIN is incorrect." });
+          return;
+      }
+      
+      const method = pinConfirmation.method;
+
+      if (method === 'wallet') {
+          // Logic for wallet payment is here, but we just show a toast for now
+          // This would typically involve an API call
+          const newTransaction = {
+            id: `TRN-KEY-${Date.now()}`,
+            date: new Date().toISOString(),
+            description: `Key Purchase: ${generatedKey}`,
+            amount: KEY_PRICE,
+            type: 'debit' as 'debit',
+          };
+          saveConfig({
+            ...config,
+            affiliate: {
+              ...config.affiliate,
+              myWallet: (config.affiliate.myWallet || 0) - KEY_PRICE,
+              transactions: [newTransaction, ...(config.affiliate.transactions || [])],
+            }
+          });
+      } else if (method === 'credits') {
+         // Logic for credit payment
+          const newTransaction = {
+            id: `TRN-KEY-CREDIT-${Date.now()}`,
+            date: new Date().toISOString(),
+            description: `Key Purchase with Credits: ${generatedKey}`,
+            amount: creditCost,
+            type: 'debit' as 'debit',
+          };
+           saveConfig({
+            ...config,
+            affiliate: {
+              ...config.affiliate,
+              creditBalance: (config.affiliate.creditBalance || 0) - creditCost,
+              transactions: [newTransaction, ...(config.affiliate.transactions || [])],
+            }
+          });
       }
 
       toast({
-          title: "Payment Processing",
-          description: `Processing payment for key ${generatedKey} via ${method}.`,
+          title: "Payment Successful!",
+          description: `Key ${generatedKey} has been purchased via ${method}.`,
       });
       handleClose();
   };
@@ -85,12 +135,14 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
         setStep(1);
         setGeneratedKey('');
         setPurchaseDetails(null);
+        setPinConfirmation(null);
+        pinForm.reset();
     }, 200);
   }
 
   return (
     <>
-      <Dialog open={isOpen && !purchaseDetails} onOpenChange={handleClose}>
+      <Dialog open={isOpen && !purchaseDetails && !pinConfirmation} onOpenChange={handleClose}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>{step === 1 ? 'Generate New Activation Key' : 'Confirm Purchase'}</DialogTitle>
@@ -104,14 +156,11 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
           {step === 1 && (
             <div className="space-y-4 pt-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                   {/* Left: Key */}
                    <div className="flex flex-col items-center justify-center p-4 border rounded-md bg-muted text-center h-full">
                       <p className="text-sm text-muted-foreground">Generated Activation Key</p>
                       <p className="font-mono text-2xl font-bold tracking-wider my-4 break-all">{generatedKey}</p>
                       <p className="text-xs text-muted-foreground">This key is unique and ready to be shared.</p>
                   </div>
-
-                  {/* Right: Benefits */}
                   <div className="space-y-3 rounded-lg border p-4">
                       <h3 className="text-sm font-semibold">Key Benefits for Your New Client:</h3>
                       <div className="flex items-start gap-3 text-sm">
@@ -150,42 +199,29 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
                 </div>
               <h3 className="text-sm font-semibold text-center">Choose Payment Method</h3>
                <div className="grid grid-cols-3 gap-2">
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button className="flex-col h-auto py-3 bg-primary hover:bg-primary/90 text-primary-foreground">
-                            <Wallet className="mb-2 h-5 w-5" />
-                            <div>
-                                <p>Pay with Wallet</p>
-                                <p className="text-xs opacity-80">K{walletBalance.toLocaleString()}</p>
-                            </div>
-                        </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader><AlertDialogTitle>Pay with Wallet</AlertDialogTitle><AlertDialogDescription>Confirm debiting K{KEY_PRICE.toLocaleString()} from your wallet?</AlertDialogDescription></AlertDialogHeader>
-                        <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handlePayment('wallet')}>Confirm</AlertDialogAction></AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                         <Button className="flex-col h-auto py-3 bg-accent hover:bg-accent/90 text-accent-foreground">
-                            <CreditCard className="mb-2 h-5 w-5" />
-                            <div>
-                                <p>BS Credits</p>
-                                <p className="text-xs opacity-80">BS {creditBalance.toLocaleString()}</p>
-                            </div>
-                        </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader><AlertDialogTitle>Pay with BS Credits</AlertDialogTitle><AlertDialogDescription>Confirm debiting BS {creditCost.toLocaleString()} for this purchase?</AlertDialogDescription></AlertDialogHeader>
-                        <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handlePayment('credits')}>Confirm</AlertDialogAction></AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-                <Button className="flex-col h-auto py-3 bg-green-600 hover:bg-green-700 text-white" onClick={handleManualPayment}>
+                  <Button onClick={() => {
+                      if (walletBalance < KEY_PRICE) {
+                          toast({ variant: 'destructive', title: 'Insufficient Wallet Balance' });
+                      } else {
+                          setPinConfirmation({ method: 'wallet' });
+                      }
+                  }} className="flex-col h-auto py-3 bg-primary hover:bg-primary/90 text-white">
+                      <Wallet className="mb-2 h-5 w-5" />
+                      <div><p>Pay with Wallet</p><p className="text-xs opacity-80">K{walletBalance.toLocaleString()}</p></div>
+                  </Button>
+                   <Button onClick={() => {
+                      if (creditBalance < creditCost) {
+                           toast({ variant: 'destructive', title: 'Insufficient Credits' });
+                      } else {
+                          setPinConfirmation({ method: 'credits' });
+                      }
+                  }} className="flex-col h-auto py-3 bg-accent hover:bg-accent/90 text-white">
+                      <CreditCard className="mb-2 h-5 w-5" />
+                      <div><p>BS Credits</p><p className="text-xs opacity-80">BS {creditBalance.toLocaleString()}</p></div>
+                  </Button>
+                  <Button className="flex-col h-auto py-3 bg-green-600 hover:bg-green-700 text-white" onClick={handleManualPayment}>
                     <User className="mb-2 h-5 w-5" />
-                    <div>
-                        <p>Manual</p>
-                        <p className="text-xs opacity-80">Customer pays</p>
-                    </div>
+                    <div><p>Manual</p><p className="text-xs opacity-80">Customer pays</p></div>
                 </Button>
               </div>
                <DialogFooter>
@@ -195,6 +231,43 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
           )}
         </DialogContent>
       </Dialog>
+      
+      {/* PIN Confirmation Dialog */}
+      <Dialog open={!!pinConfirmation} onOpenChange={() => setPinConfirmation(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm with PIN</DialogTitle>
+            <DialogDescription>
+                {pinConfirmation?.method === 'wallet' 
+                    ? `Enter your PIN to confirm payment of K${KEY_PRICE.toLocaleString()} from your wallet.`
+                    : `Enter your PIN to confirm payment of BS ${creditCost.toLocaleString()} from your credit balance.`
+                }
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...pinForm}>
+            <form onSubmit={pinForm.handleSubmit((data) => handlePayment(data.pin))} className="space-y-4">
+                 <FormField
+                    control={pinForm.control}
+                    name="pin"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>4-Digit PIN</FormLabel>
+                            <FormControl>
+                                <Input type="password" maxLength={4} {...field} className="text-center font-bold tracking-[1rem]" />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setPinConfirmation(null)}>Cancel</Button>
+                    <Button type="submit">Confirm Payment</Button>
+                </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+      
       {purchaseDetails && (
         <PurchaseDialog
           plan={purchaseDetails}
