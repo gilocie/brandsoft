@@ -311,7 +311,7 @@ export default function AdminPage() {
     return (
         <div className="container mx-auto space-y-8">
             <div>
-                <h1 className="text-3xl font-bold font-headline">Affiliate Admin</h1>
+                <h1 className="text-3xl font-bold font-headline">Admin</h1>
                 <p className="text-muted-foreground">Manage your team and their withdrawal requests.</p>
             </div>
 
