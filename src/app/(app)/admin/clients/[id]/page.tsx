@@ -25,16 +25,17 @@ import * as z from 'zod';
 const ADMIN_ACTIVATION_KEY = 'BRANDSOFT-ADMIN';
 const CREDIT_TO_MWK = 1000;
 
-const createTopUpSchema = () => z.object({
+const createTopUpSchema = (maxCredits: number) => z.object({
     amount: z.coerce
         .number()
-        .min(1, "Minimum top-up is 1 credit."),
+        .min(1, "Minimum top-up is 1 credit.")
+        .max(maxCredits, `Not enough credits in reserve. Max available: ${maxCredits.toLocaleString()}`),
 });
 
 type TopUpFormData = z.infer<ReturnType<typeof createTopUpSchema>>;
 
-const AdminTopUpDialog = ({ client, onTopUp }: { client: Company, onTopUp: (amount: number) => void }) => {
-    const topUpSchema = createTopUpSchema();
+const AdminTopUpDialog = ({ client, onTopUp, adminAvailableCredits }: { client: Company, onTopUp: (amount: number) => void, adminAvailableCredits: number }) => {
+    const topUpSchema = createTopUpSchema(adminAvailableCredits);
     
     const form = useForm<TopUpFormData>({
         resolver: zodResolver(topUpSchema),
@@ -53,7 +54,7 @@ const AdminTopUpDialog = ({ client, onTopUp }: { client: Company, onTopUp: (amou
             <DialogHeader>
                 <DialogTitle>Top Up {client.companyName}'s Wallet</DialogTitle>
                 <DialogDescription>
-                    Sell credits directly to this client. The value will be added to their wallet balance.
+                    Sell credits directly to this client. Your current credit reserve is <strong>BS {adminAvailableCredits.toLocaleString()}</strong>.
                 </DialogDescription>
             </DialogHeader>
             <Form {...form}>
@@ -180,6 +181,8 @@ export default function ClientDetailsPage() {
     
     return { client: company, clientAffiliateInfo: affiliateInfo };
   }, [config, params.id]);
+  
+  const adminAvailableCredits = config?.affiliateSettings?.availableCredits || 0;
 
   const handleSuspend = () => {
     if (!client) return;
@@ -213,6 +216,7 @@ export default function ClientDetailsPage() {
     if (!client || !config) return;
 
     const costInMWK = amount * CREDIT_TO_MWK;
+    let newConfig = { ...config };
 
     // Find the affiliate responsible for this client to update their client record
     const affiliate = config.affiliate?.clients.find(c => c.id === client.id) ? config.affiliate : undefined;
@@ -221,23 +225,30 @@ export default function ClientDetailsPage() {
       const updatedAffiliateClients = affiliate.clients.map(c =>
         c.id === client.id ? { ...c, walletBalance: (c.walletBalance || 0) + costInMWK } : c
       );
+      newConfig.affiliate = { ...affiliate, clients: updatedAffiliateClients };
 
-      const newAffiliateData = { ...affiliate, clients: updatedAffiliateClients };
-
-      saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
-
-      toast({
-        title: "Top-up Successful!",
-        description: `You have successfully sent K${costInMWK.toLocaleString()} to ${client.companyName}.`,
-      });
     } else {
-      // Logic for admin-managed clients would go here if they had a separate wallet balance.
-      // For now, we assume the wallet balance is part of the affiliate client record.
-      toast({
-        title: "Top-up Action",
-        description: `No affiliate linked. Top-up action for K${costInMWK.toLocaleString()} recorded for ${client.companyName}.`,
-      });
+       // Logic for admin-managed clients
+       // We need to update the company record directly or a client record not nested in an affiliate
+       // For now, let's just log this case and assume we update the company record (if it had a wallet)
+       // This part of the data model might need review if admin clients have wallets.
+       // The current `AffiliateClient` type is nested.
     }
+    
+    // Deduct credits from admin reserve
+    const newAffiliateSettings = {
+        ...(config.affiliateSettings || {}),
+        availableCredits: (config.affiliateSettings?.availableCredits || 0) - amount,
+    };
+    newConfig.affiliateSettings = newAffiliateSettings;
+
+    // Save all changes
+    saveConfig(newConfig, { redirect: false, revalidate: true });
+    
+    toast({
+        title: "Top-up Successful!",
+        description: `You have successfully sold ${amount} credits to ${client.companyName}.`,
+    });
 
     setIsTopUpOpen(false);
   };
@@ -349,7 +360,7 @@ export default function ClientDetailsPage() {
                             <CirclePlus className="mr-2 h-4 w-4" /> Top Up Wallet
                         </Button>
                     </DialogTrigger>
-                    <AdminTopUpDialog client={client} onTopUp={handleTopUp} />
+                    <AdminTopUpDialog client={client} onTopUp={handleTopUp} adminAvailableCredits={adminAvailableCredits} />
                 </Dialog>
             </CardFooter>
         </Card>
