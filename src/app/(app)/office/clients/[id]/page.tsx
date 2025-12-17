@@ -12,6 +12,81 @@ import Link from 'next/link';
 import { StatCard } from '@/components/office/stat-card';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter as ShadcnDialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+
+const CREDIT_TO_MWK = 1000;
+
+const createTopUpSchema = (maxCredits: number) => z.object({
+    amount: z.coerce
+        .number()
+        .min(30, "Minimum top-up is 30 credits.")
+        .max(maxCredits, `You only have ${maxCredits} credits available.`),
+});
+
+type TopUpFormData = z.infer<ReturnType<typeof createTopUpSchema>>;
+
+const TopUpDialog = ({ client, affiliate, onTopUp }: { client: AffiliateClient, affiliate: any, onTopUp: (amount: number) => void }) => {
+    const affiliateCredits = affiliate?.creditBalance || 0;
+    
+    const topUpSchema = createTopUpSchema(affiliateCredits);
+    
+    const form = useForm<TopUpFormData>({
+        resolver: zodResolver(topUpSchema),
+        defaultValues: { amount: 30 },
+    });
+
+    const watchedAmount = form.watch('amount');
+    const costInMWK = watchedAmount * CREDIT_TO_MWK;
+
+    const onSubmit = (data: TopUpFormData) => {
+        onTopUp(data.amount);
+    };
+
+    return (
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Top Up {client.name}'s Wallet</DialogTitle>
+                <DialogDescription>
+                    Transfer BS Credits from your account to your client's wallet.
+                    Your current credit balance is <strong className="text-primary">BS {affiliateCredits.toLocaleString()}</strong>.
+                </DialogDescription>
+            </DialogHeader>
+            <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
+                    <FormField
+                        control={form.control}
+                        name="amount"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>BS Credits to Transfer</FormLabel>
+                                <FormControl>
+                                    <Input type="number" min="30" step="1" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                     <div className="p-4 bg-muted rounded-lg text-center space-y-1">
+                        <p className="text-sm text-muted-foreground">Client will receive</p>
+                        <p className="text-2xl font-bold">K{costInMWK.toLocaleString()}</p>
+                    </div>
+                    <ShadcnDialogFooter>
+                        <DialogClose asChild>
+                            <Button type="button" variant="outline">Cancel</Button>
+                        </DialogClose>
+                        <Button type="submit">Confirm Top Up</Button>
+                    </ShadcnDialogFooter>
+                </form>
+            </Form>
+        </DialogContent>
+    );
+};
+
 
 export default function ClientDetailsPage() {
   const params = useParams();
@@ -21,10 +96,11 @@ export default function ClientDetailsPage() {
   const [isSuspendOpen, setIsSuspendOpen] = useState(false);
   const [isTopUpOpen, setIsTopUpOpen] = useState(false);
 
-  const client = useMemo(() => {
-    // In a multi-affiliate setup, you'd get the specific affiliate first.
-    // For now, we assume one affiliate and find the client in their list.
-    return config?.affiliate?.clients.find(c => c.id === params.id);
+  const { client, affiliate } = useMemo(() => {
+    if (!config || !config.affiliate) return { client: undefined, affiliate: undefined };
+    
+    const foundClient = config.affiliate.clients.find(c => c.id === params.id);
+    return { client: foundClient, affiliate: config.affiliate };
   }, [config, params.id]);
 
   const handleSuspend = () => {
@@ -38,18 +114,45 @@ export default function ClientDetailsPage() {
     setIsSuspendOpen(false);
   };
 
-  const handleTopUp = () => {
-    if (!client) return;
-    // Placeholder for top-up logic
-    console.log(`Topping up for client: ${client.name}`);
+  const handleTopUp = (amount: number) => {
+    if (!client || !config || !affiliate) return;
+    
+    const costInMWK = amount * CREDIT_TO_MWK;
+    
+    // 1. Update Affiliate
+    const newAffiliateData = {
+        ...affiliate,
+        creditBalance: (affiliate.creditBalance || 0) - amount,
+        transactions: [
+            {
+                id: `TRN-DEBIT-${Date.now()}`,
+                date: new Date().toISOString(),
+                description: `Credit sale to ${client.name}`,
+                amount: amount,
+                type: 'debit' as const,
+            },
+            ...(affiliate.transactions || [])
+        ],
+    };
+    
+    // 2. Update Client in Affiliate's list
+    const updatedAffiliateClients = affiliate.clients.map(c => 
+        c.id === client.id ? { ...c, walletBalance: (c.walletBalance || 0) + costInMWK } : c
+    );
+    newAffiliateData.clients = updatedAffiliateClients;
+
+    // 3. Save config
+    saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
+
     toast({
-      title: "Top-up Action",
-      description: `Ready to top-up wallet for ${client.name}.`,
+      title: "Top-up Successful!",
+      description: `You have successfully sent K${costInMWK.toLocaleString()} to ${client.name}.`,
     });
+    
     setIsTopUpOpen(false);
   };
 
-  if (!client) {
+  if (!client || !affiliate) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center">
         <h2 className="text-xl font-semibold">Client not found</h2>
@@ -92,9 +195,14 @@ export default function ClientDetailsPage() {
 
       <div className="grid gap-4 md:grid-cols-2">
         <StatCard title="Client Wallet" value={client.walletBalance || 0} isCurrency icon={Wallet} footer="Funds available to the client">
-             <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => setIsTopUpOpen(true)}>
-                <CirclePlus className="mr-2 h-4 w-4" /> Top Up Wallet
-            </Button>
+             <Dialog open={isTopUpOpen} onOpenChange={setIsTopUpOpen}>
+                <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="w-full mt-2">
+                        <CirclePlus className="mr-2 h-4 w-4" /> Top Up Wallet
+                    </Button>
+                </DialogTrigger>
+                <TopUpDialog client={client} affiliate={affiliate} onTopUp={handleTopUp} />
+            </Dialog>
         </StatCard>
         <Card className="flex flex-col">
             <CardHeader className="flex-grow">
@@ -123,21 +231,7 @@ export default function ClientDetailsPage() {
               </AlertDialogFooter>
           </AlertDialogContent>
       </AlertDialog>
-
-       <AlertDialog open={isTopUpOpen} onOpenChange={setIsTopUpOpen}>
-          <AlertDialogContent>
-              <AlertDialogHeader>
-                  <AlertDialogTitle>Top Up Wallet</AlertDialogTitle>
-                  <AlertDialogDescription>
-                      This functionality is not yet implemented.
-                  </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => handleTopUp()}>OK</AlertDialogAction>
-              </AlertDialogFooter>
-          </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
+
