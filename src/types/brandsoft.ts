@@ -191,6 +191,12 @@ export type Review = {
   date: string;
 };
 
+export type Plan = {
+  name: string;
+  price: number;
+  features: string[];
+};
+
 export type AdminSettings = {
   maxCredits: number;
   buyPrice: number;
@@ -272,6 +278,7 @@ export type BrandsoftConfig = {
   outgoingRequests?: QuotationRequest[];
   requestResponses?: Quotation[];
   templates: BrandsoftTemplate[];
+  plans?: Plan[];
   currencies: string[];
   purchases?: Purchase[];
   reviews?: Review[];

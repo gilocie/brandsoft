@@ -6,7 +6,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useBrandsoft, type Affiliate, type Transaction, type AffiliateClient, type Company, type AdminSettings, type Purchase } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Affiliate, type Transaction, type AffiliateClient, type Company, type AdminSettings, type Purchase, type Plan } from '@/hooks/use-brandsoft';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -38,13 +38,6 @@ const statusVariantMap: { [key: string]: 'default' | 'secondary' | 'destructive'
   processing: 'primary',
   completed: 'success',
 };
-
-const initialPlans = [
-    { name: 'Free Trial', price: 'K0', features: ['Up to 10 invoices', 'Up to 10 customers', 'Basic templates'] },
-    { name: 'Standard', price: 'K5,000/mo', features: ['Unlimited invoices', 'Unlimited customers', 'Premium templates', 'Email support'] },
-    { name: 'Pro', price: 'K15,000/mo', features: ['All Standard features', 'API access', 'Priority support', 'Advanced analytics'] },
-    { name: 'Enterprise', price: 'Custom', features: ['All Pro features', 'Dedicated support', 'Custom integrations', 'On-premise option'] },
-];
 
 const premiumFeatures = [
     { id: 'fullTemplateEditor', label: 'Full Template Editor Access' },
@@ -84,8 +77,7 @@ export default function AdminPage() {
     const [isManageReserveOpen, setIsManageReserveOpen] = useState(false);
     const [isResetFinancialsOpen, setIsResetFinancialsOpen] = useState(false);
     const [isAddPlanOpen, setIsAddPlanOpen] = useState(false);
-    const [plans, setPlans] = useState(initialPlans);
-    const [planToDelete, setPlanToDelete] = useState<typeof initialPlans[0] | null>(null);
+    const [planToDelete, setPlanToDelete] = useState<Plan | null>(null);
     
     const adminSettings: AdminSettings = useMemo(() => config?.admin || {
         maxCredits: 1000000,
@@ -96,6 +88,8 @@ export default function AdminPage() {
         soldCredits: 0,
         isReserveLocked: false,
     }, [config?.admin]);
+
+    const plans = useMemo(() => config?.plans || [], [config?.plans]);
     
     const isReserveLocked = adminSettings.isReserveLocked;
 
@@ -166,11 +160,23 @@ export default function AdminPage() {
     };
     
     const onNewPlanSubmit = (data: NewPlanFormData) => {
-        console.log("New Plan Data:", data);
+        if (!config) return;
+
+        const newPlan: Plan = {
+            name: data.name,
+            price: data.price,
+            features: data.features || [],
+        };
+
+        const updatedPlans = [...(config.plans || []), newPlan];
+        
+        saveConfig({ ...config, plans: updatedPlans }, { redirect: false });
+
         toast({
-            title: "Plan Submitted (Dev)",
-            description: "Check the console for the new plan data.",
+            title: "Plan Created!",
+            description: `The "${data.name}" plan has been successfully added.`,
         });
+        
         setIsAddPlanOpen(false);
         newPlanForm.reset();
     };
@@ -347,20 +353,19 @@ export default function AdminPage() {
         setIsResetFinancialsOpen(false);
     };
 
-    const handleEditPlan = (plan: typeof plans[0]) => {
-        // Logic to pre-fill the form and open it
-        const priceNumber = Number(plan.price.replace(/[^0-9]/g, ''));
+    const handleEditPlan = (plan: Plan) => {
         newPlanForm.reset({
             name: plan.name,
-            price: priceNumber || 0,
-            features: [], // You'll need to map this based on your feature logic
+            price: plan.price,
+            features: plan.features,
         });
         setIsAddPlanOpen(true);
     };
 
     const handleDeletePlan = () => {
-        if (!planToDelete) return;
-        setPlans(plans.filter(p => p.name !== planToDelete.name));
+        if (!planToDelete || !config) return;
+        const updatedPlans = plans.filter(p => p.name !== planToDelete.name);
+        saveConfig({ ...config, plans: updatedPlans }, { redirect: false });
         toast({ title: `Plan "${planToDelete.name}" deleted` });
         setPlanToDelete(null); // This closes the dialog
     };
@@ -466,7 +471,7 @@ export default function AdminPage() {
                                             </DialogHeader>
                                             <Form {...newPlanForm}>
                                                 <form onSubmit={newPlanForm.handleSubmit(onNewPlanSubmit)} className="pt-4">
-                                                    <div className="grid grid-cols-2 gap-6">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                         <div className="space-y-4">
                                                             <FormField control={newPlanForm.control} name="name" render={({ field }) => (
                                                                 <FormItem><FormLabel>Plan Name</FormLabel><FormControl><Input placeholder="e.g., Business Pro" {...field} /></FormControl><FormMessage /></FormItem>
@@ -548,14 +553,14 @@ export default function AdminPage() {
                                                             </DropdownMenuContent>
                                                         </DropdownMenu>
                                                     </div>
-                                                    <CardDescription className="text-2xl font-bold pt-1">{plan.price}</CardDescription>
+                                                    <CardDescription className="text-2xl font-bold pt-1">K{plan.price.toLocaleString()}/mo</CardDescription>
                                                 </CardHeader>
                                                 <CardContent>
                                                     <ul className="space-y-2 text-sm text-muted-foreground">
                                                         {plan.features.map(feature => (
                                                             <li key={feature} className="flex items-center gap-2">
                                                                 <CheckCircle className="h-4 w-4 text-green-500" />
-                                                                <span>{feature}</span>
+                                                                <span>{premiumFeatures.find(f => f.id === feature)?.label || feature}</span>
                                                             </li>
                                                         ))}
                                                     </ul>

@@ -2,7 +2,7 @@
 
 'use client';
 
-import type { BrandsoftConfig, Company, Customer, Invoice, Quotation, QuotationRequest, Affiliate, Transaction, AdminSettings } from '@/types/brandsoft';
+import type { BrandsoftConfig, Company, Customer, Invoice, Quotation, QuotationRequest, Affiliate, Transaction, AdminSettings, Plan } from '@/types/brandsoft';
 
 const initialCompanies: Omit<Company, 'id'>[] = [
     { 
@@ -204,6 +204,13 @@ export function useSetup(
       { id: 'C-003', name: 'Kicks & Co. Manager', email: 'manager@kicks.co', companyName: 'Kicks & Co.' },
   ];
 
+  const initialPlans: Plan[] = [
+    { name: 'Free Trial', price: 0, features: ['Up to 10 invoices', 'Up to 10 customers', 'Basic templates'] },
+    { name: 'Standard', price: 5000, features: ['Unlimited invoices', 'Unlimited customers', 'Premium templates', 'Email support'] },
+    { name: 'Pro', price: 15000, features: ['All Standard features', 'API access', 'Priority support', 'Advanced analytics'] },
+    { name: 'Enterprise', price: 0, features: ['All Pro features', 'Dedicated support', 'Custom integrations', 'On-premise option'] },
+];
+
   const USD_TO_MWK_RATE = 1700;
 
   const initialAffiliateData: Affiliate = {
@@ -345,6 +352,7 @@ export function useSetup(
       incomingRequests: [],
       requestResponses: [],
       templates: [],
+      plans: initialPlans,
       currencies: ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD'],
       purchases: [],
       reviews: [],
