@@ -5,7 +5,7 @@ import { useBrandsoft, type Transaction, type Affiliate } from '@/hooks/use-bran
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Copy, DollarSign, ExternalLink, ShieldCheck, ShieldOff, UserCheck, Users, Edit, CreditCard, Gift, KeyRound, Phone, TrendingUp, TrendingDown, MoreHorizontal, ArrowRight, Wallet, Banknote, Smartphone, CheckCircle, Pencil, Eye, EyeOff, Send } from 'lucide-react';
+import { Copy, DollarSign, ExternalLink, ShieldCheck, ShieldOff, UserCheck, Users, Edit, CreditCard, Gift, KeyRound, Phone, TrendingUp, TrendingDown, MoreHorizontal, ArrowRight, Wallet, Banknote, Smartphone, CheckCircle, Pencil, Eye, EyeOff, Send, Bell } from 'lucide-react';
 import { ClientCard } from '@/components/affiliate/client-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -29,6 +29,7 @@ import { SecurityQuestionsDialog, type SecurityQuestionFormData } from '@/compon
 import { WithdrawalMethodDialog, type WithdrawalMethodFormData, type EditableWithdrawalMethod } from '@/components/office/dialogs/withdrawal-method-dialog';
 import { BankWithdrawalDialog, type BankWithdrawalFormData } from '@/components/office/dialogs/bank-withdrawal-dialog';
 import { BsCreditsDialog, type BsCreditsFormData } from '@/components/office/dialogs/bs-credits-dialog';
+import Link from 'next/link';
 
 const affiliateSchema = z.object({
     fullName: z.string().min(2, "Full name is required"),
@@ -67,6 +68,11 @@ export function OfficePageContent() {
           profilePic: affiliate?.profilePic || '',
       }
   });
+
+  const pendingTopUps = useMemo(() => {
+    if (!config?.purchases) return [];
+    return config.purchases.filter(p => p.status === 'pending' && p.planName === 'Wallet Top-up');
+  }, [config?.purchases]);
 
   // NEW: Create a synchronized list of clients
   // This merges the Affiliate Client entry with the latest real Company Data
@@ -310,10 +316,33 @@ export function OfficePageContent() {
       setIsSecurityQuestionsOpen(false);
   };
 
+  const TopUpNotificationCard = () => {
+    if (pendingTopUps.length === 0) return null;
+    
+    const isSingleOrder = pendingTopUps.length === 1;
+    const orderId = isSingleOrder ? pendingTopUps[0].orderId : '';
+
+    return (
+        <StatCard
+            icon={Bell}
+            title="Pending Top-ups"
+            value={pendingTopUps.length}
+            footer={isSingleOrder ? `Order ID: ${orderId}` : `${pendingTopUps.length} orders need verification.`}
+            className="border-primary"
+        >
+            <Button size="sm" className="w-full mt-2" asChild>
+                <Link href={isSingleOrder ? `/verify-purchase?orderId=${orderId}` : '/verify-purchase'}>
+                    {isSingleOrder ? 'View Order' : 'View All'}
+                </Link>
+            </Button>
+        </StatCard>
+    );
+  };
+
   return (
     <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="flex items-center gap-4 col-span-1 md:col-span-2">
           <Avatar className="h-20 w-20">
             <AvatarImage src={affiliate.profilePic} />
             <AvatarFallback>{affiliate.fullName.charAt(0)}</AvatarFallback>
@@ -403,6 +432,7 @@ export function OfficePageContent() {
             </Dialog>
           </div>
         </div>
+        <TopUpNotificationCard />
       </div>
 
        <Tabs value={activeTab} onValueChange={setActiveTab}>
