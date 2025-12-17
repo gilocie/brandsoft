@@ -34,6 +34,7 @@ import Link from 'next/link';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
+import { GenerateKeyDialog } from '@/components/office/dialogs/generate-key-dialog';
 
 
 const affiliateSchema = z.object({
@@ -68,6 +69,7 @@ export function OfficePageContent() {
   const [isBsCreditsDialogOpen, setIsBsCreditsDialogOpen] = useState(false);
   const [isPinDialogOpen, setIsPinDialogOpen] = useState(false);
   const [isSecurityQuestionsOpen, setIsSecurityQuestionsOpen] = useState(false);
+  const [isGenerateKeyOpen, setIsGenerateKeyOpen] = useState(false);
 
   const affiliate = config?.affiliate;
 
@@ -832,7 +834,7 @@ export function OfficePageContent() {
                         <CardTitle>Activation Keys</CardTitle>
                         <CardDescription>Manage your generated activation keys.</CardDescription>
                     </div>
-                    <Button>
+                    <Button onClick={() => setIsGenerateKeyOpen(true)}>
                         <PlusCircle className="mr-2 h-4 w-4" />
                         New Activation Key
                     </Button>
@@ -874,6 +876,13 @@ export function OfficePageContent() {
             onClose={() => setIsSecurityQuestionsOpen(false)}
             onSave={handleSaveSecurityQuestions}
             currentData={affiliate.securityQuestionData}
+        />
+        <GenerateKeyDialog
+            isOpen={isGenerateKeyOpen}
+            onClose={() => setIsGenerateKeyOpen(false)}
+            staffId={affiliate.staffId || ''}
+            walletBalance={mwkBalance}
+            creditBalance={affiliate.creditBalance || 0}
         />
     </div>
   );
