@@ -519,32 +519,62 @@ export default function AdminPage() {
                 </TabsContent>
                 <TabsContent value="plans" className="pt-6">
                     <Card>
-                        <CardHeader>
-                            <CardTitle>Subscription Plans</CardTitle>
-                            <CardDescription>Plans available for clients to purchase.</CardDescription>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle>Subscription Plans</CardTitle>
+                                <CardDescription>Plans available for clients to purchase.</CardDescription>
+                            </div>
+                            <Dialog>
+                                <DialogTrigger asChild>
+                                    <Button><PackagePlus className="mr-2 h-4 w-4" /> Add New Plan</Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Add New Plan</DialogTitle>
+                                        <DialogDescription>
+                                            This feature is coming soon.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                </DialogContent>
+                            </Dialog>
                         </CardHeader>
-                        <CardContent className="grid gap-4 md:grid-cols-2">
-                           {plans.map(plan => (
-                                <Card key={plan.name}>
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2 text-xl">
-                                            <Briefcase className="h-5 w-5" />
-                                            {plan.name}
-                                        </CardTitle>
-                                        <CardDescription className="text-2xl font-bold pt-1">{plan.price}</CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <ul className="space-y-2 text-sm text-muted-foreground">
-                                            {plan.features.map(feature => (
-                                                <li key={feature} className="flex items-center gap-2">
-                                                    <CheckCircle className="h-4 w-4 text-green-500" />
-                                                    <span>{feature}</span>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </CardContent>
-                                </Card>
-                            ))}
+                        <CardContent>
+                             <Tabs defaultValue="plans">
+                                <TabsList>
+                                    <TabsTrigger value="plans">Plans</TabsTrigger>
+                                    <TabsTrigger value="features">Plan Features</TabsTrigger>
+                                </TabsList>
+                                <TabsContent value="plans" className="pt-4">
+                                     <div className="grid gap-4 md:grid-cols-2">
+                                        {plans.map(plan => (
+                                            <Card key={plan.name}>
+                                                <CardHeader>
+                                                    <CardTitle className="flex items-center gap-2 text-xl">
+                                                        <Briefcase className="h-5 w-5" />
+                                                        {plan.name}
+                                                    </CardTitle>
+                                                    <CardDescription className="text-2xl font-bold pt-1">{plan.price}</CardDescription>
+                                                </CardHeader>
+                                                <CardContent>
+                                                    <ul className="space-y-2 text-sm text-muted-foreground">
+                                                        {plan.features.map(feature => (
+                                                            <li key={feature} className="flex items-center gap-2">
+                                                                <CheckCircle className="h-4 w-4 text-green-500" />
+                                                                <span>{feature}</span>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </CardContent>
+                                            </Card>
+                                        ))}
+                                    </div>
+                                </TabsContent>
+                                <TabsContent value="features" className="pt-4">
+                                    <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
+                                        <p className="text-muted-foreground">Plan feature management coming soon.</p>
+                                    </div>
+                                </TabsContent>
+                            </Tabs>
                         </CardContent>
                     </Card>
                 </TabsContent>
