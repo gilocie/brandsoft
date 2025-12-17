@@ -392,13 +392,29 @@ export default function AdminPage() {
     const handleResetFinancials = () => {
         if (!config || !config.admin) return;
 
+        // Reset admin financial records
         const newAdminSettings: AdminSettings = {
             ...config.admin,
             soldCredits: 0,
             availableCredits: config.admin.maxCredits,
         };
-        saveConfig({ ...config, admin: newAdminSettings }, { redirect: false, revalidate: true });
-        toast({ title: 'Financial Records Reset!', description: 'Credit sales have been reset to zero.' });
+
+        let newAffiliateData = config.affiliate;
+        // Optionally reset affiliate's financial data as well for a full wipe
+        if (newAffiliateData) {
+            newAffiliateData = {
+                ...newAffiliateData,
+                creditBalance: 0,
+                myWallet: 0,
+                transactions: [],
+                totalSales: 0,
+                unclaimedCommission: 0,
+                bonus: 0,
+            };
+        }
+
+        saveConfig({ ...config, admin: newAdminSettings, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
+        toast({ title: 'Financial Records Reset!', description: 'All credit sales and affiliate balances have been reset.' });
         setIsResetFinancialsOpen(false);
     };
 
@@ -699,7 +715,7 @@ export default function AdminPage() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Reset Financial Records?</AlertDialogTitle>
                         <AlertDialogDescription>
-                           This will reset all credit sales records to zero and restore your distribution reserve to its maximum capacity. This action cannot be undone. Are you sure?
+                           This will reset all credit sales records to zero, restore your distribution reserve to its maximum capacity, and wipe all affiliate balances and transactions. This action cannot be undone. Are you sure?
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
