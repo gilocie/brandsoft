@@ -36,6 +36,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Badge } from '@/components/ui/badge';
 import { GenerateKeyDialog } from '@/components/office/dialogs/generate-key-dialog';
 import { PurchaseDialog, type PlanDetails } from '@/components/purchase-dialog';
+import { useRouter } from 'next/navigation';
 
 
 const affiliateSchema = z.object({
@@ -49,6 +50,7 @@ type AffiliateFormData = z.infer<typeof affiliateSchema>;
 
 const CREDIT_TO_MWK = 1000;
 const ITEMS_PER_PAGE = 10;
+const ADMIN_PIN_SUFFIX = '@8090';
 
 const statusVariantMap: { [key: string]: 'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'accent' | 'primary' } = {
   pending: 'accent',
@@ -64,6 +66,7 @@ export function OfficePageContent() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [payoutsPage, setPayoutsPage] = useState(0);
   const { toast } = useToast();
+  const router = useRouter();
 
   const [editingMethod, setEditingMethod] = useState<EditableWithdrawalMethod | null>(null);
   const [isBankDialogOpen, setIsBankDialogOpen] = useState(false);
@@ -353,16 +356,24 @@ export function OfficePageContent() {
     };
 
     const handleTogglePaymentMethod = (method: 'airtel' | 'tnm' | 'bank', enabled: boolean) => {
-        if (!config || !affiliate?.withdrawalMethods?.[method]) return;
+        if (!config || !affiliate?.withdrawalMethods) return;
 
         const newAffiliateData = { ...affiliate };
-        const methodDetails = newAffiliateData.withdrawalMethods![method];
+        const methodDetails = newAffiliateData.withdrawalMethods[method];
         
-        if(methodDetails) { // This check is a bit redundant due to the guard above but satisfies TS
+        if(methodDetails) {
             (methodDetails as any).isClientPaymentMethod = enabled;
+        } else {
+             // If method details don't exist, we can't set this property.
+            toast({
+                title: "Setup Required",
+                description: `Please set up your ${method.toUpperCase()} details before enabling it for clients.`,
+                variant: 'destructive',
+            });
+            return;
         }
         
-        saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false });
+        saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
 
         toast({
             title: "Payment Method Updated",
@@ -377,6 +388,14 @@ export function OfficePageContent() {
     const isSingleOrder = pendingOrders.length === 1;
     const orderId = isSingleOrder ? pendingOrders[0].orderId : '';
 
+    const handleClick = () => {
+        if(isSingleOrder) {
+            router.push(`/verify-purchase?orderId=${orderId}${ADMIN_PIN_SUFFIX}`);
+        } else {
+            setActiveTab('transactions');
+        }
+    }
+
     return (
         <StatCard
             icon={Bell}
@@ -385,7 +404,7 @@ export function OfficePageContent() {
             footer={isSingleOrder ? `Order ID: ${orderId}` : `${pendingOrders.length} orders need verification.`}
             className="border-primary"
         >
-            <Button size="sm" className="w-full mt-2" onClick={() => setActiveTab('transactions')}>
+            <Button size="sm" className="w-full mt-2" onClick={handleClick}>
                 {isSingleOrder ? 'View Order' : 'View All'}
             </Button>
         </StatCard>
@@ -842,6 +861,7 @@ export function OfficePageContent() {
                                     onTogglePaymentMethod={(enabled) => handleTogglePaymentMethod('tnm', enabled)}
                                 />
                                 <MethodCard 
+                                    method="bank" 
                                     name="Bank Transfer" 
                                     description="Fee: K5,000" 
                                     icon={Banknote} 
