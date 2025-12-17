@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { useRouter } from 'next/navigation';
+import { Checkbox } from './ui/checkbox';
 
 
 interface PurchaseDialogProps {
@@ -58,7 +59,7 @@ const paymentMethods = [
 ];
 
 export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = false }: PurchaseDialogProps) {
-    const { addPurchaseOrder } = useBrandsoft();
+    const { config, addPurchaseOrder, saveConfig } = useBrandsoft();
     const { toast } = useToast();
     const router = useRouter();
     const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
@@ -67,6 +68,18 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
     const [purchaseState, setPurchaseState] = useState<'idle' | 'processing' | 'success'>('idle');
     const [orderId, setOrderId] = useState('');
     const [whatsappNumber, setWhatsappNumber] = useState('');
+    const [saveWhatsapp, setSaveWhatsapp] = useState(false);
+    
+    // Auto-fill WhatsApp number if it's the affiliate making the purchase
+    useEffect(() => {
+        if (isOpen && plan.name.startsWith('Activation Key') && config?.affiliate?.phone) {
+            setWhatsappNumber(config.affiliate.phone);
+        } else if (isOpen && config?.profile.phone) {
+            // For clients, pre-fill if available from their main profile
+            setWhatsappNumber(config.profile.phone);
+        }
+    }, [isOpen, plan.name, config]);
+
 
     const handleReceiptUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0] || null;
@@ -115,6 +128,14 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
             };
             addPurchaseOrder(newOrder);
 
+             // If "save number" is checked, update the main profile
+            if (saveWhatsapp && config && config.profile.phone !== whatsappNumber) {
+                saveConfig({
+                    ...config,
+                    profile: { ...config.profile, phone: whatsappNumber }
+                }, { redirect: false, revalidate: false });
+            }
+
             const message = `*Please Activate My New Order!*
 %0A%0AOrder ID: ${newOrderId}
 %0APlan: ${plan.name} (${plan.period})
@@ -143,6 +164,7 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
             setReceiptFile(null);
             setSelectedPayment(null);
             setWhatsappNumber('');
+            setSaveWhatsapp(false);
         }
     };
     
@@ -154,6 +176,10 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
             <span className={cn("text-sm", isComplete && "text-muted-foreground line-through")}>{label}</span>
         </div>
     );
+    
+    // Hide the key itself for security
+    const orderSummaryTitle = plan.name.startsWith('Activation Key') ? 'Activation Key Purchase' : plan.name;
+
 
     return (
         <Dialog open={isOpen} onOpenChange={handleDialogClose}>
@@ -189,7 +215,7 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                                     <CardTitle>Order Summary</CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-2 text-sm">
-                                    <div className="flex justify-between"><span className="text-muted-foreground">Item:</span> <strong>{plan.name}</strong></div>
+                                    <div className="flex justify-between"><span className="text-muted-foreground">Item:</span> <strong>{orderSummaryTitle}</strong></div>
                                     {!isTopUp && <div className="flex justify-between"><span className="text-muted-foreground">Period:</span> <strong>{plan.period}</strong></div>}
                                     <div className="flex justify-between font-bold text-lg"><span className="text-muted-foreground">Total:</span> <span>{plan.price}</span></div>
                                 </CardContent>
@@ -201,6 +227,16 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                                 <StepIndicator step={3} label="Upload Receipt" isComplete={!!receiptFile} />
                                 <StepIndicator step={4} label="Confirm Purchase" isComplete={purchaseState === 'success'} />
                             </div>
+
+                             {/* Only show save option if it's NOT an affiliate's key purchase */}
+                             {!plan.name.startsWith('Activation Key') && (
+                                <div className="flex items-center space-x-2 pt-4">
+                                    <Checkbox id="save-whatsapp" checked={saveWhatsapp} onCheckedChange={(checked) => setSaveWhatsapp(checked as boolean)} />
+                                    <label htmlFor="save-whatsapp" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                        Save my number for future purchases
+                                    </label>
+                                </div>
+                            )}
                         </div>
 
                         {/* Right Side: Payment Details */}
