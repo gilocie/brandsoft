@@ -2,7 +2,7 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
-import { useBrandsoft, type Company, type Review } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Company, type Review, type QuotationRequest } from '@/hooks/use-brandsoft';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -91,7 +91,7 @@ export default function MarketplacePage() {
    const filteredRequests = useMemo(() => {
     if (!config || !config.companies || !currentUserId) return [];
     
-    let requests = (config.quotationRequests || []).filter(req => 
+    let requests = (config.incomingRequests || []).filter((req: QuotationRequest) => 
         req.status === 'open' && 
         new Date(req.dueDate) >= new Date() &&
         req.requesterId !== currentUserId && // Exclude user's own requests
@@ -100,7 +100,7 @@ export default function MarketplacePage() {
 
     const companiesById = new Map<string, Company>(config.companies.map(c => [c.id, c]));
 
-    return requests.filter(req => {
+    return requests.filter((req: QuotationRequest) => {
         const requester = companiesById.get(req.requesterId);
 
         const searchMatch = searchTerm 
