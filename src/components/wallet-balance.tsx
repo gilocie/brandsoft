@@ -112,7 +112,7 @@ export function WalletBalance() {
                 <DialogHeader>
                     <DialogTitle>Top Up Your Wallet</DialogTitle>
                     <DialogDescription>
-                        Enter the amount you wish to add to your wallet.
+                        Minimum top up is K30,000. The current exchange rate is K{exchangeValue.toLocaleString()} for 1 BS Credit.
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -161,4 +161,3 @@ export function WalletBalance() {
     </div>
   );
 }
-
