@@ -229,9 +229,9 @@ export default function AdminPage() {
     const watchedSellPrice = form.watch('sellPrice');
     const watchedMaxCredits = form.watch('maxCredits');
 
-     const affiliates = useMemo(() => (config?.affiliate ? [config.affiliate] : []), [config?.affiliate]);
+    const affiliates = useMemo(() => (config?.affiliate ? [config.affiliate] : []), [config?.affiliate]);
     
-    const totalCirculatingCredits = useMemo(() => {
+    const circulatingCredits = useMemo(() => {
         return affiliates.reduce((sum, aff) => sum + (aff.creditBalance || 0), 0);
     }, [affiliates]);
     
@@ -255,13 +255,12 @@ export default function AdminPage() {
     const totalPendingBsCreditAmount = pendingBsCreditWithdrawals.reduce((sum, req) => sum + req.amount, 0);
     const totalPendingBsCredits = totalPendingBsCreditAmount / (affiliateSettings.exchangeValue || 1000);
 
-    const availableToSell = creditsInReserve - totalCirculatingCredits - totalPendingBsCredits;
-
-
     const availableCreditsPercentage = useMemo(() => {
         if (!watchedMaxCredits || watchedMaxCredits === 0) return 0;
         return (creditsInReserve / watchedMaxCredits) * 100;
     }, [creditsInReserve, watchedMaxCredits]);
+    
+    const soldCredits = (affiliateSettings.maxCredits || 0) - creditsInReserve;
 
     const onCreditSettingsSubmit = (data: CreditSettingsFormData) => {
         if (!config || isReserveLocked) return;
@@ -398,22 +397,22 @@ export default function AdminPage() {
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                  <StatCard 
-                    title="Available Credits" 
-                    value={`BS ${availableToSell.toLocaleString()}`} 
+                    title="Distribution Reserve" 
+                    value={`BS ${creditsInReserve.toLocaleString()}`} 
                     icon={Wallet}
-                    description={`Value: K${(availableToSell * (affiliateSettings.sellPrice || 0)).toLocaleString()}`}
-                    className={cn(availableToSell <= 100 && 'bg-destructive text-destructive-foreground')}
+                    description={`Value: K${(creditsInReserve * (affiliateSettings.sellPrice || 0)).toLocaleString()}`}
+                    className={cn(creditsInReserve <= 100 && 'bg-destructive text-destructive-foreground')}
                  >
                     <Button size="sm" className="w-full mt-2" onClick={() => setIsManageReserveOpen(true)} disabled={isReserveLocked}>Manage</Button>
                 </StatCard>
                  <StatCard 
                     title="Sold Credits" 
-                    value={`BS ${totalCirculatingCredits.toLocaleString()}`} 
-                    description={`Value: K${(totalCirculatingCredits * (affiliateSettings.sellPrice || 0)).toLocaleString()}`} 
+                    value={`BS ${soldCredits.toLocaleString()}`} 
+                    description={`Value: K${(soldCredits * (affiliateSettings.sellPrice || 0)).toLocaleString()}`} 
                     icon={TrendingUp} 
                  />
-                 <StatCard title="Bought Credits" value="0" description="Paid: K0" icon={TrendingDown} />
-                 <StatCard title="Net Profit" value={`K${(totalCirculatingCredits * (affiliateSettings.sellPrice || 0)).toLocaleString()}`} description="Overall credit profit" icon={BarChart} />
+                 <StatCard title="Circulating Credits" value={`BS ${circulatingCredits.toLocaleString()}`} description={`Value: K${(circulatingCredits * (affiliateSettings.sellPrice || 0)).toLocaleString()}`} icon={TrendingDown} />
+                 <StatCard title="Net Profit" value={`K${(soldCredits * (affiliateSettings.sellPrice || 0) - (affiliateSettings.maxCredits - affiliateSettings.availableCredits - circulatingCredits) * (affiliateSettings.buyPrice || 0)).toLocaleString()}`} description="Overall credit profit" icon={BarChart} />
             </div>
 
             <div className="grid gap-4 md:grid-cols-3">
@@ -666,7 +665,7 @@ export default function AdminPage() {
                 onOpenChange={setIsManageReserveOpen}
                 onSubmit={handleManageReserve}
                 totalReserve={affiliateSettings.availableCredits || 0}
-                circulatingCredits={totalCirculatingCredits}
+                circulatingCredits={circulatingCredits}
                 maxCredits={affiliateSettings.maxCredits || 0}
             />
         </div>
