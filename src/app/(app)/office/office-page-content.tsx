@@ -403,15 +403,6 @@ export function OfficePageContent() {
             </Dialog>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-            <Input value={affiliate.affiliateLink} readOnly className="h-9 text-sm" />
-            <Button size="sm" variant="outline" onClick={() => navigator.clipboard.writeText(affiliate.affiliateLink)}>
-                <Copy className="h-4 w-4 mr-2"/> Copy Link
-            </Button>
-            <Button size="sm" asChild>
-                <a href={affiliate.affiliateLink} target="_blank"><ExternalLink className="h-4 w-4 mr-2"/> Visit</a>
-            </Button>
-        </div>
       </div>
 
        <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -597,9 +588,23 @@ export function OfficePageContent() {
             </Tabs>
         </TabsContent>
         <TabsContent value="invitations" className="pt-6">
-            <div className="flex h-60 items-center justify-center rounded-lg border-2 border-dashed">
-                <p className="text-muted-foreground">Invitation management will be available here.</p>
-            </div>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Your Invitation Link</CardTitle>
+                    <CardDescription>Share this link to invite new clients to BrandSoft. You'll earn commissions on their purchases.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                     <div className="flex items-center gap-2">
+                        <Input value={affiliate.affiliateLink} readOnly className="h-9 text-sm" />
+                        <Button size="sm" variant="outline" onClick={() => navigator.clipboard.writeText(affiliate.affiliateLink)}>
+                            <Copy className="h-4 w-4 mr-2"/> Copy Link
+                        </Button>
+                        <Button size="sm" asChild>
+                            <a href={affiliate.affiliateLink} target="_blank"><ExternalLink className="h-4 w-4 mr-2"/> Visit</a>
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
         </TabsContent>
         <TabsContent value="my-features" className="pt-6 space-y-6">
             <Card>
