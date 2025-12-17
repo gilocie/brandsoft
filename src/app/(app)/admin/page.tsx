@@ -6,7 +6,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useBrandsoft, type Affiliate, type Transaction, type AffiliateClient, type Company, type AdminSettings } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Affiliate, type Transaction, type AffiliateClient, type Company, type AdminSettings, type Purchase } from '@/hooks/use-brandsoft';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -284,26 +284,52 @@ export default function AdminPage() {
    
     const adminClients = useMemo(() => {
         if (!config?.companies) return [];
-        // Find companies referred by Admin.
+
         const referredByAdmin = config.companies.filter(c => c.referredBy === ADMIN_ACTIVATION_KEY);
-        // Find companies not in ANY affiliate list (fallback, in case referredBy is not set).
         const allAffiliateClientIds = affiliates.flatMap(a => a.clients.map(c => c.id));
         const unassigned = config.companies.filter(c => !c.referredBy && !allAffiliateClientIds.includes(c.id));
         
         const combined = [...referredByAdmin, ...unassigned];
         const unique = Array.from(new Map(combined.map(c => [c.id, c])).values());
 
-        // Map Company to AffiliateClient for display consistency
-        return unique.map((company: Company): AffiliateClient => ({
-            id: company.id,
-            name: company.companyName,
-            avatar: company.logo || `https://picsum.photos/seed/${company.id}/100`,
-            plan: 'N/A', // Admin clients don't have plans in this context
-            status: 'active', // Assuming they are active
-            remainingDays: undefined,
-            walletBalance: 0,
-        }));
-    }, [config?.companies, affiliates]);
+        const clientPurchases = config.purchases || [];
+
+        return unique.map((company: Company): AffiliateClient => {
+            const companyPurchases = clientPurchases
+                .filter(p => p.customerId === company.id)
+                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            
+            const activePurchase = companyPurchases.find(p => p.status === 'active');
+            const latestPurchase = companyPurchases[0];
+
+            let plan = 'Free Trial';
+            let status: 'active' | 'expired' = 'active';
+            let remainingDays;
+            
+            const purchaseToUse = activePurchase || latestPurchase;
+
+            if (purchaseToUse) {
+                plan = purchaseToUse.planName;
+                if(purchaseToUse.status === 'active') {
+                    status = 'active';
+                    remainingDays = purchaseToUse.remainingTime.value;
+                } else if (purchaseToUse.status === 'inactive' || purchaseToUse.status === 'declined') {
+                    status = 'expired';
+                    remainingDays = 0;
+                }
+            }
+
+            return {
+                id: company.id,
+                name: company.companyName,
+                avatar: company.logo || `https://picsum.photos/seed/${company.id}/100`,
+                plan: plan,
+                status: status,
+                remainingDays: remainingDays,
+                walletBalance: 0,
+            };
+        });
+    }, [config?.companies, config?.purchases, affiliates]);
 
     const totalAffiliates = affiliates.length;
     

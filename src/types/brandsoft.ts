@@ -146,6 +146,7 @@ export type Purchase = {
         value: number;
         unit: 'minutes' | 'days';
     };
+    customerId?: string; // Link purchase to a company
 }
 
 export type BrandsoftTemplate = {
