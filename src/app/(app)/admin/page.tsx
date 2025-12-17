@@ -578,7 +578,7 @@ export default function AdminPage() {
                                     <CardDescription>Manage features available for subscription plans.</CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="space-y-2">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {premiumFeatures.map(feature => (
                                             <div key={feature.id} className="flex items-center justify-between rounded-lg border p-3">
                                                 <p className="text-sm font-medium">{feature.label}</p>
