@@ -6,14 +6,18 @@ import { useBrandsoft, type Purchase } from '@/hooks/use-brandsoft';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { HistoryTable } from './history-table';
-import { History as HistoryIcon, Wallet, Zap, TrendingUp, CreditCard } from 'lucide-react';
+import { History as HistoryIcon, Wallet, Zap, TrendingUp, CreditCard, Trash2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { WalletBalance } from '@/components/wallet-balance';
+import { Button } from '@/components/ui/button';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { useToast } from '@/hooks/use-toast';
 
 export function HistoryPageContent() {
     const { config, saveConfig } = useBrandsoft();
     const [autoRenew, setAutoRenew] = useState(config?.profile.autoRenew || false);
+    const { toast } = useToast();
 
     const { 
         planPurchases, 
@@ -55,6 +59,21 @@ export function HistoryPageContent() {
         }
     };
     
+    const handleClearHistory = (type: 'plans' | 'topups') => {
+        if (!config) return;
+
+        const newPurchases = config.purchases.filter(p => {
+            const isTopUp = p.planName.toLowerCase().includes('top-up') || p.planName.toLowerCase().includes('credit purchase');
+            return type === 'plans' ? isTopUp : !isTopUp;
+        });
+
+        saveConfig({ ...config, purchases: newPurchases }, { redirect: false });
+        toast({
+            title: "History Cleared",
+            description: `All ${type === 'plans' ? 'plan purchase' : 'top-up'} transactions have been deleted.`,
+        });
+    };
+
     const walletBalance = config?.profile.walletBalance || 0;
     const currencySymbol = config?.profile.defaultCurrency === 'MWK' ? 'K' : config?.profile.defaultCurrency || '';
 
@@ -181,11 +200,30 @@ export function HistoryPageContent() {
                         </CardHeader>
                         <CardContent>
                            <Tabs defaultValue="approved">
-                                <TabsList>
-                                    <TabsTrigger value="approved">Approved</TabsTrigger>
-                                    <TabsTrigger value="pending">Pending</TabsTrigger>
-                                    <TabsTrigger value="declined">Declined</TabsTrigger>
-                                </TabsList>
+                                <div className="flex items-center justify-between border-b">
+                                    <TabsList>
+                                        <TabsTrigger value="approved">Approved</TabsTrigger>
+                                        <TabsTrigger value="pending">Pending</TabsTrigger>
+                                        <TabsTrigger value="declined">Declined</TabsTrigger>
+                                    </TabsList>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="destructive" size="sm" disabled={planPurchases.length === 0}>
+                                                <Trash2 className="mr-2 h-4 w-4" /> Clear History
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                <AlertDialogDescription>This will permanently delete all plan purchase history. This action cannot be undone.</AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => handleClearHistory('plans')}>Delete</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </div>
                                 <TabsContent value="approved" className="pt-4">
                                     <HistoryTable purchases={approvedPlans} />
                                 </TabsContent>
@@ -210,11 +248,30 @@ export function HistoryPageContent() {
                         </CardHeader>
                         <CardContent>
                              <Tabs defaultValue="approved">
-                                <TabsList>
-                                    <TabsTrigger value="approved">Approved</TabsTrigger>
-                                    <TabsTrigger value="pending">Pending</TabsTrigger>
-                                    <TabsTrigger value="declined">Declined</TabsTrigger>
-                                </TabsList>
+                                 <div className="flex items-center justify-between border-b">
+                                    <TabsList>
+                                        <TabsTrigger value="approved">Approved</TabsTrigger>
+                                        <TabsTrigger value="pending">Pending</TabsTrigger>
+                                        <TabsTrigger value="declined">Declined</TabsTrigger>
+                                    </TabsList>
+                                     <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="destructive" size="sm" disabled={topUps.length === 0}>
+                                                <Trash2 className="mr-2 h-4 w-4" /> Clear History
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                <AlertDialogDescription>This will permanently delete all wallet top-up history. This action cannot be undone.</AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => handleClearHistory('topups')}>Delete</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </div>
                                 <TabsContent value="approved" className="pt-4">
                                     <HistoryTable purchases={approvedTopups} />
                                 </TabsContent>
