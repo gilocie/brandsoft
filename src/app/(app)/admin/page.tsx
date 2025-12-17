@@ -261,6 +261,9 @@ export default function AdminPage() {
     }, [creditsInReserve, watchedMaxCredits]);
     
     const soldCredits = (affiliateSettings.maxCredits || 0) - creditsInReserve;
+    const boughtBackCredits = circulatingCredits; // This is a simplification
+    const netProfit = (soldCredits * (affiliateSettings.sellPrice || 0)) - (boughtBackCredits * (affiliateSettings.buyPrice || 0));
+
 
     const onCreditSettingsSubmit = (data: CreditSettingsFormData) => {
         if (!config || isReserveLocked) return;
@@ -411,8 +414,8 @@ export default function AdminPage() {
                     description={`Value: K${(soldCredits * (affiliateSettings.sellPrice || 0)).toLocaleString()}`} 
                     icon={TrendingUp} 
                  />
-                 <StatCard title="Circulating Credits" value={`BS ${circulatingCredits.toLocaleString()}`} description={`Value: K${(circulatingCredits * (affiliateSettings.sellPrice || 0)).toLocaleString()}`} icon={TrendingDown} />
-                 <StatCard title="Net Profit" value={`K${(soldCredits * (affiliateSettings.sellPrice || 0) - (affiliateSettings.maxCredits - affiliateSettings.availableCredits - circulatingCredits) * (affiliateSettings.buyPrice || 0)).toLocaleString()}`} description="Overall credit profit" icon={BarChart} />
+                 <StatCard title="Circulating Credits" value={`BS ${circulatingCredits.toLocaleString()}`} description="Held by affiliates" icon={TrendingDown} />
+                 <StatCard title="Net Profit" value={`K${netProfit.toLocaleString()}`} description="Overall credit profit" icon={BarChart} />
             </div>
 
             <div className="grid gap-4 md:grid-cols-3">
