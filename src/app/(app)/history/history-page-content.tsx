@@ -6,17 +6,20 @@ import { useBrandsoft, type Purchase } from '@/hooks/use-brandsoft';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { HistoryTable } from './history-table';
-import { History as HistoryIcon, Wallet, Zap, TrendingUp, CreditCard, Trash2 } from 'lucide-react';
+import { History as HistoryIcon, Wallet, Zap, TrendingUp, CreditCard, Trash2, Bell } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { WalletBalance } from '@/components/wallet-balance';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
+import { StatCard } from '@/components/office/stat-card';
+import { useRouter } from 'next/navigation';
 
 export function HistoryPageContent() {
     const { config, saveConfig } = useBrandsoft();
     const { toast } = useToast();
+    const router = useRouter();
     
     const [autoRenew, setAutoRenew] = useState(config?.profile.autoRenew || false);
     const [isAutoRenewConfirmOpen, setIsAutoRenewConfirmOpen] = useState(false);
@@ -47,7 +50,7 @@ export function HistoryPageContent() {
             pendingPlans: planPurchases.filter(p => p.status === 'pending'),
             declinedPlans: planPurchases.filter(p => p.status === 'declined'),
             approvedTopups: topUps.filter(p => p.status === 'active'),
-            pendingTopups: topUps.filter(p => p.status === 'pending'),
+            pendingTopups: topUps.filter(p => p.status === 'pending' || p.status === 'processing'),
             declinedTopups: topUps.filter(p => p.status === 'declined'),
         };
 
@@ -110,6 +113,29 @@ export function HistoryPageContent() {
                 return sum + (isNaN(price) ? 0 : price);
             }, 0);
     }, [config?.purchases]);
+    
+    const TopUpNotificationCard = () => {
+        if (pendingTopups.length === 0) return null;
+        
+        const isSingleOrder = pendingTopups.length === 1;
+        const orderId = isSingleOrder ? pendingTopups[0].orderId : '';
+        const totalAmount = pendingTopups.reduce((sum, p) => sum + parseFloat(p.planPrice.replace(/[^0-9.-]+/g,"")), 0);
+
+        return (
+            <StatCard
+                icon={Bell}
+                title="Pending Top-ups"
+                value={pendingTopups.length}
+                footer={isSingleOrder ? `Order ID: ${orderId}` : `${pendingTopups.length} orders pending. Total: K${totalAmount.toLocaleString()}`}
+                className="border-primary"
+            >
+                <Button size="sm" className="w-full mt-2" onClick={() => router.push(`/verify-purchase?orderId=${orderId}`)}>
+                    {isSingleOrder ? 'View Order' : 'View All'}
+                </Button>
+            </StatCard>
+        );
+    };
+
 
     return (
         <div className="container mx-auto space-y-6">
@@ -127,7 +153,7 @@ export function HistoryPageContent() {
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {/* Wallet Balance Card */}
                 <Card className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
                     <CardHeader>
@@ -198,6 +224,7 @@ export function HistoryPageContent() {
                         </p>
                     </CardContent>
                 </Card>
+                <TopUpNotificationCard />
             </div>
 
             {/* Transactions Tabs */}
