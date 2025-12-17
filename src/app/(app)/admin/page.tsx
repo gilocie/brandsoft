@@ -28,6 +28,7 @@ import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/comp
 import { ManageReserveDialog, type ManageReserveFormData } from '@/components/admin/manage-reserve-dialog';
 import { StatCard } from '@/components/admin/stat-card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 
 
 const ADMIN_ACTIVATION_KEY = 'BRANDSOFT-ADMIN';
