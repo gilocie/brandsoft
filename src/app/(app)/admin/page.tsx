@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Users, BarChart, Clock, CheckCircle, RefreshCw, Briefcase, UserX, Trash2, Wallet, TrendingUp, TrendingDown, PackagePlus, Banknote, Shield, Lock, Unlock, AlertTriangle } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ClientCard } from '@/components/affiliate/client-card';
@@ -310,7 +310,7 @@ export default function AdminPage() {
 
             if (purchaseToUse) {
                 plan = purchaseToUse.planName;
-                remainingDays = purchaseToUse.remainingTime.value;
+                remainingDays = purchaseToUse.remainingTime?.value;
                 if (purchaseToUse.status === 'active' && remainingDays > 0) {
                     status = 'active';
                 } else {
@@ -786,3 +786,4 @@ export default function AdminPage() {
     
 
     
+
