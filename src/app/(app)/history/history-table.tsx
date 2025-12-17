@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -21,9 +22,10 @@ interface HistoryTableProps {
   purchases: Purchase[];
 }
 
-const statusVariantMap: Record<string, 'default' | 'secondary' | 'destructive' | 'outline' | 'success'> = {
+const statusVariantMap: Record<string, 'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'accent'> = {
   active: 'success',
-  pending: 'default',
+  pending: 'accent',
+  processing: 'primary',
   declined: 'destructive',
   inactive: 'outline',
 };

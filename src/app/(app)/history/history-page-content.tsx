@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -6,7 +7,7 @@ import { useBrandsoft, type Purchase } from '@/hooks/use-brandsoft';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { HistoryTable } from './history-table';
-import { History as HistoryIcon, Wallet, Zap, TrendingUp, CreditCard, Trash2, Bell } from 'lucide-react';
+import { History as HistoryIcon, Wallet, Zap, TrendingUp, CreditCard, Trash2, Bell, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { WalletBalance } from '@/components/wallet-balance';
@@ -15,6 +16,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from '@/hooks/use-toast';
 import { StatCard } from '@/components/office/stat-card';
 import { useRouter } from 'next/navigation';
+import { cn } from '@/lib/utils';
 
 export function HistoryPageContent() {
     const { config, saveConfig } = useBrandsoft();
@@ -34,9 +36,10 @@ export function HistoryPageContent() {
         declinedPlans,
         approvedTopups,
         pendingTopups,
-        declinedTopups
+        processingTopups,
+        declinedTopups,
     } = useMemo(() => {
-        if (!config?.purchases) return { planPurchases: [], topUps: [], approvedPlans: [], pendingPlans: [], declinedPlans: [], approvedTopups: [], pendingTopups: [], declinedTopups: [] };
+        if (!config?.purchases) return { planPurchases: [], topUps: [], approvedPlans: [], pendingPlans: [], declinedPlans: [], approvedTopups: [], pendingTopups: [], processingTopups: [], declinedTopups: [] };
 
         const allPurchases = config.purchases.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         
@@ -50,7 +53,8 @@ export function HistoryPageContent() {
             pendingPlans: planPurchases.filter(p => p.status === 'pending'),
             declinedPlans: planPurchases.filter(p => p.status === 'declined'),
             approvedTopups: topUps.filter(p => p.status === 'active'),
-            pendingTopups: topUps.filter(p => p.status === 'pending' || p.status === 'processing'),
+            pendingTopups: topUps.filter(p => p.status === 'pending'),
+            processingTopups: topUps.filter(p => p.status === 'processing'),
             declinedTopups: topUps.filter(p => p.status === 'declined'),
         };
 
@@ -114,25 +118,58 @@ export function HistoryPageContent() {
             }, 0);
     }, [config?.purchases]);
     
-    const TopUpNotificationCard = () => {
-        if (pendingTopups.length === 0) return null;
+    const TopUpNotificationCard = ({ 
+        orders, 
+        title, 
+        icon: Icon,
+        variant,
+        buttonText
+    }: { 
+        orders: Purchase[], 
+        title: string, 
+        icon: React.ElementType,
+        variant: 'primary' | 'accent' | 'destructive',
+        buttonText: string
+    }) => {
+        if (orders.length === 0) return null;
         
-        const isSingleOrder = pendingTopups.length === 1;
-        const orderId = isSingleOrder ? pendingTopups[0].orderId : '';
-        const totalAmount = pendingTopups.reduce((sum, p) => sum + parseFloat(p.planPrice.replace(/[^0-9.-]+/g,"")), 0);
+        const isSingleOrder = orders.length === 1;
+        const orderId = isSingleOrder ? orders[0].orderId : '';
+        const totalAmount = orders.reduce((sum, p) => sum + parseFloat(p.planPrice.replace(/[^0-9.-]+/g,"")), 0);
+
+        const cardClasses = {
+            primary: 'bg-primary/10 border-primary text-primary',
+            accent: 'bg-accent/10 border-accent text-accent',
+            destructive: 'bg-destructive/10 border-destructive text-destructive',
+        };
+
+        const buttonClasses = {
+            primary: 'bg-primary/20 hover:bg-primary/30',
+            accent: 'bg-accent/20 hover:bg-accent/30',
+            destructive: 'bg-destructive/20 hover:bg-destructive/30',
+        };
 
         return (
-            <StatCard
-                icon={Bell}
-                title="Pending Top-ups"
-                value={pendingTopups.length}
-                footer={isSingleOrder ? `Order ID: ${orderId}` : `${pendingTopups.length} orders pending. Total: K${totalAmount.toLocaleString()}`}
-                className="border-primary"
-            >
-                <Button size="sm" className="w-full mt-2" onClick={() => router.push(`/verify-purchase?orderId=${orderId}`)}>
-                    {isSingleOrder ? 'View Order' : 'View All'}
-                </Button>
-            </StatCard>
+            <Card className={cn("border-2", cardClasses[variant])}>
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                         <CardTitle className="flex items-center gap-2 text-base">
+                            <Icon className="h-5 w-5" />
+                            {title} ({orders.length})
+                        </CardTitle>
+                    </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                     <p className="text-3xl font-bold">{currencySymbol}{totalAmount.toLocaleString()}</p>
+                    <Button 
+                        size="sm" 
+                        className={cn("w-full mt-2", buttonClasses[variant])}
+                        onClick={() => router.push(`/verify-purchase?orderId=${orderId}`)}
+                    >
+                        {buttonText}
+                    </Button>
+                </CardContent>
+            </Card>
         );
     };
 
@@ -169,7 +206,7 @@ export function HistoryPageContent() {
                         <div className="text-3xl font-bold text-white">
                             {currencySymbol} {walletBalance.toLocaleString()}
                         </div>
-                        <WalletBalance variant="outline" className="bg-white/10 border-white text-white hover:bg-white hover:text-primary" />
+                        <WalletBalance variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white hover:text-primary" />
                     </CardContent>
                 </Card>
 
@@ -224,7 +261,9 @@ export function HistoryPageContent() {
                         </p>
                     </CardContent>
                 </Card>
-                <TopUpNotificationCard />
+                <TopUpNotificationCard orders={declinedTopups} title="Declined Top-ups" icon={AlertTriangle} variant="destructive" buttonText="See Why" />
+                <TopUpNotificationCard orders={processingTopups} title="Processing Top-ups" icon={RefreshCw} variant="accent" buttonText="View Status" />
+                <TopUpNotificationCard orders={pendingTopups} title="Pending Top-ups" icon={Bell} variant="primary" buttonText="View Orders" />
             </div>
 
             {/* Transactions Tabs */}
@@ -302,6 +341,7 @@ export function HistoryPageContent() {
                                     <TabsList>
                                         <TabsTrigger value="approved">Approved</TabsTrigger>
                                         <TabsTrigger value="pending">Pending</TabsTrigger>
+                                        <TabsTrigger value="processing">Processing</TabsTrigger>
                                         <TabsTrigger value="declined">Declined</TabsTrigger>
                                     </TabsList>
                                      <AlertDialog>
@@ -327,6 +367,9 @@ export function HistoryPageContent() {
                                 </TabsContent>
                                 <TabsContent value="pending" className="pt-4">
                                      <HistoryTable purchases={pendingTopups} />
+                                </TabsContent>
+                                <TabsContent value="processing" className="pt-4">
+                                     <HistoryTable purchases={processingTopups} />
                                 </TabsContent>
                                 <TabsContent value="declined" className="pt-4">
                                      <HistoryTable purchases={declinedTopups} />
