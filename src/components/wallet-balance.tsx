@@ -71,6 +71,8 @@ export function WalletBalance() {
     resolver: zodResolver(topUpSchema),
     defaultValues: { amount: 30000 },
   });
+  
+  const watchedAmount = form.watch('amount');
 
   if (!config) {
     return null;
@@ -78,6 +80,9 @@ export function WalletBalance() {
 
   const balance = config.profile.walletBalance || 0;
   const currency = config.profile.defaultCurrency || '';
+  const exchangeValue = config.admin?.exchangeValue || 1000;
+  const equivalentCredits = watchedAmount / exchangeValue;
+
 
   const handleTopUpSubmit = (data: TopUpFormData) => {
     setPurchaseDetails({
@@ -120,7 +125,9 @@ export function WalletBalance() {
                               <FormControl>
                                 <AmountInput value={field.value} onChange={field.onChange} />
                               </FormControl>
-                              <FormDescription>Min: K30,000</FormDescription>
+                               <FormDescription>
+                                You will receive: <span className="font-bold text-primary">BS {equivalentCredits.toFixed(2)}</span>
+                               </FormDescription>
                               <FormMessage />
                                <div className="flex flex-col gap-1 pt-2 border-t mt-4 bg-muted/30 p-3 rounded-md">
                                 <div className="flex justify-between items-center pt-2">
