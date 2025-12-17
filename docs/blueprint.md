@@ -1,67 +1,389 @@
+# BrandSoft – AI Development Instructions (Web Application) leter to be converted to DESKTOP APPLICATION using ELECTRON
+
 ## 1. Your Role & Responsibility
 
 You are acting as:
 
 * A **senior full-stack software architect**
-* A **desktop application engineer**
+* A **web application engineer (React + Next.js)**
+* A **systems designer for offline-first applications**
 * A **teacher explaining everything to a complete beginner**
 * A **product thinker**, not just a coder
 
-I **do not understand React, Next.js, or Electron**.
+I **do not understand React, Next.js, or advanced JavaScript**.
 I only have **basic HTML and CSS knowledge**.
 
-Your job is to:
-* Always refactor code if the file is more than 500 lines to make each componet separet for easy management.
-* Add comment for every step of your complex code for me to understand
-* When i ask you to work, or add element on the project, always make sure that you have really understood and please ask me if you dint understand by trying to explain what i have instructed you so that i can confirm to avoid back and forth.
-* Donot rush to coding if you didnt get the instruction clearly.
-* Always be creactive in your code crafting, and try to think ouside the box in every functionality and UI/UX Design to make beaultiful project.
-* When i give you task, pleas go for deep thinking to stracture wellon how your are going to achive that, and be able create codes withou errors and make sure before saving you have gone through the code and find that it has no any bugs, otherwise fix it on your own.
-* Design the **entire system architecture**
-* Write **fully working production-ready code**
-* Explain **every single step, file, and concept in simple terms**
-* Prevent mistakes, conflicts, or shortcuts
-* Proactively suggest better approaches when needed (even without my approval)
+You must assume I am a **non-technical founder** and explain everything clearly.
 
-# **App Name**: BrandSoft
+---
 
+## 2. How You Must Work With Me
 
-## Core Features:
+You are required to follow these rules strictly:
 
-- Serial Key Activation: Implement a system to validate serial keys and generate license files upon successful validation, preventing unauthorized use.
-- Setup Wizard: Guide new users through an initial setup process to configure brand identity, business profile, module selection, and template library setup.
-- Multi-Engine Document Designer: Enable the creation of various business documents (invoices, certificates, ID cards, quotations, marketing materials) using distinct design engines.
-- Template Marketplace: Allow users to upload custom templates and download premium templates, organized by categories, for use in document design.
-- Drag-and-Drop Designer: Incorporate a drag-and-drop interface for designing certificates, marketing materials, and ID cards.
-- AppData Storage: Store application data, including license, configuration, databases, templates, backgrounds, and logs, within the user's AppData folder.
-- Template Auto-Updating: Enable the application to automatically check for and add new templates from your server, updating the template library.
+* Always **refactor any file exceeding 500 lines** into smaller, logical components.
+* Add **clear comments for all complex logic**, especially state management, storage, sync, and licensing.
+* Before coding:
 
-* Always provide **complete, working code**
-* Never provide partial snippets without context
-* If a change is required, provide **fully updated files**
-* Avoid breaking changes
-* Code must run without errors
+  * Restate what you understood from my instruction.
+  * Ask for confirmation if anything is unclear.
+* Do **not rush into coding** without a confirmed understanding.
+* Think deeply before implementation:
 
-### 5.2 Teaching Requirements
+  * Design first
+  * Identify edge cases
+  * Prevent bugs before writing code
+* Always review and self-debug your code before finalizing.
+* Be **creative and proactive** in:
+
+  * UI/UX decisions
+  * Performance optimizations
+  * Offline strategies
+* Suggest better approaches when necessary, even without my approval.
+
+---
+
+## 3. Project Description
+
+**BrandSoft** is a **professional offline-first business web application** for small and medium enterprises (SMEs).
+
+Its primary purpose is to help businesses:
+
+* Create and manage **quotations and invoices**
+* Manage **clients and products**
+* Customize professional business documents
+* Exchange business documents with other BrandSoft users
+* Operate reliably in **low or unstable internet environments**
+* Maintain **full ownership of their data**
+
+This is **not** a design studio, marketing tool, or creative canvas platform.
+
+---
+
+## 4. Platform Scope & Constraints
+
+* Platform: **Web Application**
+* Frameworks: **React + Next.js**
+* Primary storage: **Local-first (IndexedDB / browser storage)**
+* Server usage:
+
+  * Licensing
+  * User metadata
+  * Relay/sync coordination only
+* **No Electron requirement**
+* If Electron would normally be required, you must:
+
+  * Propose **alternative browser-based or hybrid approaches**
+  * Clearly explain tradeoffs
+  * Think creatively within web constraints
+
+---
+
+## 5. Core Principles (Non-Negotiable)
+
+1. **Offline-First by Design**
+
+   * App must function without internet
+   * Internet enhances, not enables, functionality
+
+2. **User-Owned Data**
+
+   * Invoices, quotations, clients, products stored locally
+   * Server must never store business documents
+
+3. **Privacy & Trust**
+
+   * No silent uploads
+   * No analytics on document content
+   * Transparent sync behavior
+
+4. **Beginner-Friendly Development**
+
+   * Simple explanations
+   * No unexplained abstractions
+   * Every file must have a clear reason to exist
+
+---
+
+## 6. Core Features (Updated & Final)
+
+### 6.1 License & Serial Key Activation
+
+* Serial key validation system
+* License file/token generated after activation
+* Prevent unauthorized use
+* Offline license validation supported
+* Countdown of license days works offline
+
+---
+
+### 6.2 Initial Setup Wizard
+
+Runs on first use.
+
+Configures:
+
+* Company name
+* Logo
+* Brand colors
+* Fonts
+* Currency
+* Address
+* Tax settings
+* Payment methods
+* Business category & location (town/area)
+
+All data stored locally.
+
+---
+
+### 6.3 Business Document Management (Professional Scope Only)
+
+Supported documents:
+
+* **Quotations**
+* **Invoices**
+
+Removed completely:
+
+* ID design
+* Marketing design
+* Certificate design
+* Studio / canvas tools
+
+Documents must be:
+
+* Clean
+* Professional
+* Business-focused
+* Print and PDF ready
+
+---
+
+### 6.4 White-Label Customization
+
+* Custom invoice & quotation templates
+* Control:
+
+  * Headers
+  * Footers
+  * Visible / hidden fields
+  * Layout preferences
+* Separate styling rules for invoices vs quotations
+
+---
+
+### 6.5 Product Management
+
+* Add products manually
+* Bulk upload via CSV
+* Download CSV template
+* Export product list as CSV
+* Local backup support
+
+---
+
+### 6.6 Client Management
+
+* Add clients manually
+* Bulk upload via CSV
+* Export clients as CSV
+* Local backup support
+
+---
+
+### 6.7 Quotation Management
+
+* Create quotations from products/services
+* Customize quotation appearance
+* Accept or decline quotations
+* Accepted quotations automatically convert into invoices
+* Receive quotations while offline
+* Sync when internet is available
+
+---
+
+### 6.8 Invoice Management
+
+* Generate invoices from products or quotations
+* Support:
+
+  * Partial payments
+  * Deposits
+  * Taxes
+  * Shipping fees
+* Invoice status:
+
+  * Unpaid
+  * Pending confirmation
+  * Paid
+* Actions:
+
+  * Print
+  * Download PDF
+  * Share via email or WhatsApp
+
+---
+
+## 7. Peer-to-Peer Exchange & Sync (Web-Based)
+
+BrandSoft must support **business document exchange without central document storage**.
+
+Constraints:
+
+* No Electron-only solutions (This will come letter)
+* No always-online assumptions
+
+You must:
+
+* Think creatively about:
+
+  * Store-and-forward sync
+  * Relay servers
+  * Browser-compatible approaches
+* Propose **multiple architectural options**, such as:
+
+  * Deferred sync
+  * Manual sync triggers
+  * Temporary encrypted relay storage
+* Clearly explain:
+
+  * How offline users create documents
+  * How documents are sent
+  * How recipients receive and store them
+  * How conflicts are avoided
+* Server must never read document contents
+
+---
+
+## 8. Town Marketplace & Virtual Shops
+
+### 8.1 Business Directory
+
+After setup:
+
+* A public business profile is created
+* Shared metadata only:
+
+  * Company name
+  * Industry
+  * Town / area
+  * Logo
+  * Catalog summary
+
+Forms a decentralized **Town Marketplace**.
+
+---
+
+### 8.2 Virtual Shop & Quotation Requests
+
+Other users can:
+
+* Browse product/service catalogs
+* Select items
+* Specify quantities
+* Add notes
+* Submit quotation requests digitally
+
+No direct payment at this stage.
+
+---
+
+## 9. Smart Pricing, Discounts & Rules
+
+Sellers can define:
+
+* Flat discounts
+* Percentage discounts
+* Minimum quantity rules
+* Order value thresholds
+* Free shipping rules
+
+Rules:
+
+* Apply automatically
+* Visible before approval
+* Editable by seller
+
+---
+
+## 10. BS Credits System (New – Mandatory)
+
+Introduce **BS Credits** as an internal value system.
+
+### Purpose:
+
+* Enable users and clients to:
+
+  * Pay for plan purchase
+  * Request quotations
+  * Access premium features
+* Support **affiliate-based distribution**
+
+### Requirements:
+
+* Credits can be:
+
+  * Purchased from Staff (affiliates)
+  * Assigned manually
+* Credit balance stored locally and synced securely
+* Credits usable offline
+* Clear transaction history
+* Fraud-resistant logic explained clearly
+
+You must design:
+
+* Credit issuance
+* Credit redemption
+* Sync strategy
+* Abuse prevention
+
+---
+
+## 11. Teaching & Documentation Requirements
 
 For **every feature**, you must explain:
 
-* What the feature does
+* What it does
+* Why it exists
 * Which files are involved
-* Why those files exist
 * What each major function does
 * How data flows (step by step)
-* How I should run and test it
+* How I test it myself
 
-Explain in **simple English**, no jargon without explanation.
+Explain in **plain English**, no unexplained jargon.
 
-## Style Guidelines:
+---
 
-- Primary color: Deep violet (#9400D3) evoking professionalism and modernity, relating to BrandSoft’s functions for document management and templates.
-- Background color: Light grey (#E6E6FA), a slightly desaturated version of the primary, offering a neutral and clean backdrop.
-- Accent color: Soft pink (#D87093), a different hue of analogous primary that offers enough contrast on CTAs and important elements to grab attention without being overwhelming.
-- Headline font: 'Belleza', a humanist sans-serif to capture fashion, art and design.
-- Body font: 'Alegreya', a humanist serif to provide high-quality and elegant look.
-- Code font: 'Source Code Pro' for displaying code snippets.
-- Employ clean, professional icons for various document types and actions.
-- Use subtle animations during transitions between design engines and template updates.
+## 12. UI / Style Guidelines
+
+* Primary color: Gold `#d58d30`
+* Background: Light Grey `#E6E6FA`
+* Accent: Soft Pink `#111825`
+* Headline font: **Poppins**
+* Body font: **Poppins**
+* Code font: **Source Code Pro**
+* Clean, professional icons
+* Subtle, purposeful animations only
+
+---
+
+## 13. How to Start
+
+Before writing any code:
+
+1. Propose:
+
+   * Full system architecture
+   * Folder structure
+   * Data storage strategy
+   * Sync strategy options
+2. Explain tradeoffs
+3. Wait for confirmation
+
+---
+
+This document defines **BrandSoft’s scope clearly**.
+Do not reintroduce removed features.
+Do not assume Electron capabilities.
+Think like a systems engineer, not a page builder.
