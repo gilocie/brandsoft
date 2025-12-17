@@ -63,7 +63,7 @@ const AmountInput = ({ value, onChange, className }: { value: number, onChange: 
 };
 
 
-export function WalletBalance() {
+export function WalletBalance({className}: {className?: string}) {
   const { config } = useBrandsoft();
   const [isTopUpOpen, setIsTopUpOpen] = useState(false);
   const [purchaseDetails, setPurchaseDetails] = useState<PlanDetails | null>(null);
@@ -123,85 +123,78 @@ export function WalletBalance() {
 
 
   return (
-    <div className="flex items-center gap-2">
-        <div className="flex items-center gap-2 border rounded-full px-3 py-1.5 text-sm font-medium">
-            <Wallet className="h-4 w-4 text-muted-foreground" />
-            <span>{currency}{balance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
-        </div>
-        <Dialog open={isTopUpOpen} onOpenChange={(open) => { if(!open) { handleDialogClose(); } else { setIsTopUpOpen(true); } }}>
-            <DialogTrigger asChild>
-                 <Button size="sm">Top up</Button>
-            </DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>{step === 1 ? 'Top Up Your Wallet' : 'Confirm Purchase'}</DialogTitle>
-                    <DialogDescription>
-                       {step === 1 
-                         ? `Minimum top up is K30,000. Current exchange rate: K${exchangeValue.toLocaleString()} = BS 1.`
-                         : 'Review your purchase details below.'
-                       }
-                    </DialogDescription>
-                </DialogHeader>
+    <Dialog open={isTopUpOpen} onOpenChange={(open) => { if(!open) { handleDialogClose(); } else { setIsTopUpOpen(true); } }}>
+        <DialogTrigger asChild>
+             <Button size="sm" className={className}>Top up</Button>
+        </DialogTrigger>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>{step === 1 ? 'Top Up Your Wallet' : 'Confirm Purchase'}</DialogTitle>
+                <DialogDescription>
+                   {step === 1 
+                     ? `Minimum top up is K30,000. Current exchange rate: K${exchangeValue.toLocaleString()} = BS 1.`
+                     : 'Review your purchase details below.'
+                   }
+                </DialogDescription>
+            </DialogHeader>
 
-                {step === 1 && (
-                    <Form {...form}>
-                        <form onSubmit={(e) => { e.preventDefault(); handleNextStep(); }} className="space-y-6 pt-4">
-                           <FormField
-                              control={form.control}
-                              name="amount"
-                              render={({ field }) => (
-                                <FormItem className="text-center">
-                                  <FormControl>
-                                    <AmountInput value={field.value} onChange={field.onChange} />
-                                  </FormControl>
-                                   <FormDescription>
-                                    You will receive: <span className="font-bold text-primary">BS {equivalentCredits.toFixed(2)}</span>
-                                   </FormDescription>
-                                  <FormMessage />
-                                   <div className="flex flex-col gap-1 pt-2 border-t mt-4 bg-muted/30 p-3 rounded-md">
-                                    <div className="flex justify-between items-center pt-2">
-                                      <span className="font-bold">Current Balance:</span>
-                                      <span className="text-xl font-bold text-primary">
-                                        {currency}{balance.toLocaleString()}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </FormItem>
-                              )}
-                            />
-                            <DialogFooter>
-                                <Button type="button" variant="outline" onClick={handleDialogClose}>Cancel</Button>
-                                <Button type="submit">Next <ArrowRight className="ml-2 h-4 w-4" /></Button>
-                            </DialogFooter>
-                        </form>
-                    </Form>
-                )}
-                
-                {step === 2 && (
-                    <div className="space-y-6 pt-4">
-                        <div className="p-4 bg-muted rounded-lg text-center space-y-2">
-                            <p className="text-sm text-muted-foreground">You are paying</p>
-                            <p className="text-4xl font-bold">K{watchedAmount.toLocaleString()}</p>
-                             <p className="text-sm text-muted-foreground">and will receive <strong className="text-primary">BS {equivalentCredits.toFixed(2)}</strong></p>
-                        </div>
-                        <div className="flex items-center justify-center gap-4 text-center">
-                            <div className="flex flex-col items-center gap-2">
-                                <Avatar className="h-12 w-12 border">
-                                    <AvatarImage src={whoReceivesPayment.profilePic} />
-                                    <AvatarFallback><Building2/></AvatarFallback>
-                                </Avatar>
-                                <p className="text-xs font-semibold">{whoReceivesPayment.fullName}</p>
-                            </div>
-                        </div>
+            {step === 1 && (
+                <Form {...form}>
+                    <form onSubmit={(e) => { e.preventDefault(); handleNextStep(); }} className="space-y-6 pt-4">
+                       <FormField
+                          control={form.control}
+                          name="amount"
+                          render={({ field }) => (
+                            <FormItem className="text-center">
+                              <FormControl>
+                                <AmountInput value={field.value} onChange={field.onChange} />
+                              </FormControl>
+                               <FormDescription>
+                                You will receive: <span className="font-bold text-primary">BS {equivalentCredits.toFixed(2)}</span>
+                               </FormDescription>
+                              <FormMessage />
+                               <div className="flex flex-col gap-1 pt-2 border-t mt-4 bg-muted/30 p-3 rounded-md">
+                                <div className="flex justify-between items-center pt-2">
+                                  <span className="font-bold">Current Balance:</span>
+                                  <span className="text-xl font-bold text-primary">
+                                    {currency}{balance.toLocaleString()}
+                                  </span>
+                                </div>
+                              </div>
+                            </FormItem>
+                          )}
+                        />
                         <DialogFooter>
-                            <Button type="button" variant="outline" onClick={() => setStep(1)}>Back</Button>
-                            <Button type="button" onClick={handleConfirmAndPay}>Confirm & Pay</Button>
+                            <Button type="button" variant="outline" onClick={handleDialogClose}>Cancel</Button>
+                            <Button type="submit">Next <ArrowRight className="ml-2 h-4 w-4" /></Button>
                         </DialogFooter>
+                    </form>
+                </Form>
+            )}
+            
+            {step === 2 && (
+                <div className="space-y-6 pt-4">
+                    <div className="p-4 bg-muted rounded-lg text-center space-y-2">
+                        <p className="text-sm text-muted-foreground">You are paying</p>
+                        <p className="text-4xl font-bold">K{watchedAmount.toLocaleString()}</p>
+                         <p className="text-sm text-muted-foreground">and will receive <strong className="text-primary">BS {equivalentCredits.toFixed(2)}</strong></p>
                     </div>
-                )}
-            </DialogContent>
-        </Dialog>
-
+                    <div className="flex items-center justify-center gap-4 text-center">
+                        <div className="flex flex-col items-center gap-2">
+                            <Avatar className="h-12 w-12 border">
+                                <AvatarImage src={whoReceivesPayment.profilePic} />
+                                <AvatarFallback><Building2/></AvatarFallback>
+                            </Avatar>
+                            <p className="text-xs font-semibold">{whoReceivesPayment.fullName}</p>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button type="button" variant="outline" onClick={() => setStep(1)}>Back</Button>
+                        <Button type="button" onClick={handleConfirmAndPay}>Confirm & Pay</Button>
+                    </DialogFooter>
+                </div>
+            )}
+        </DialogContent>
         {step === 3 && purchaseDetails && (
             <PurchaseDialog
                 plan={purchaseDetails}
@@ -211,6 +204,6 @@ export function WalletBalance() {
                 isTopUp={true}
             />
         )}
-    </div>
+    </Dialog>
   );
 }

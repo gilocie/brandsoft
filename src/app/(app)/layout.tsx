@@ -222,7 +222,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             {pageTitle}
           </h1>
           <div className="flex items-center gap-2">
-            <WalletBalance />
             <Button variant="ghost" size="icon" asChild className="flex-shrink-0 relative">
               <Link href="/quotation-requests?subtab=incoming">
                 <Bell className="h-6 w-6" />

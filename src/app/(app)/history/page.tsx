@@ -89,7 +89,7 @@ export default function HistoryPage() {
                         <div className="text-3xl font-bold text-white">
                             {currencySymbol} {walletBalance.toLocaleString()}
                         </div>
-                        <WalletBalance />
+                        <WalletBalance className="bg-white text-black hover:bg-gray-200"/>
                     </CardContent>
                 </Card>
 
