@@ -12,9 +12,10 @@ import Link from "next/link";
 
 interface ClientCardProps {
   client: AffiliateClient;
+  baseUrl?: '/office' | '/admin';
 }
 
-export const ClientCard = ({ client }: ClientCardProps) => {
+export const ClientCard = ({ client, baseUrl = '/office' }: ClientCardProps) => {
   const isExpired = client.status === 'expired';
   const remainingDays = client.remainingDays || 0;
   const isExpiringSoon = !isExpired && remainingDays <= 7;
@@ -47,7 +48,7 @@ export const ClientCard = ({ client }: ClientCardProps) => {
       </CardContent>
       <CardContent className="p-4 pt-0">
         <Button variant="outline" size="sm" className="w-full" asChild>
-            <Link href={`/office/clients/${client.id}`}>
+            <Link href={`${baseUrl}/clients/${client.id}`}>
                 <Eye className="h-4 w-4 mr-2" />
                 View Client
             </Link>

@@ -508,7 +508,7 @@ export default function AffiliateDetailsPage() {
                                 </CardHeader>
                                 <CardContent className="space-y-2">
                                     {affiliate.clients.map(client => (
-                                        <ClientCard key={client.id} client={client} />
+                                        <ClientCard key={client.id} client={client} baseUrl="/admin" />
                                     ))}
                                 </CardContent>
                             </Card>

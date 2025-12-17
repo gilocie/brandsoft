@@ -420,7 +420,7 @@ export default function AdminPage() {
                         </CardHeader>
                         <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                             {allClients.map((client: AffiliateClient) => (
-                                <ClientCard key={client.id} client={client} />
+                                <ClientCard key={client.id} client={client} baseUrl="/admin" />
                             ))}
                         </CardContent>
                     </Card>
