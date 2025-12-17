@@ -117,8 +117,8 @@ export function HistoryPageContent() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold font-headline flex items-center gap-3">
-                        <HistoryIcon className="h-8 w-8" />
-                        Transaction History
+                        <Wallet className="h-8 w-8" />
+                        Wallet & Transactions
                     </h1>
                     <p className="text-muted-foreground mt-1">
                         Review your plan purchases and wallet top-up history.

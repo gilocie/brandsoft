@@ -16,6 +16,6 @@ const HistoryPageContent = dynamic(
   }
 );
 
-export default function HistoryPage() {
+export default function WalletPage() {
   return <HistoryPageContent />;
 }
