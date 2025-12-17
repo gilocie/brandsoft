@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, Suspense, useCallback } from 'react';
@@ -13,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useBrandsoft, type Purchase } from '@/hooks/use-brandsoft';
 import { useToast } from "@/hooks/use-toast";
-import { KeyRound, CheckCircle, XCircle, Loader2, Download, Eye, Info } from 'lucide-react';
+import { KeyRound, CheckCircle, XCircle, Loader2, Download, Eye, Info, Wallet } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
@@ -374,6 +375,13 @@ function VerifyPurchaseContent() {
             <CardContent>
                 {renderContent()}
             </CardContent>
+            {order && (
+                <CardFooter>
+                    <Button asChild variant="outline">
+                        <Link href="/history"><Wallet className="mr-2 h-4 w-4" /> Return to Wallet</Link>
+                    </Button>
+                </CardFooter>
+            )}
         </Card>
     );
 }
