@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useForm, useWatch } from 'react-hook-form';
@@ -10,7 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { useToast } from '@/hooks/use-toast';
 import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
-import { UploadCloud, Paintbrush, Layers, Trash2, ArrowLeft, Loader2, PanelLeft, Eye, Hash, Wallet, Coins, ChevronLeft, ChevronRight } from 'lucide-react';
+import { UploadCloud, Paintbrush, Layers, Trash2, ArrowLeft, Loader2, PanelLeft, Eye, Hash, Wallet, Coins, ChevronLeft, ChevronRight, Star } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Link from 'next/link';
@@ -27,6 +28,8 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import NextImage, { StaticImageData } from 'next/image';
 import backgroundImages from '@/lib/background-images';
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { Badge } from '@/components/ui/badge';
 
 const designSettingsSchema = z.object({
   logo: z.string().optional(),
@@ -74,13 +77,17 @@ const ImageUploader = ({
     fieldName,
     opacityFieldName,
     label,
-    aspect
+    aspect,
+    isPremium,
+    featureName
 }: {
     form: any,
     fieldName: keyof DesignSettingsFormData,
     opacityFieldName?: keyof DesignSettingsFormData,
     label: string,
-    aspect: 'wide' | 'normal'
+    aspect: 'wide' | 'normal',
+    isPremium: boolean;
+    featureName: string;
 }) => {
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -124,6 +131,24 @@ const ImageUploader = ({
         }
     };
 
+    const UploaderButton = () => (
+         <div className="relative w-full">
+            <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => inputRef.current?.click()}
+                className="w-full h-8 text-xs"
+                disabled={!isPremium}
+            >
+                <UploadCloud className="mr-2 h-3 w-3" /> {imageSrc ? 'Change' : 'Upload'}
+            </Button>
+            {!isPremium && (
+                 <Badge variant="destructive" className="absolute -top-2 -right-2 text-xs px-1 py-0.5"><Star className="h-2.5 w-2.5"/></Badge>
+            )}
+        </div>
+    )
+
     return (
         <div className="space-y-2">
             <FormLabel className="text-xs">{label}</FormLabel>
@@ -131,7 +156,7 @@ const ImageUploader = ({
                 {imageSrc ? (
                     <>
                         <img src={imageSrc} alt={`${label} preview`} className="max-h-full max-w-full object-contain" style={{ opacity: opacityValue ?? 1 }} />
-                        <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={handleDeleteImage}>
+                        <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6" onClick={handleDeleteImage} disabled={!isPremium}>
                            <Trash2 className="h-3 w-3" />
                         </Button>
                     </>
@@ -139,14 +164,21 @@ const ImageUploader = ({
                     <p className="text-xs text-muted-foreground">{label}</p>
                 )}
             </div>
-            <FormField control={form.control} name={fieldName} render={({ field }) => (
+            <FormField control={form.control} name={fieldName} render={() => (
                 <FormItem>
                     <FormControl>
                         <div>
                             <Input type="file" accept="image/*" className="hidden" ref={inputRef} onChange={handleImageChange} />
-                            <Button type="button" variant="outline" size="sm" onClick={() => inputRef.current?.click()} className="w-full h-8 text-xs">
-                                <UploadCloud className="mr-2 h-3 w-3" /> {imageSrc ? 'Change' : 'Upload'}
-                            </Button>
+                            {!isPremium ? (
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild><UploaderButton /></TooltipTrigger>
+                                        <TooltipContent><p>{featureName} is a premium feature.</p></TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                            ) : (
+                                <UploaderButton />
+                            )}
                         </div>
                     </FormControl>
                     <FormMessage />
@@ -175,12 +207,14 @@ const ImageUploader = ({
     );
 };
 
-function SettingsPanel({ form, documentType, onSubmit, returnUrl, documentData }: {
+function SettingsPanel({ form, documentType, onSubmit, returnUrl, documentData, hasFullTemplateEditor, hasRemoveBranding }: {
   form: any,
   documentType: string | null,
   onSubmit: (data: any) => void,
   returnUrl: string,
   documentData: Invoice | Quotation | null,
+  hasFullTemplateEditor: boolean,
+  hasRemoveBranding: boolean,
 }) {
   const { setFormData } = useFormState('designFormData');
   const [imagePage, setImagePage] = useState(0);
@@ -257,7 +291,7 @@ function SettingsPanel({ form, documentType, onSubmit, returnUrl, documentData }
                              <AccordionItem value="appearance" className="border-0">
                                 <AccordionTrigger className="text-sm p-2"><div className="flex items-center gap-2"><Paintbrush className="h-4 w-4"/> Appearance</div></AccordionTrigger>
                                 <AccordionContent className="p-2 space-y-3">
-                                    <ImageUploader form={form} fieldName="logo" label="Custom Logo" aspect='normal' />
+                                    <ImageUploader form={form} fieldName="logo" label="Custom Logo" aspect='normal' isPremium={hasFullTemplateEditor} featureName="Custom Logo" />
                                     <Separator />
                                     <div className="grid grid-cols-2 gap-2">
                                         <FormField control={form.control} name="backgroundColor" render={({ field }) => (
@@ -313,7 +347,7 @@ function SettingsPanel({ form, documentType, onSubmit, returnUrl, documentData }
                                             </div>
                                         )}
                                     </div>
-                                    <ImageUploader form={form} fieldName="backgroundImage" opacityFieldName="backgroundImageOpacity" label="Custom Background" aspect='normal' />
+                                    <ImageUploader form={form} fieldName="backgroundImage" opacityFieldName="backgroundImageOpacity" label="Custom Background" aspect='normal' isPremium={hasFullTemplateEditor} featureName="Custom Background" />
                                 </AccordionContent>
                              </AccordionItem>
                              
@@ -328,12 +362,22 @@ function SettingsPanel({ form, documentType, onSubmit, returnUrl, documentData }
                                         {name: 'showDates', label: 'Dates'},
                                         {name: 'showPaymentDetails', label: 'Payment Details'},
                                         {name: 'showNotes', label: 'Notes Section'},
-                                        {name: 'showBrandsoftFooter', label: '"Created By" Footer'},
+                                        {name: 'showBrandsoftFooter', label: '"Created By" Footer', premiumFeature: 'removeBranding'},
                                     ].map(item => (
                                          <FormField key={item.name} control={form.control} name={item.name as any} render={({ field }) => (
                                             <FormItem className="flex flex-row items-center justify-between rounded-md border p-2">
-                                                <FormLabel className="text-xs">{item.label}</FormLabel>
-                                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                                <div className="flex items-center gap-2">
+                                                    <FormLabel className="text-xs">{item.label}</FormLabel>
+                                                    {item.premiumFeature && !hasRemoveBranding && (
+                                                        <TooltipProvider>
+                                                            <Tooltip>
+                                                                <TooltipTrigger><Badge variant="destructive"><Star className="h-2.5 w-2.5"/></Badge></TooltipTrigger>
+                                                                <TooltipContent><p>{item.label} is a premium feature.</p></TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
+                                                    )}
+                                                </div>
+                                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} disabled={item.premiumFeature && !hasRemoveBranding} /></FormControl>
                                             </FormItem>
                                          )} />
                                     ))}
@@ -359,7 +403,7 @@ function SettingsPanel({ form, documentType, onSubmit, returnUrl, documentData }
                                             <FormField control={form.control} name="headerColor" render={({ field }) => (
                                                 <FormItem><FormLabel className="text-xs">Header Bar Color</FormLabel><FormControl><Input type="color" {...field} value={field.value || '#000000'} className="h-8 w-full p-1 cursor-pointer" /></FormControl></FormItem>
                                             )} />
-                                            <ImageUploader form={form} fieldName="headerImage" opacityFieldName="headerImageOpacity" label="Header Image" aspect='wide' />
+                                            <ImageUploader form={form} fieldName="headerImage" opacityFieldName="headerImageOpacity" label="Header Image" aspect='wide' isPremium={hasFullTemplateEditor} featureName="Custom Header Image" />
                                         </TabsContent>
                                         <TabsContent value="footer" className="pt-3 space-y-3">
                                             <FormField control={form.control} name="showFooter" render={({ field }) => (
@@ -371,7 +415,7 @@ function SettingsPanel({ form, documentType, onSubmit, returnUrl, documentData }
                                             <FormField control={form.control} name="footerColor" render={({ field }) => (
                                                 <FormItem><FormLabel className="text-xs">Footer Bar Color</FormLabel><FormControl><Input type="color" {...field} value={field.value || '#000000'} className="h-8 w-full p-1 cursor-pointer" /></FormControl></FormItem>
                                             )} />
-                                            <ImageUploader form={form} fieldName="footerImage" opacityFieldName="footerImageOpacity" label="Footer Image" aspect='wide' />
+                                            <ImageUploader form={form} fieldName="footerImage" opacityFieldName="footerImageOpacity" label="Footer Image" aspect='wide' isPremium={hasFullTemplateEditor} featureName="Custom Footer Image" />
                                         </TabsContent>
                                         <TabsContent value="watermark" className="pt-3 space-y-3">
                                             <div className="space-y-1"><FormLabel className="text-xs">Watermark Text</FormLabel>
@@ -476,6 +520,16 @@ function DocumentDesignPage() {
     const [document, setDocument] = useState<Invoice | Quotation | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const isInitialLoad = useRef(true);
+
+    const activePlan = useMemo(() => {
+        const activePurchase = config?.purchases?.find(p => p.status === 'active');
+        if (!activePurchase) return { name: 'Free Trial', features: [] };
+        const planDetails = config?.plans?.find(p => p.name === activePurchase.planName);
+        return planDetails || { name: activePurchase.planName, features: [] };
+    }, [config?.purchases, config?.plans]);
+
+    const hasFullTemplateEditor = useMemo(() => activePlan.features.includes('fullTemplateEditor'), [activePlan]);
+    const hasRemoveBranding = useMemo(() => activePlan.features.includes('removeBranding'), [activePlan]);
 
 
     const form = useForm<DesignSettingsFormData>({
@@ -793,6 +847,8 @@ function DocumentDesignPage() {
                     onSubmit={onSubmit} 
                     returnUrl={returnUrl}
                     documentData={finalDocumentData}
+                    hasFullTemplateEditor={hasFullTemplateEditor}
+                    hasRemoveBranding={hasRemoveBranding}
                 />
             </aside>
 
