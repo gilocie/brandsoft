@@ -392,15 +392,13 @@ export default function AdminPage() {
     const handleResetFinancials = () => {
         if (!config || !config.admin) return;
 
-        // Reset admin financial records
         const newAdminSettings: AdminSettings = {
             ...config.admin,
-            soldCredits: 0,
-            availableCredits: config.admin.maxCredits,
+            soldCredits: config.admin.maxCredits, // Mark all as sold
+            availableCredits: 0, // Set available to 0
         };
 
         let newAffiliateData = config.affiliate;
-        // Optionally reset affiliate's financial data as well for a full wipe
         if (newAffiliateData) {
             newAffiliateData = {
                 ...newAffiliateData,
@@ -417,6 +415,7 @@ export default function AdminPage() {
         toast({ title: 'Financial Records Reset!', description: 'All credit sales and affiliate balances have been reset.' });
         setIsResetFinancialsOpen(false);
     };
+
 
     return (
         <div className="container mx-auto space-y-8">
