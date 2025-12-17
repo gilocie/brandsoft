@@ -8,6 +8,8 @@ import { useToast } from '@/hooks/use-toast';
 import { KeyRound, Wallet, CreditCard, Gift, Calendar, User } from 'lucide-react';
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import { PurchaseDialog, type PlanDetails } from '@/components/purchase-dialog';
+import { useBrandsoft } from '@/hooks/use-brandsoft';
+import { cn } from '@/lib/utils';
 
 const KEY_PRICE = 5000; // Hardcoded for now
 
@@ -22,19 +24,20 @@ interface GenerateKeyDialogProps {
 export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, creditBalance }: GenerateKeyDialogProps) => {
   const [step, setStep] = useState(1);
   const [generatedKey, setGeneratedKey] = useState('');
+  const { config } = useBrandsoft();
   const { toast } = useToast();
   const [purchaseDetails, setPurchaseDetails] = useState<PlanDetails | null>(null);
 
+  const exchangeValue = config?.admin?.exchangeValue || 1000;
+  const creditCost = KEY_PRICE / exchangeValue;
 
   useEffect(() => {
-    // When the dialog opens, generate a new key automatically.
     if (isOpen && step === 1) {
       const uniqueSuffix = Date.now().toString(36).slice(-6).toUpperCase();
       const fullKey = `${staffId}-${uniqueSuffix}`;
       setGeneratedKey(fullKey);
     }
   }, [isOpen, step, staffId]);
-
 
   const handleProceedToPayment = () => {
     if (generatedKey) {
@@ -43,12 +46,28 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
   };
   
   const handlePayment = (method: 'wallet' | 'credits') => {
-      // Placeholder for actual payment logic
+      if (method === 'wallet' && walletBalance < KEY_PRICE) {
+        toast({
+          variant: 'destructive',
+          title: 'Insufficient Wallet Balance',
+          description: `You need K${KEY_PRICE.toLocaleString()} to purchase this key.`,
+        });
+        return;
+      }
+
+      if (method === 'credits' && creditBalance < creditCost) {
+        toast({
+          variant: 'destructive',
+          title: 'Insufficient Credits',
+          description: `You need BS ${creditCost.toLocaleString()} to purchase this key.`,
+        });
+        return;
+      }
+
       toast({
           title: "Payment Processing",
           description: `Processing payment for key ${generatedKey} via ${method}.`,
       });
-      // In a real app, you'd deduct from balance, etc.
       handleClose();
   };
 
@@ -130,30 +149,42 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
                   <p className="text-xs text-muted-foreground pt-2">Generated Key: <span className="font-mono">{generatedKey}</span></p>
                 </div>
               <h3 className="text-sm font-semibold text-center">Choose Payment Method</h3>
-              <div className="grid grid-cols-3 gap-2">
+               <div className="grid grid-cols-3 gap-2">
                 <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                      <Button variant="outline" className="flex-col h-auto py-3"><Wallet className="mb-2 h-5 w-5 text-primary" /><div><p>Pay with Wallet</p><p className="text-xs text-muted-foreground">K{walletBalance.toLocaleString()}</p></div></Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader><AlertDialogTitle>Pay with Wallet</AlertDialogTitle><AlertDialogDescription>Confirm debiting K{KEY_PRICE.toLocaleString()} from your wallet?</AlertDialogDescription></AlertDialogHeader>
-                    <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handlePayment('wallet')}>Confirm</AlertDialogAction></AlertDialogFooter>
-                  </AlertDialogContent>
+                    <AlertDialogTrigger asChild>
+                        <Button className="flex-col h-auto py-3 bg-primary hover:bg-primary/90 text-primary-foreground">
+                            <Wallet className="mb-2 h-5 w-5" />
+                            <div>
+                                <p>Pay with Wallet</p>
+                                <p className="text-xs opacity-80">K{walletBalance.toLocaleString()}</p>
+                            </div>
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader><AlertDialogTitle>Pay with Wallet</AlertDialogTitle><AlertDialogDescription>Confirm debiting K{KEY_PRICE.toLocaleString()} from your wallet?</AlertDialogDescription></AlertDialogHeader>
+                        <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handlePayment('wallet')}>Confirm</AlertDialogAction></AlertDialogFooter>
+                    </AlertDialogContent>
                 </AlertDialog>
                 <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                      <Button variant="outline" className="flex-col h-auto py-3"><CreditCard className="mb-2 h-5 w-5 text-primary" /><div><p>BS Credits</p><p className="text-xs text-muted-foreground">BS {creditBalance.toLocaleString()}</p></div></Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                     <AlertDialogHeader><AlertDialogTitle>Pay with BS Credits</AlertDialogTitle><AlertDialogDescription>Confirm debiting required credits for K{KEY_PRICE.toLocaleString()}?</AlertDialogDescription></AlertDialogHeader>
-                     <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handlePayment('credits')}>Confirm</AlertDialogAction></AlertDialogFooter>
-                  </AlertDialogContent>
+                    <AlertDialogTrigger asChild>
+                         <Button className="flex-col h-auto py-3 bg-accent hover:bg-accent/90 text-accent-foreground">
+                            <CreditCard className="mb-2 h-5 w-5" />
+                            <div>
+                                <p>BS Credits</p>
+                                <p className="text-xs opacity-80">BS {creditBalance.toLocaleString()}</p>
+                            </div>
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader><AlertDialogTitle>Pay with BS Credits</AlertDialogTitle><AlertDialogDescription>Confirm debiting BS {creditCost.toLocaleString()} for this purchase?</AlertDialogDescription></AlertDialogHeader>
+                        <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handlePayment('credits')}>Confirm</AlertDialogAction></AlertDialogFooter>
+                    </AlertDialogContent>
                 </AlertDialog>
-                <Button variant="outline" className="flex-col h-auto py-3" onClick={handleManualPayment}>
-                    <User className="mb-2 h-5 w-5 text-primary" />
+                <Button className="flex-col h-auto py-3 bg-green-600 hover:bg-green-700 text-white" onClick={handleManualPayment}>
+                    <User className="mb-2 h-5 w-5" />
                     <div>
                         <p>Manual</p>
-                        <p className="text-xs text-muted-foreground">Customer pays</p>
+                        <p className="text-xs opacity-80">Customer pays</p>
                     </div>
                 </Button>
               </div>
