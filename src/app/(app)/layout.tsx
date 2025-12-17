@@ -40,6 +40,7 @@ import {
   MessageSquareQuote,
   Bell,
   Shield,
+  History,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -58,6 +59,7 @@ const mainNavItems = [
   { href: '/quotations', icon: FileBarChart2, label: 'Quotations', enabledKey: 'quotation' },
   { href: '/quotation-requests', icon: MessageSquareQuote, label: 'Requests', enabledKey: 'quotation' },
   { href: '/products', icon: Package, label: 'Products', enabledKey: 'invoice' },
+  { href: '/history', icon: History, label: 'History', enabledKey: null },
   { href: '/companies', icon: Users, label: 'Companies', enabledKey: null },
   { href: '/marketplace', icon: Store, label: 'Suppliers', enabledKey: null },
   { href: '/admin', icon: Shield, label: 'Admin', enabledKey: null },
