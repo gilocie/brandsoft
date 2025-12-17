@@ -215,7 +215,7 @@ export default function ClientDetailsPage() {
   return (
     <div className="container mx-auto space-y-6">
       <Button variant="ghost" asChild>
-        <Link href="/admin/affiliates/affiliate_user"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Affiliate</Link>
+        <Link href="/admin"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Admin</Link>
       </Button>
 
       <Card>
@@ -330,5 +330,3 @@ export default function ClientDetailsPage() {
     </div>
   );
 }
-
-    
