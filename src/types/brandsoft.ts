@@ -1,5 +1,4 @@
 
-
 import { Page } from '@/stores/canvas-store';
 
 export type AffiliateClient = {
@@ -258,6 +257,7 @@ export type BrandsoftConfig = {
     defaultInvoiceTemplate?: DesignSettings | string;
     defaultQuotationTemplate?: DesignSettings | string;
     walletBalance?: number;
+    autoRenew?: boolean;
   };
   modules: {
     invoice: boolean;

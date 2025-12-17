@@ -1,15 +1,20 @@
 
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useBrandsoft, type Purchase } from '@/hooks/use-brandsoft';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { HistoryTable } from './history-table';
-import { History as HistoryIcon } from 'lucide-react';
+import { History as HistoryIcon, Wallet } from 'lucide-react';
+import { StatCard } from '@/components/office/stat-card';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { WalletBalance } from '@/components/wallet-balance';
 
 export default function HistoryPage() {
-    const { config } = useBrandsoft();
+    const { config, saveConfig } = useBrandsoft();
+    const [autoRenew, setAutoRenew] = useState(config?.profile.autoRenew || false);
 
     const { planPurchases, topUps } = useMemo(() => {
         if (!config?.purchases) return { planPurchases: [], topUps: [] };
@@ -22,6 +27,18 @@ export default function HistoryPage() {
         return { planPurchases, topUps };
 
     }, [config?.purchases]);
+    
+    const handleAutoRenewChange = (checked: boolean) => {
+        setAutoRenew(checked);
+        if (config) {
+            saveConfig({
+                ...config,
+                profile: { ...config.profile, autoRenew: checked }
+            }, { redirect: false });
+        }
+    };
+    
+    const walletBalance = config?.profile.walletBalance || 0;
 
     return (
         <div className="container mx-auto space-y-6">
@@ -33,6 +50,42 @@ export default function HistoryPage() {
                 <p className="text-muted-foreground">
                     Review your plan purchases and wallet top-up history.
                 </p>
+            </div>
+
+             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <StatCard 
+                    icon={Wallet} 
+                    title="Available Wallet Balance" 
+                    value={walletBalance} 
+                    isCurrency
+                    currencyPrefix={config?.profile.defaultCurrency}
+                    footer="This balance is used for plan renewals and purchases."
+                    variant="primary"
+                >
+                    <div className="flex justify-center">
+                        <WalletBalance />
+                    </div>
+                </StatCard>
+                <Card className="flex flex-col justify-center">
+                    <CardHeader>
+                        <CardTitle>Automatic Renewals</CardTitle>
+                        <CardDescription>
+                            Automatically renew your plan using your wallet balance when it's about to expire.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex items-center justify-between rounded-lg border p-4">
+                            <Label htmlFor="auto-renew-switch" className="font-medium">
+                                Enable Auto-renewal
+                            </Label>
+                            <Switch
+                                id="auto-renew-switch"
+                                checked={autoRenew}
+                                onCheckedChange={handleAutoRenewChange}
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
 
             <Tabs defaultValue="plans" className="space-y-4">
@@ -70,3 +123,4 @@ export default function HistoryPage() {
         </div>
     );
 }
+

@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import type { BrandsoftConfig, Company, Customer, Invoice, Quotation, QuotationRequest, Affiliate, Transaction, AdminSettings, Plan } from '@/types/brandsoft';
@@ -333,6 +332,7 @@ export function useSetup(
         quotationPrefix: 'QUO-',
         quotationStartNumber: 101,
         walletBalance: 0,
+        autoRenew: false,
       },
       modules: {
         invoice: data.invoice,
