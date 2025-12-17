@@ -7,7 +7,7 @@ import { useBrandsoft, type AffiliateClient, type Company } from '@/hooks/use-br
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Ban, Briefcase, User, Wallet, CirclePlus, Clock, Trash2, UserCog } from 'lucide-react';
+import { ArrowLeft, Ban, Briefcase, User, Wallet, CirclePlus, Clock, Trash2, UserCog, Search } from 'lucide-react';
 import Link from 'next/link';
 import { StatCard } from '@/components/office/stat-card';
 import { useToast } from '@/hooks/use-toast';
@@ -15,15 +15,25 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 
 const ADMIN_ACTIVATION_KEY = 'BRANDSOFT-ADMIN';
 
 const AssignClientDialog = ({ client, onAssign, currentAffiliateName }: { client: Company | undefined, onAssign: (newAffiliateId: string) => void, currentAffiliateName?: string }) => {
     const { config } = useBrandsoft();
     const [selectedAffiliate, setSelectedAffiliate] = useState<string>('');
+    const [searchTerm, setSearchTerm] = useState('');
     
     // In a multi-affiliate app, this would be config.affiliates
-    const availableAffiliates = config?.affiliate ? [config.affiliate] : [];
+    const allAffiliates = config?.affiliate ? [config.affiliate] : [];
+
+    const filteredAffiliates = useMemo(() => {
+        if (!searchTerm) return allAffiliates;
+        return allAffiliates.filter(aff => 
+            aff.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            aff.username.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [allAffiliates, searchTerm]);
 
     if (!client) return null;
 
@@ -35,7 +45,16 @@ const AssignClientDialog = ({ client, onAssign, currentAffiliateName }: { client
                     Currently assigned to: <strong>{currentAffiliateName || 'Brandsoft Admin'}</strong>. Select a new affiliate or take ownership.
                 </DialogDescription>
             </DialogHeader>
-            <div className="py-4">
+             <div className="py-4 space-y-4">
+                 <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                        placeholder="Search affiliates..."
+                        className="pl-10"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                 </div>
                  <RadioGroup value={selectedAffiliate} onValueChange={setSelectedAffiliate} className="space-y-2">
                     {/* Only show "Assign to Admin" if the client is NOT already assigned to admin */}
                     {currentAffiliateName && (
@@ -44,7 +63,7 @@ const AssignClientDialog = ({ client, onAssign, currentAffiliateName }: { client
                             <Label htmlFor="brandsoft-admin" className="font-bold">Brandsoft (Admin)</Label>
                         </div>
                     )}
-                    {availableAffiliates.map(aff => (
+                    {filteredAffiliates.map(aff => (
                          <div key={aff.staffId} className="flex items-center space-x-2 rounded-md border p-3">
                             <RadioGroupItem value={aff.staffId!} id={aff.staffId!} />
                             <Label htmlFor={aff.staffId!} className="w-full">
@@ -52,6 +71,11 @@ const AssignClientDialog = ({ client, onAssign, currentAffiliateName }: { client
                             </Label>
                         </div>
                     ))}
+                    {filteredAffiliates.length === 0 && (
+                        <div className="text-center text-sm text-muted-foreground p-4">
+                            No affiliates found.
+                        </div>
+                    )}
                 </RadioGroup>
             </div>
             <DialogFooter>
