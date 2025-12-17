@@ -1,7 +1,8 @@
 
+
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -10,16 +11,17 @@ import {
 } from '@/components/ui/dialog';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Loader2, UploadCloud, FileCheck } from 'lucide-react';
+import { CheckCircle, Loader2, UploadCloud, FileCheck, Building2, Smartphone, Banknote } from 'lucide-react';
 import { PlanDetails } from './manage-plan-dialog';
-import { useBrandsoft } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Affiliate, type WithdrawalMethodDetails, type BankDetails } from '@/hooks/use-brandsoft';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Checkbox } from './ui/checkbox';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
 
 interface PurchaseDialogProps {
@@ -30,7 +32,7 @@ interface PurchaseDialogProps {
   isTopUp?: boolean;
 }
 
-const paymentMethods = [
+const defaultPaymentMethods = [
     {
         id: 'bank',
         name: 'National Bank',
@@ -58,10 +60,18 @@ const paymentMethods = [
     }
 ];
 
+const iconMap: Record<string, React.ElementType> = {
+    airtel: Smartphone,
+    tnm: Smartphone,
+    bank: Banknote,
+    default: Building2,
+};
+
 export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = false }: PurchaseDialogProps) {
     const { config, addPurchaseOrder, saveConfig } = useBrandsoft();
     const { toast } = useToast();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
     const [receiptFile, setReceiptFile] = useState<File | null>(null);
     const [receiptDataUrl, setReceiptDataUrl] = useState<string | null>(null);
@@ -69,16 +79,56 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
     const [orderId, setOrderId] = useState('');
     const [whatsappNumber, setWhatsappNumber] = useState('');
     const [saveWhatsapp, setSaveWhatsapp] = useState(false);
-    
-    // Auto-fill WhatsApp number if it's the affiliate making the purchase
+
+    const clientReferredBy = useMemo(() => {
+        const myCompany = config?.companies.find(c => c.companyName === config?.brand.businessName);
+        return myCompany?.referredBy || null;
+    }, [config]);
+
+    const paymentMethods = useMemo(() => {
+        if (!clientReferredBy || clientReferredBy === 'BRANDSOFT-ADMIN') {
+            return defaultPaymentMethods;
+        }
+
+        // Simplification for demo. In a real app, you'd find the affiliate by staffId.
+        const affiliate = config?.affiliate;
+        if (!affiliate || !affiliate.withdrawalMethods) {
+            return defaultPaymentMethods;
+        }
+        
+        const affiliateMethods = [];
+        
+        if (affiliate.withdrawalMethods.airtel?.isClientPaymentMethod) {
+            affiliateMethods.push({
+                id: 'airtel', name: 'Airtel Money',
+                details: [{ label: 'Name', value: affiliate.withdrawalMethods.airtel.name }, { label: 'Number', value: affiliate.withdrawalMethods.airtel.phone }]
+            });
+        }
+        if (affiliate.withdrawalMethods.tnm?.isClientPaymentMethod) {
+             affiliateMethods.push({
+                id: 'tnm', name: 'TNM Mpamba',
+                details: [{ label: 'Name', value: affiliate.withdrawalMethods.tnm.name }, { label: 'Number', value: affiliate.withdrawalMethods.tnm.phone }]
+            });
+        }
+        if (affiliate.withdrawalMethods.bank?.isClientPaymentMethod) {
+             affiliateMethods.push({
+                id: 'bank', name: 'Bank Transfer',
+                details: [
+                    { label: 'Bank', value: affiliate.withdrawalMethods.bank.bankName }, 
+                    { label: 'Acc Name', value: config?.affiliate?.fullName || '' }, 
+                    { label: 'Acc #', value: affiliate.withdrawalMethods.bank.accountNumber }
+                ]
+            });
+        }
+
+        return affiliateMethods.length > 0 ? affiliateMethods : defaultPaymentMethods;
+    }, [clientReferredBy, config]);
+
     useEffect(() => {
-        if (isOpen && plan.name.startsWith('Activation Key') && config?.affiliate?.phone) {
-            setWhatsappNumber(config.affiliate.phone);
-        } else if (isOpen && config?.profile.phone) {
-            // For clients, pre-fill if available from their main profile
+        if (isOpen && config?.profile.phone) {
             setWhatsappNumber(config.profile.phone);
         }
-    }, [isOpen, plan.name, config]);
+    }, [isOpen, config]);
 
 
     const handleReceiptUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -128,7 +178,6 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
             };
             addPurchaseOrder(newOrder);
 
-             // If "save number" is checked, update the main profile
             if (saveWhatsapp && config && config.profile.phone !== whatsappNumber) {
                 saveConfig({
                     ...config,
@@ -155,11 +204,10 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
     const handleDialogClose = () => {
         if (purchaseState !== 'processing') {
             if (purchaseState === 'success') {
-                onSuccess(); // This will close the parent dialog too
+                onSuccess();
             } else {
-                onClose(); // Just close this dialog
+                onClose();
             }
-            // Reset state
             setPurchaseState('idle');
             setReceiptFile(null);
             setSelectedPayment(null);
@@ -177,7 +225,6 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
         </div>
     );
     
-    // Hide the key itself for security
     const orderSummaryTitle = plan.name.startsWith('Activation Key') ? 'Activation Key Purchase' : plan.name;
 
 
@@ -208,7 +255,6 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-4">
-                        {/* Left Side: Summary & Status */}
                         <div className="space-y-6">
                             <Card>
                                 <CardHeader>
@@ -228,7 +274,6 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                                 <StepIndicator step={4} label="Confirm Purchase" isComplete={purchaseState === 'success'} />
                             </div>
 
-                             {/* Only show save option if it's NOT an affiliate's key purchase */}
                              {!plan.name.startsWith('Activation Key') && (
                                 <div className="flex items-center space-x-2 pt-4">
                                     <Checkbox id="save-whatsapp" checked={saveWhatsapp} onCheckedChange={(checked) => setSaveWhatsapp(checked as boolean)} />
@@ -239,32 +284,37 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                             )}
                         </div>
 
-                        {/* Right Side: Payment Details */}
                         <div className="space-y-4">
                             <h3 className="font-semibold">Payment Method</h3>
                              <Accordion type="single" collapsible value={selectedPayment || ""} onValueChange={setSelectedPayment}>
-                                {paymentMethods.map(method => (
-                                    <AccordionItem value={method.id} key={method.id}>
-                                        <AccordionTrigger className={cn("hover:no-underline p-3 rounded-md", selectedPayment === method.id && "bg-primary/10 text-primary hover:bg-primary/20")}>
-                                            {method.name}
-                                        </AccordionTrigger>
-                                        <AccordionContent className="p-3 space-y-2 text-sm border-t">
-                                             {method.details.map(detail => (
-                                                <div key={detail.label} className="flex justify-between">
-                                                    <span className="text-muted-foreground">{detail.label}:</span>
-                                                    <span className="font-mono">{detail.value}</span>
+                                {paymentMethods.map(method => {
+                                    const Icon = iconMap[method.id] || iconMap.default;
+                                    return (
+                                        <AccordionItem value={method.id} key={method.id}>
+                                            <AccordionTrigger className={cn("hover:no-underline p-3 rounded-md", selectedPayment === method.id && "bg-primary/10 text-primary hover:bg-primary/20")}>
+                                                <div className="flex items-center gap-3">
+                                                    <Icon className="h-5 w-5"/>
+                                                    <span>{method.name}</span>
                                                 </div>
-                                            ))}
-                                            <div className="pt-4">
-                                                <label htmlFor="receipt-upload" className={cn("w-full cursor-pointer flex items-center justify-center gap-2 border-2 border-dashed rounded-md p-4 text-sm hover:bg-muted", receiptFile && selectedPayment === method.id && "border-green-500 bg-green-50 text-green-700")}>
-                                                    {receiptFile && selectedPayment === method.id ? <FileCheck className="h-4 w-4" /> : <UploadCloud className="h-4 w-4" />}
-                                                    {receiptFile && selectedPayment === method.id ? receiptFile.name : "Upload Transaction Receipt"}
-                                                </label>
-                                                <Input id="receipt-upload" type="file" className="hidden" onChange={handleReceiptUpload} />
-                                            </div>
-                                        </AccordionContent>
-                                    </AccordionItem>
-                                ))}
+                                            </AccordionTrigger>
+                                            <AccordionContent className="p-3 space-y-2 text-sm border-t">
+                                                {method.details.map(detail => (
+                                                    <div key={detail.label} className="flex justify-between">
+                                                        <span className="text-muted-foreground">{detail.label}:</span>
+                                                        <span className="font-mono">{detail.value}</span>
+                                                    </div>
+                                                ))}
+                                                <div className="pt-4">
+                                                    <label htmlFor="receipt-upload" className={cn("w-full cursor-pointer flex items-center justify-center gap-2 border-2 border-dashed rounded-md p-4 text-sm hover:bg-muted", receiptFile && selectedPayment === method.id && "border-green-500 bg-green-50 text-green-700")}>
+                                                        {receiptFile && selectedPayment === method.id ? <FileCheck className="h-4 w-4" /> : <UploadCloud className="h-4 w-4" />}
+                                                        {receiptFile && selectedPayment === method.id ? receiptFile.name : "Upload Transaction Receipt"}
+                                                    </label>
+                                                    <Input id="receipt-upload" type="file" className="hidden" onChange={handleReceiptUpload} />
+                                                </div>
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                    )
+                                })}
                             </Accordion>
                              <Button className="w-full" disabled={isConfirmDisabled} onClick={handleConfirmPurchase}>
                                 {purchaseState === 'processing' ? (

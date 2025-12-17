@@ -1,4 +1,5 @@
 
+
 import { Page } from '@/stores/canvas-store';
 
 export type AffiliateClient = {
@@ -19,6 +20,24 @@ export type Transaction = {
   amount: number;
   type: 'credit' | 'debit';
 };
+
+export type WithdrawalMethodDetails = {
+    name: string;
+    phone: string;
+    isClientPaymentMethod?: boolean;
+};
+
+export type BankDetails = {
+    bankName: string;
+    accountNumber: string;
+    accountType: 'Saving' | 'Current' | 'Fixed';
+    isClientPaymentMethod?: boolean;
+};
+
+export type BsCreditsDetails = {
+    staffId: string;
+};
+
 
 export type Affiliate = {
   fullName: string;
@@ -43,10 +62,10 @@ export type Affiliate = {
   clients: AffiliateClient[];
   transactions?: Transaction[];
   withdrawalMethods?: {
-    airtel?: { name: string; phone: string };
-    tnm?: { name: string; phone: string };
-    bank?: { bankName: string; accountNumber: string; accountType: 'Saving' | 'Current' | 'Fixed'; };
-    bsCredits?: { staffId: string; };
+    airtel?: WithdrawalMethodDetails;
+    tnm?: WithdrawalMethodDetails;
+    bank?: BankDetails;
+    bsCredits?: BsCreditsDetails;
   };
 };
 
