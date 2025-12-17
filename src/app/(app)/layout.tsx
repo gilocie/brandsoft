@@ -91,7 +91,7 @@ const HeaderWalletCard = () => {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="ghost" className="flex-shrink-0">
+        <Button className="flex-shrink-0 bg-green-600 text-white hover:bg-green-700">
           <Wallet className="h-5 w-5 mr-2" />
           Wallet
         </Button>
