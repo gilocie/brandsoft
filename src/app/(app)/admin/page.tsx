@@ -205,7 +205,7 @@ export default function AdminPage() {
         buyPrice: 850,
         sellPrice: 900,
         exchangeValue: 1000,
-        availableCredits: 100000,
+        availableCredits: 0,
         soldCredits: 0,
         isReserveLocked: false,
     }, [config?.admin]);
@@ -395,7 +395,7 @@ export default function AdminPage() {
         const newAdminSettings: AdminSettings = {
             ...config.admin,
             soldCredits: 0,
-            availableCredits: config.admin.maxCredits,
+            availableCredits: 0,
         };
 
         let newAffiliateData = config.affiliate;
@@ -644,7 +644,7 @@ export default function AdminPage() {
                                     <TableCell>{new Date(req.date).toLocaleDateString()}</TableCell>
                                     <TableCell>K{req.amount.toLocaleString()}</TableCell>
                                     <TableCell>{(req as any).method || 'Not specified'}</TableCell>
-                                    <TableCell><Badge variant={statusVariantMap[req.status] || 'default'} className="capitalize">{req.status}</Badge></TableCell>
+                                    <TableCell><Badge variant={statusVariantMap[req.status]} className="capitalize">{req.status}</Badge></TableCell>
                                     <TableCell className="text-right">
                                          <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
