@@ -76,6 +76,40 @@ const initialCompanies: Omit<Company, 'id'>[] = [
         customerType: 'company',
         logo: 'https://picsum.photos/seed/biz6/200',
         website: 'https://naturesbest.mw',
+    },
+    // Add affiliate's clients to the main companies list
+    {
+        name: 'Sant Salon Owner',
+        email: 'contact@santsalon.com',
+        phone: '0991112233',
+        companyName: 'Sant Salon',
+        description: 'Premier hair and beauty salon.',
+        industry: 'Beauty & Wellness',
+        town: 'Blantyre',
+        customerType: 'company',
+        logo: 'https://picsum.photos/seed/c1/100',
+    },
+    {
+        name: 'Manja Factory CEO',
+        email: 'ceo@manjafactory.com',
+        phone: '0884445566',
+        companyName: 'Manja Factory',
+        description: 'Large-scale manufacturing services.',
+        industry: 'Manufacturing',
+        town: 'Lilongwe',
+        customerType: 'company',
+        logo: 'https://picsum.photos/seed/c2/100',
+    },
+    {
+        name: 'Kicks & Co. Manager',
+        email: 'manager@kicks.co',
+        phone: '0997778899',
+        companyName: 'Kicks & Co.',
+        description: 'The best sneakers in town.',
+        industry: 'Retail',
+        town: 'Mzuzu',
+        customerType: 'company',
+        logo: 'https://picsum.photos/seed/c3/100',
     }
 ];
 
@@ -165,6 +199,9 @@ export function useSetup(
       { id: 'COMP-DEMO-1', name: 'Jane Chirwa', email: 'jane.chirwa@bytesolutions.mw', companyName: 'Byte Solutions'},
       { id: 'COMP-DEMO-2', name: 'Mike Phiri', email: 'mike.phiri@maketesupplies.mw', companyName: 'Makete Supplies'},
       { id: 'COMP-DEMO-3', name: 'Grace Moyo', email: 'grace.moyo@buildright.mw', companyName: 'BuildRight Hardware'},
+      { id: 'C-001', name: 'Sant Salon Owner', email: 'contact@santsalon.com', companyName: 'Sant Salon' },
+      { id: 'C-002', name: 'Manja Factory CEO', email: 'ceo@manjafactory.com', companyName: 'Manja Factory' },
+      { id: 'C-003', name: 'Kicks & Co. Manager', email: 'manager@kicks.co', companyName: 'Kicks & Co.' },
   ];
 
   const USD_TO_MWK_RATE = 1700;
@@ -184,7 +221,11 @@ export function useSetup(
     creditBalance: 50.00,
     bonus: 2500,
     staffId: 'BS-AFF-12345678',
-    clients: [],
+    clients: [
+      { id: 'COMP-6', name: 'Sant Salon', avatar: 'https://picsum.photos/seed/c1/100', plan: 'Free Trial', status: 'active', remainingDays: 25 },
+      { id: 'COMP-7', name: 'Manja Factory', avatar: 'https://picsum.photos/seed/c2/100', plan: 'Standard', status: 'active', remainingDays: 80 },
+      { id: 'COMP-8', name: 'Kicks & Co.', avatar: 'https://picsum.photos/seed/c3/100', plan: 'Pro', status: 'expired', remainingDays: 0 },
+    ],
     transactions: [
         { id: 'TRN-1', date: '2024-07-20', description: 'Withdrawal', amount: 500 * USD_TO_MWK_RATE, type: 'debit' },
         { id: 'TRN-2', date: '2024-07-18', description: 'Commission: Client B', amount: 75.50 * USD_TO_MWK_RATE, type: 'credit' },
@@ -217,17 +258,8 @@ export function useSetup(
         website: data.website,
     };
 
-    const userAsCustomer: Customer = {
-        id: userCompanyId,
-        name: data.businessName,
-        email: data.email,
-        phone: data.phone,
-        address: data.address,
-        companyName: data.businessName,
-    };
-
     const finalCompanies = [
-        ...initialCompanies.map((c, i) => ({...c, id: `COMP-DEMO-${i}`})),
+        ...initialCompanies.map((c, i) => ({...c, id: `COMP-${i}`})),
         userAsCompany
     ];
     
@@ -303,5 +335,7 @@ export function useSetup(
 
   return { finalizeSetup };
 }
+
+    
 
     
