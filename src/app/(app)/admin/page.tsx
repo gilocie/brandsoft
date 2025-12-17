@@ -39,7 +39,7 @@ const statusVariantMap: { [key: string]: 'default' | 'secondary' | 'destructive'
   completed: 'success',
 };
 
-const plans = [
+const initialPlans = [
     { name: 'Free Trial', price: 'K0', features: ['Up to 10 invoices', 'Up to 10 customers', 'Basic templates'] },
     { name: 'Standard', price: 'K5,000/mo', features: ['Unlimited invoices', 'Unlimited customers', 'Premium templates', 'Email support'] },
     { name: 'Pro', price: 'K15,000/mo', features: ['All Standard features', 'API access', 'Priority support', 'Advanced analytics'] },
@@ -84,7 +84,8 @@ export default function AdminPage() {
     const [isManageReserveOpen, setIsManageReserveOpen] = useState(false);
     const [isResetFinancialsOpen, setIsResetFinancialsOpen] = useState(false);
     const [isAddPlanOpen, setIsAddPlanOpen] = useState(false);
-    const [planToDelete, setPlanToDelete] = useState<typeof plans[0] | null>(null);
+    const [plans, setPlans] = useState(initialPlans);
+    const [planToDelete, setPlanToDelete] = useState<typeof initialPlans[0] | null>(null);
     
     const adminSettings: AdminSettings = useMemo(() => config?.admin || {
         maxCredits: 1000000,
@@ -359,8 +360,7 @@ export default function AdminPage() {
 
     const handleDeletePlan = () => {
         if (!planToDelete) return;
-        // Logic to delete the plan
-        console.log(`Deleting plan: ${planToDelete.name}`);
+        setPlans(plans.filter(p => p.name !== planToDelete.name));
         toast({ title: `Plan "${planToDelete.name}" deleted` });
         setPlanToDelete(null); // This closes the dialog
     };
