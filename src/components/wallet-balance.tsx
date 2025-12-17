@@ -118,7 +118,7 @@ export function WalletBalance({className}: {className?: string}) {
   const affiliate = config.affiliate;
   const whoReceivesPayment = affiliate || {
       fullName: 'Brandsoft',
-      logo: '', // You can add a Brandsoft logo URL here
+      profilePic: '', // You can add a Brandsoft logo URL here
   };
 
 
