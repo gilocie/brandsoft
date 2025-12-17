@@ -12,7 +12,7 @@ import { useQuotations } from './use-quotations';
 import { useQuotationRequests } from './use-quotation-requests';
 import { usePurchases } from './use-purchases';
 import { useCurrencies } from './use-currencies';
-import type { BrandsoftConfig, Company, Product, Invoice, Quotation, QuotationRequest, Purchase, Customer, Review, Affiliate, Transaction, AdminSettings } from '@/types/brandsoft';
+import type { BrandsoftConfig, Company, Product, Invoice, Quotation, QuotationRequest, Purchase, Customer, Review, Affiliate, Transaction, AdminSettings, Plan } from '@/types/brandsoft';
 
 export * from '@/types/brandsoft';
 
@@ -150,6 +150,29 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       console.error("Error revalidating config from localStorage", error);
     }
   }, []);
+  
+  // This function recursively removes base64 image data from the config
+  const stripImageData = (obj: any): any => {
+    if (Array.isArray(obj)) {
+      return obj.map(item => stripImageData(item));
+    }
+    if (obj !== null && typeof obj === 'object') {
+      const newObj: { [key: string]: any } = {};
+      for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+          const value = obj[key];
+          if (typeof value === 'string' && value.startsWith('data:image/')) {
+            // Keep the property with an empty string or a placeholder
+            newObj[key] = ''; 
+          } else {
+            newObj[key] = stripImageData(value);
+          }
+        }
+      }
+      return newObj;
+    }
+    return obj;
+  };
 
   const saveConfig = (newConfig: BrandsoftConfig, options: { redirect?: boolean; revalidate?: boolean } = {}) => {
     const { redirect = true, revalidate: shouldRevalidate = false } = options;
@@ -164,7 +187,17 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
 
     setConfig(newConfig);
     
-    localStorage.setItem(CONFIG_KEY, JSON.stringify(newConfig));
+    // Before saving to localStorage, strip out any large base64 image data
+    const strippedConfig = stripImageData(newConfig);
+    
+    try {
+      localStorage.setItem(CONFIG_KEY, JSON.stringify(strippedConfig));
+    } catch (error) {
+        console.error("Failed to save configuration to localStorage:", error);
+        // Optionally, notify the user that their changes couldn't be saved.
+        alert("Error: Could not save your changes. The browser storage might be full.");
+    }
+    
     setIsConfigured(true);
 
     if (shouldRevalidate) {
