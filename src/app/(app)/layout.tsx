@@ -91,9 +91,9 @@ const HeaderWalletCard = () => {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="flex-shrink-0">
-          <Wallet className="h-6 w-6" />
-          <span className="sr-only">Wallet</span>
+        <Button variant="ghost" className="flex-shrink-0">
+          <Wallet className="h-5 w-5 mr-2" />
+          Wallet
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80">
