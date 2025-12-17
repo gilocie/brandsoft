@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useBrandsoft, type Transaction, type Affiliate, type Purchase } from '@/hooks/use-brandsoft';
@@ -348,6 +349,24 @@ export function OfficePageContent() {
         toast({
             title: "Status Updated",
             description: `Top-up order status set to ${newStatus}.`,
+        });
+    };
+
+    const handleTogglePaymentMethod = (method: 'airtel' | 'tnm' | 'bank', enabled: boolean) => {
+        if (!config || !affiliate?.withdrawalMethods?.[method]) return;
+
+        const newAffiliateData = { ...affiliate };
+        const methodDetails = newAffiliateData.withdrawalMethods![method];
+        
+        if(methodDetails) { // This check is a bit redundant due to the guard above but satisfies TS
+            (methodDetails as any).isClientPaymentMethod = enabled;
+        }
+        
+        saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false });
+
+        toast({
+            title: "Payment Method Updated",
+            description: `${method.toUpperCase()} is now ${enabled ? 'enabled' : 'disabled'} for client payments.`
         });
     };
 
@@ -801,10 +820,43 @@ export function OfficePageContent() {
                         </TabsList>
                         <TabsContent value="withdraw" className="p-6">
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <MethodCard method="airtel" name="Airtel Money" description="Fee: K3,000" icon={Smartphone} isSetup={!!affiliate.withdrawalMethods?.airtel} onAction={() => setEditingMethod('airtel')} />
-                                <MethodCard method="tnm" name="TNM Mpamba" description="Fee: K3,000" icon={Smartphone} isSetup={!!affiliate.withdrawalMethods?.tnm} onAction={() => setEditingMethod('tnm')} />
-                                <MethodCard name="Bank Transfer" description="Fee: K5,000" icon={Banknote} isSetup={!!affiliate.withdrawalMethods?.bank} onAction={() => setIsBankDialogOpen(true)} />
-                                <MethodCard method="bsCredits" name="BS Credits" description="No fees" icon={Wallet} isSetup={!!affiliate.withdrawalMethods?.bsCredits} onAction={() => setIsBsCreditsDialogOpen(true)} />
+                                <MethodCard 
+                                    method="airtel" 
+                                    name="Airtel Money" 
+                                    description="Fee: K3,000" 
+                                    icon={Smartphone} 
+                                    isSetup={!!affiliate.withdrawalMethods?.airtel} 
+                                    onAction={() => setEditingMethod('airtel')} 
+                                    isPaymentMethod={affiliate.withdrawalMethods?.airtel?.isClientPaymentMethod}
+                                    onTogglePaymentMethod={(enabled) => handleTogglePaymentMethod('airtel', enabled)}
+                                />
+                                <MethodCard 
+                                    method="tnm" 
+                                    name="TNM Mpamba" 
+                                    description="Fee: K3,000" 
+                                    icon={Smartphone} 
+                                    isSetup={!!affiliate.withdrawalMethods?.tnm} 
+                                    onAction={() => setEditingMethod('tnm')} 
+                                    isPaymentMethod={affiliate.withdrawalMethods?.tnm?.isClientPaymentMethod}
+                                    onTogglePaymentMethod={(enabled) => handleTogglePaymentMethod('tnm', enabled)}
+                                />
+                                <MethodCard 
+                                    name="Bank Transfer" 
+                                    description="Fee: K5,000" 
+                                    icon={Banknote} 
+                                    isSetup={!!affiliate.withdrawalMethods?.bank} 
+                                    onAction={() => setIsBankDialogOpen(true)}
+                                    isPaymentMethod={affiliate.withdrawalMethods?.bank?.isClientPaymentMethod}
+                                    onTogglePaymentMethod={(enabled) => handleTogglePaymentMethod('bank', enabled)}
+                                />
+                                <MethodCard 
+                                    method="bsCredits" 
+                                    name="BS Credits" 
+                                    description="No fees" 
+                                    icon={Wallet} 
+                                    isSetup={!!affiliate.withdrawalMethods?.bsCredits} 
+                                    onAction={() => setIsBsCreditsDialogOpen(true)} 
+                                />
                             </div>
                         </TabsContent>
                          <TabsContent value="security" className="p-6 space-y-4">
