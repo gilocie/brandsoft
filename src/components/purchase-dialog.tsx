@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState } from 'react';
@@ -27,6 +26,7 @@ interface PurchaseDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  isTopUp?: boolean;
 }
 
 const paymentMethods = [
@@ -57,7 +57,7 @@ const paymentMethods = [
     }
 ];
 
-export function PurchaseDialog({ plan, isOpen, onClose, onSuccess }: PurchaseDialogProps) {
+export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = false }: PurchaseDialogProps) {
     const { addPurchaseOrder } = useBrandsoft();
     const { toast } = useToast();
     const router = useRouter();
@@ -189,8 +189,8 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess }: PurchaseDia
                                     <CardTitle>Order Summary</CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-2 text-sm">
-                                    <div className="flex justify-between"><span className="text-muted-foreground">Plan:</span> <strong>{plan.name}</strong></div>
-                                    <div className="flex justify-between"><span className="text-muted-foreground">Period:</span> <strong>{plan.period}</strong></div>
+                                    <div className="flex justify-between"><span className="text-muted-foreground">Item:</span> <strong>{plan.name}</strong></div>
+                                    {!isTopUp && <div className="flex justify-between"><span className="text-muted-foreground">Period:</span> <strong>{plan.period}</strong></div>}
                                     <div className="flex justify-between font-bold text-lg"><span className="text-muted-foreground">Total:</span> <span>{plan.price}</span></div>
                                 </CardContent>
                             </Card>
