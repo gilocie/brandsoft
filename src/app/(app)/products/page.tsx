@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -6,7 +7,7 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useBrandsoft, type Product } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Product, type Purchase } from '@/hooks/use-brandsoft';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -61,11 +62,12 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { PlusCircle, MoreHorizontal, Eye, FilePenLine, Trash2, FileText, FileBarChart2, UploadCloud, Download, Search } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Eye, FilePenLine, Trash2, FileText, FileBarChart2, UploadCloud, Download, Search, Star } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 const formSchema = z.object({
   id: z.string().optional(),
@@ -120,6 +122,15 @@ export default function ProductsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [currentPage, setCurrentPage] = useState(0);
+
+  const activePlan = useMemo(() => {
+    const activePurchase = config?.purchases?.find(p => p.status === 'active');
+    if (!activePurchase) return { name: 'Free Trial', features: [] };
+    const planDetails = config?.plans?.find(p => p.name === activePurchase.planName);
+    return planDetails || { name: activePurchase.planName, features: [] };
+  }, [config?.purchases, config?.plans]);
+
+  const hasBulkOperations = useMemo(() => activePlan.features.includes('bulkOperations'), [activePlan]);
   
   const form = useForm<ProductFormData>({
     resolver: zodResolver(formSchema),
@@ -347,14 +358,26 @@ export default function ProductsPage() {
                     </Button>
                 </>
             ) : (
-                <>
-                    <Button variant="outline" onClick={handleExportAll}>
-                        <Download className="mr-2 h-4 w-4" /> Export All
-                    </Button>
+                <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                             <div className="relative">
+                                <Button variant="outline" onClick={handleExportAll} disabled={!hasBulkOperations}>
+                                    <Download className="mr-2 h-4 w-4" /> Export All
+                                </Button>
+                                {!hasBulkOperations && (
+                                    <Badge variant="destructive" className="absolute -top-2 -right-2 text-xs px-1.5 py-0.5"><Star className="h-3 w-3"/></Badge>
+                                )}
+                            </div>
+                        </TooltipTrigger>
+                         {!hasBulkOperations && (
+                            <TooltipContent><p>This is a premium feature. Please upgrade your plan.</p></TooltipContent>
+                        )}
+                    </Tooltip>
                     <Button onClick={() => handleOpenForm()}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Add New Item
                     </Button>
-                </>
+                </TooltipProvider>
             )}
         </div>
       </div>
@@ -467,10 +490,24 @@ export default function ProductsPage() {
                 Fill in the details for the item.
               </DialogDescription>
             </div>
-            <Button variant="outline" onClick={() => { setIsFormOpen(false); setIsBulkUploadOpen(true); }}>
-              <UploadCloud className="mr-2 h-4 w-4" />
-              Bulk Upload
-            </Button>
+             <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                       <div className="relative">
+                         <Button variant="outline" onClick={() => setIsBulkUploadOpen(true)} disabled={!hasBulkOperations}>
+                            <UploadCloud className="mr-2 h-4 w-4" />
+                            Bulk Upload
+                        </Button>
+                        {!hasBulkOperations && (
+                            <Badge variant="destructive" className="absolute -top-2 -right-2 text-xs px-1.5 py-0.5"><Star className="h-3 w-3"/></Badge>
+                        )}
+                       </div>
+                    </TooltipTrigger>
+                    {!hasBulkOperations && (
+                        <TooltipContent><p>This is a premium feature. Please upgrade your plan.</p></TooltipContent>
+                    )}
+                </Tooltip>
+            </TooltipProvider>
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
@@ -622,6 +659,8 @@ export default function ProductsPage() {
     </div>
   );
 }
+    
+
     
 
     

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useRef, ChangeEvent, useEffect } from 'react';
@@ -42,6 +43,8 @@ import { useRouter } from 'next/navigation';
 import { CompanyCard } from '@/components/company-card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Image from 'next/image';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 const formSchema = z.object({
   id: z.string().optional(),
@@ -132,6 +135,15 @@ export default function CompaniesPage() {
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
+
+  const activePlan = useMemo(() => {
+    const activePurchase = config?.purchases?.find(p => p.status === 'active');
+    if (!activePurchase) return { name: 'Free Trial', features: [] };
+    const planDetails = config?.plans?.find(p => p.name === activePurchase.planName);
+    return planDetails || { name: activePurchase.planName, features: [] };
+  }, [config?.purchases, config?.plans]);
+
+  const hasBulkOperations = useMemo(() => activePlan.features.includes('bulkOperations'), [activePlan]);
 
   const form = useForm<CompanyFormData>({
     resolver: zodResolver(formSchema),
@@ -292,7 +304,38 @@ export default function CompaniesPage() {
           <p className="text-muted-foreground">Manage your B2B contacts and marketplace peers.</p>
         </div>
         <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={handleExportAll}><Download className="mr-2 h-4 w-4" /> Export All</Button>
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                         <div className="relative">
+                            <Button variant="outline" onClick={handleExportAll} disabled={!hasBulkOperations}>
+                                <Download className="mr-2 h-4 w-4" /> Export All
+                            </Button>
+                            {!hasBulkOperations && (
+                                <Badge variant="destructive" className="absolute -top-2 -right-2 text-xs px-1.5 py-0.5"><Star className="h-3 w-3"/></Badge>
+                            )}
+                        </div>
+                    </TooltipTrigger>
+                    {!hasBulkOperations && (
+                        <TooltipContent><p>This is a premium feature. Please upgrade your plan.</p></TooltipContent>
+                    )}
+                </Tooltip>
+                 <Tooltip>
+                    <TooltipTrigger asChild>
+                         <div className="relative">
+                            <Button variant="outline" disabled={!hasBulkOperations}>
+                                <UploadCloud className="mr-2 h-4 w-4" /> Bulk Upload
+                            </Button>
+                            {!hasBulkOperations && (
+                                <Badge variant="destructive" className="absolute -top-2 -right-2 text-xs px-1.5 py-0.5"><Star className="h-3 w-3"/></Badge>
+                            )}
+                        </div>
+                    </TooltipTrigger>
+                    {!hasBulkOperations && (
+                        <TooltipContent><p>This is a premium feature. Please upgrade your plan.</p></TooltipContent>
+                    )}
+                </Tooltip>
+            </TooltipProvider>
             <Button onClick={() => handleOpenForm()}><PlusCircle className="mr-2 h-4 w-4" /> Add New Company</Button>
         </div>
       </div>
@@ -465,3 +508,5 @@ export default function CompaniesPage() {
     </div>
   );
 }
+
+    

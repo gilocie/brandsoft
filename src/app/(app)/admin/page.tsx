@@ -48,6 +48,7 @@ const premiumFeatures = [
     { id: 'smartAnalytics', label: 'Smart Analytics' },
     { id: 'featuredListing', label: 'Featured Marketplace Listing' },
     { id: 'priorityAlerts', label: 'Priority Quotation Alerts' },
+    { id: 'bulkOperations', label: 'Bulk Import/Export' },
 ];
 
 const creditSettingsSchema = z.object({
@@ -813,3 +814,5 @@ export default function AdminPage() {
         </div>
     );
 }
+
+    
