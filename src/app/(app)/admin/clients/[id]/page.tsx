@@ -272,11 +272,11 @@ export default function ClientDetailsPage() {
         id: client.id,
         name: client.companyName,
         avatar: client.logo || `https://picsum.photos/seed/${client.id}/100`,
-        plan: 'Free Trial',
+        plan: affiliateClientInfo?.plan || 'Free Trial',
         status: 'active',
-        joinDate: new Date().toISOString(),
-        remainingDays: 30,
-        walletBalance: 0,
+        joinDate: affiliateClientInfo?.joinDate || new Date().toISOString(),
+        remainingDays: affiliateClientInfo?.remainingDays || 30,
+        walletBalance: affiliateClientInfo?.walletBalance || 0,
     };
     
     // 3. Update affiliate lists
@@ -333,13 +333,15 @@ export default function ClientDetailsPage() {
           <div className="flex-1 space-y-1 text-center md:text-left">
             <CardTitle className="text-3xl font-headline">{client.companyName}</CardTitle>
             <CardDescription className="text-base text-muted-foreground flex items-center justify-center md:justify-start gap-4">
-              <span className="flex items-center gap-2"><Briefcase className="h-4 w-4" /> Plan: {affiliateClientInfo?.plan || 'Free Trial'}</span>
-              {affiliateClientInfo && !isExpired && (
-                <span className="flex items-center gap-2"><Clock className="h-4 w-4" /> {affiliateClientInfo.remainingDays} days left</span>
-              )}
-               {isExpired && (
-                <span className="flex items-center gap-2 text-destructive"><Clock className="h-4 w-4" /> Expired</span>
-              )}
+              <span className="flex items-center gap-2">
+                <Briefcase className="h-4 w-4" /> Plan: {affiliateClientInfo?.plan || 'Free Trial'}
+                {affiliateClientInfo && !isExpired && (
+                  <span className="flex items-center gap-2 text-sm"><Clock className="h-4 w-4 ml-2" /> {affiliateClientInfo.remainingDays} days left</span>
+                )}
+                {isExpired && (
+                    <span className="flex items-center gap-2 text-destructive"><Clock className="h-4 w-4 ml-2" /> Expired</span>
+                )}
+              </span>
             </CardDescription>
              <div className="pt-2">
                 <span className={`px-3 py-1 text-xs font-semibold rounded-full ${affiliateClientInfo?.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>

@@ -183,13 +183,15 @@ export default function ClientDetailsPage() {
           <div className="flex-1 space-y-1 text-center md:text-left">
             <CardTitle className="text-3xl font-headline">{client.name}</CardTitle>
             <CardDescription className="text-base text-muted-foreground flex items-center justify-center md:justify-start gap-4">
-              <span className="flex items-center gap-2"><Briefcase className="h-4 w-4" /> Plan: {client.plan}</span>
-              {!isExpired && client.remainingDays !== undefined && (
-                <span className="flex items-center gap-2"><Clock className="h-4 w-4" /> {client.remainingDays} days left</span>
-              )}
-               {isExpired && (
-                <span className="flex items-center gap-2 text-destructive"><Clock className="h-4 w-4" /> Expired</span>
-              )}
+              <span className="flex items-center gap-2">
+                <Briefcase className="h-4 w-4" /> Plan: {client.plan}
+                {!isExpired && client.remainingDays !== undefined && (
+                  <span className="flex items-center gap-2 text-sm"><Clock className="h-4 w-4 ml-2" /> {client.remainingDays} days left</span>
+                )}
+                {isExpired && (
+                  <span className="flex items-center gap-2 text-destructive"><Clock className="h-4 w-4 ml-2" /> Expired</span>
+                )}
+              </span>
             </CardDescription>
              <div className="pt-2">
                 <span className={`px-3 py-1 text-xs font-semibold rounded-full ${client.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
