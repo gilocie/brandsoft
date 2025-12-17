@@ -3,15 +3,65 @@
 
 import { useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useBrandsoft, type AffiliateClient } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type AffiliateClient, type Company } from '@/hooks/use-brandsoft';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Ban, Briefcase, User, Wallet, CirclePlus, Clock, Trash2 } from 'lucide-react';
+import { ArrowLeft, Ban, Briefcase, User, Wallet, CirclePlus, Clock, Trash2, UserCog } from 'lucide-react';
 import Link from 'next/link';
 import { StatCard } from '@/components/office/stat-card';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+
+const ADMIN_ACTIVATION_KEY = 'BRANDSOFT-ADMIN';
+
+const AssignClientDialog = ({ client, onAssign, currentAffiliateName }: { client: Company | undefined, onAssign: (newAffiliateId: string) => void, currentAffiliateName?: string }) => {
+    const { config } = useBrandsoft();
+    const [selectedAffiliate, setSelectedAffiliate] = useState<string>(ADMIN_ACTIVATION_KEY);
+    
+    // In a multi-affiliate app, this would be config.affiliates
+    const availableAffiliates = config?.affiliate ? [config.affiliate] : [];
+
+    if (!client) return null;
+
+    return (
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Assign {client.companyName} to a new affiliate</DialogTitle>
+                <DialogDescription>
+                    Currently assigned to: <strong>{currentAffiliateName || 'None'}</strong>. Select a new affiliate or assign to admin.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+                 <RadioGroup value={selectedAffiliate} onValueChange={setSelectedAffiliate} className="space-y-2">
+                    <div className="flex items-center space-x-2 rounded-md border p-3">
+                        <RadioGroupItem value={ADMIN_ACTIVATION_KEY} id="brandsoft-admin" />
+                        <Label htmlFor="brandsoft-admin" className="font-bold">Brandsoft (Admin)</Label>
+                    </div>
+                    {availableAffiliates.map(aff => (
+                         <div key={aff.staffId} className="flex items-center space-x-2 rounded-md border p-3">
+                            <RadioGroupItem value={aff.staffId!} id={aff.staffId!} />
+                            <Label htmlFor={aff.staffId!} className="w-full">
+                                {aff.fullName} (@{aff.username})
+                            </Label>
+                        </div>
+                    ))}
+                </RadioGroup>
+            </div>
+            <DialogFooter>
+                 <DialogClose asChild>
+                    <Button type="button" variant="outline">Cancel</Button>
+                </DialogClose>
+                <DialogClose asChild>
+                    <Button onClick={() => onAssign(selectedAffiliate)}>Assign Client</Button>
+                </DialogClose>
+            </DialogFooter>
+        </DialogContent>
+    )
+}
 
 export default function ClientDetailsPage() {
   const params = useParams();
@@ -22,40 +72,42 @@ export default function ClientDetailsPage() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isTopUpOpen, setIsTopUpOpen] = useState(false);
 
-  const client = useMemo(() => {
-    // In a multi-affiliate setup, you'd get the specific affiliate first.
-    // For now, we assume one affiliate and find the client in their list.
-    return config?.affiliate?.clients.find(c => c.id === params.id);
+  const { client, clientAffiliateInfo } = useMemo(() => {
+    if (!config) return { client: undefined, clientAffiliateInfo: undefined };
+    // The company data is the source of truth
+    const company = config.companies.find(c => c.id === params.id);
+    // Find which affiliate, if any, has this company in their client list
+    const affiliateInfo = config.affiliate?.clients.find(c => c.id === company?.id) ? config.affiliate : undefined;
+
+    return { client: company, clientAffiliateInfo: affiliateInfo };
   }, [config, params.id]);
 
   const handleSuspend = () => {
     if (!client) return;
     // Placeholder for suspension logic
-    console.log(`Suspending client: ${client.name}`);
+    console.log(`Suspending client: ${client.companyName}`);
     toast({
       title: "Client Suspended",
-      description: `${client.name} has been suspended.`,
+      description: `${client.companyName} has been suspended.`,
     });
     setIsSuspendOpen(false);
   };
   
   const handleDelete = () => {
-    if (!client || !config || !config.affiliate) return;
+    if (!client || !config) return;
     
     // This is a destructive action.
-    const updatedClients = config.affiliate.clients.filter(c => c.id !== client.id);
+    const updatedClients = config.affiliate?.clients.filter(c => c.id !== client.id) || [];
     const updatedCompanies = config.companies.filter(c => c.id !== client.id);
+    const updatedAffiliate = config.affiliate ? { ...config.affiliate, clients: updatedClients } : undefined;
 
     saveConfig({ 
         ...config, 
         companies: updatedCompanies,
-        affiliate: {
-            ...config.affiliate,
-            clients: updatedClients
-        }
+        affiliate: updatedAffiliate,
     }, { redirect: false });
     
-    toast({ title: 'Client Deleted', description: `${client.name} has been removed.` });
+    toast({ title: 'Client Deleted', description: `${client.companyName} has been removed.` });
     setIsDeleteOpen(false);
     router.push('/admin');
   };
@@ -63,12 +115,60 @@ export default function ClientDetailsPage() {
   const handleTopUp = () => {
     if (!client) return;
     // Placeholder for top-up logic
-    console.log(`Topping up for client: ${client.name}`);
+    console.log(`Topping up for client: ${client.companyName}`);
     toast({
       title: "Top-up Action",
-      description: `Ready to top-up wallet for ${client.name}.`,
+      description: `Ready to top-up wallet for ${client.companyName}.`,
     });
     setIsTopUpOpen(false);
+  };
+  
+  const handleAssignClient = (newAffiliateId: string) => {
+    if (!config || !client) return;
+    
+    const newAffiliate = config.affiliate?.staffId === newAffiliateId ? config.affiliate : undefined;
+    let oldAffiliate = clientAffiliateInfo;
+    
+    // 1. Update the Company's `referredBy` key
+    const updatedCompanies = config.companies.map(c => 
+        c.id === client.id ? { ...c, referredBy: newAffiliateId } : c
+    );
+    
+    // 2. Prepare the new affiliate client record
+    const newClientRecord: AffiliateClient = {
+        id: client.id,
+        name: client.companyName,
+        avatar: client.logo || `https://picsum.photos/seed/${client.id}/100`,
+        plan: 'Free Trial', // Reset plan or carry over? Let's reset for now.
+        status: 'active',
+        joinDate: new Date().toISOString(),
+        remainingDays: 30,
+        walletBalance: 0,
+    };
+    
+    // 3. Update affiliate lists
+    let updatedAffiliateData = { ...config.affiliate };
+
+    // Remove from old affiliate if they exist and are not the new one
+    if (oldAffiliate && oldAffiliate.staffId !== newAffiliateId) {
+        updatedAffiliateData.clients = updatedAffiliateData.clients?.filter(c => c.id !== client.id);
+    }
+
+    // Add to new affiliate if they exist and don't already have the client
+    if (newAffiliate && !newAffiliate.clients.some(c => c.id === client.id)) {
+        updatedAffiliateData.clients = [...newAffiliate.clients, newClientRecord];
+    }
+    
+    saveConfig({
+        ...config,
+        companies: updatedCompanies,
+        affiliate: updatedAffiliateData as any,
+    }, { redirect: false });
+
+    toast({
+        title: "Client Re-assigned",
+        description: `${client.companyName} has been assigned to ${newAffiliate ? newAffiliate.fullName : 'Brandsoft Admin'}.`
+    });
   };
 
   if (!client) {
@@ -82,6 +182,8 @@ export default function ClientDetailsPage() {
       </div>
     );
   }
+  
+  const affiliateClientInfo = clientAffiliateInfo?.clients.find(c => c.id === client.id);
 
   return (
     <div className="container mx-auto space-y-6">
@@ -92,20 +194,20 @@ export default function ClientDetailsPage() {
       <Card>
         <CardHeader className="flex flex-col md:flex-row items-center gap-6">
           <Avatar className="h-28 w-28 border">
-            <AvatarImage src={client.avatar} alt={client.name} />
-            <AvatarFallback>{client.name.charAt(0)}</AvatarFallback>
+            <AvatarImage src={client.logo} alt={client.companyName} />
+            <AvatarFallback>{client.companyName.charAt(0)}</AvatarFallback>
           </Avatar>
           <div className="flex-1 space-y-1 text-center md:text-left">
-            <CardTitle className="text-3xl font-headline">{client.name}</CardTitle>
+            <CardTitle className="text-3xl font-headline">{client.companyName}</CardTitle>
             <CardDescription className="text-base text-muted-foreground flex items-center justify-center md:justify-start gap-4">
-              <span className="flex items-center gap-2"><Briefcase className="h-4 w-4" /> Plan: {client.plan}</span>
-              {client.status === 'active' && client.remainingDays !== undefined && (
-                <span className="flex items-center gap-2"><Clock className="h-4 w-4" /> {client.remainingDays} days left</span>
+              <span className="flex items-center gap-2"><Briefcase className="h-4 w-4" /> Plan: {affiliateClientInfo?.plan || 'N/A'}</span>
+              {affiliateClientInfo?.status === 'active' && affiliateClientInfo?.remainingDays !== undefined && (
+                <span className="flex items-center gap-2"><Clock className="h-4 w-4" /> {affiliateClientInfo.remainingDays} days left</span>
               )}
             </CardDescription>
              <div className="pt-2">
-                <span className={`px-3 py-1 text-xs font-semibold rounded-full ${client.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                  {client.status.charAt(0).toUpperCase() + client.status.slice(1)}
+                <span className={`px-3 py-1 text-xs font-semibold rounded-full ${affiliateClientInfo?.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                  {affiliateClientInfo?.status ? (affiliateClientInfo.status.charAt(0).toUpperCase() + affiliateClientInfo.status.slice(1)) : 'Inactive'}
                 </span>
              </div>
           </div>
@@ -113,7 +215,7 @@ export default function ClientDetailsPage() {
       </Card>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <StatCard title="Client Wallet" value={client.walletBalance || 0} isCurrency icon={Wallet} footer="Funds available to the client">
+        <StatCard title="Client Wallet" value={affiliateClientInfo?.walletBalance || 0} isCurrency icon={Wallet} footer="Funds available to the client">
         </StatCard>
         <Card>
             <CardHeader>
@@ -131,10 +233,28 @@ export default function ClientDetailsPage() {
         </Card>
       </div>
 
+       <Dialog>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Client Re-assignment</CardTitle>
+                    <CardDescription>Transfer this client to another affiliate or take admin ownership.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                     <DialogTrigger asChild>
+                        <Button variant="outline" className="w-full">
+                            <UserCog className="mr-2 h-4 w-4" /> Assign Client
+                        </Button>
+                    </DialogTrigger>
+                </CardContent>
+            </Card>
+            <AssignClientDialog client={client} onAssign={handleAssignClient} currentAffiliateName={clientAffiliateInfo?.fullName} />
+        </Dialog>
+
+
        <AlertDialog open={isSuspendOpen} onOpenChange={setIsSuspendOpen}>
           <AlertDialogContent>
               <AlertDialogHeader>
-                  <AlertDialogTitle>Suspend {client.name}?</AlertDialogTitle>
+                  <AlertDialogTitle>Suspend {client.companyName}?</AlertDialogTitle>
                   <AlertDialogDescription>
                       This will temporarily disable their account. Are you sure?
                   </AlertDialogDescription>
@@ -149,7 +269,7 @@ export default function ClientDetailsPage() {
        <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
           <AlertDialogContent>
               <AlertDialogHeader>
-                  <AlertDialogTitle>Delete {client.name}?</AlertDialogTitle>
+                  <AlertDialogTitle>Delete {client.companyName}?</AlertDialogTitle>
                   <AlertDialogDescription>
                       This action is irreversible and will permanently remove this client. Are you sure?
                   </AlertDialogDescription>
