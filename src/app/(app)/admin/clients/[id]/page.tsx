@@ -243,6 +243,9 @@ export default function ClientDetailsPage() {
 
       <div className="grid gap-4 md:grid-cols-2">
         <StatCard title="Client Wallet" value={affiliateClientInfo?.walletBalance || 0} isCurrency icon={Wallet} footer="Funds available to the client">
+            <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => setIsTopUpOpen(true)}>
+                <CirclePlus className="mr-2 h-4 w-4" /> Top Up Wallet
+            </Button>
         </StatCard>
         <Card>
             <CardHeader>
@@ -306,6 +309,21 @@ export default function ClientDetailsPage() {
                   <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
                       Delete Permanently
                   </AlertDialogAction>
+              </AlertDialogFooter>
+          </AlertDialogContent>
+      </AlertDialog>
+      
+       <AlertDialog open={isTopUpOpen} onOpenChange={setIsTopUpOpen}>
+          <AlertDialogContent>
+              <AlertDialogHeader>
+                  <AlertDialogTitle>Top Up Wallet</AlertDialogTitle>
+                  <AlertDialogDescription>
+                      This functionality is not yet implemented.
+                  </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => handleTopUp()}>OK</AlertDialogAction>
               </AlertDialogFooter>
           </AlertDialogContent>
       </AlertDialog>
