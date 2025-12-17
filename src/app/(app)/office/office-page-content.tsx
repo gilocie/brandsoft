@@ -6,7 +6,7 @@ import { useBrandsoft, type Transaction, type Affiliate, type Purchase } from '@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Copy, DollarSign, ExternalLink, ShieldCheck, ShieldOff, UserCheck, Users, Edit, CreditCard, Gift, KeyRound, Phone, TrendingUp, TrendingDown, MoreHorizontal, ArrowRight, Wallet, Banknote, Smartphone, CheckCircle, Pencil, Eye, EyeOff, Send, Bell, RefreshCw } from 'lucide-react';
+import { Copy, DollarSign, ExternalLink, ShieldCheck, ShieldOff, UserCheck, Users, Edit, CreditCard, Gift, KeyRound, Phone, TrendingUp, TrendingDown, MoreHorizontal, ArrowRight, Wallet, Banknote, Smartphone, CheckCircle, Pencil, Eye, EyeOff, Send, Bell, RefreshCw, PlusCircle } from 'lucide-react';
 import { ClientCard } from '@/components/affiliate/client-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -827,9 +827,15 @@ export function OfficePageContent() {
         </TabsContent>
         <TabsContent value="keys" className="pt-6">
             <Card>
-                <CardHeader>
-                    <CardTitle>Activation Keys</CardTitle>
-                    <CardDescription>Manage your generated activation keys.</CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle>Activation Keys</CardTitle>
+                        <CardDescription>Manage your generated activation keys.</CardDescription>
+                    </div>
+                    <Button>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        New Activation Key
+                    </Button>
                 </CardHeader>
                 <CardContent className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
                     <p className="text-muted-foreground">Activation key management coming soon.</p>
