@@ -122,10 +122,10 @@ export default function ClientDetailsPage() {
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Button variant="outline" onClick={() => setIsSuspendOpen(true)}>
-                    <Ban className="mr-2 h-4 w-4" /> Suspend Client
+                    <Ban className="mr-2 h-4 w-4" /> Suspend
                 </Button>
                 <Button variant="destructive" onClick={() => setIsDeleteOpen(true)}>
-                    <Trash2 className="mr-2 h-4 w-4" /> Delete Client
+                    <Trash2 className="mr-2 h-4 w-4" /> Delete
                 </Button>
             </CardContent>
         </Card>
