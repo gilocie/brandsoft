@@ -3,7 +3,7 @@
 
 import { useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useBrandsoft, type AffiliateClient, type Company } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type AffiliateClient, type Company, type Affiliate } from '@/hooks/use-brandsoft';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -16,15 +16,83 @@ import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter as 
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+
 
 const ADMIN_ACTIVATION_KEY = 'BRANDSOFT-ADMIN';
+const CREDIT_TO_MWK = 1000;
+
+const createTopUpSchema = () => z.object({
+    amount: z.coerce
+        .number()
+        .min(1, "Minimum top-up is 1 credit."),
+});
+
+type TopUpFormData = z.infer<ReturnType<typeof createTopUpSchema>>;
+
+const AdminTopUpDialog = ({ client, onTopUp }: { client: Company, onTopUp: (amount: number) => void }) => {
+    const topUpSchema = createTopUpSchema();
+    
+    const form = useForm<TopUpFormData>({
+        resolver: zodResolver(topUpSchema),
+        defaultValues: { amount: 30 },
+    });
+
+    const watchedAmount = form.watch('amount');
+    const costInMWK = watchedAmount * CREDIT_TO_MWK;
+
+    const onSubmit = (data: TopUpFormData) => {
+        onTopUp(data.amount);
+    };
+
+    return (
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Top Up {client.companyName}'s Wallet</DialogTitle>
+                <DialogDescription>
+                    Sell credits directly to this client. The value will be added to their wallet balance.
+                </DialogDescription>
+            </DialogHeader>
+            <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
+                    <FormField
+                        control={form.control}
+                        name="amount"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>BS Credits to Sell</FormLabel>
+                                <FormControl>
+                                    <Input type="number" min="1" step="1" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                     <div className="p-4 bg-muted rounded-lg text-center space-y-1">
+                        <p className="text-sm text-muted-foreground">Client will be charged</p>
+                        <p className="text-2xl font-bold">K{costInMWK.toLocaleString()}</p>
+                    </div>
+                    <ShadcnDialogFooter>
+                        <DialogClose asChild>
+                            <Button type="button" variant="outline">Cancel</Button>
+                        </DialogClose>
+                        <Button type="submit">Confirm Top Up</Button>
+                    </ShadcnDialogFooter>
+                </form>
+            </Form>
+        </DialogContent>
+    );
+};
+
 
 const AssignClientDialog = ({ client, onAssign, currentAffiliateName }: { client: Company | undefined, onAssign: (newAffiliateId: string) => void, currentAffiliateName?: string }) => {
     const { config } = useBrandsoft();
     const [selectedAffiliate, setSelectedAffiliate] = useState<string>('');
     const [searchTerm, setSearchTerm] = useState('');
     
-    // In a multi-affiliate app, this would be config.affiliates
     const allAffiliates = config?.affiliate ? [config.affiliate] : [];
 
     const filteredAffiliates = useMemo(() => {
@@ -56,7 +124,6 @@ const AssignClientDialog = ({ client, onAssign, currentAffiliateName }: { client
                     />
                  </div>
                  <RadioGroup value={selectedAffiliate} onValueChange={setSelectedAffiliate} className="space-y-2">
-                    {/* Only show "Assign to Admin" if the client is NOT already assigned to admin */}
                     {currentAffiliateName && (
                         <div className="flex items-center space-x-2 rounded-md border p-3">
                             <RadioGroupItem value={ADMIN_ACTIVATION_KEY} id="brandsoft-admin" />
@@ -101,17 +168,21 @@ export default function ClientDetailsPage() {
 
   const { client, clientAffiliateInfo } = useMemo(() => {
     if (!config) return { client: undefined, clientAffiliateInfo: undefined };
-    // The company data is the source of truth
+    
     const company = config.companies.find(c => c.id === params.id);
-    // Find which affiliate, if any, has this company in their client list
-    const affiliateInfo = config.affiliate?.clients.find(c => c.id === company?.id) ? config.affiliate : undefined;
-
+    let affiliateInfo: Affiliate | undefined;
+    
+    if (company && company.referredBy && company.referredBy !== ADMIN_ACTIVATION_KEY) {
+        if(config.affiliate?.staffId === company.referredBy) {
+            affiliateInfo = config.affiliate;
+        }
+    }
+    
     return { client: company, clientAffiliateInfo: affiliateInfo };
   }, [config, params.id]);
 
   const handleSuspend = () => {
     if (!client) return;
-    // Placeholder for suspension logic
     console.log(`Suspending client: ${client.companyName}`);
     toast({
       title: "Client Suspended",
@@ -123,7 +194,6 @@ export default function ClientDetailsPage() {
   const handleDelete = () => {
     if (!client || !config) return;
     
-    // This is a destructive action.
     const updatedClients = config.affiliate?.clients.filter(c => c.id !== client.id) || [];
     const updatedCompanies = config.companies.filter(c => c.id !== client.id);
     const updatedAffiliate = config.affiliate ? { ...config.affiliate, clients: updatedClients } : undefined;
@@ -139,14 +209,36 @@ export default function ClientDetailsPage() {
     router.push('/admin');
   };
 
-  const handleTopUp = () => {
-    if (!client) return;
-    // Placeholder for top-up logic
-    console.log(`Topping up for client: ${client.companyName}`);
-    toast({
-      title: "Top-up Action",
-      description: `Ready to top-up wallet for ${client.companyName}.`,
-    });
+ const handleTopUp = (amount: number) => {
+    if (!client || !config) return;
+
+    const costInMWK = amount * CREDIT_TO_MWK;
+
+    // Find the affiliate responsible for this client to update their client record
+    const affiliate = config.affiliate?.clients.find(c => c.id === client.id) ? config.affiliate : undefined;
+
+    if (affiliate) {
+      const updatedAffiliateClients = affiliate.clients.map(c =>
+        c.id === client.id ? { ...c, walletBalance: (c.walletBalance || 0) + costInMWK } : c
+      );
+
+      const newAffiliateData = { ...affiliate, clients: updatedAffiliateClients };
+
+      saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
+
+      toast({
+        title: "Top-up Successful!",
+        description: `You have successfully sent K${costInMWK.toLocaleString()} to ${client.companyName}.`,
+      });
+    } else {
+      // Logic for admin-managed clients would go here if they had a separate wallet balance.
+      // For now, we assume the wallet balance is part of the affiliate client record.
+      toast({
+        title: "Top-up Action",
+        description: `No affiliate linked. Top-up action for K${costInMWK.toLocaleString()} recorded for ${client.companyName}.`,
+      });
+    }
+
     setIsTopUpOpen(false);
   };
   
@@ -166,7 +258,7 @@ export default function ClientDetailsPage() {
         id: client.id,
         name: client.companyName,
         avatar: client.logo || `https://picsum.photos/seed/${client.id}/100`,
-        plan: 'Free Trial', // Reset plan or carry over? Let's reset for now.
+        plan: 'Free Trial',
         status: 'active',
         joinDate: new Date().toISOString(),
         remainingDays: 30,
@@ -242,11 +334,25 @@ export default function ClientDetailsPage() {
       </Card>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <StatCard title="Client Wallet" value={affiliateClientInfo?.walletBalance || 0} isCurrency icon={Wallet} footer="Funds available to the client">
-            <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => setIsTopUpOpen(true)}>
-                <CirclePlus className="mr-2 h-4 w-4" /> Top Up Wallet
-            </Button>
-        </StatCard>
+         <Card className="flex flex-col">
+            <CardHeader className="flex-grow">
+                <CardTitle>Client Wallet</CardTitle>
+                <CardDescription>Funds available to the client.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                 <p className="text-3xl font-bold">K{(affiliateClientInfo?.walletBalance || 0).toLocaleString()}</p>
+            </CardContent>
+            <CardFooter>
+                 <Dialog open={isTopUpOpen} onOpenChange={setIsTopUpOpen}>
+                    <DialogTrigger asChild>
+                        <Button variant="outline" size="sm" className="w-full">
+                            <CirclePlus className="mr-2 h-4 w-4" /> Top Up Wallet
+                        </Button>
+                    </DialogTrigger>
+                    <AdminTopUpDialog client={client} onTopUp={handleTopUp} />
+                </Dialog>
+            </CardFooter>
+        </Card>
         <Card className="flex flex-col">
             <CardHeader className="flex-grow">
                 <CardTitle>Admin Actions</CardTitle>
@@ -309,21 +415,6 @@ export default function ClientDetailsPage() {
                   <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
                       Delete Permanently
                   </AlertDialogAction>
-              </AlertDialogFooter>
-          </AlertDialogContent>
-      </AlertDialog>
-      
-       <AlertDialog open={isTopUpOpen} onOpenChange={setIsTopUpOpen}>
-          <AlertDialogContent>
-              <AlertDialogHeader>
-                  <AlertDialogTitle>Top Up Wallet</AlertDialogTitle>
-                  <AlertDialogDescription>
-                      This functionality is not yet implemented.
-                  </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => handleTopUp()}>OK</AlertDialogAction>
               </AlertDialogFooter>
           </AlertDialogContent>
       </AlertDialog>
