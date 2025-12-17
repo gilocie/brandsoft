@@ -5,7 +5,7 @@ import { useBrandsoft, type Transaction, type Affiliate, type Purchase } from '@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Copy, DollarSign, ExternalLink, ShieldCheck, ShieldOff, UserCheck, Users, Edit, CreditCard, Gift, KeyRound, Phone, TrendingUp, TrendingDown, MoreHorizontal, ArrowRight, Wallet, Banknote, Smartphone, CheckCircle, Pencil, Eye, EyeOff, Send, Bell, RefreshCw, PlusCircle, User } from 'lucide-react';
+import { Copy, DollarSign, ExternalLink, ShieldCheck, ShieldOff, UserCheck, Users, Edit, CreditCard, Gift, KeyRound, Phone, TrendingUp, TrendingDown, MoreHorizontal, ArrowRight, Wallet, Banknote, Smartphone, CheckCircle, Pencil, Eye, EyeOff, Send, Bell, RefreshCw, PlusCircle, User, Loader2 } from 'lucide-react';
 import { ClientCard } from '@/components/affiliate/client-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -86,7 +86,7 @@ export function OfficePageContent() {
 
   const pendingTopUps = useMemo(() => {
     if (!config?.purchases) return [];
-    return config.purchases.filter(p => p.planName === 'Wallet Top-up');
+    return config.purchases.filter(p => p.planName.startsWith('Credit Purchase') || p.planName === 'Wallet Top-up');
   }, [config?.purchases]);
 
   const pendingTopUpOrders = useMemo(() => pendingTopUps.filter(p => p.status === 'pending'), [pendingTopUps]);
@@ -208,12 +208,12 @@ export function OfficePageContent() {
 
   const totalPayoutPages = Math.ceil(payoutTransactions.length / ITEMS_PER_PAGE);
 
-  if (!affiliate) {
+  if (!config || !affiliate) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <p>Affiliate data not available.</p>
-      </div>
-    );
+        <div className="flex h-[80vh] w-full items-center justify-center">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </div>
+     );
   }
   
   const bonusAmount = affiliate.bonus || 0;
@@ -836,7 +836,7 @@ export function OfficePageContent() {
                         <CardTitle>Activation Keys</CardTitle>
                         <CardDescription>Manage your generated activation keys.</CardDescription>
                     </div>
-                    <Button onClick={() => setIsGenerateKeyOpen(true)}>
+                     <Button onClick={() => setIsGenerateKeyOpen(true)}>
                         <PlusCircle className="mr-2 h-4 w-4" />
                         New Activation Key
                     </Button>
@@ -891,7 +891,7 @@ export function OfficePageContent() {
                 plan={purchaseDetails}
                 isOpen={!!purchaseDetails}
                 onClose={() => setPurchaseDetails(null)}
-                onSuccess={() => setPurchaseDetails(null)}
+                onSuccess={() => { setPurchaseDetails(null); setIsGenerateKeyOpen(false); }}
                 isTopUp
             />
         )}
