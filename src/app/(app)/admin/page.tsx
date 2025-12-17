@@ -84,6 +84,7 @@ export default function AdminPage() {
     const [isManageReserveOpen, setIsManageReserveOpen] = useState(false);
     const [isResetFinancialsOpen, setIsResetFinancialsOpen] = useState(false);
     const [isAddPlanOpen, setIsAddPlanOpen] = useState(false);
+    const [planToDelete, setPlanToDelete] = useState<typeof plans[0] | null>(null);
     
     const adminSettings: AdminSettings = useMemo(() => config?.admin || {
         maxCredits: 1000000,
@@ -345,6 +346,25 @@ export default function AdminPage() {
         setIsResetFinancialsOpen(false);
     };
 
+    const handleEditPlan = (plan: typeof plans[0]) => {
+        // Logic to pre-fill the form and open it
+        const priceNumber = Number(plan.price.replace(/[^0-9]/g, ''));
+        newPlanForm.reset({
+            name: plan.name,
+            price: priceNumber || 0,
+            features: [], // You'll need to map this based on your feature logic
+        });
+        setIsAddPlanOpen(true);
+    };
+
+    const handleDeletePlan = () => {
+        if (!planToDelete) return;
+        // Logic to delete the plan
+        console.log(`Deleting plan: ${planToDelete.name}`);
+        toast({ title: `Plan "${planToDelete.name}" deleted` });
+        setPlanToDelete(null); // This closes the dialog
+    };
+
 
     return (
         <div className="container mx-auto space-y-8">
@@ -519,10 +539,10 @@ export default function AdminPage() {
                                                                 </Button>
                                                             </DropdownMenuTrigger>
                                                             <DropdownMenuContent>
-                                                                <DropdownMenuItem>
+                                                                <DropdownMenuItem onSelect={() => handleEditPlan(plan)}>
                                                                     <Pencil className="mr-2 h-4 w-4" /> Edit
                                                                 </DropdownMenuItem>
-                                                                <DropdownMenuItem className="text-destructive focus:text-destructive">
+                                                                <DropdownMenuItem onSelect={() => setPlanToDelete(plan)} className="text-destructive focus:text-destructive">
                                                                     <Trash2 className="mr-2 h-4 w-4" /> Delete
                                                                 </DropdownMenuItem>
                                                             </DropdownMenuContent>
@@ -768,10 +788,23 @@ export default function AdminPage() {
                 distributionReserve={adminSettings.availableCredits || 0}
                 maxCredits={adminSettings.maxCredits || 0}
             />
+
+            <AlertDialog open={!!planToDelete} onOpenChange={(open) => !open && setPlanToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete "{planToDelete?.name}" Plan?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the subscription plan.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setPlanToDelete(null)}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeletePlan} className="bg-destructive hover:bg-destructive/90">
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
-
-    
-
-    
