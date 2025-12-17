@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Users, BarChart, Clock, CheckCircle, RefreshCw, Briefcase, UserX, Trash2, Wallet, TrendingUp, TrendingDown, PackagePlus, Banknote, Shield } from 'lucide-react';
+import { MoreHorizontal, Users, BarChart, Clock, CheckCircle, RefreshCw, Briefcase, UserX, Trash2, Wallet, TrendingUp, TrendingDown, PackagePlus, Banknote, Shield, Lock, Unlock } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from '@/hooks/use-toast';
@@ -24,6 +24,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+
 
 const ADMIN_ACTIVATION_KEY = 'BRANDSOFT-ADMIN';
 
@@ -59,6 +61,7 @@ const creditSettingsSchema = z.object({
   buyPrice: z.coerce.number().min(0, "Buy price cannot be negative."),
   sellPrice: z.coerce.number().min(0, "Sell price cannot be negative."),
   exchangeValue: z.coerce.number().min(0, "Exchange value cannot be negative."),
+  isReserveLocked: z.boolean().default(false),
 });
 type CreditSettingsFormData = z.infer<typeof creditSettingsSchema>;
 
@@ -206,7 +209,10 @@ export default function AdminPage() {
         sellPrice: 900,
         exchangeValue: 1000,
         availableCredits: 100000,
+        isReserveLocked: false,
     }, [config?.affiliateSettings]);
+    
+    const isReserveLocked = affiliateSettings.isReserveLocked;
 
     const form = useForm<CreditSettingsFormData>({
         resolver: zodResolver(creditSettingsSchema),
@@ -258,7 +264,7 @@ export default function AdminPage() {
     }, [creditsInReserve, watchedMaxCredits]);
 
     const onCreditSettingsSubmit = (data: CreditSettingsFormData) => {
-        if (!config) return;
+        if (!config || isReserveLocked) return;
         const newSettings = {
           ...affiliateSettings,
           ...data,
@@ -266,6 +272,14 @@ export default function AdminPage() {
         saveConfig({ ...config, affiliateSettings: newSettings }, { redirect: false });
         toast({ title: "Credit Settings Saved", description: "Your BS Credit settings have been updated." });
     };
+    
+    const toggleReserveLock = () => {
+         if (!config) return;
+         const newLockState = !isReserveLocked;
+         const newSettings = { ...affiliateSettings, isReserveLocked: newLockState };
+         saveConfig({ ...config, affiliateSettings: newSettings }, { redirect: false });
+         toast({ title: `Reserve ${newLockState ? 'Locked' : 'Unlocked'}`, description: `Credit settings are now ${newLockState ? 'protected' : 'editable'}.` });
+    }
 
    
     const adminClients = useMemo(() => {
@@ -349,7 +363,7 @@ export default function AdminPage() {
     };
 
     const handleManageReserve = (data: ManageReserveFormData) => {
-        if (!config) return;
+        if (!config || isReserveLocked) return;
         const currentCredits = affiliateSettings.availableCredits || 0;
         const maxCredits = affiliateSettings.maxCredits || 0;
         let newCredits = currentCredits;
@@ -390,7 +404,7 @@ export default function AdminPage() {
                     description={`Value: K${(availableToSell * (affiliateSettings.sellPrice || 0)).toLocaleString()}`}
                     className={cn(availableToSell <= 100 && 'bg-destructive text-destructive-foreground')}
                  >
-                    <Button size="sm" className="w-full mt-2" onClick={() => setIsManageReserveOpen(true)}>Manage</Button>
+                    <Button size="sm" className="w-full mt-2" onClick={() => setIsManageReserveOpen(true)} disabled={isReserveLocked}>Manage</Button>
                 </StatCard>
                  <StatCard 
                     title="Sold Credits" 
@@ -522,18 +536,34 @@ export default function AdminPage() {
                                             <Form {...form}>
                                                 <form onSubmit={form.handleSubmit(onCreditSettingsSubmit)} className="space-y-4">
                                                     <FormField control={form.control} name="maxCredits" render={({ field }) => (
-                                                        <FormItem><FormLabel>Max BS Credits in Circulation</FormLabel><FormControl><Input type="text" {...field} onChange={(e) => field.onChange(parseInt(e.target.value.replace(/,/g, ''), 10) || 0)} value={(field.value || 0).toLocaleString()} /></FormControl><FormMessage /></FormItem>
+                                                        <FormItem>
+                                                            <div className="flex items-center justify-between">
+                                                                <FormLabel>Master Reserve</FormLabel>
+                                                                <TooltipProvider>
+                                                                    <Tooltip>
+                                                                        <TooltipTrigger asChild>
+                                                                            <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={toggleReserveLock}>
+                                                                                {isReserveLocked ? <Lock className="h-4 w-4"/> : <Unlock className="h-4 w-4"/>}
+                                                                            </Button>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent>
+                                                                            <p>{isReserveLocked ? 'Unlock to edit settings' : 'Lock to protect settings'}</p>
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
+                                                                </TooltipProvider>
+                                                            </div>
+                                                            <FormControl><Input type="text" {...field} disabled={isReserveLocked} onChange={(e) => field.onChange(parseInt(e.target.value.replace(/,/g, ''), 10) || 0)} value={(field.value || 0).toLocaleString()} /></FormControl><FormMessage /></FormItem>
                                                     )} />
                                                     <FormField control={form.control} name="buyPrice" render={({ field }) => (
-                                                        <FormItem><FormLabel>BS Credit Buying Price (from affiliates)</FormLabel><FormControl><Input type="text" {...field} onChange={(e) => field.onChange(parseInt(e.target.value.replace(/,/g, ''), 10) || 0)} value={(field.value || 0).toLocaleString()} /></FormControl><FormMessage /></FormItem>
+                                                        <FormItem><FormLabel>BS Credit Buying Price (from affiliates)</FormLabel><FormControl><Input type="text" {...field} disabled={isReserveLocked} onChange={(e) => field.onChange(parseInt(e.target.value.replace(/,/g, ''), 10) || 0)} value={(field.value || 0).toLocaleString()} /></FormControl><FormMessage /></FormItem>
                                                     )} />
                                                     <FormField control={form.control} name="sellPrice" render={({ field }) => (
-                                                        <FormItem><FormLabel>BS Credit Selling Price (to affiliates)</FormLabel><FormControl><Input type="text" {...field} onChange={(e) => field.onChange(parseInt(e.target.value.replace(/,/g, ''), 10) || 0)} value={(field.value || 0).toLocaleString()} /></FormControl><FormMessage /></FormItem>
+                                                        <FormItem><FormLabel>BS Credit Selling Price (to affiliates)</FormLabel><FormControl><Input type="text" {...field} disabled={isReserveLocked} onChange={(e) => field.onChange(parseInt(e.target.value.replace(/,/g, ''), 10) || 0)} value={(field.value || 0).toLocaleString()} /></FormControl><FormMessage /></FormItem>
                                                     )} />
                                                     <FormField control={form.control} name="exchangeValue" render={({ field }) => (
-                                                        <FormItem><FormLabel>BS Credit Exchange Value (1 Credit = K{watchedExchangeValue ? watchedExchangeValue.toLocaleString() : 0})</FormLabel><FormControl><Input type="text" {...field} onChange={(e) => field.onChange(parseInt(e.target.value.replace(/,/g, ''), 10) || 0)} value={(field.value || 0).toLocaleString()} /></FormControl><FormMessage /></FormItem>
+                                                        <FormItem><FormLabel>BS Credit Exchange Value (1 Credit = K{watchedExchangeValue ? watchedExchangeValue.toLocaleString() : 0})</FormLabel><FormControl><Input type="text" {...field} disabled={isReserveLocked} onChange={(e) => field.onChange(parseInt(e.target.value.replace(/,/g, ''), 10) || 0)} value={(field.value || 0).toLocaleString()} /></FormControl><FormMessage /></FormItem>
                                                     )} />
-                                                    <Button type="submit">Save Credit Settings</Button>
+                                                    <Button type="submit" disabled={isReserveLocked}>Save Credit Settings</Button>
                                                 </form>
                                             </Form>
                                         </CardContent>
