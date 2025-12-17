@@ -6,7 +6,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useBrandsoft, type Affiliate, type Transaction, type AffiliateClient, type Company, type AdminSettings, type Purchase, type Plan } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Affiliate, type Transaction, type AffiliateClient, type Company, type AdminSettings, type Plan } from '@/hooks/use-brandsoft';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -49,6 +49,7 @@ const premiumFeatures = [
     { id: 'featuredListing', label: 'Featured Marketplace Listing' },
     { id: 'priorityAlerts', label: 'Priority Quotation Alerts' },
     { id: 'bulkOperations', label: 'Bulk Import/Export' },
+    { id: 'partialPayments', label: 'Request Partial Payments' },
 ];
 
 const creditSettingsSchema = z.object({

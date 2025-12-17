@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -16,7 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from "@/lib/utils";
-import { CalendarIcon, PlusCircle, Trash2, Save, Send, Eye, UserPlus, Loader2, Palette } from 'lucide-react';
+import { CalendarIcon, PlusCircle, Trash2, Save, Send, Eye, UserPlus, Loader2, Palette, Star, Badge } from 'lucide-react';
 import { format, parseISO } from "date-fns";
 import Link from 'next/link';
 import { useBrandsoft, type Customer, type Quotation, type Product } from '@/hooks/use-brandsoft';
@@ -28,6 +28,7 @@ import { Separator } from '@/components/ui/separator';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { QuotationPreview } from '@/components/quotation-preview';
 import { useFormState } from '@/hooks/use-form-state';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const lineItemSchema = z.object({
   productId: z.string().optional(),
@@ -80,6 +81,15 @@ export default function EditQuotationPage() {
   const [useManualEntry, setUseManualEntry] = useState<boolean[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
+  const activePlan = useMemo(() => {
+    const activePurchase = config?.purchases?.find(p => p.status === 'active');
+    if (!activePurchase) return { name: 'Free Trial', features: [] };
+    const planDetails = config?.plans?.find(p => p.name === activePurchase.planName);
+    return planDetails || { name: activePurchase.planName, features: [] };
+  }, [config?.purchases, config?.plans]);
+
+  const hasPartialPayments = useMemo(() => activePlan.features.includes('partialPayments'), [activePlan]);
 
   const form = useForm<QuotationFormData>({
     resolver: zodResolver(formSchema),
@@ -212,7 +222,7 @@ export default function EditQuotationPage() {
     const total = subtotalAfterDiscount + taxAmount + shipping;
 
     let partialPaymentAmount = 0;
-    if (data.applyPartialPayment && data.partialPaymentValue) {
+    if (data.applyPartialPayment && data.partialPaymentValue && hasPartialPayments) {
         if (data.partialPaymentType === 'percentage') {
             partialPaymentAmount = total * (data.partialPaymentValue / 100);
         } else {
@@ -307,7 +317,7 @@ export default function EditQuotationPage() {
   const total = subtotalAfterDiscount + taxAmount + shippingAmount;
 
   let partialPaymentAmount = 0;
-  if (watchedValues.applyPartialPayment && watchedValues.partialPaymentValue) {
+  if (watchedValues.applyPartialPayment && watchedValues.partialPaymentValue && hasPartialPayments) {
       if (watchedValues.partialPaymentType === 'percentage') {
           partialPaymentAmount = total * (watchedValues.partialPaymentValue / 100);
       } else {
@@ -748,18 +758,31 @@ export default function EditQuotationPage() {
                         name="applyPartialPayment"
                         render={({ field }) => (
                             <FormItem className="flex justify-between items-center">
-                                <FormLabel htmlFor="apply-partial-switch">Request Partial Payment</FormLabel>
+                                <div className="flex items-center gap-2">
+                                    <FormLabel htmlFor="apply-partial-switch">Request Partial Payment</FormLabel>
+                                    {!hasPartialPayments && (
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Badge variant="destructive"><Star className="h-3 w-3"/></Badge>
+                                                </TooltipTrigger>
+                                                <TooltipContent><p>This is a premium feature.</p></TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    )}
+                                </div>
                                 <FormControl>
                                   <Switch
                                     id="apply-partial-switch"
                                     checked={field.value}
                                     onCheckedChange={field.onChange}
+                                    disabled={!hasPartialPayments}
                                   />
                                 </FormControl>
                             </FormItem>
                         )}
                         />
-                    {watchedValues.applyPartialPayment && (
+                    {watchedValues.applyPartialPayment && hasPartialPayments && (
                         <div className="pl-4 space-y-4 pt-2 pb-2">
                            <div className="grid grid-cols-2 gap-4">
                                 <FormField control={form.control} name="partialPaymentType" render={({ field }) => (
@@ -781,7 +804,7 @@ export default function EditQuotationPage() {
                         </div>
                     )}
 
-                     {watchedValues.applyPartialPayment && (
+                     {watchedValues.applyPartialPayment && hasPartialPayments && (
                         <>
                             <Separator />
                             <div className="flex justify-between font-bold text-lg pt-2 p-3 rounded-md bg-primary text-primary-foreground">
