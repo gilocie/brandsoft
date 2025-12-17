@@ -1,17 +1,17 @@
 
-
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useBrandsoft } from '@/hooks/use-brandsoft';
+import { ArrowRight, CreditCard, User, Wallet } from 'lucide-react';
 
 const CREDIT_PURCHASE_PRICE = 900; // K900 per credit
 
@@ -22,7 +22,15 @@ const buyCreditsSchema = z.object({
 
 type BuyCreditsFormData = z.infer<typeof buyCreditsSchema>;
 
-export const BuyCreditsDialog = ({ walletBalance, adminAvailableCredits }: { walletBalance: number, adminAvailableCredits: number }) => {
+export const BuyCreditsDialog = ({
+    walletBalance,
+    adminAvailableCredits,
+    onManualPayment,
+}: {
+    walletBalance: number,
+    adminAvailableCredits: number,
+    onManualPayment: (details: { name: 'Credit Purchase', price: string, period: string }) => void,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState(1);
   const { config, saveConfig } = useBrandsoft();
@@ -39,32 +47,45 @@ export const BuyCreditsDialog = ({ walletBalance, adminAvailableCredits }: { wal
   const handleNextStep = async () => {
       const isValid = await form.trigger(['credits']);
       if (isValid) {
-          if (!config?.affiliate?.isPinSet) {
-              toast({
-                  variant: 'destructive',
-                  title: "PIN Not Set",
-                  description: "Please set up your withdrawal PIN in the 'My Features' tab before purchasing credits.",
-              });
-              return;
-          }
-          if (cost > walletBalance) {
-              toast({
-                variant: 'destructive',
-                title: "Insufficient Funds",
-                description: `You need K${cost.toLocaleString()} but only have K${walletBalance.toLocaleString()} available.`,
-              });
-              return;
-          }
-           if (creditsToBuy > adminAvailableCredits) {
+          if (creditsToBuy > adminAvailableCredits) {
               toast({
                 variant: 'destructive',
                 title: "Apology",
-                description: "We have a low Credit Reserve. Please Try Again Later.",
+                description: `We only have BS ${adminAvailableCredits.toLocaleString()} in reserve. Please try a smaller amount.`,
               });
               return;
           }
           setStep(2);
       }
+  }
+  
+  const handleWalletPayment = () => {
+       if (cost > walletBalance) {
+            toast({
+              variant: 'destructive',
+              title: "Insufficient Funds",
+              description: `You need K${cost.toLocaleString()} but only have K${walletBalance.toLocaleString()} available.`,
+            });
+            return;
+        }
+        if (!config?.affiliate?.isPinSet) {
+            toast({
+                variant: 'destructive',
+                title: "PIN Not Set",
+                description: "Please set up your withdrawal PIN in 'My Features' before purchasing.",
+            });
+            return;
+        }
+        setStep(3);
+  }
+  
+  const handleManualPaymentClick = () => {
+    onManualPayment({
+        name: `Credit Purchase (${creditsToBuy} BS)` as any,
+        price: `K${cost.toLocaleString()}`,
+        period: 'One-time Purchase'
+    });
+    handleDialogClose();
   }
 
   const onSubmit = (data: BuyCreditsFormData) => {
@@ -106,13 +127,19 @@ export const BuyCreditsDialog = ({ walletBalance, adminAvailableCredits }: { wal
       description: `You purchased ${data.credits} credits for K${cost.toLocaleString()}.`,
     });
     
-    setIsOpen(false);
-    form.reset();
-    setStep(1);
+    handleDialogClose();
   };
 
+  const handleDialogClose = () => {
+    setIsOpen(false);
+    setTimeout(() => {
+        form.reset();
+        setStep(1);
+    }, 200);
+  }
+
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if(!open) { form.reset(); setStep(1); } }}>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button>Buy Credits</Button>
       </DialogTrigger>
@@ -120,7 +147,9 @@ export const BuyCreditsDialog = ({ walletBalance, adminAvailableCredits }: { wal
         <DialogHeader>
           <DialogTitle>Buy Platform Credits</DialogTitle>
           <DialogDescription>
-            {step === 1 ? 'Purchase credits using your available wallet balance. 1 Credit = K1,000 value.' : 'Confirm your purchase with your PIN.'}
+            {step === 1 && 'Purchase credits to top up client wallets. 1 Credit = K1,000 value.'}
+            {step === 2 && 'Choose your preferred payment method.'}
+            {step === 3 && 'Confirm your purchase with your PIN.'}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -132,6 +161,10 @@ export const BuyCreditsDialog = ({ walletBalance, adminAvailableCredits }: { wal
                         <div className="flex justify-between">
                             <span>Available Wallet Balance:</span>
                             <span className="font-bold">K{walletBalance.toLocaleString()}</span>
+                        </div>
+                         <div className="flex justify-between">
+                            <span>Admin Credit Reserve:</span>
+                            <span className="font-bold">BS {adminAvailableCredits.toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between text-primary">
                             <span>Your Purchase Price:</span>
@@ -159,16 +192,39 @@ export const BuyCreditsDialog = ({ walletBalance, adminAvailableCredits }: { wal
                     </div>
 
                     <DialogFooter>
-                        <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
-                        <Button type="button" onClick={handleNextStep}>Continue</Button>
+                        <Button type="button" variant="outline" onClick={handleDialogClose}>Cancel</Button>
+                        <Button type="button" onClick={handleNextStep}>Next <ArrowRight className="ml-2 h-4 w-4" /></Button>
                     </DialogFooter>
                 </>
             )}
 
             {step === 2 && (
+                 <div className="pt-4 space-y-4">
+                    <div className="p-4 bg-muted rounded-lg text-center space-y-1">
+                      <p className="text-sm text-muted-foreground">You are buying BS {creditsToBuy.toLocaleString()} for</p>
+                      <p className="text-4xl font-bold">K{cost.toLocaleString()}</p>
+                    </div>
+                  <h3 className="text-sm font-semibold text-center">Choose Payment Method</h3>
+                   <div className="grid grid-cols-2 gap-2">
+                        <Button onClick={handleWalletPayment} className="flex-col h-auto py-3 bg-primary hover:bg-primary/90 text-white">
+                            <Wallet className="mb-2 h-5 w-5" />
+                            <div><p>Pay with Wallet</p><p className="text-xs opacity-80">K{walletBalance.toLocaleString()}</p></div>
+                        </Button>
+                        <Button className="flex-col h-auto py-3 bg-green-600 hover:bg-green-700 text-white" onClick={handleManualPaymentClick}>
+                            <User className="mb-2 h-5 w-5" />
+                            <div><p>Manual Payment</p><p className="text-xs opacity-80">Bank or Mobile</p></div>
+                        </Button>
+                    </div>
+                   <DialogFooter>
+                      <Button type="button" variant="outline" onClick={() => setStep(1)}>Back</Button>
+                   </DialogFooter>
+                </div>
+            )}
+            
+            {step === 3 && (
                 <>
                     <div className="p-4 bg-muted rounded-lg text-center space-y-1">
-                        <p className="text-sm text-muted-foreground">Total Cost</p>
+                        <p className="text-sm text-muted-foreground">Confirming purchase of BS {creditsToBuy.toLocaleString()} for</p>
                         <p className="text-2xl font-bold">K{cost.toLocaleString()}</p>
                     </div>
 
@@ -187,17 +243,14 @@ export const BuyCreditsDialog = ({ walletBalance, adminAvailableCredits }: { wal
                     />
 
                     <DialogFooter>
-                        <Button type="button" variant="outline" onClick={() => setStep(1)}>Back</Button>
+                        <Button type="button" variant="outline" onClick={() => setStep(2)}>Back</Button>
                         <Button type="submit">Confirm Purchase</Button>
                     </DialogFooter>
                 </>
             )}
-
           </form>
         </Form>
       </DialogContent>
     </Dialog>
   );
 };
-
-    

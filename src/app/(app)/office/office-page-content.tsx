@@ -70,6 +70,7 @@ export function OfficePageContent() {
   const [isPinDialogOpen, setIsPinDialogOpen] = useState(false);
   const [isSecurityQuestionsOpen, setIsSecurityQuestionsOpen] = useState(false);
   const [isGenerateKeyOpen, setIsGenerateKeyOpen] = useState(false);
+  const [purchaseDetails, setPurchaseDetails] = useState<PlanDetails | null>(null);
 
   const affiliate = config?.affiliate;
 
@@ -551,9 +552,10 @@ export function OfficePageContent() {
                         valuePrefix={`BS `}
                         footer={`Value: K${((affiliate.creditBalance || 0) * CREDIT_TO_MWK).toLocaleString()}`}
                     >
-                        <BuyCreditsDialog 
+                        <BuyCreditsDialog
                             walletBalance={affiliate.myWallet || 0}
                             adminAvailableCredits={config?.admin?.availableCredits || 0}
+                            onManualPayment={(details) => setPurchaseDetails(details)}
                          />
                     </StatCard>
                     <Card>
@@ -884,6 +886,15 @@ export function OfficePageContent() {
             walletBalance={mwkBalance}
             creditBalance={affiliate.creditBalance || 0}
         />
+        {purchaseDetails && (
+            <PurchaseDialog
+                plan={purchaseDetails}
+                isOpen={!!purchaseDetails}
+                onClose={() => setPurchaseDetails(null)}
+                onSuccess={() => setPurchaseDetails(null)}
+                isTopUp
+            />
+        )}
     </div>
   );
 }
