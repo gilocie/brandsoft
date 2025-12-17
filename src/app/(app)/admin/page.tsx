@@ -394,8 +394,8 @@ export default function AdminPage() {
 
         const newAdminSettings: AdminSettings = {
             ...config.admin,
-            soldCredits: config.admin.maxCredits, // Mark all as sold
-            availableCredits: 0, // Set available to 0
+            soldCredits: 0,
+            availableCredits: config.admin.maxCredits,
         };
 
         let newAffiliateData = config.affiliate;
