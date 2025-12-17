@@ -516,7 +516,7 @@ export default function AdminPage() {
                                             <Card className="mb-6 bg-primary text-primary-foreground">
                                                 <CardHeader>
                                                     <CardTitle className="flex items-center justify-between text-base">
-                                                        <span>Credit Reserve Status</span>
+                                                        <span>Master Reserve Status</span>
                                                         <span className="text-sm font-normal text-primary-foreground/80">{availableCreditsPercentage.toFixed(1)}% Full</span>
                                                     </CardTitle>
                                                 </CardHeader>
