@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Users, UserCheck, UserX } from 'lucide-react';
+import { MoreHorizontal, Users, UserCheck, UserX, Trash2 } from 'lucide-react';
 import type { Affiliate } from "@/hooks/use-brandsoft";
 
 interface AffiliateCardProps {
@@ -47,7 +47,7 @@ export const AffiliateCard = ({ affiliate, onSelectAction }: AffiliateCardProps)
                         <UserX className="mr-2 h-4 w-4" /> Deactivate
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => onSelectAction('delete')} className="text-destructive focus:text-destructive">
-                        <UserX className="mr-2 h-4 w-4" /> Delete
+                        <Trash2 className="mr-2 h-4 w-4" /> Delete
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>

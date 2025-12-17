@@ -92,57 +92,17 @@ export default function ClientDetailsPage() {
 
       <div className="grid gap-4 md:grid-cols-2">
         <StatCard title="Client Wallet" value={client.walletBalance || 0} isCurrency icon={Wallet} footer="Funds available to the client">
-            <Button onClick={() => setIsTopUpOpen(true)} className="w-full">
-                <CirclePlus className="mr-2 h-4 w-4" /> Top Up Wallet
-            </Button>
         </StatCard>
         <Card>
             <CardHeader>
-                <CardTitle>Actions</CardTitle>
-                <CardDescription>Manage this client's account.</CardDescription>
+                <CardTitle>Details</CardTitle>
+                <CardDescription>Other client information.</CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col sm:flex-row gap-2">
-                <Button variant="destructive" onClick={() => setIsSuspendOpen(true)} className="w-full">
-                    <Ban className="mr-2 h-4 w-4" /> Suspend Client
-                </Button>
+            <CardContent>
+                <p className="text-sm text-muted-foreground">More details will be shown here.</p>
             </CardContent>
         </Card>
       </div>
-      
-       <AlertDialog open={isSuspendOpen} onOpenChange={setIsSuspendOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure you want to suspend {client.name}?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action will temporarily disable their account access and services. They will not be able to use the platform until unsuspended.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleSuspend} className="bg-destructive hover:bg-destructive/90">
-              Yes, Suspend
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-       <AlertDialog open={isTopUpOpen} onOpenChange={setIsTopUpOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Top Up Wallet for {client.name}</AlertDialogTitle>
-            <AlertDialogDescription>
-                This feature is coming soon. It will allow you to transfer credits from your balance directly to your client's wallet.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setIsTopUpOpen(false)}>
-              Got it
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
     </div>
   );
 }
-
