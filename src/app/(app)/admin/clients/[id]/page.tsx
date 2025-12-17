@@ -7,7 +7,7 @@ import { useBrandsoft, type AffiliateClient } from '@/hooks/use-brandsoft';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Ban, Briefcase, User, Wallet, CirclePlus, Clock } from 'lucide-react';
+import { ArrowLeft, Ban, Briefcase, User, Wallet, CirclePlus, Clock, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { StatCard } from '@/components/office/stat-card';
 import { useToast } from '@/hooks/use-toast';
@@ -19,6 +19,7 @@ export default function ClientDetailsPage() {
   const { toast } = useToast();
   const { config, saveConfig } = useBrandsoft();
   const [isSuspendOpen, setIsSuspendOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isTopUpOpen, setIsTopUpOpen] = useState(false);
 
   const client = useMemo(() => {
@@ -36,6 +37,27 @@ export default function ClientDetailsPage() {
       description: `${client.name} has been suspended.`,
     });
     setIsSuspendOpen(false);
+  };
+  
+  const handleDelete = () => {
+    if (!client || !config || !config.affiliate) return;
+    
+    // This is a destructive action.
+    const updatedClients = config.affiliate.clients.filter(c => c.id !== client.id);
+    const updatedCompanies = config.companies.filter(c => c.id !== client.id);
+
+    saveConfig({ 
+        ...config, 
+        companies: updatedCompanies,
+        affiliate: {
+            ...config.affiliate,
+            clients: updatedClients
+        }
+    }, { redirect: false });
+    
+    toast({ title: 'Client Deleted', description: `${client.name} has been removed.` });
+    setIsDeleteOpen(false);
+    router.push('/admin');
   };
 
   const handleTopUp = () => {
@@ -64,7 +86,7 @@ export default function ClientDetailsPage() {
   return (
     <div className="container mx-auto space-y-6">
       <Button variant="ghost" asChild>
-        <Link href="/admin"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Admin</Link>
+        <Link href="/admin/affiliates/affiliate_user"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Affiliate</Link>
       </Button>
 
       <Card>
@@ -95,14 +117,51 @@ export default function ClientDetailsPage() {
         </StatCard>
         <Card>
             <CardHeader>
-                <CardTitle>Details</CardTitle>
-                <CardDescription>Other client information.</CardDescription>
+                <CardTitle>Admin Actions</CardTitle>
+                <CardDescription>Manage this client's account.</CardDescription>
             </CardHeader>
-            <CardContent>
-                <p className="text-sm text-muted-foreground">More details will be shown here.</p>
+            <CardContent className="grid grid-cols-2 gap-4">
+                <Button variant="outline" onClick={() => setIsSuspendOpen(true)}>
+                    <Ban className="mr-2 h-4 w-4" /> Suspend Client
+                </Button>
+                <Button variant="destructive" onClick={() => setIsDeleteOpen(true)}>
+                    <Trash2 className="mr-2 h-4 w-4" /> Delete Client
+                </Button>
             </CardContent>
         </Card>
       </div>
+
+       <AlertDialog open={isSuspendOpen} onOpenChange={setIsSuspendOpen}>
+          <AlertDialogContent>
+              <AlertDialogHeader>
+                  <AlertDialogTitle>Suspend {client.name}?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                      This will temporarily disable their account. Are you sure?
+                  </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleSuspend}>Suspend</AlertDialogAction>
+              </AlertDialogFooter>
+          </AlertDialogContent>
+      </AlertDialog>
+
+       <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+          <AlertDialogContent>
+              <AlertDialogHeader>
+                  <AlertDialogTitle>Delete {client.name}?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                      This action is irreversible and will permanently remove this client. Are you sure?
+                  </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                      Delete Permanently
+                  </AlertDialogAction>
+              </AlertDialogFooter>
+          </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
