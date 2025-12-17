@@ -120,7 +120,7 @@ export default function ClientDetailsPage() {
                 <CardTitle>Admin Actions</CardTitle>
                 <CardDescription>Manage this client's account.</CardDescription>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-4">
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Button variant="outline" onClick={() => setIsSuspendOpen(true)}>
                     <Ban className="mr-2 h-4 w-4" /> Suspend Client
                 </Button>
