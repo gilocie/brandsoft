@@ -12,9 +12,9 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Users, BarChart, Clock, CheckCircle, RefreshCw, Briefcase, UserX, Trash2, Wallet, TrendingUp, TrendingDown, PackagePlus, Banknote, Shield, Lock, Unlock, AlertTriangle } from 'lucide-react';
+import { MoreHorizontal, Users, BarChart, Clock, CheckCircle, RefreshCw, Briefcase, UserX, Trash2, Wallet, TrendingUp, TrendingDown, PackagePlus, Banknote, Shield, Lock, Unlock, AlertTriangle, Ai, Bot, Star, Zap } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ClientCard } from '@/components/affiliate/client-card';
@@ -25,8 +25,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import { StatCard } from '@/components/admin/stat-card';
 import { ManageReserveDialog, type ManageReserveFormData } from '@/components/admin/manage-reserve-dialog';
+import { StatCard } from '@/components/admin/stat-card';
+
 
 const ADMIN_ACTIVATION_KEY = 'BRANDSOFT-ADMIN';
 
@@ -42,6 +43,38 @@ const plans = [
     { name: 'Pro', price: 'K15,000/mo', features: ['All Standard features', 'API access', 'Priority support', 'Advanced analytics'] },
     { name: 'Enterprise', price: 'Custom', features: ['All Pro features', 'Dedicated support', 'Custom integrations', 'On-premise option'] },
 ];
+
+const premiumFeatures = [
+    { 
+        category: 'Customization & Branding', 
+        features: [
+            { name: 'Full Template Editor Access', description: 'Unlock the advanced drag-and-drop template designer.' },
+            { name: 'Remove BrandSoft Branding', description: 'Remove the "Created by BrandSoft" footer from documents.' },
+        ]
+    },
+    {
+        category: 'Automation & Efficiency',
+        features: [
+            { name: 'Recurring Invoices', description: 'Set up automatically recurring invoices for clients.' },
+            { name: 'API Access', description: 'Integrate BrandSoft with your other business systems.' },
+        ]
+    },
+    {
+        category: 'AI-Powered Tools',
+        features: [
+            { name: 'AI Content Generation', description: 'Generate product descriptions and marketing copy.' },
+            { name: 'Smart Analytics', description: 'Get deeper insights and predictive sales analytics.' },
+        ]
+    },
+     {
+        category: 'Marketplace & Affiliate',
+        features: [
+            { name: 'Featured Marketplace Listing', description: 'Get a highlighted spot on the supplier marketplace.' },
+            { name: 'Priority Quotation Alerts', description: 'Receive instant notifications for new public requests.' },
+        ]
+    }
+];
+
 
 const creditSettingsSchema = z.object({
   maxCredits: z.coerce.number().min(0, "Max credits cannot be negative."),
@@ -172,18 +205,19 @@ export default function AdminPage() {
 
             if (purchaseToUse) {
                 plan = purchaseToUse.planName;
-                remainingDays = purchaseToUse.remainingTime?.value;
-                if (purchaseToUse.status === 'active' && (remainingDays === undefined || remainingDays > 0)) {
-                    status = 'active';
+                if(purchaseToUse.status === 'active') {
+                    remainingDays = purchaseToUse.remainingTime?.value;
+                    status = (remainingDays === undefined || remainingDays > 0) ? 'active' : 'expired';
+                    if (status === 'expired') remainingDays = 0;
                 } else {
-                    status = 'expired';
-                    remainingDays = 0;
+                     status = 'expired';
+                     remainingDays = 0;
                 }
             } else {
                 status = 'expired';
                 remainingDays = 0;
             }
-
+            
             return {
                 id: company.id,
                 name: company.companyName,
@@ -434,10 +468,25 @@ export default function AdminPage() {
                                         ))}
                                     </div>
                                 </TabsContent>
-                                <TabsContent value="features" className="pt-4">
-                                    <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
-                                        <p className="text-muted-foreground">Plan feature management coming soon.</p>
-                                    </div>
+                                <TabsContent value="features" className="pt-4 space-y-4">
+                                     {premiumFeatures.map(category => (
+                                        <div key={category.category}>
+                                            <h3 className="text-sm font-semibold mb-2">{category.category}</h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {category.features.map(feature => (
+                                                    <Card key={feature.name}>
+                                                        <CardHeader className="flex flex-row items-start justify-between p-4">
+                                                            <div className="space-y-1">
+                                                                <CardTitle className="text-base">{feature.name}</CardTitle>
+                                                                <CardDescription className="text-xs">{feature.description}</CardDescription>
+                                                            </div>
+                                                            <Bot className="h-5 w-5 text-primary" />
+                                                        </CardHeader>
+                                                    </Card>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
                                 </TabsContent>
                             </Tabs>
                         </CardContent>
