@@ -76,7 +76,7 @@ export const BuyCreditsDialog = ({
             });
             return;
         }
-        setStep(3);
+        setStep(3); // Proceed to PIN entry step
   }
   
   const handleManualPaymentClick = () => {
@@ -206,11 +206,11 @@ export const BuyCreditsDialog = ({
                     </div>
                   <h3 className="text-sm font-semibold text-center">Choose Payment Method</h3>
                    <div className="grid grid-cols-2 gap-2">
-                        <Button onClick={handleWalletPayment} className="flex-col h-auto py-3 bg-primary hover:bg-primary/90 text-white">
+                        <Button type="button" onClick={handleWalletPayment} className="flex-col h-auto py-3 bg-primary hover:bg-primary/90 text-white">
                             <Wallet className="mb-2 h-5 w-5" />
                             <div><p>Pay with Wallet</p><p className="text-xs opacity-80">K{walletBalance.toLocaleString()}</p></div>
                         </Button>
-                        <Button className="flex-col h-auto py-3 bg-green-600 hover:bg-green-700 text-white" onClick={handleManualPaymentClick}>
+                        <Button type="button" className="flex-col h-auto py-3 bg-green-600 hover:bg-green-700 text-white" onClick={handleManualPaymentClick}>
                             <User className="mb-2 h-5 w-5" />
                             <div><p>Manual Payment</p><p className="text-xs opacity-80">Bank or Mobile</p></div>
                         </Button>
