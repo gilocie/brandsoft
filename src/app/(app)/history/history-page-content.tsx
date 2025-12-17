@@ -16,10 +16,12 @@ import { useToast } from '@/hooks/use-toast';
 
 export function HistoryPageContent() {
     const { config, saveConfig } = useBrandsoft();
-    const [autoRenew, setAutoRenew] = useState(config?.profile.autoRenew || false);
     const { toast } = useToast();
+    
+    const [autoRenew, setAutoRenew] = useState(config?.profile.autoRenew || false);
     const [isAutoRenewConfirmOpen, setIsAutoRenewConfirmOpen] = useState(false);
     const [pendingAutoRenewState, setPendingAutoRenewState] = useState(false);
+    const [isFundsAlertOpen, setIsFundsAlertOpen] = useState(false);
 
     const { 
         planPurchases, 
@@ -51,9 +53,20 @@ export function HistoryPageContent() {
 
     }, [config?.purchases]);
     
+    const walletBalance = config?.profile.walletBalance || 0;
+    const currencySymbol = config?.profile.defaultCurrency === 'MWK' ? 'K' : config?.profile.defaultCurrency || '';
+    
     const handleAutoRenewToggle = (checked: boolean) => {
         setPendingAutoRenewState(checked);
-        setIsAutoRenewConfirmOpen(true);
+        if (checked) { // Enabling
+            if (walletBalance < 30000) {
+                setIsFundsAlertOpen(true);
+            } else {
+                setIsAutoRenewConfirmOpen(true);
+            }
+        } else { // Disabling
+            setIsAutoRenewConfirmOpen(true);
+        }
     };
 
     const confirmAutoRenewChange = () => {
@@ -85,8 +98,6 @@ export function HistoryPageContent() {
         });
     };
 
-    const walletBalance = config?.profile.walletBalance || 0;
-    const currencySymbol = config?.profile.defaultCurrency === 'MWK' ? 'K' : config?.profile.defaultCurrency || '';
 
     // Calculate total spent on successful purchases
     const totalSpent = useMemo(() => {
@@ -156,6 +167,7 @@ export function HistoryPageContent() {
                                 id="auto-renew-switch"
                                 checked={autoRenew}
                                 onCheckedChange={handleAutoRenewToggle}
+                                disabled={walletBalance === 0 && !autoRenew}
                             />
                         </div>
                         {autoRenew && (
@@ -310,6 +322,23 @@ export function HistoryPageContent() {
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction onClick={confirmAutoRenewChange}>
                             {pendingAutoRenewState ? 'Enable Auto-renewal' : 'Disable'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+            
+             <AlertDialog open={isFundsAlertOpen} onOpenChange={setIsFundsAlertOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Insufficient Funds</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            You need at least K30,000 in your wallet to enable auto-renewal. Please top up your wallet first.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction asChild>
+                            <WalletBalance />
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
