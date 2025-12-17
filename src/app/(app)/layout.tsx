@@ -93,6 +93,7 @@ const HeaderWalletCard = () => {
       <PopoverTrigger asChild>
         <Button className="flex-shrink-0 bg-green-600 text-white hover:bg-green-700">
           <Wallet className="h-5 w-5 mr-2" />
+          <span className="font-bold mr-2">{config.profile.defaultCurrency || 'K'}{balance.toLocaleString()}</span>
           Wallet
         </Button>
       </PopoverTrigger>
