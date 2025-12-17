@@ -8,8 +8,7 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { KeyRound, Wallet, CreditCard, Gift, Calendar, User } from 'lucide-react';
-import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
+import { KeyRound, Wallet, CreditCard, Gift, Calendar, User, Copy } from 'lucide-react';
 import { PurchaseDialog, type PlanDetails } from '@/components/purchase-dialog';
 import { useBrandsoft } from '@/hooks/use-brandsoft';
 import { cn } from '@/lib/utils';
@@ -47,14 +46,17 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
     resolver: zodResolver(pinSchema),
     defaultValues: { pin: '' },
   });
+  
+  const maskedKey = generatedKey ? `${staffId}-******` : '';
+
 
   useEffect(() => {
-    if (isOpen && step === 1) {
+    if (isOpen && step === 1 && !generatedKey) {
       const uniqueSuffix = Date.now().toString(36).slice(-6).toUpperCase();
       const fullKey = `${staffId}-${uniqueSuffix}`;
       setGeneratedKey(fullKey);
     }
-  }, [isOpen, step, staffId]);
+  }, [isOpen, step, staffId, generatedKey]);
 
   const handleProceedToPayment = () => {
     if (generatedKey) {
@@ -78,8 +80,6 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
       const method = pinConfirmation.method;
 
       if (method === 'wallet') {
-          // Logic for wallet payment is here, but we just show a toast for now
-          // This would typically involve an API call
           const newTransaction = {
             id: `TRN-KEY-${Date.now()}`,
             date: new Date().toISOString(),
@@ -94,9 +94,8 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
               myWallet: (config.affiliate.myWallet || 0) - KEY_PRICE,
               transactions: [newTransaction, ...(config.affiliate.transactions || [])],
             }
-          });
+          }, { redirect: false, revalidate: true });
       } else if (method === 'credits') {
-         // Logic for credit payment
           const newTransaction = {
             id: `TRN-KEY-CREDIT-${Date.now()}`,
             date: new Date().toISOString(),
@@ -111,19 +110,21 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
               creditBalance: (config.affiliate.creditBalance || 0) - creditCost,
               transactions: [newTransaction, ...(config.affiliate.transactions || [])],
             }
-          });
+          }, { redirect: false, revalidate: true });
       }
 
       toast({
           title: "Payment Successful!",
-          description: `Key ${generatedKey} has been purchased via ${method}.`,
+          description: `Key ${maskedKey} has been purchased.`,
       });
-      handleClose();
+      
+      setPinConfirmation(null);
+      setStep(3); // Go to success step
   };
 
   const handleManualPayment = () => {
       setPurchaseDetails({
-        name: `Activation Key (${generatedKey})` as any,
+        name: `Activation Key (${maskedKey})` as any,
         price: `K${KEY_PRICE.toLocaleString()}`,
         period: 'One-time Key Purchase',
     });
@@ -145,11 +146,15 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
       <Dialog open={isOpen && !purchaseDetails && !pinConfirmation} onOpenChange={handleClose}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle>{step === 1 ? 'Generate New Activation Key' : 'Confirm Purchase'}</DialogTitle>
+            <DialogTitle>
+                {step === 1 && 'Generate New Activation Key'}
+                {step === 2 && 'Confirm Purchase'}
+                {step === 3 && 'Key Generated Successfully!'}
+            </DialogTitle>
              <DialogDescription>
-              {step === 1 
-                ? 'Create a new activation key for a customer. Each key includes startup bonuses.' 
-                : `Confirm purchase for the generated key below.`}
+              {step === 1 && 'Create a new activation key for a customer. Each key includes startup bonuses.'}
+              {step === 2 && `Confirm purchase for the generated key.`}
+              {step === 3 && 'Your new activation key is ready. Share it with your client.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -158,8 +163,8 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                    <div className="flex flex-col items-center justify-center p-4 border rounded-md bg-muted text-center h-full">
                       <p className="text-sm text-muted-foreground">Generated Activation Key</p>
-                      <p className="font-mono text-2xl font-bold tracking-wider my-4 break-all">{generatedKey}</p>
-                      <p className="text-xs text-muted-foreground">This key is unique and ready to be shared.</p>
+                      <p className="font-mono text-2xl font-bold tracking-wider my-4 break-all">{maskedKey}</p>
+                      <p className="text-xs text-muted-foreground">The full key will be revealed after purchase.</p>
                   </div>
                   <div className="space-y-3 rounded-lg border p-4">
                       <h3 className="text-sm font-semibold">Key Benefits for Your New Client:</h3>
@@ -195,7 +200,7 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
                 <div className="p-4 bg-muted rounded-lg text-center space-y-1">
                   <p className="text-sm text-muted-foreground">You are purchasing a new key for</p>
                   <p className="text-4xl font-bold">K{KEY_PRICE.toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground pt-2">Generated Key: <span className="font-mono">{generatedKey}</span></p>
+                  <p className="text-xs text-muted-foreground pt-2">Generated Key: <span className="font-mono">{maskedKey}</span></p>
                 </div>
               <h3 className="text-sm font-semibold text-center">Choose Payment Method</h3>
                <div className="grid grid-cols-3 gap-2">
@@ -228,6 +233,22 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
                   <Button type="button" variant="outline" onClick={() => setStep(1)}>Back</Button>
                </DialogFooter>
             </div>
+          )}
+          
+          {step === 3 && (
+              <div className="space-y-4 pt-4 text-center">
+                   <div className="flex flex-col items-center justify-center p-4 border rounded-md bg-muted">
+                      <p className="text-sm text-muted-foreground">Your New Activation Key:</p>
+                      <p className="font-mono text-2xl font-bold tracking-wider my-2 break-all">{generatedKey}</p>
+                      <Button size="sm" variant="secondary" onClick={() => { navigator.clipboard.writeText(generatedKey); toast({title: "Copied to clipboard!"})}}>
+                          <Copy className="h-4 w-4 mr-2" />
+                          Copy Key
+                      </Button>
+                  </div>
+                  <DialogFooter>
+                      <Button onClick={handleClose}>Done</Button>
+                  </DialogFooter>
+              </div>
           )}
         </DialogContent>
       </Dialog>
@@ -273,7 +294,7 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
           plan={purchaseDetails}
           isOpen={!!purchaseDetails}
           onClose={handleClose}
-          onSuccess={handleClose}
+          onSuccess={() => { setStep(3); setPurchaseDetails(null); }}
           isTopUp
         />
       )}
