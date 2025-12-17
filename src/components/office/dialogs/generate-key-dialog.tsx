@@ -59,7 +59,7 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent>
+      <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle>{step === 1 ? 'Generate New Activation Key' : 'Confirm Purchase'}</DialogTitle>
            <DialogDescription>
@@ -71,30 +71,35 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
 
         {step === 1 && (
           <div className="space-y-4 pt-4">
-              <div className="p-4 border rounded-md bg-muted text-center">
-                  <p className="text-sm text-muted-foreground">Generated Activation Key</p>
-                  <p className="font-mono text-xl font-bold tracking-wider">{generatedKey}</p>
-              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 {/* Left: Key */}
+                 <div className="flex flex-col items-center justify-center p-4 border rounded-md bg-muted text-center h-full">
+                    <p className="text-sm text-muted-foreground">Generated Activation Key</p>
+                    <p className="font-mono text-2xl font-bold tracking-wider my-4">{generatedKey}</p>
+                    <p className="text-xs text-muted-foreground">This key is unique and ready to be shared.</p>
+                </div>
 
-              <div className="space-y-3 rounded-lg border p-4">
-                 <h3 className="text-sm font-semibold">Key Benefits for Your New Client:</h3>
-                 <div className="flex items-start gap-3 text-sm">
-                    <Calendar className="h-5 w-5 text-primary mt-0.5 shrink-0"/>
-                    <div>
-                        <p className="font-medium">30 Free Premium Days</p>
-                        <p className="text-xs text-muted-foreground">The client starts with a 30-day free trial on any premium plan upon activation.</p>
+                {/* Right: Benefits */}
+                <div className="space-y-3 rounded-lg border p-4">
+                    <h3 className="text-sm font-semibold">Key Benefits for Your New Client:</h3>
+                    <div className="flex items-start gap-3 text-sm">
+                        <Calendar className="h-5 w-5 text-primary mt-0.5 shrink-0"/>
+                        <div>
+                            <p className="font-medium">30 Free Premium Days</p>
+                            <p className="text-xs text-muted-foreground">The client starts with a 30-day free trial on any premium plan upon activation.</p>
+                        </div>
                     </div>
-                 </div>
-                 <div className="flex items-start gap-3 text-sm">
-                    <Gift className="h-5 w-5 text-primary mt-0.5 shrink-0"/>
-                    <div>
-                        <p className="font-medium">K30,000 Starter Wallet</p>
-                        <p className="text-xs text-muted-foreground">A K30,000 balance is credited to their account to automatically renew their plan after the free trial.</p>
+                    <div className="flex items-start gap-3 text-sm">
+                        <Gift className="h-5 w-5 text-primary mt-0.5 shrink-0"/>
+                        <div>
+                            <p className="font-medium">K30,000 Starter Wallet</p>
+                            <p className="text-xs text-muted-foreground">A K30,000 balance is credited to their account to automatically renew their plan after the free trial.</p>
+                        </div>
                     </div>
-                 </div>
+                </div>
               </div>
             
-              <div className="text-center font-bold text-lg">
+              <div className="text-center font-bold text-lg pt-4 border-t">
                 Cost: K{KEY_PRICE.toLocaleString()}
               </div>
               <DialogFooter>
@@ -108,7 +113,7 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
           <div className="pt-4 space-y-4">
               <div className="p-4 bg-muted rounded-lg text-center space-y-1">
                 <p className="text-sm text-muted-foreground">You are purchasing a new key for</p>
-                <p className="text-2xl font-bold">K{KEY_PRICE.toLocaleString()}</p>
+                <p className="text-4xl font-bold">K{KEY_PRICE.toLocaleString()}</p>
                 <p className="text-xs text-muted-foreground pt-2">Generated Key: <span className="font-mono">{generatedKey}</span></p>
               </div>
             <h3 className="text-sm font-semibold text-center">Choose Payment Method</h3>
