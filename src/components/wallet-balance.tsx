@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useBrandsoft } from "@/hooks/use-brandsoft";
-import { Button } from "./ui/button";
+import { Button, type ButtonProps } from "./ui/button";
 import { Wallet, Building2, Check, ArrowRight } from "lucide-react";
 import {
   Dialog,
@@ -63,7 +63,7 @@ const AmountInput = ({ value, onChange, className }: { value: number, onChange: 
 };
 
 
-export function WalletBalance({className}: {className?: string}) {
+export function WalletBalance({className, variant}: {className?: string, variant?: ButtonProps["variant"]}) {
   const { config } = useBrandsoft();
   const [isTopUpOpen, setIsTopUpOpen] = useState(false);
   const [purchaseDetails, setPurchaseDetails] = useState<PlanDetails | null>(null);
@@ -125,7 +125,7 @@ export function WalletBalance({className}: {className?: string}) {
   return (
     <Dialog open={isTopUpOpen} onOpenChange={(open) => { if(!open) { handleDialogClose(); } else { setIsTopUpOpen(true); } }}>
         <DialogTrigger asChild>
-             <Button size="sm" className={className}>Top up</Button>
+             <Button size="sm" variant={variant} className={className}>Top up</Button>
         </DialogTrigger>
         <DialogContent>
             <DialogHeader>
