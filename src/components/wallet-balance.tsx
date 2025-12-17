@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -18,14 +18,49 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { PurchaseDialog, type PlanDetails } from './purchase-dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "./ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "./ui/form";
 import { Input } from "./ui/input";
+import { cn } from "@/lib/utils";
 
 const topUpSchema = z.object({
   amount: z.coerce.number().min(30000, "Minimum top-up is K30,000."),
 });
 
 type TopUpFormData = z.infer<typeof topUpSchema>;
+
+const AmountInput = ({ value, onChange, className }: { value: number, onChange: (value: number) => void, className?: string }) => {
+    const [displayValue, setDisplayValue] = useState<string>('');
+
+    useEffect(() => {
+        setDisplayValue(value > 0 ? value.toLocaleString() : '');
+    }, [value]);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const rawValue = e.target.value.replace(/,/g, '');
+        if (/^\d*$/.test(rawValue)) { // Allow only digits
+            const numValue = Number(rawValue);
+            setDisplayValue(numValue > 0 ? numValue.toLocaleString() : '');
+            onChange(numValue);
+        }
+    };
+    
+    return (
+        <div className="relative text-center">
+            <span className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 text-5xl font-bold text-muted-foreground pointer-events-none" style={{ left: `calc(50% - ${((displayValue.length + 2) / 2) * 1.5}rem)` }}>K</span>
+            <input
+                type="text"
+                value={displayValue}
+                onChange={handleInputChange}
+                className={cn(
+                    "w-full bg-transparent border-none text-5xl font-bold text-center focus:outline-none focus:ring-0",
+                    className
+                )}
+                placeholder="0"
+            />
+        </div>
+    );
+};
+
 
 export function WalletBalance() {
   const { config } = useBrandsoft();
@@ -52,6 +87,11 @@ export function WalletBalance() {
     });
     setIsTopUpOpen(false); // Close amount dialog
   };
+  
+   const handleDialogClose = () => {
+    form.reset();
+    setIsTopUpOpen(false);
+  };
 
   return (
     <div className="flex items-center gap-2">
@@ -59,7 +99,7 @@ export function WalletBalance() {
             <Wallet className="h-4 w-4 text-muted-foreground" />
             <span>{currency}{balance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
         </div>
-        <Dialog open={isTopUpOpen} onOpenChange={setIsTopUpOpen}>
+        <Dialog open={isTopUpOpen} onOpenChange={(open) => { if(!open) { handleDialogClose(); } else { setIsTopUpOpen(true); } }}>
             <DialogTrigger asChild>
                  <Button size="sm">Top up</Button>
             </DialogTrigger>
@@ -71,22 +111,30 @@ export function WalletBalance() {
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(handleTopUpSubmit)} className="space-y-4 pt-4">
+                    <form onSubmit={form.handleSubmit(handleTopUpSubmit)} className="space-y-6 pt-4">
                        <FormField
                           control={form.control}
                           name="amount"
                           render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Amount (in {currency})</FormLabel>
+                            <FormItem className="text-center">
                               <FormControl>
-                                <Input type="number" placeholder="e.g., 50000" {...field} />
+                                <AmountInput value={field.value} onChange={field.onChange} />
                               </FormControl>
+                              <FormDescription>Min: K30,000</FormDescription>
                               <FormMessage />
+                               <div className="flex flex-col gap-1 pt-2 border-t mt-4 bg-muted/30 p-3 rounded-md">
+                                <div className="flex justify-between items-center pt-2">
+                                  <span className="font-bold">Current Balance:</span>
+                                  <span className="text-xl font-bold text-primary">
+                                    {currency}{balance.toLocaleString()}
+                                  </span>
+                                </div>
+                              </div>
                             </FormItem>
                           )}
                         />
                         <DialogFooter>
-                            <Button type="button" variant="outline" onClick={() => setIsTopUpOpen(false)}>Cancel</Button>
+                            <Button type="button" variant="outline" onClick={handleDialogClose}>Cancel</Button>
                             <Button type="submit">Proceed to Payment</Button>
                         </DialogFooter>
                     </form>
@@ -106,3 +154,4 @@ export function WalletBalance() {
     </div>
   );
 }
+
