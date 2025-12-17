@@ -85,15 +85,16 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
         return myCompany?.referredBy || null;
     }, [config]);
 
-    const paymentMethods = useMemo(() => {
+    const { methods: paymentMethods, number: affiliateWhatsappNumber } = useMemo(() => {
+        const brandsoftNumber = '265991972336';
         if (!clientReferredBy || clientReferredBy === 'BRANDSOFT-ADMIN') {
-            return defaultPaymentMethods;
+            return { methods: defaultPaymentMethods, number: brandsoftNumber };
         }
 
         // Simplification for demo. In a real app, you'd find the affiliate by staffId.
         const affiliate = config?.affiliate;
         if (!affiliate || !affiliate.withdrawalMethods) {
-            return defaultPaymentMethods;
+            return { methods: defaultPaymentMethods, number: brandsoftNumber };
         }
         
         const affiliateMethods = [];
@@ -121,7 +122,10 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
             });
         }
 
-        return affiliateMethods.length > 0 ? affiliateMethods : defaultPaymentMethods;
+        const finalMethods = affiliateMethods.length > 0 ? affiliateMethods : defaultPaymentMethods;
+        const finalNumber = affiliate.phone ? affiliate.phone.replace(/\+/g, '') : brandsoftNumber;
+
+        return { methods: finalMethods, number: finalNumber };
     }, [clientReferredBy, config]);
 
     useEffect(() => {
@@ -193,7 +197,7 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
 %0AUser WhatsApp: ${whatsappNumber}
 %0A%0AView Status: ${window.location.origin}/verify-purchase?orderId=${newOrderId}
 %0A%0AMy regards`;
-            window.open(`https://wa.me/265991972336?text=${message}`, '_blank');
+            window.open(`https://wa.me/${affiliateWhatsappNumber}?text=${message}`, '_blank');
             
             setPurchaseState('success');
         }, 1500);
