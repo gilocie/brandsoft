@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useBrandsoft } from "@/hooks/use-brandsoft";
 import { Button } from "./ui/button";
-import { Wallet } from "lucide-react";
+import { Wallet, Building2, Check, ArrowRight } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -21,6 +21,7 @@ import { PurchaseDialog, type PlanDetails } from './purchase-dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "./ui/form";
 import { Input } from "./ui/input";
 import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 
 const topUpSchema = z.object({
   amount: z.coerce.number().min(30000, "Minimum top-up is K30,000."),
@@ -66,6 +67,7 @@ export function WalletBalance() {
   const { config } = useBrandsoft();
   const [isTopUpOpen, setIsTopUpOpen] = useState(false);
   const [purchaseDetails, setPurchaseDetails] = useState<PlanDetails | null>(null);
+  const [step, setStep] = useState(1);
 
   const form = useForm<TopUpFormData>({
     resolver: zodResolver(topUpSchema),
@@ -84,19 +86,41 @@ export function WalletBalance() {
   const equivalentCredits = watchedAmount / exchangeValue;
 
 
-  const handleTopUpSubmit = (data: TopUpFormData) => {
+  const handleNextStep = async () => {
+    const isValid = await form.trigger('amount');
+    if(isValid) {
+      setStep(2);
+    }
+  };
+
+  const handleConfirmAndPay = () => {
+    const data = form.getValues();
     setPurchaseDetails({
       name: 'Wallet Top-up' as any,
       price: `${currency}${data.amount.toLocaleString()}`,
       period: 'One-time',
     });
-    setIsTopUpOpen(false); // Close amount dialog
+    // We keep the top-up dialog open but hide it by advancing the step
+    setStep(3); 
   };
   
    const handleDialogClose = () => {
     form.reset();
+    setStep(1);
     setIsTopUpOpen(false);
   };
+  
+  const handlePurchaseSuccess = () => {
+    setPurchaseDetails(null);
+    handleDialogClose();
+  };
+
+  const affiliate = config.affiliate;
+  const whoReceivesPayment = affiliate || {
+      fullName: 'Brandsoft',
+      logo: '', // You can add a Brandsoft logo URL here
+  };
+
 
   return (
     <div className="flex items-center gap-2">
@@ -110,51 +134,80 @@ export function WalletBalance() {
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Top Up Your Wallet</DialogTitle>
+                    <DialogTitle>{step === 1 ? 'Top Up Your Wallet' : 'Confirm Purchase'}</DialogTitle>
                     <DialogDescription>
-                        Minimum top up is K30,000. The current exchange rate is K{exchangeValue.toLocaleString()} for 1 BS Credit.
+                       {step === 1 
+                         ? `Minimum top up is K30,000. Current exchange rate: K${exchangeValue.toLocaleString()} = BS 1.`
+                         : 'Review your purchase details below.'
+                       }
                     </DialogDescription>
                 </DialogHeader>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(handleTopUpSubmit)} className="space-y-6 pt-4">
-                       <FormField
-                          control={form.control}
-                          name="amount"
-                          render={({ field }) => (
-                            <FormItem className="text-center">
-                              <FormControl>
-                                <AmountInput value={field.value} onChange={field.onChange} />
-                              </FormControl>
-                               <FormDescription>
-                                You will receive: <span className="font-bold text-primary">BS {equivalentCredits.toFixed(2)}</span>
-                               </FormDescription>
-                              <FormMessage />
-                               <div className="flex flex-col gap-1 pt-2 border-t mt-4 bg-muted/30 p-3 rounded-md">
-                                <div className="flex justify-between items-center pt-2">
-                                  <span className="font-bold">Current Balance:</span>
-                                  <span className="text-xl font-bold text-primary">
-                                    {currency}{balance.toLocaleString()}
-                                  </span>
-                                </div>
-                              </div>
-                            </FormItem>
-                          )}
-                        />
+
+                {step === 1 && (
+                    <Form {...form}>
+                        <form onSubmit={(e) => { e.preventDefault(); handleNextStep(); }} className="space-y-6 pt-4">
+                           <FormField
+                              control={form.control}
+                              name="amount"
+                              render={({ field }) => (
+                                <FormItem className="text-center">
+                                  <FormControl>
+                                    <AmountInput value={field.value} onChange={field.onChange} />
+                                  </FormControl>
+                                   <FormDescription>
+                                    You will receive: <span className="font-bold text-primary">BS {equivalentCredits.toFixed(2)}</span>
+                                   </FormDescription>
+                                  <FormMessage />
+                                   <div className="flex flex-col gap-1 pt-2 border-t mt-4 bg-muted/30 p-3 rounded-md">
+                                    <div className="flex justify-between items-center pt-2">
+                                      <span className="font-bold">Current Balance:</span>
+                                      <span className="text-xl font-bold text-primary">
+                                        {currency}{balance.toLocaleString()}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </FormItem>
+                              )}
+                            />
+                            <DialogFooter>
+                                <Button type="button" variant="outline" onClick={handleDialogClose}>Cancel</Button>
+                                <Button type="submit">Next <ArrowRight className="ml-2 h-4 w-4" /></Button>
+                            </DialogFooter>
+                        </form>
+                    </Form>
+                )}
+                
+                {step === 2 && (
+                    <div className="space-y-6 pt-4">
+                        <div className="p-4 bg-muted rounded-lg text-center space-y-2">
+                            <p className="text-sm text-muted-foreground">You are paying</p>
+                            <p className="text-4xl font-bold">K{watchedAmount.toLocaleString()}</p>
+                             <p className="text-sm text-muted-foreground">and will receive <strong className="text-primary">BS {equivalentCredits.toFixed(2)}</strong></p>
+                        </div>
+                        <div className="flex items-center justify-center gap-4 text-center">
+                            <div className="flex flex-col items-center gap-2">
+                                <Avatar className="h-12 w-12 border">
+                                    <AvatarImage src={whoReceivesPayment.profilePic} />
+                                    <AvatarFallback><Building2/></AvatarFallback>
+                                </Avatar>
+                                <p className="text-xs font-semibold">{whoReceivesPayment.fullName}</p>
+                            </div>
+                        </div>
                         <DialogFooter>
-                            <Button type="button" variant="outline" onClick={handleDialogClose}>Cancel</Button>
-                            <Button type="submit">Proceed to Payment</Button>
+                            <Button type="button" variant="outline" onClick={() => setStep(1)}>Back</Button>
+                            <Button type="button" onClick={handleConfirmAndPay}>Confirm & Pay</Button>
                         </DialogFooter>
-                    </form>
-                </Form>
+                    </div>
+                )}
             </DialogContent>
         </Dialog>
 
-        {purchaseDetails && (
+        {step === 3 && purchaseDetails && (
             <PurchaseDialog
                 plan={purchaseDetails}
                 isOpen={!!purchaseDetails}
-                onClose={() => setPurchaseDetails(null)}
-                onSuccess={() => setPurchaseDetails(null)}
+                onClose={() => { setPurchaseDetails(null); handleDialogClose(); }}
+                onSuccess={handlePurchaseSuccess}
                 isTopUp={true}
             />
         )}
