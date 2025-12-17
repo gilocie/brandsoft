@@ -68,7 +68,7 @@ export const BuyCreditsDialog = ({ walletBalance, adminAvailableCredits }: { wal
   }
 
   const onSubmit = (data: BuyCreditsFormData) => {
-    if (!config || !config.affiliate) return;
+    if (!config || !config.affiliate || !config.admin) return;
 
     if (!data.pin || data.pin !== config.affiliate.pin) {
         toast({ variant: 'destructive', title: "Incorrect PIN" });
@@ -93,12 +93,13 @@ export const BuyCreditsDialog = ({ walletBalance, adminAvailableCredits }: { wal
       transactions: [newTransaction, ...(config.affiliate.transactions || [])],
     };
 
-    const newAffiliateSettings = {
-        ...(config.affiliateSettings || {}),
-        availableCredits: (config.affiliateSettings?.availableCredits || 0) - data.credits,
+    const newAdminSettings = {
+        ...config.admin,
+        availableCredits: (config.admin.availableCredits || 0) - data.credits,
+        soldCredits: (config.admin.soldCredits || 0) + data.credits,
     };
 
-    saveConfig({ ...config, affiliate: newAffiliateData, affiliateSettings: newAffiliateSettings }, { redirect: false, revalidate: true });
+    saveConfig({ ...config, affiliate: newAffiliateData, admin: newAdminSettings }, { redirect: false, revalidate: true });
     
     toast({
       title: 'Purchase Successful!',

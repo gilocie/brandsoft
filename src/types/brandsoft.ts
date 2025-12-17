@@ -68,6 +68,7 @@ export type Company = {
   logo?: string;
   coverImage?: string;
   website?: string;
+  referredBy?: string;
 };
 
 export type Customer = {
@@ -189,6 +190,16 @@ export type Review = {
   date: string;
 };
 
+export type AdminSettings = {
+  maxCredits: number;
+  buyPrice: number;
+  sellPrice: number;
+  exchangeValue: number;
+  availableCredits: number;
+  soldCredits: number;
+  isReserveLocked?: boolean;
+};
+
 export type BrandsoftConfig = {
   brand: {
     logo: string;
@@ -249,13 +260,7 @@ export type BrandsoftConfig = {
     marketing: boolean;
   };
   affiliate?: Affiliate;
-  affiliateSettings?: {
-    maxCredits?: number;
-    buyPrice?: number;
-    sellPrice?: number;
-    exchangeValue?: number;
-    availableCredits?: number;
-  };
+  admin?: AdminSettings;
   companies: Company[];
   customers: Customer[];
   products: Product[];

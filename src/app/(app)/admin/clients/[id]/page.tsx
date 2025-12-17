@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -182,7 +183,7 @@ export default function ClientDetailsPage() {
     return { client: company, clientAffiliateInfo: affiliateInfo };
   }, [config, params.id]);
   
-  const adminAvailableCredits = config?.affiliateSettings?.availableCredits || 0;
+  const adminAvailableCredits = config?.admin?.availableCredits || 0;
 
   const handleSuspend = () => {
     if (!client) return;
@@ -213,36 +214,36 @@ export default function ClientDetailsPage() {
   };
 
  const handleTopUp = (amount: number) => {
-    if (!client || !config) return;
+    if (!client || !config || !config.admin) return;
 
     const costInMWK = amount * CREDIT_TO_MWK;
     let newConfig = { ...config };
+    
+    // Deduct credits from admin reserve and increment sold credits
+    const newAdminSettings = {
+        ...config.admin,
+        availableCredits: (config.admin.availableCredits || 0) - amount,
+        soldCredits: (config.admin.soldCredits || 0) + amount,
+    };
+    newConfig.admin = newAdminSettings;
 
-    // Find the affiliate responsible for this client to update their client record
+    // Check if client is managed by an affiliate
     const affiliate = config.affiliate?.clients.find(c => c.id === client.id) ? config.affiliate : undefined;
 
     if (affiliate) {
+      // Update wallet balance for the client within the affiliate's list
       const updatedAffiliateClients = affiliate.clients.map(c =>
         c.id === client.id ? { ...c, walletBalance: (c.walletBalance || 0) + costInMWK } : c
       );
       newConfig.affiliate = { ...affiliate, clients: updatedAffiliateClients };
-
     } else {
-       // Logic for admin-managed clients
-       // We need to update the company record directly or a client record not nested in an affiliate
-       // For now, let's just log this case and assume we update the company record (if it had a wallet)
-       // This part of the data model might need review if admin clients have wallets.
-       // The current `AffiliateClient` type is nested.
+       // This handles admin-managed clients.
+       // The current data model does not have a separate wallet for admin clients.
+       // This could be an area for future improvement. We'll log it for now.
+       console.log(`Admin client ${client.companyName} topped up. Wallet functionality for admin clients needs review.`);
     }
-    
-    // Deduct credits from admin reserve
-    const newAffiliateSettings = {
-        ...(config.affiliateSettings || {}),
-        availableCredits: (config.affiliateSettings?.availableCredits || 0) - amount,
-    };
-    newConfig.affiliateSettings = newAffiliateSettings;
 
-    // Save all changes
+    // Save all changes at once
     saveConfig(newConfig, { redirect: false, revalidate: true });
     
     toast({

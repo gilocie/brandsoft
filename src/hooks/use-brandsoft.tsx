@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, createContext, useContext, ReactNode, useCallback } from 'react';
@@ -11,7 +12,7 @@ import { useQuotations } from './use-quotations';
 import { useQuotationRequests } from './use-quotation-requests';
 import { usePurchases } from './use-purchases';
 import { useCurrencies } from './use-currencies';
-import type { BrandsoftConfig, Company, Product, Invoice, Quotation, QuotationRequest, Purchase, Customer, Review, Affiliate, Transaction } from '@/types/brandsoft';
+import type { BrandsoftConfig, Company, Product, Invoice, Quotation, QuotationRequest, Purchase, Customer, Review, Affiliate, Transaction, AdminSettings } from '@/types/brandsoft';
 
 export * from '@/types/brandsoft';
 
@@ -222,6 +223,16 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
             }
         }
         
+        if (parsedConfig.affiliateSettings) {
+            parsedConfig.admin = {
+                ...parsedConfig.affiliateSettings,
+                soldCredits: parsedConfig.affiliateSettings.maxCredits - parsedConfig.affiliateSettings.availableCredits,
+            };
+            delete parsedConfig.affiliateSettings;
+            needsSave = true;
+        }
+
+
         setConfig(parsedConfig);
 
         if (needsSave) {

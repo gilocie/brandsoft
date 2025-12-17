@@ -2,7 +2,7 @@
 
 'use client';
 
-import type { BrandsoftConfig, Company, Customer, Invoice, Quotation, QuotationRequest, Affiliate, Transaction } from '@/types/brandsoft';
+import type { BrandsoftConfig, Company, Customer, Invoice, Quotation, QuotationRequest, Affiliate, Transaction, AdminSettings } from '@/types/brandsoft';
 
 const initialCompanies: Omit<Company, 'id'>[] = [
     { 
@@ -240,6 +240,16 @@ export function useSetup(
     securityQuestionData: undefined,
   };
 
+  const initialAdminSettings: AdminSettings = {
+    maxCredits: 200000,
+    buyPrice: 850,
+    sellPrice: 900,
+    exchangeValue: 1000,
+    availableCredits: 200000,
+    soldCredits: 0,
+    isReserveLocked: false,
+  };
+
 
   async function finalizeSetup(data: any) {
     const userCompanyId = `COMP-ME-${Date.now()}`;
@@ -256,6 +266,16 @@ export function useSetup(
         description: data.description,
         logo: data.logo,
         website: data.website,
+        referredBy: 'BRANDSOFT-ADMIN',
+    };
+    
+    const userAsCustomer: Customer = {
+        id: userCompanyId,
+        name: data.businessName,
+        email: data.email,
+        phone: data.phone,
+        address: data.address,
+        companyName: data.businessName,
     };
 
     const finalCompanies = [
@@ -315,6 +335,7 @@ export function useSetup(
         marketing: data.marketing,
       },
       affiliate: initialAffiliateData,
+      admin: initialAdminSettings,
       companies: finalCompanies,
       customers: finalCustomers,
       products: [],
@@ -335,7 +356,3 @@ export function useSetup(
 
   return { finalizeSetup };
 }
-
-    
-
-    

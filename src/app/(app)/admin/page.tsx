@@ -1,11 +1,12 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useBrandsoft, type Affiliate, type Transaction, type AffiliateClient, type Company } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Affiliate, type Transaction, type AffiliateClient, type Company, type AdminSettings } from '@/hooks/use-brandsoft';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -78,14 +79,12 @@ const ManageReserveDialog = ({
     onOpenChange,
     onSubmit,
     totalReserve,
-    circulatingCredits,
     maxCredits
 }: {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
     onSubmit: (data: ManageReserveFormData) => void;
     totalReserve: number;
-    circulatingCredits: number;
     maxCredits: number;
 }) => {
     const form = useForm<ManageReserveFormData>({
@@ -99,8 +98,6 @@ const ManageReserveDialog = ({
     useEffect(() => {
         form.reset({ action: 'add', amount: 1, reason: '' });
     }, [isOpen, form]);
-
-    const availableToAdjust = maxCredits - totalReserve;
     
     const finalReserve = watchedAction === 'add' 
         ? totalReserve + (Number(watchedAmount) || 0)
@@ -113,7 +110,6 @@ const ManageReserveDialog = ({
                     <DialogTitle>Manage Credits Reserve</DialogTitle>
                      <DialogDescription>
                         Manually adjust the total credits in your central reserve.
-                        You have <span className="font-bold">{availableToAdjust.toLocaleString()}</span> credits available before you reach your max limit of {(maxCredits).toLocaleString()}.
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -203,27 +199,28 @@ export default function AdminPage() {
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [isManageReserveOpen, setIsManageReserveOpen] = useState(false);
     
-    const affiliateSettings = useMemo(() => config?.affiliateSettings || {
+    const adminSettings: AdminSettings = useMemo(() => config?.admin || {
         maxCredits: 1000000,
         buyPrice: 850,
         sellPrice: 900,
         exchangeValue: 1000,
         availableCredits: 100000,
+        soldCredits: 0,
         isReserveLocked: false,
-    }, [config?.affiliateSettings]);
+    }, [config?.admin]);
     
-    const isReserveLocked = affiliateSettings.isReserveLocked;
+    const isReserveLocked = adminSettings.isReserveLocked;
 
     const form = useForm<CreditSettingsFormData>({
         resolver: zodResolver(creditSettingsSchema),
-        defaultValues: affiliateSettings,
+        defaultValues: adminSettings,
     });
 
     useEffect(() => {
-        if (config?.affiliateSettings) {
-            form.reset(config.affiliateSettings);
+        if (config?.admin) {
+            form.reset(config.admin);
         }
-    }, [config?.affiliateSettings, form]);
+    }, [config?.admin, form]);
     
     const watchedExchangeValue = form.watch('exchangeValue');
     const watchedSellPrice = form.watch('sellPrice');
@@ -235,7 +232,7 @@ export default function AdminPage() {
         return affiliates.reduce((sum, aff) => sum + (aff.creditBalance || 0), 0);
     }, [affiliates]);
     
-    const creditsInReserve = (affiliateSettings.availableCredits || 0);
+    const distributionReserve = adminSettings.availableCredits || 0;
 
     const withdrawalRequests = useMemo(() => {
         if (!config?.affiliate?.transactions) return [];
@@ -253,33 +250,33 @@ export default function AdminPage() {
     }, [withdrawalRequests]);
 
     const totalPendingBsCreditAmount = pendingBsCreditWithdrawals.reduce((sum, req) => sum + req.amount, 0);
-    const totalPendingBsCredits = totalPendingBsCreditAmount / (affiliateSettings.exchangeValue || 1000);
+    const totalPendingBsCredits = totalPendingBsCreditAmount / (adminSettings.exchangeValue || 1000);
 
     const availableCreditsPercentage = useMemo(() => {
         if (!watchedMaxCredits || watchedMaxCredits === 0) return 0;
-        return (creditsInReserve / watchedMaxCredits) * 100;
-    }, [creditsInReserve, watchedMaxCredits]);
+        return (distributionReserve / watchedMaxCredits) * 100;
+    }, [distributionReserve, watchedMaxCredits]);
     
-    const soldCredits = (affiliateSettings.maxCredits || 0) - creditsInReserve;
+    const soldCredits = adminSettings.soldCredits || 0;
     const boughtBackCredits = circulatingCredits; // This is a simplification
-    const netProfit = (soldCredits * (affiliateSettings.sellPrice || 0)) - (boughtBackCredits * (affiliateSettings.buyPrice || 0));
+    const netProfit = (soldCredits * (adminSettings.sellPrice || 0)) - (boughtBackCredits * (adminSettings.buyPrice || 0));
 
 
     const onCreditSettingsSubmit = (data: CreditSettingsFormData) => {
         if (!config || isReserveLocked) return;
-        const newSettings = {
-          ...affiliateSettings,
+        const newSettings: AdminSettings = {
+          ...adminSettings,
           ...data,
         };
-        saveConfig({ ...config, affiliateSettings: newSettings }, { redirect: false });
+        saveConfig({ ...config, admin: newSettings }, { redirect: false });
         toast({ title: "Credit Settings Saved", description: "Your BS Credit settings have been updated." });
     };
     
     const toggleReserveLock = () => {
          if (!config) return;
          const newLockState = !isReserveLocked;
-         const newSettings = { ...affiliateSettings, isReserveLocked: newLockState };
-         saveConfig({ ...config, affiliateSettings: newSettings }, { redirect: false });
+         const newSettings: AdminSettings = { ...adminSettings, isReserveLocked: newLockState };
+         saveConfig({ ...config, admin: newSettings }, { redirect: false });
          toast({ title: `Reserve ${newLockState ? 'Locked' : 'Unlocked'}`, description: `Credit settings are now ${newLockState ? 'protected' : 'editable'}.` });
     }
 
@@ -314,13 +311,13 @@ export default function AdminPage() {
 
 
     const handleStatusChange = (transactionId: string, newStatus: 'pending' | 'processing' | 'completed') => {
-        if (!config?.affiliate) return;
+        if (!config?.affiliate || !config?.admin) return;
 
         const transaction = config.affiliate.transactions?.find(t => t.id === transactionId);
         if (!transaction) return;
 
         let newAffiliateData = { ...config.affiliate };
-        let newAffiliateSettings = { ...config.affiliateSettings };
+        let newAdminSettings = { ...config.admin };
 
         // Update transaction status
         newAffiliateData.transactions = newAffiliateData.transactions?.map(t => 
@@ -329,11 +326,11 @@ export default function AdminPage() {
 
         // If a BS Credit withdrawal is completed, return credits to the reserve
         if (newStatus === 'completed' && (transaction as any).method === 'bsCredits') {
-            const creditAmount = transaction.amount / (affiliateSettings.exchangeValue || 1000);
-            newAffiliateSettings.availableCredits = (newAffiliateSettings.availableCredits || 0) + creditAmount;
+            const creditAmount = transaction.amount / (adminSettings.exchangeValue || 1000);
+            newAdminSettings.availableCredits = (newAdminSettings.availableCredits || 0) + creditAmount;
         }
 
-        saveConfig({ ...config, affiliate: newAffiliateData, affiliateSettings: newAffiliateSettings }, { redirect: false, revalidate: true });
+        saveConfig({ ...config, affiliate: newAffiliateData, admin: newAdminSettings }, { redirect: false, revalidate: true });
         
         toast({
             title: "Status Updated",
@@ -366,8 +363,8 @@ export default function AdminPage() {
 
     const handleManageReserve = (data: ManageReserveFormData) => {
         if (!config || isReserveLocked) return;
-        const currentCredits = affiliateSettings.availableCredits || 0;
-        const maxCredits = affiliateSettings.maxCredits || 0;
+        const currentCredits = adminSettings.availableCredits || 0;
+        const maxCredits = adminSettings.maxCredits || 0;
         let newCredits = currentCredits;
 
         if (data.action === 'add') {
@@ -384,8 +381,8 @@ export default function AdminPage() {
             newCredits -= data.amount;
         }
         
-        const newAffiliateSettings = { ...affiliateSettings, availableCredits: newCredits };
-        saveConfig({ ...config, affiliateSettings: newAffiliateSettings }, { redirect: false });
+        const newAdminSettings = { ...adminSettings, availableCredits: newCredits };
+        saveConfig({ ...config, admin: newAdminSettings }, { redirect: false });
         
         toast({ title: "Reserve Updated", description: `Credit reserve is now ${newCredits.toLocaleString()}.` });
         setIsManageReserveOpen(false);
@@ -401,17 +398,17 @@ export default function AdminPage() {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                  <StatCard 
                     title="Distribution Reserve" 
-                    value={`BS ${creditsInReserve.toLocaleString()}`} 
+                    value={`BS ${distributionReserve.toLocaleString()}`} 
                     icon={Wallet}
-                    description={`Value: K${(creditsInReserve * (affiliateSettings.sellPrice || 0)).toLocaleString()}`}
-                    className={cn(creditsInReserve <= 100 && 'bg-destructive text-destructive-foreground')}
+                    description={`Value: K${(distributionReserve * (adminSettings.sellPrice || 0)).toLocaleString()}`}
+                    className={cn(distributionReserve <= 100 && 'bg-destructive text-destructive-foreground')}
                  >
                     <Button size="sm" className="w-full mt-2" onClick={() => setIsManageReserveOpen(true)} disabled={isReserveLocked}>Manage</Button>
                 </StatCard>
                  <StatCard 
                     title="Sold Credits" 
                     value={`BS ${soldCredits.toLocaleString()}`} 
-                    description={`Value: K${(soldCredits * (affiliateSettings.sellPrice || 0)).toLocaleString()}`} 
+                    description={`Value: K${(soldCredits * (adminSettings.sellPrice || 0)).toLocaleString()}`} 
                     icon={TrendingUp} 
                  />
                  <StatCard title="Circulating Credits" value={`BS ${circulatingCredits.toLocaleString()}`} description="Held by affiliates" icon={TrendingDown} />
@@ -525,7 +522,7 @@ export default function AdminPage() {
                                                 <CardContent>
                                                     <div className="space-y-1">
                                                         <div className="flex justify-between font-mono text-sm">
-                                                            <span>BS {creditsInReserve.toLocaleString()}</span>
+                                                            <span>BS {distributionReserve.toLocaleString()}</span>
                                                             <span className="font-sans text-primary-foreground/80">/ BS {(watchedMaxCredits || 0).toLocaleString()}</span>
                                                         </div>
                                                         <Progress value={availableCreditsPercentage} className="bg-primary-foreground/20 [&>div]:bg-primary-foreground"/>
@@ -667,9 +664,8 @@ export default function AdminPage() {
                 isOpen={isManageReserveOpen}
                 onOpenChange={setIsManageReserveOpen}
                 onSubmit={handleManageReserve}
-                totalReserve={affiliateSettings.availableCredits || 0}
-                circulatingCredits={circulatingCredits}
-                maxCredits={affiliateSettings.maxCredits || 0}
+                totalReserve={adminSettings.availableCredits || 0}
+                maxCredits={adminSettings.maxCredits || 0}
             />
         </div>
     );
