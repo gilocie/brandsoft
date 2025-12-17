@@ -20,7 +20,7 @@ const ADMIN_ACTIVATION_KEY = 'BRANDSOFT-ADMIN';
 
 const AssignClientDialog = ({ client, onAssign, currentAffiliateName }: { client: Company | undefined, onAssign: (newAffiliateId: string) => void, currentAffiliateName?: string }) => {
     const { config } = useBrandsoft();
-    const [selectedAffiliate, setSelectedAffiliate] = useState<string>(ADMIN_ACTIVATION_KEY);
+    const [selectedAffiliate, setSelectedAffiliate] = useState<string>('');
     
     // In a multi-affiliate app, this would be config.affiliates
     const availableAffiliates = config?.affiliate ? [config.affiliate] : [];
@@ -32,15 +32,18 @@ const AssignClientDialog = ({ client, onAssign, currentAffiliateName }: { client
             <DialogHeader>
                 <DialogTitle>Assign {client.companyName} to a new affiliate</DialogTitle>
                 <DialogDescription>
-                    Currently assigned to: <strong>{currentAffiliateName || 'None'}</strong>. Select a new affiliate or assign to admin.
+                    Currently assigned to: <strong>{currentAffiliateName || 'Brandsoft Admin'}</strong>. Select a new affiliate or take ownership.
                 </DialogDescription>
             </DialogHeader>
             <div className="py-4">
                  <RadioGroup value={selectedAffiliate} onValueChange={setSelectedAffiliate} className="space-y-2">
-                    <div className="flex items-center space-x-2 rounded-md border p-3">
-                        <RadioGroupItem value={ADMIN_ACTIVATION_KEY} id="brandsoft-admin" />
-                        <Label htmlFor="brandsoft-admin" className="font-bold">Brandsoft (Admin)</Label>
-                    </div>
+                    {/* Only show "Assign to Admin" if the client is NOT already assigned to admin */}
+                    {currentAffiliateName && (
+                        <div className="flex items-center space-x-2 rounded-md border p-3">
+                            <RadioGroupItem value={ADMIN_ACTIVATION_KEY} id="brandsoft-admin" />
+                            <Label htmlFor="brandsoft-admin" className="font-bold">Brandsoft (Admin)</Label>
+                        </div>
+                    )}
                     {availableAffiliates.map(aff => (
                          <div key={aff.staffId} className="flex items-center space-x-2 rounded-md border p-3">
                             <RadioGroupItem value={aff.staffId!} id={aff.staffId!} />
@@ -56,7 +59,7 @@ const AssignClientDialog = ({ client, onAssign, currentAffiliateName }: { client
                     <Button type="button" variant="outline">Cancel</Button>
                 </DialogClose>
                 <DialogClose asChild>
-                    <Button onClick={() => onAssign(selectedAffiliate)}>Assign Client</Button>
+                    <Button onClick={() => onAssign(selectedAffiliate)} disabled={!selectedAffiliate}>Assign Client</Button>
                 </DialogClose>
             </DialogFooter>
         </DialogContent>
