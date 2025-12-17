@@ -168,19 +168,21 @@ export default function ClientDetailsPage() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isTopUpOpen, setIsTopUpOpen] = useState(false);
 
-  const { client, clientAffiliateInfo } = useMemo(() => {
-    if (!config) return { client: undefined, clientAffiliateInfo: undefined };
-    
+  const { client, clientAffiliate, affiliateClientInfo } = useMemo(() => {
+    if (!config) return { client: undefined, clientAffiliate: undefined, affiliateClientInfo: undefined };
+
     const company = config.companies.find(c => c.id === params.id);
-    let affiliateInfo: Affiliate | undefined;
-    
-    if (company && company.referredBy && company.referredBy !== ADMIN_ACTIVATION_KEY) {
-        if(config.affiliate?.staffId === company.referredBy) {
-            affiliateInfo = config.affiliate;
-        }
+    if (!company) return { client: undefined, clientAffiliate: undefined, affiliateClientInfo: undefined };
+
+    // This part is simplified for a single-affiliate structure as in the demo data.
+    // In a multi-affiliate system, you would search through all affiliates.
+    const affiliate = config.affiliate;
+    if (affiliate && affiliate.clients.some(c => c.id === company.id)) {
+      const clientInfo = affiliate.clients.find(c => c.id === company.id);
+      return { client: company, clientAffiliate: affiliate, affiliateClientInfo: clientInfo };
     }
-    
-    return { client: company, clientAffiliateInfo: affiliateInfo };
+
+    return { client: company, clientAffiliate: undefined, affiliateClientInfo: undefined };
   }, [config, params.id]);
   
   const adminAvailableCredits = config?.admin?.availableCredits || 0;
@@ -258,7 +260,7 @@ export default function ClientDetailsPage() {
     if (!config || !client) return;
     
     const newAffiliate = config.affiliate?.staffId === newAffiliateId ? config.affiliate : undefined;
-    let oldAffiliate = clientAffiliateInfo;
+    let oldAffiliate = clientAffiliate;
     
     // 1. Update the Company's `referredBy` key
     const updatedCompanies = config.companies.map(c => 
@@ -314,7 +316,7 @@ export default function ClientDetailsPage() {
     );
   }
   
-  const affiliateClientInfo = clientAffiliateInfo?.clients.find(c => c.id === client.id);
+  const isExpired = affiliateClientInfo?.status === 'expired' || affiliateClientInfo?.remainingDays === 0;
 
   return (
     <div className="container mx-auto space-y-6">
@@ -331,9 +333,12 @@ export default function ClientDetailsPage() {
           <div className="flex-1 space-y-1 text-center md:text-left">
             <CardTitle className="text-3xl font-headline">{client.companyName}</CardTitle>
             <CardDescription className="text-base text-muted-foreground flex items-center justify-center md:justify-start gap-4">
-              <span className="flex items-center gap-2"><Briefcase className="h-4 w-4" /> Plan: {affiliateClientInfo?.plan || 'N/A'}</span>
-              {affiliateClientInfo?.status === 'active' && affiliateClientInfo?.remainingDays !== undefined && (
+              <span className="flex items-center gap-2"><Briefcase className="h-4 w-4" /> Plan: {affiliateClientInfo?.plan || 'Free Trial'}</span>
+              {affiliateClientInfo && !isExpired && (
                 <span className="flex items-center gap-2"><Clock className="h-4 w-4" /> {affiliateClientInfo.remainingDays} days left</span>
+              )}
+               {isExpired && (
+                <span className="flex items-center gap-2 text-destructive"><Clock className="h-4 w-4" /> Expired</span>
               )}
             </CardDescription>
              <div className="pt-2">
@@ -395,7 +400,7 @@ export default function ClientDetailsPage() {
                     </DialogTrigger>
                 </CardContent>
             </Card>
-            <AssignClientDialog client={client} onAssign={handleAssignClient} currentAffiliateName={clientAffiliateInfo?.fullName} />
+            <AssignClientDialog client={client} onAssign={handleAssignClient} currentAffiliateName={clientAffiliate?.fullName} />
         </Dialog>
 
 
@@ -433,5 +438,7 @@ export default function ClientDetailsPage() {
     </div>
   );
 }
+
+    
 
     

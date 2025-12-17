@@ -1,9 +1,10 @@
 
+
 'use client';
 
 import { useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useBrandsoft, type AffiliateClient } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type AffiliateClient, type Company, type Affiliate } from '@/hooks/use-brandsoft';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -163,6 +164,9 @@ export default function ClientDetailsPage() {
       </div>
     );
   }
+  
+  const isExpired = client.status === 'expired' || client.remainingDays === 0;
+
 
   return (
     <div className="container mx-auto space-y-6">
@@ -180,8 +184,11 @@ export default function ClientDetailsPage() {
             <CardTitle className="text-3xl font-headline">{client.name}</CardTitle>
             <CardDescription className="text-base text-muted-foreground flex items-center justify-center md:justify-start gap-4">
               <span className="flex items-center gap-2"><Briefcase className="h-4 w-4" /> Plan: {client.plan}</span>
-              {client.status === 'active' && client.remainingDays !== undefined && (
+              {!isExpired && client.remainingDays !== undefined && (
                 <span className="flex items-center gap-2"><Clock className="h-4 w-4" /> {client.remainingDays} days left</span>
+              )}
+               {isExpired && (
+                <span className="flex items-center gap-2 text-destructive"><Clock className="h-4 w-4" /> Expired</span>
               )}
             </CardDescription>
              <div className="pt-2">
@@ -235,3 +242,4 @@ export default function ClientDetailsPage() {
   );
 }
 
+    
