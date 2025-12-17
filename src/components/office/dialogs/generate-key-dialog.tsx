@@ -1,23 +1,12 @@
 
 'use client';
 
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { KeyRound, Wallet, CreditCard } from 'lucide-react';
+import { KeyRound, Wallet, CreditCard, Gift, Calendar } from 'lucide-react';
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
-
-const generateKeySchema = z.object({
-  keySuffix: z.string().min(4, "Key suffix must be at least 4 characters."),
-});
-
-type GenerateKeyFormData = z.infer<typeof generateKeySchema>;
 
 const KEY_PRICE = 5000; // Hardcoded for now
 
@@ -34,15 +23,20 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
   const [generatedKey, setGeneratedKey] = useState('');
   const { toast } = useToast();
 
-  const form = useForm<GenerateKeyFormData>({
-    resolver: zodResolver(generateKeySchema),
-    defaultValues: { keySuffix: '' },
-  });
+  useEffect(() => {
+    // When the dialog opens, generate a new key automatically.
+    if (isOpen && step === 1) {
+      const uniqueSuffix = Date.now().toString(36).slice(-6).toUpperCase();
+      const fullKey = `${staffId}-${uniqueSuffix}`;
+      setGeneratedKey(fullKey);
+    }
+  }, [isOpen, step, staffId]);
 
-  const handleGenerate = (data: GenerateKeyFormData) => {
-    const fullKey = `${staffId}-${data.keySuffix.toUpperCase()}`;
-    setGeneratedKey(fullKey);
-    setStep(2);
+
+  const handleProceedToPayment = () => {
+    if (generatedKey) {
+        setStep(2);
+    }
   };
   
   const handlePayment = (method: 'wallet' | 'credits' | 'manual') => {
@@ -52,16 +46,14 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
           description: `Processing payment for key ${generatedKey} via ${method}.`,
       });
       // In a real app, you'd deduct from balance, etc.
-      onClose();
-      form.reset();
-      setStep(1);
+      handleClose();
   };
 
   const handleClose = () => {
     onClose();
     setTimeout(() => {
-        form.reset();
         setStep(1);
+        setGeneratedKey('');
     }, 200);
   }
 
@@ -72,38 +64,44 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
           <DialogTitle>{step === 1 ? 'Generate New Activation Key' : 'Confirm Purchase'}</DialogTitle>
            <DialogDescription>
             {step === 1 
-              ? 'Create a new activation key for a customer. One key costs K5,000.' 
-              : `Confirm purchase for key: ${generatedKey}`}
+              ? 'Create a new activation key for a customer. Each key includes startup bonuses.' 
+              : `Confirm purchase for the generated key below.`}
           </DialogDescription>
         </DialogHeader>
 
         {step === 1 && (
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleGenerate)} className="space-y-4 pt-4">
-              <div className="flex items-center gap-2 p-3 border rounded-md bg-muted">
-                <span className="font-mono text-sm text-muted-foreground">{staffId}-</span>
-                <FormField
-                  control={form.control}
-                  name="keySuffix"
-                  render={({ field }) => (
-                    <FormItem className="flex-1">
-                      <FormControl>
-                        <Input placeholder="UNIQUEID" {...field} className="font-mono uppercase" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+          <div className="space-y-4 pt-4">
+              <div className="p-4 border rounded-md bg-muted text-center">
+                  <p className="text-sm text-muted-foreground">Generated Activation Key</p>
+                  <p className="font-mono text-xl font-bold tracking-wider">{generatedKey}</p>
               </div>
+
+              <div className="space-y-3 rounded-lg border p-4">
+                 <h3 className="text-sm font-semibold">Key Benefits for Your New Client:</h3>
+                 <div className="flex items-start gap-3 text-sm">
+                    <Calendar className="h-5 w-5 text-primary mt-0.5 shrink-0"/>
+                    <div>
+                        <p className="font-medium">30 Free Premium Days</p>
+                        <p className="text-xs text-muted-foreground">The client starts with a 30-day free trial on any premium plan upon activation.</p>
+                    </div>
+                 </div>
+                 <div className="flex items-start gap-3 text-sm">
+                    <Gift className="h-5 w-5 text-primary mt-0.5 shrink-0"/>
+                    <div>
+                        <p className="font-medium">K30,000 Starter Wallet</p>
+                        <p className="text-xs text-muted-foreground">A K30,000 balance is credited to their account to automatically renew their plan after the free trial.</p>
+                    </div>
+                 </div>
+              </div>
+            
               <div className="text-center font-bold text-lg">
                 Cost: K{KEY_PRICE.toLocaleString()}
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={handleClose}>Cancel</Button>
-                <Button type="submit"><KeyRound className="mr-2 h-4 w-4" />Generate & Proceed</Button>
+                <Button type="button" onClick={handleProceedToPayment}><KeyRound className="mr-2 h-4 w-4" />Create Key & Proceed</Button>
               </DialogFooter>
-            </form>
-          </Form>
+          </div>
         )}
 
         {step === 2 && (
@@ -111,6 +109,7 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
               <div className="p-4 bg-muted rounded-lg text-center space-y-1">
                 <p className="text-sm text-muted-foreground">You are purchasing a new key for</p>
                 <p className="text-2xl font-bold">K{KEY_PRICE.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground pt-2">Generated Key: <span className="font-mono">{generatedKey}</span></p>
               </div>
             <h3 className="text-sm font-semibold text-center">Choose Payment Method</h3>
             <div className="grid grid-cols-1 gap-4">
