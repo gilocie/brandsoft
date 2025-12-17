@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Users, BarChart, Clock, CheckCircle, RefreshCw, Briefcase, UserX, Trash2, Wallet, TrendingUp, TrendingDown, PackagePlus, Banknote, Shield, Lock, Unlock, AlertTriangle, Bot, Star, Zap } from 'lucide-react';
+import { MoreHorizontal, Users, BarChart, Clock, CheckCircle, RefreshCw, Briefcase, UserX, Trash2, Wallet, TrendingUp, TrendingDown, PackagePlus, Banknote, Shield, Lock, Unlock, AlertTriangle, Bot, Star, Zap, Pencil } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from '@/hooks/use-toast';
@@ -205,10 +205,9 @@ export default function AdminPage() {
 
             if (purchaseToUse) {
                 plan = purchaseToUse.planName;
+                remainingDays = purchaseToUse.remainingTime?.value;
                 if(purchaseToUse.status === 'active') {
-                    remainingDays = purchaseToUse.remainingTime?.value;
                     status = (remainingDays === undefined || remainingDays > 0) ? 'active' : 'expired';
-                    if (status === 'expired') remainingDays = 0;
                 } else {
                      status = 'expired';
                      remainingDays = 0;
@@ -423,7 +422,7 @@ export default function AdminPage() {
                                 <CardTitle>Subscription Plans</CardTitle>
                                 <CardDescription>Plans available for clients to purchase.</CardDescription>
                             </div>
-                            <Dialog>
+                             <Dialog>
                                 <DialogTrigger asChild>
                                     <Button><PackagePlus className="mr-2 h-4 w-4" /> Add New Plan</Button>
                                 </DialogTrigger>
@@ -448,10 +447,27 @@ export default function AdminPage() {
                                         {plans.map(plan => (
                                             <Card key={plan.name}>
                                                 <CardHeader>
-                                                    <CardTitle className="flex items-center gap-2 text-xl">
-                                                        <Briefcase className="h-5 w-5" />
-                                                        {plan.name}
-                                                    </CardTitle>
+                                                    <div className="flex items-center justify-between">
+                                                        <CardTitle className="flex items-center gap-2 text-xl">
+                                                            <Briefcase className="h-5 w-5" />
+                                                            {plan.name}
+                                                        </CardTitle>
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                                    <MoreHorizontal className="h-4 w-4" />
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent>
+                                                                <DropdownMenuItem>
+                                                                    <Pencil className="mr-2 h-4 w-4" /> Edit
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem className="text-destructive focus:text-destructive">
+                                                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    </div>
                                                     <CardDescription className="text-2xl font-bold pt-1">{plan.price}</CardDescription>
                                                 </CardHeader>
                                                 <CardContent>
