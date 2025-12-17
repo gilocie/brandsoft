@@ -22,6 +22,11 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
   BriefcaseBusiness,
   LayoutDashboard,
   FileText,
@@ -55,7 +60,7 @@ import { WalletBalance } from '@/components/wallet-balance';
 
 const mainNavItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', enabledKey: null },
-  { href: '/history', icon: Wallet, label: 'Wallet', enabledKey: null },
+  { href: '/history', icon: History, label: 'Wallet', enabledKey: null },
   { href: '/office', icon: BriefcaseBusiness, label: 'Office', enabledKey: null },
   { href: '/invoices', icon: FileText, label: 'Invoices', enabledKey: 'invoice' },
   { href: '/quotations', icon: FileBarChart2, label: 'Quotations', enabledKey: 'quotation' },
@@ -74,6 +79,45 @@ const upcomingNavItems = [
 ];
 
 const navItems = [...mainNavItems, ...upcomingNavItems];
+
+const HeaderWalletCard = () => {
+  const { config } = useBrandsoft();
+  if (!config?.profile) return null;
+
+  const balance = config.profile.walletBalance || 0;
+  const creditValue = config.admin?.exchangeValue || 1000;
+  const bsCredits = balance / creditValue;
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="icon" className="flex-shrink-0">
+          <Wallet className="h-6 w-6" />
+          <span className="sr-only">Wallet</span>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80">
+        <div className="grid gap-4">
+          <div className="space-y-2">
+            <h4 className="font-medium leading-none">Wallet Balance</h4>
+            <p className="text-sm text-muted-foreground">
+              Your available funds for purchases.
+            </p>
+          </div>
+          <div className="flex flex-col items-center justify-center space-y-2 rounded-lg border bg-muted p-4">
+            <p className="text-4xl font-bold">
+                {config.profile.defaultCurrency || 'K'}{balance.toLocaleString()}
+            </p>
+            <p className="text-xs text-muted-foreground">
+                ≈ BS {bsCredits.toFixed(2)}
+            </p>
+          </div>
+          <WalletBalance variant="default" className="w-full" />
+        </div>
+      </PopoverContent>
+    </Popover>
+  )
+}
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -223,6 +267,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             {pageTitle}
           </h1>
           <div className="flex items-center gap-2">
+            <HeaderWalletCard />
             <Button variant="ghost" size="icon" asChild className="flex-shrink-0 relative">
               <Link href="/quotation-requests?subtab=incoming">
                 <Bell className="h-6 w-6" />
