@@ -144,7 +144,7 @@ export function HistoryPageContent() {
         };
 
         const buttonClasses = {
-            primary: 'bg-primary/20 hover:bg-primary/30',
+            primary: 'bg-primary hover:bg-primary/90 text-primary-foreground',
             accent: 'bg-accent/20 hover:bg-accent/30',
             destructive: 'bg-destructive/20 hover:bg-destructive/30',
         };
