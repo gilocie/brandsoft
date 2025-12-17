@@ -96,13 +96,13 @@ export default function ClientDetailsPage() {
                 <CirclePlus className="mr-2 h-4 w-4" /> Top Up Wallet
             </Button>
         </StatCard>
-        <Card>
-            <CardHeader>
+        <Card className="flex flex-col">
+            <CardHeader className="flex-grow">
                 <CardTitle>Client Actions</CardTitle>
                 <CardDescription>Manage this client's account.</CardDescription>
             </CardHeader>
             <CardContent>
-                <Button variant="outline" className="w-full" onClick={() => setIsSuspendOpen(true)}>
+                <Button variant="destructive" className="w-full" onClick={() => setIsSuspendOpen(true)}>
                     <Ban className="mr-2 h-4 w-4" /> Suspend Client
                 </Button>
             </CardContent>
