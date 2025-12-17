@@ -521,6 +521,7 @@ export function OfficePageContent() {
             <TabsTrigger value="transactions">Transactions</TabsTrigger>
             <TabsTrigger value="invitations">Invitations</TabsTrigger>
             <TabsTrigger value="my-features">My Features</TabsTrigger>
+            <TabsTrigger value="keys">Keys</TabsTrigger>
         </TabsList>
         <TabsContent value="dashboard" className="pt-6">
             <div className="grid gap-6">
@@ -821,6 +822,17 @@ export function OfficePageContent() {
                              <VerificationItem title="Identity Verification" status={affiliate.idUploaded} actionText="Upload ID" onAction={() => alert("Open ID upload dialog")} />
                         </TabsContent>
                     </Tabs>
+                </CardContent>
+            </Card>
+        </TabsContent>
+        <TabsContent value="keys" className="pt-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Activation Keys</CardTitle>
+                    <CardDescription>Manage your generated activation keys.</CardDescription>
+                </CardHeader>
+                <CardContent className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
+                    <p className="text-muted-foreground">Activation key management coming soon.</p>
                 </CardContent>
             </Card>
         </TabsContent>
