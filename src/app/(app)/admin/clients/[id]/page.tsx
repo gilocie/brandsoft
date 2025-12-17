@@ -6,13 +6,13 @@ import { useParams, useRouter } from 'next/navigation';
 import { useBrandsoft, type AffiliateClient, type Company } from '@/hooks/use-brandsoft';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { ArrowLeft, Ban, Briefcase, User, Wallet, CirclePlus, Clock, Trash2, UserCog, Search } from 'lucide-react';
 import Link from 'next/link';
 import { StatCard } from '@/components/office/stat-card';
 import { useToast } from '@/hooks/use-toast';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter as ShadcnDialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -78,14 +78,14 @@ const AssignClientDialog = ({ client, onAssign, currentAffiliateName }: { client
                     )}
                 </RadioGroup>
             </div>
-            <DialogFooter>
+            <ShadcnDialogFooter>
                  <DialogClose asChild>
                     <Button type="button" variant="outline">Cancel</Button>
                 </DialogClose>
                 <DialogClose asChild>
                     <Button onClick={() => onAssign(selectedAffiliate)} disabled={!selectedAffiliate}>Assign Client</Button>
                 </DialogClose>
-            </DialogFooter>
+            </ShadcnDialogFooter>
         </DialogContent>
     )
 }
@@ -252,14 +252,14 @@ export default function ClientDetailsPage() {
                 <CardTitle>Admin Actions</CardTitle>
                 <CardDescription>Manage this client's account.</CardDescription>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <CardFooter className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Button variant="outline" onClick={() => setIsSuspendOpen(true)}>
                     <Ban className="mr-2 h-4 w-4" /> Suspend
                 </Button>
                 <Button variant="destructive" onClick={() => setIsDeleteOpen(true)}>
                     <Trash2 className="mr-2 h-4 w-4" /> Delete
                 </Button>
-            </CardContent>
+            </CardFooter>
         </Card>
       </div>
 
