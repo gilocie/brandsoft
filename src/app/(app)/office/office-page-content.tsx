@@ -1,11 +1,12 @@
 
+
 'use client';
 
-import { useBrandsoft, type Transaction, type Affiliate } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Transaction, type Affiliate, type Purchase } from '@/hooks/use-brandsoft';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Copy, DollarSign, ExternalLink, ShieldCheck, ShieldOff, UserCheck, Users, Edit, CreditCard, Gift, KeyRound, Phone, TrendingUp, TrendingDown, MoreHorizontal, ArrowRight, Wallet, Banknote, Smartphone, CheckCircle, Pencil, Eye, EyeOff, Send, Bell } from 'lucide-react';
+import { Copy, DollarSign, ExternalLink, ShieldCheck, ShieldOff, UserCheck, Users, Edit, CreditCard, Gift, KeyRound, Phone, TrendingUp, TrendingDown, MoreHorizontal, ArrowRight, Wallet, Banknote, Smartphone, CheckCircle, Pencil, Eye, EyeOff, Send, Bell, RefreshCw } from 'lucide-react';
 import { ClientCard } from '@/components/affiliate/client-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -30,6 +31,10 @@ import { WithdrawalMethodDialog, type WithdrawalMethodFormData, type EditableWit
 import { BankWithdrawalDialog, type BankWithdrawalFormData } from '@/components/office/dialogs/bank-withdrawal-dialog';
 import { BsCreditsDialog, type BsCreditsFormData } from '@/components/office/dialogs/bs-credits-dialog';
 import Link from 'next/link';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
+
 
 const affiliateSchema = z.object({
     fullName: z.string().min(2, "Full name is required"),
@@ -42,6 +47,13 @@ type AffiliateFormData = z.infer<typeof affiliateSchema>;
 
 const CREDIT_TO_MWK = 1000;
 const ITEMS_PER_PAGE = 10;
+
+const statusVariantMap: { [key: string]: 'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'accent' | 'primary' } = {
+  pending: 'accent',
+  processing: 'primary',
+  completed: 'success',
+  active: 'success',
+};
 
 
 export function OfficePageContent() {
@@ -71,7 +83,7 @@ export function OfficePageContent() {
 
   const pendingTopUps = useMemo(() => {
     if (!config?.purchases) return [];
-    return config.purchases.filter(p => p.status === 'pending' && p.planName === 'Wallet Top-up');
+    return config.purchases.filter(p => p.planName === 'Wallet Top-up');
   }, [config?.purchases]);
 
   // NEW: Create a synchronized list of clients
@@ -315,25 +327,39 @@ export function OfficePageContent() {
       toast({ title: 'Security Question Saved!' });
       setIsSecurityQuestionsOpen(false);
   };
+  
+  const handleStatusChange = (orderId: string, newStatus: 'pending' | 'processing' | 'active') => {
+        if (!config?.purchases) return;
+
+        const updatedPurchases = config.purchases.map(p => 
+            p.orderId === orderId ? { ...p, status: newStatus as 'pending' | 'active' } : p
+        );
+        
+        saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: true });
+        
+        toast({
+            title: "Status Updated",
+            description: `Top-up order status set to ${newStatus}.`,
+        });
+    };
 
   const TopUpNotificationCard = () => {
-    if (pendingTopUps.length === 0) return null;
+    const pendingOrders = pendingTopUps.filter(p => p.status === 'pending');
+    if (pendingOrders.length === 0) return null;
     
-    const isSingleOrder = pendingTopUps.length === 1;
-    const orderId = isSingleOrder ? pendingTopUps[0].orderId : '';
+    const isSingleOrder = pendingOrders.length === 1;
+    const orderId = isSingleOrder ? pendingOrders[0].orderId : '';
 
     return (
         <StatCard
             icon={Bell}
             title="Pending Top-ups"
-            value={pendingTopUps.length}
-            footer={isSingleOrder ? `Order ID: ${orderId}` : `${pendingTopUps.length} orders need verification.`}
+            value={pendingOrders.length}
+            footer={isSingleOrder ? `Order ID: ${orderId}` : `${pendingOrders.length} orders need verification.`}
             className="border-primary"
         >
-            <Button size="sm" className="w-full mt-2" asChild>
-                <Link href={isSingleOrder ? `/verify-purchase?orderId=${orderId}` : '/verify-purchase'}>
-                    {isSingleOrder ? 'View Order' : 'View All'}
-                </Link>
+            <Button size="sm" className="w-full mt-2" onClick={() => setActiveTab('transactions')}>
+                {isSingleOrder ? 'View Order' : 'View All'}
             </Button>
         </StatCard>
     );
@@ -471,7 +497,7 @@ export function OfficePageContent() {
                     >
                         <BuyCreditsDialog 
                             walletBalance={affiliate.myWallet || 0}
-                            adminAvailableCredits={config?.affiliateSettings?.availableCredits || 0}
+                            adminAvailableCredits={config?.admin?.availableCredits || 0}
                          />
                     </StatCard>
                     <Card>
@@ -566,11 +592,66 @@ export function OfficePageContent() {
             </div>
         </TabsContent>
          <TabsContent value="transactions" className="pt-6">
-            <Tabs defaultValue="sales">
+            <Tabs defaultValue="top-ups">
                 <TabsList>
-                    <TabsTrigger value="sales">Sales Transactions</TabsTrigger>
-                    <TabsTrigger value="payouts">Payout Transactions</TabsTrigger>
+                    <TabsTrigger value="top-ups">Top-ups</TabsTrigger>
+                    <TabsTrigger value="sales">Sales</TabsTrigger>
+                    <TabsTrigger value="payouts">Payouts</TabsTrigger>
                 </TabsList>
+                <TabsContent value="top-ups" className="pt-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Client Top-up Requests</CardTitle>
+                            <CardDescription>Manage your client's wallet top-up orders.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                           <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Date</TableHead>
+                                        <TableHead>Order ID</TableHead>
+                                        <TableHead>Amount</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {pendingTopUps.length > 0 ? pendingTopUps.map(req => (
+                                        <TableRow key={req.orderId}>
+                                            <TableCell>{new Date(req.date).toLocaleDateString()}</TableCell>
+                                            <TableCell>{req.orderId}</TableCell>
+                                            <TableCell>{req.planPrice}</TableCell>
+                                            <TableCell>
+                                                <Badge variant={statusVariantMap[req.status] || 'default'} className="capitalize">
+                                                    {req.status}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4"/></Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent>
+                                                        <DropdownMenuItem onClick={() => handleStatusChange(req.orderId, 'processing')} disabled={req.status === 'processing' || req.status === 'active'}>
+                                                            <RefreshCw className="mr-2 h-4 w-4" /> Mark as Processing
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleStatusChange(req.orderId, 'active')} disabled={req.status === 'active'}>
+                                                            <CheckCircle className="mr-2 h-4 w-4" /> Mark as Completed
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </TableCell>
+                                        </TableRow>
+                                    )) : (
+                                        <TableRow>
+                                            <TableCell colSpan={5} className="text-center h-24">No top-up requests found.</TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
                 <TabsContent value="sales" className="pt-4">
                     <div className="flex h-60 items-center justify-center rounded-lg border-2 border-dashed">
                         <p className="text-muted-foreground">Sales transaction history will be shown here.</p>
