@@ -310,10 +310,10 @@ export default function AdminPage() {
 
             if (purchaseToUse) {
                 plan = purchaseToUse.planName;
-                if(purchaseToUse.status === 'active') {
+                remainingDays = purchaseToUse.remainingTime.value;
+                if (purchaseToUse.status === 'active' && remainingDays > 0) {
                     status = 'active';
-                    remainingDays = purchaseToUse.remainingTime.value;
-                } else if (purchaseToUse.status === 'inactive' || purchaseToUse.status === 'declined') {
+                } else {
                     status = 'expired';
                     remainingDays = 0;
                 }

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -16,9 +17,10 @@ interface ClientCardProps {
 }
 
 export const ClientCard = ({ client, baseUrl = '/office' }: ClientCardProps) => {
-  const isExpired = client.status === 'expired';
+  const isExpired = client.status === 'expired' || client.remainingDays === 0;
   const remainingDays = client.remainingDays || 0;
   const isExpiringSoon = !isExpired && remainingDays <= 7;
+  const statusLabel = isExpired ? 'expired' : client.status;
 
   return (
     <Card className="flex flex-col">
@@ -34,7 +36,7 @@ export const ClientCard = ({ client, baseUrl = '/office' }: ClientCardProps) => 
       </CardHeader>
       <CardContent className="flex-grow flex items-center justify-between p-4 pt-0">
         <Badge variant={isExpired ? 'destructive' : 'success'} className="capitalize">
-          {client.status}
+          {statusLabel}
         </Badge>
         {!isExpired && (
             <div className={cn(
