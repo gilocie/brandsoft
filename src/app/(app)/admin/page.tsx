@@ -394,8 +394,8 @@ export default function AdminPage() {
 
         const newAdminSettings: AdminSettings = {
             ...config.admin,
-            soldCredits: 0,
-            availableCredits: config.admin.maxCredits,
+            soldCredits: config.admin.maxCredits,
+            availableCredits: 0,
         };
 
         let newAffiliateData = config.affiliate;
@@ -714,7 +714,7 @@ export default function AdminPage() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Reset Financial Records?</AlertDialogTitle>
                         <AlertDialogDescription>
-                           This will reset all credit sales records to zero, restore your distribution reserve to its maximum capacity, and wipe all affiliate balances and transactions. This action cannot be undone. Are you sure?
+                           This will set your distribution reserve to zero and clear all financial records. This action cannot be undone. Are you sure?
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
