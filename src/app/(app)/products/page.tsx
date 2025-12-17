@@ -319,7 +319,7 @@ export default function ProductsPage() {
   const currencyCode = config?.profile.defaultCurrency || '';
 
   return (
-    <div className="container mx-auto space-y-6">
+    <div className="container mx-auto space-y-6 pt-16">
       <div className="flex items-center justify-between">
         {selectedProductIds.length === 0 && (
             <div>
