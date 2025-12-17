@@ -67,9 +67,6 @@ export default function HistoryPage() {
                         Review your plan purchases and wallet top-up history.
                     </p>
                 </div>
-                <Badge variant="outline" className="text-base px-4 py-2">
-                    {allPurchases.length} Total Transactions
-                </Badge>
             </div>
 
             {/* Stats Grid */}
@@ -130,8 +127,8 @@ export default function HistoryPage() {
                             <CardTitle>Total Spent</CardTitle>
                             <TrendingUp className="h-5 w-5 text-muted-foreground" />
                         </div>
-                        <CardDescription>
-                            All-time spending
+                         <CardDescription>
+                           All-time successful spending.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -139,7 +136,7 @@ export default function HistoryPage() {
                             {currencySymbol} {totalSpent.toLocaleString()}
                         </div>
                         <p className="text-sm text-muted-foreground mt-2">
-                            {planPurchases.length} plan purchases • {topUps.length} top-ups
+                           {allPurchases.length} total transactions
                         </p>
                     </CardContent>
                 </Card>
