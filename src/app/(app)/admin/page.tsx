@@ -5,13 +5,13 @@ import { useState, useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useBrandsoft, type Affiliate, type Transaction, type AffiliateClient } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Affiliate, type Transaction, type AffiliateClient, type Company } from '@/hooks/use-brandsoft';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Users, BarChart, Clock, CheckCircle, RefreshCw, Briefcase, UserX, Trash2, Wallet, TrendingUp, TrendingDown, PackagePlus, Banknote } from 'lucide-react';
+import { MoreHorizontal, Users, BarChart, Clock, CheckCircle, RefreshCw, Briefcase, UserX, Trash2, Wallet, TrendingUp, TrendingDown, PackagePlus, Banknote, Shield } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from '@/hooks/use-toast';
@@ -24,6 +24,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
+
+const ADMIN_ACTIVATION_KEY = 'BRANDSOFT-ADMIN';
 
 const StatCard = ({ title, value, icon: Icon, description, children, className }: { title: string, value: string | number, icon: React.ElementType, description?: string, children?: React.ReactNode, className?: string }) => (
     <Card className={className}>
@@ -267,9 +269,33 @@ export default function AdminPage() {
 
    
     const allClients = useMemo(() => {
+        // This now correctly shows ONLY clients referred by an affiliate.
         if (!config?.affiliate?.clients) return [];
         return config.affiliate.clients;
     }, [config?.affiliate?.clients]);
+    
+    const adminClients = useMemo(() => {
+        if (!config?.companies) return [];
+        // Find companies referred by Admin.
+        const referredByAdmin = config.companies.filter(c => c.referredBy === ADMIN_ACTIVATION_KEY);
+        // Find companies not in ANY affiliate list (fallback, in case referredBy is not set).
+        const allAffiliateClientIds = affiliates.flatMap(a => a.clients.map(c => c.id));
+        const unassigned = config.companies.filter(c => !c.referredBy && !allAffiliateClientIds.includes(c.id));
+        
+        const combined = [...referredByAdmin, ...unassigned];
+        const unique = Array.from(new Map(combined.map(c => [c.id, c])).values());
+
+        // Map Company to AffiliateClient for display consistency
+        return unique.map((company: Company): AffiliateClient => ({
+            id: company.id,
+            name: company.companyName,
+            avatar: company.logo || `https://picsum.photos/seed/${company.id}/100`,
+            plan: 'N/A', // Admin clients don't have plans in this context
+            status: 'active', // Assuming they are active
+            remainingDays: undefined,
+            walletBalance: 0,
+        }));
+    }, [config?.companies, affiliates]);
 
     const totalAffiliates = affiliates.length;
     
@@ -389,9 +415,10 @@ export default function AdminPage() {
             </div>
 
              <Tabs defaultValue="staff" className="w-full">
-                <TabsList>
+                <TabsList className="grid w-full grid-cols-5">
                     <TabsTrigger value="staff">Staff</TabsTrigger>
-                    <TabsTrigger value="clients">Clients</TabsTrigger>
+                    <TabsTrigger value="clients">Affiliate Clients</TabsTrigger>
+                    <TabsTrigger value="admin-clients">Admin Clients</TabsTrigger>
                     <TabsTrigger value="plans">Plans</TabsTrigger>
                     <TabsTrigger value="options">Options</TabsTrigger>
                 </TabsList>
@@ -415,13 +442,30 @@ export default function AdminPage() {
                 <TabsContent value="clients" className="pt-6">
                     <Card>
                         <CardHeader>
-                            <CardTitle>All Clients</CardTitle>
+                            <CardTitle>All Affiliate Clients</CardTitle>
                             <CardDescription>Clients referred by all your affiliates.</CardDescription>
                         </CardHeader>
                         <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                             {allClients.map((client: AffiliateClient) => (
                                 <ClientCard key={client.id} client={client} baseUrl="/admin" />
                             ))}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                 <TabsContent value="admin-clients" className="pt-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Admin-Managed Clients</CardTitle>
+                            <CardDescription>Clients directly managed by Brandsoft.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                             {adminClients.length > 0 ? adminClients.map((client: AffiliateClient) => (
+                                <ClientCard key={client.id} client={client} baseUrl="/admin" />
+                            )) : (
+                                <div className="col-span-full flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
+                                    <p className="text-muted-foreground">No admin-managed clients found.</p>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </TabsContent>
