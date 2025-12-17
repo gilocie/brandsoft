@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Users, BarChart, Clock, CheckCircle, RefreshCw, Briefcase, UserX, Trash2, Wallet, TrendingUp, TrendingDown, PackagePlus, Banknote, Shield, Lock, Unlock, AlertTriangle } from 'lucide-react';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -21,28 +21,14 @@ import { ClientCard } from '@/components/affiliate/client-card';
 import { AffiliateCard } from '@/components/affiliate/affiliate-card';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-
+import { StatCard } from '@/components/admin/stat-card';
+import { ManageReserveDialog, type ManageReserveFormData } from '@/components/admin/manage-reserve-dialog';
 
 const ADMIN_ACTIVATION_KEY = 'BRANDSOFT-ADMIN';
-
-const StatCard = ({ title, value, icon: Icon, description, children, className }: { title: string, value: string | number, icon: React.ElementType, description?: string, children?: React.ReactNode, className?: string }) => (
-    <Card className={className}>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{title}</CardTitle>
-            <Icon className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-            <div className="text-2xl font-bold">{value}</div>
-            {description && <p className="text-xs text-muted-foreground">{description}</p>}
-            {children && <div className="mt-2">{children}</div>}
-        </CardContent>
-    </Card>
-);
 
 const statusVariantMap: { [key: string]: 'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'accent' | 'primary' } = {
   pending: 'accent',
@@ -65,130 +51,6 @@ const creditSettingsSchema = z.object({
   isReserveLocked: z.boolean().default(false),
 });
 type CreditSettingsFormData = z.infer<typeof creditSettingsSchema>;
-
-const manageReserveSchema = z.object({
-  action: z.enum(['add', 'deduct']),
-  amount: z.coerce.number().min(0.01, "Amount must be a positive number."),
-  reason: z.string().min(5, "A reason is required for this action."),
-});
-
-type ManageReserveFormData = z.infer<typeof manageReserveSchema>;
-
-const ManageReserveDialog = ({
-    isOpen,
-    onOpenChange,
-    onSubmit,
-    distributionReserve,
-    maxCredits
-}: {
-    isOpen: boolean;
-    onOpenChange: (open: boolean) => void;
-    onSubmit: (data: ManageReserveFormData) => void;
-    distributionReserve: number;
-    maxCredits: number;
-}) => {
-    const form = useForm<ManageReserveFormData>({
-      resolver: zodResolver(manageReserveSchema),
-      defaultValues: { action: 'add', amount: 1, reason: '' },
-    });
-
-    const watchedAmount = form.watch('amount');
-    const watchedAction = form.watch('action');
-
-    useEffect(() => {
-        form.reset({ action: 'add', amount: 1, reason: '' });
-    }, [isOpen, form]);
-    
-    const finalReserve = watchedAction === 'add' 
-        ? distributionReserve + (Number(watchedAmount) || 0)
-        : distributionReserve - (Number(watchedAmount) || 0);
-
-    return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Manage Credits Reserve</DialogTitle>
-                     <DialogDescription>
-                        Manually adjust the total credits in your central reserve.
-                    </DialogDescription>
-                </DialogHeader>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
-                        <FormField
-                            control={form.control}
-                            name="action"
-                            render={({ field }) => (
-                            <FormItem className="space-y-3">
-                                <FormLabel>Action</FormLabel>
-                                <FormControl>
-                                <RadioGroup
-                                    onValueChange={field.onChange}
-                                    defaultValue={field.value}
-                                    className="grid grid-cols-2 gap-4"
-                                >
-                                    <div className="flex flex-col gap-2 rounded-lg border p-3">
-                                        <div className="flex items-center justify-between">
-                                            <FormLabel className="font-normal flex items-center gap-2">
-                                                 <FormControl><RadioGroupItem value="add" /></FormControl>
-                                                 Add to Reserve
-                                            </FormLabel>
-                                             <div className="text-right">
-                                                <p className="text-xs text-muted-foreground">Current</p>
-                                                <p className="text-lg font-bold">{distributionReserve.toLocaleString()}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="rounded-lg border p-3">
-                                        <FormItem className="flex items-center space-x-2 space-y-0">
-                                            <FormControl><RadioGroupItem value="deduct" /></FormControl>
-                                            <FormLabel className="font-normal">Deduct from Reserve</FormLabel>
-                                        </FormItem>
-                                    </div>
-                                </RadioGroup>
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                            )}
-                        />
-                        <div className="grid grid-cols-2 gap-4">
-                            <FormField
-                                control={form.control}
-                                name="amount"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Amount</FormLabel>
-                                        <FormControl><Input type="number" step="1" {...field} /></FormControl>
-                                        <FormDescription>
-                                            Total reserve will be <span className="font-bold">{finalReserve.toLocaleString()}</span> after this change.
-                                        </FormDescription>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="reason"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Reason</FormLabel>
-                                        <FormControl><Textarea placeholder="e.g., Initial stock, correction..." {...field} /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
-                        <DialogFooter>
-                            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                            <Button type="submit">Save Changes</Button>
-                        </DialogFooter>
-                    </form>
-                </Form>
-            </DialogContent>
-        </Dialog>
-    );
-};
-
 
 export default function AdminPage() {
     const { config, saveConfig } = useBrandsoft();
@@ -311,12 +173,15 @@ export default function AdminPage() {
             if (purchaseToUse) {
                 plan = purchaseToUse.planName;
                 remainingDays = purchaseToUse.remainingTime?.value;
-                if (purchaseToUse.status === 'active' && remainingDays > 0) {
+                if (purchaseToUse.status === 'active' && (remainingDays === undefined || remainingDays > 0)) {
                     status = 'active';
                 } else {
                     status = 'expired';
                     remainingDays = 0;
                 }
+            } else {
+                status = 'expired';
+                remainingDays = 0;
             }
 
             return {
@@ -665,7 +530,23 @@ export default function AdminPage() {
                                                     <h3 className="font-semibold">Reset Financial Records</h3>
                                                     <p className="text-sm text-muted-foreground">This will reset all credit sales records to zero.</p>
                                                 </div>
-                                                <Button variant="destructive" onClick={() => setIsResetFinancialsOpen(true)}>Reset Records</Button>
+                                                <AlertDialog open={isResetFinancialsOpen} onOpenChange={setIsResetFinancialsOpen}>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button variant="destructive">Reset Records</Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Reset Financial Records?</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                               This will set your distribution reserve to zero and clear all financial records. This action cannot be undone. Are you sure?
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={handleResetFinancials} className="bg-destructive hover:bg-destructive/90">Yes, Reset Records</AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
                                             </div>
                                         </CardContent>
                                     </Card>
@@ -764,21 +645,6 @@ export default function AdminPage() {
                 distributionReserve={adminSettings.availableCredits || 0}
                 maxCredits={adminSettings.maxCredits || 0}
             />
-            
-            <AlertDialog open={isResetFinancialsOpen} onOpenChange={setIsResetFinancialsOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Reset Financial Records?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                           This will set your distribution reserve to zero and clear all financial records. This action cannot be undone. Are you sure?
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleResetFinancials} className="bg-destructive hover:bg-destructive/90">Yes, Reset Records</AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
         </div>
     );
 }
@@ -786,4 +652,3 @@ export default function AdminPage() {
     
 
     
-
