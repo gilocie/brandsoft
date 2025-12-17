@@ -86,6 +86,11 @@ export function OfficePageContent() {
     return config.purchases.filter(p => p.planName === 'Wallet Top-up');
   }, [config?.purchases]);
 
+  const pendingTopUpOrders = useMemo(() => pendingTopUps.filter(p => p.status === 'pending'), [pendingTopUps]);
+  const processingTopUpOrders = useMemo(() => pendingTopUps.filter(p => p.status === 'processing'), [pendingTopUps]);
+  const completedTopUpOrders = useMemo(() => pendingTopUps.filter(p => p.status === 'active'), [pendingTopUps]);
+
+
   // NEW: Create a synchronized list of clients
   // This merges the Affiliate Client entry with the latest real Company Data
   const syncedClients = useMemo(() => {
@@ -332,7 +337,7 @@ export function OfficePageContent() {
         if (!config?.purchases) return;
 
         const updatedPurchases = config.purchases.map(p => 
-            p.orderId === orderId ? { ...p, status: newStatus as 'pending' | 'active' } : p
+            p.orderId === orderId ? { ...p, status: newStatus as 'pending' | 'active' | 'processing' } : p
         );
         
         saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: true });
@@ -364,6 +369,54 @@ export function OfficePageContent() {
         </StatCard>
     );
   };
+
+  const renderTopUpTable = (orders: Purchase[], emptyMessage: string) => (
+       <Table>
+            <TableHeader>
+                <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Order ID</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {orders.length > 0 ? orders.map(req => (
+                    <TableRow key={req.orderId}>
+                        <TableCell>{new Date(req.date).toLocaleDateString()}</TableCell>
+                        <TableCell>{req.orderId}</TableCell>
+                        <TableCell>{req.planPrice}</TableCell>
+                        <TableCell>
+                            <Badge variant={statusVariantMap[req.status] || 'default'} className="capitalize">
+                                {req.status}
+                            </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4"/></Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <DropdownMenuItem onClick={() => handleStatusChange(req.orderId, 'processing')} disabled={req.status === 'processing' || req.status === 'active'}>
+                                        <RefreshCw className="mr-2 h-4 w-4" /> Mark as Processing
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleStatusChange(req.orderId, 'active')} disabled={req.status === 'active'}>
+                                        <CheckCircle className="mr-2 h-4 w-4" /> Mark as Completed
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </TableCell>
+                    </TableRow>
+                )) : (
+                    <TableRow>
+                        <TableCell colSpan={5} className="text-center h-24">{emptyMessage}</TableCell>
+                    </TableRow>
+                )}
+            </TableBody>
+        </Table>
+  );
+
 
   return (
     <div className="space-y-8">
@@ -605,50 +658,22 @@ export function OfficePageContent() {
                             <CardDescription>Manage your client's wallet top-up orders.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                           <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Date</TableHead>
-                                        <TableHead>Order ID</TableHead>
-                                        <TableHead>Amount</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {pendingTopUps.length > 0 ? pendingTopUps.map(req => (
-                                        <TableRow key={req.orderId}>
-                                            <TableCell>{new Date(req.date).toLocaleDateString()}</TableCell>
-                                            <TableCell>{req.orderId}</TableCell>
-                                            <TableCell>{req.planPrice}</TableCell>
-                                            <TableCell>
-                                                <Badge variant={statusVariantMap[req.status] || 'default'} className="capitalize">
-                                                    {req.status}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4"/></Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent>
-                                                        <DropdownMenuItem onClick={() => handleStatusChange(req.orderId, 'processing')} disabled={req.status === 'processing' || req.status === 'active'}>
-                                                            <RefreshCw className="mr-2 h-4 w-4" /> Mark as Processing
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => handleStatusChange(req.orderId, 'active')} disabled={req.status === 'active'}>
-                                                            <CheckCircle className="mr-2 h-4 w-4" /> Mark as Completed
-                                                        </DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                            </TableCell>
-                                        </TableRow>
-                                    )) : (
-                                        <TableRow>
-                                            <TableCell colSpan={5} className="text-center h-24">No top-up requests found.</TableCell>
-                                        </TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
+                            <Tabs defaultValue="pending">
+                                <TabsList>
+                                    <TabsTrigger value="pending">Pending</TabsTrigger>
+                                    <TabsTrigger value="processing">Processing</TabsTrigger>
+                                    <TabsTrigger value="completed">Completed</TabsTrigger>
+                                </TabsList>
+                                <TabsContent value="pending" className="pt-4">
+                                    {renderTopUpTable(pendingTopUpOrders, "No pending top-ups.")}
+                                </TabsContent>
+                                <TabsContent value="processing" className="pt-4">
+                                     {renderTopUpTable(processingTopUpOrders, "No top-ups being processed.")}
+                                </TabsContent>
+                                <TabsContent value="completed" className="pt-4">
+                                     {renderTopUpTable(completedTopUpOrders, "No completed top-ups.")}
+                                </TabsContent>
+                            </Tabs>
                         </CardContent>
                     </Card>
                 </TabsContent>
