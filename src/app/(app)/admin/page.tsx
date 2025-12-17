@@ -418,7 +418,7 @@ export default function AdminPage() {
                 <TabsList className="grid w-full grid-cols-5">
                     <TabsTrigger value="staff">Staff</TabsTrigger>
                     <TabsTrigger value="clients">Affiliate Clients</TabsTrigger>
-                    <TabsTrigger value="admin-clients">Admin Clients</TabsTrigger>
+                    <TabsTrigger value="admin-clients">Admin Clients ({adminClients.length})</TabsTrigger>
                     <TabsTrigger value="plans">Plans</TabsTrigger>
                     <TabsTrigger value="options">Options</TabsTrigger>
                 </TabsList>
