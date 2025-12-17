@@ -18,6 +18,8 @@ export function HistoryPageContent() {
     const { config, saveConfig } = useBrandsoft();
     const [autoRenew, setAutoRenew] = useState(config?.profile.autoRenew || false);
     const { toast } = useToast();
+    const [isAutoRenewConfirmOpen, setIsAutoRenewConfirmOpen] = useState(false);
+    const [pendingAutoRenewState, setPendingAutoRenewState] = useState(false);
 
     const { 
         planPurchases, 
@@ -49,14 +51,23 @@ export function HistoryPageContent() {
 
     }, [config?.purchases]);
     
-    const handleAutoRenewChange = (checked: boolean) => {
-        setAutoRenew(checked);
+    const handleAutoRenewToggle = (checked: boolean) => {
+        setPendingAutoRenewState(checked);
+        setIsAutoRenewConfirmOpen(true);
+    };
+
+    const confirmAutoRenewChange = () => {
+        setAutoRenew(pendingAutoRenewState);
         if (config) {
             saveConfig({
                 ...config,
-                profile: { ...config.profile, autoRenew: checked }
+                profile: { ...config.profile, autoRenew: pendingAutoRenewState }
             }, { redirect: false });
         }
+        toast({
+            title: `Auto-renewal ${pendingAutoRenewState ? 'Enabled' : 'Disabled'}`,
+        });
+        setIsAutoRenewConfirmOpen(false);
     };
     
     const handleClearHistory = (type: 'plans' | 'topups') => {
@@ -144,7 +155,7 @@ export function HistoryPageContent() {
                             <Switch
                                 id="auto-renew-switch"
                                 checked={autoRenew}
-                                onCheckedChange={handleAutoRenewChange}
+                                onCheckedChange={handleAutoRenewToggle}
                             />
                         </div>
                         {autoRenew && (
@@ -286,6 +297,23 @@ export function HistoryPageContent() {
                     </Card>
                 </TabsContent>
             </Tabs>
+            
+            <AlertDialog open={isAutoRenewConfirmOpen} onOpenChange={setIsAutoRenewConfirmOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            You are about to {pendingAutoRenewState ? 'enable' : 'disable'} automatic plan renewals using your wallet balance.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmAutoRenewChange}>
+                            {pendingAutoRenewState ? 'Enable Auto-renewal' : 'Disable'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
