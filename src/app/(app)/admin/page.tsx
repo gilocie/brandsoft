@@ -27,6 +27,7 @@ import { cn } from '@/lib/utils';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { ManageReserveDialog, type ManageReserveFormData } from '@/components/admin/manage-reserve-dialog';
 import { StatCard } from '@/components/admin/stat-card';
+import { Checkbox } from '@/components/ui/checkbox';
 
 
 const ADMIN_ACTIVATION_KEY = 'BRANDSOFT-ADMIN';
@@ -45,36 +46,15 @@ const plans = [
 ];
 
 const premiumFeatures = [
-    { 
-        category: 'Customization & Branding', 
-        features: [
-            { name: 'Full Template Editor Access', description: 'Unlock the advanced drag-and-drop template designer.' },
-            { name: 'Remove BrandSoft Branding', description: 'Remove the "Created by BrandSoft" footer from documents.' },
-        ]
-    },
-    {
-        category: 'Automation & Efficiency',
-        features: [
-            { name: 'Recurring Invoices', description: 'Set up automatically recurring invoices for clients.' },
-            { name: 'API Access', description: 'Integrate BrandSoft with your other business systems.' },
-        ]
-    },
-    {
-        category: 'AI-Powered Tools',
-        features: [
-            { name: 'AI Content Generation', description: 'Generate product descriptions and marketing copy.' },
-            { name: 'Smart Analytics', description: 'Get deeper insights and predictive sales analytics.' },
-        ]
-    },
-     {
-        category: 'Marketplace & Affiliate',
-        features: [
-            { name: 'Featured Marketplace Listing', description: 'Get a highlighted spot on the supplier marketplace.' },
-            { name: 'Priority Quotation Alerts', description: 'Receive instant notifications for new public requests.' },
-        ]
-    }
+    { id: 'fullTemplateEditor', label: 'Full Template Editor Access' },
+    { id: 'removeBranding', label: 'Remove BrandSoft Branding' },
+    { id: 'recurringInvoices', label: 'Recurring Invoices' },
+    { id: 'apiAccess', label: 'API Access' },
+    { id: 'aiContent', label: 'AI Content Generation' },
+    { id: 'smartAnalytics', label: 'Smart Analytics' },
+    { id: 'featuredListing', label: 'Featured Marketplace Listing' },
+    { id: 'priorityAlerts', label: 'Priority Quotation Alerts' },
 ];
-
 
 const creditSettingsSchema = z.object({
   maxCredits: z.coerce.number().min(0, "Max credits cannot be negative."),
@@ -85,6 +65,14 @@ const creditSettingsSchema = z.object({
 });
 type CreditSettingsFormData = z.infer<typeof creditSettingsSchema>;
 
+const newPlanSchema = z.object({
+  name: z.string().min(2, "Plan name is required."),
+  price: z.coerce.number().min(0, "Price must be a non-negative number."),
+  features: z.array(z.string()).optional(),
+});
+type NewPlanFormData = z.infer<typeof newPlanSchema>;
+
+
 export default function AdminPage() {
     const { config, saveConfig } = useBrandsoft();
     const { toast } = useToast();
@@ -94,6 +82,7 @@ export default function AdminPage() {
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [isManageReserveOpen, setIsManageReserveOpen] = useState(false);
     const [isResetFinancialsOpen, setIsResetFinancialsOpen] = useState(false);
+    const [isAddPlanOpen, setIsAddPlanOpen] = useState(false);
     
     const adminSettings: AdminSettings = useMemo(() => config?.admin || {
         maxCredits: 1000000,
@@ -110,6 +99,11 @@ export default function AdminPage() {
     const form = useForm<CreditSettingsFormData>({
         resolver: zodResolver(creditSettingsSchema),
         defaultValues: adminSettings,
+    });
+    
+    const newPlanForm = useForm<NewPlanFormData>({
+        resolver: zodResolver(newPlanSchema),
+        defaultValues: { name: '', price: 0, features: [] },
     });
 
     useEffect(() => {
@@ -168,6 +162,16 @@ export default function AdminPage() {
         toast({ title: "Credit Settings Saved", description: "Your BS Credit settings have been updated." });
     };
     
+    const onNewPlanSubmit = (data: NewPlanFormData) => {
+        console.log("New Plan Data:", data);
+        toast({
+            title: "Plan Submitted (Dev)",
+            description: "Check the console for the new plan data.",
+        });
+        setIsAddPlanOpen(false);
+        newPlanForm.reset();
+    };
+
     const toggleReserveLock = () => {
          if (!config) return;
          const newLockState = !isReserveLocked;
@@ -207,7 +211,7 @@ export default function AdminPage() {
                 plan = purchaseToUse.planName;
                 remainingDays = purchaseToUse.remainingTime?.value;
                 if(purchaseToUse.status === 'active') {
-                    status = (remainingDays === undefined || remainingDays > 0) ? 'active' : 'expired';
+                    status = (remainingDays !== undefined && remainingDays > 0) ? 'active' : 'expired';
                 } else {
                      status = 'expired';
                      remainingDays = 0;
@@ -422,7 +426,7 @@ export default function AdminPage() {
                                 <CardTitle>Subscription Plans</CardTitle>
                                 <CardDescription>Plans available for clients to purchase.</CardDescription>
                             </div>
-                             <Dialog>
+                             <Dialog open={isAddPlanOpen} onOpenChange={setIsAddPlanOpen}>
                                 <DialogTrigger asChild>
                                     <Button><PackagePlus className="mr-2 h-4 w-4" /> Add New Plan</Button>
                                 </DialogTrigger>
@@ -430,81 +434,110 @@ export default function AdminPage() {
                                     <DialogHeader>
                                         <DialogTitle>Add New Plan</DialogTitle>
                                         <DialogDescription>
-                                            This feature is coming soon.
+                                            Define a new subscription plan for your customers.
                                         </DialogDescription>
                                     </DialogHeader>
+                                    <Form {...newPlanForm}>
+                                        <form onSubmit={newPlanForm.handleSubmit(onNewPlanSubmit)} className="space-y-4 pt-4">
+                                            <FormField control={newPlanForm.control} name="name" render={({ field }) => (
+                                                <FormItem><FormLabel>Plan Name</FormLabel><FormControl><Input placeholder="e.g., Business Pro" {...field} /></FormControl><FormMessage /></FormItem>
+                                            )} />
+                                             <FormField control={newPlanForm.control} name="price" render={({ field }) => (
+                                                <FormItem><FormLabel>Price (per month)</FormLabel><FormControl><Input type="number" placeholder="25000" {...field} /></FormControl><FormMessage /></FormItem>
+                                            )} />
+                                            <FormField
+                                                control={newPlanForm.control}
+                                                name="features"
+                                                render={() => (
+                                                    <FormItem>
+                                                        <div className="mb-4">
+                                                        <FormLabel className="text-base">Features</FormLabel>
+                                                        <FormDescription>Select the features included in this plan.</FormDescription>
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                        {premiumFeatures.map((item) => (
+                                                            <FormField
+                                                            key={item.id}
+                                                            control={newPlanForm.control}
+                                                            name="features"
+                                                            render={({ field }) => {
+                                                                return (
+                                                                <FormItem key={item.id} className="flex flex-row items-start space-x-3 space-y-0">
+                                                                    <FormControl>
+                                                                    <Checkbox
+                                                                        checked={field.value?.includes(item.id)}
+                                                                        onCheckedChange={(checked) => {
+                                                                        return checked
+                                                                            ? field.onChange([...(field.value || []), item.id])
+                                                                            : field.onChange(
+                                                                                field.value?.filter(
+                                                                                (value) => value !== item.id
+                                                                                )
+                                                                            )
+                                                                        }}
+                                                                    />
+                                                                    </FormControl>
+                                                                    <FormLabel className="text-sm font-normal">{item.label}</FormLabel>
+                                                                </FormItem>
+                                                                )
+                                                            }}
+                                                            />
+                                                        ))}
+                                                        </div>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                                />
+                                            <DialogFooter>
+                                                <Button type="button" variant="outline" onClick={() => setIsAddPlanOpen(false)}>Cancel</Button>
+                                                <Button type="submit">Save Plan</Button>
+                                            </DialogFooter>
+                                        </form>
+                                    </Form>
                                 </DialogContent>
                             </Dialog>
                         </CardHeader>
                         <CardContent>
-                             <Tabs defaultValue="plans">
-                                <TabsList>
-                                    <TabsTrigger value="plans">Plans</TabsTrigger>
-                                    <TabsTrigger value="features">Plan Features</TabsTrigger>
-                                </TabsList>
-                                <TabsContent value="plans" className="pt-4">
-                                     <div className="grid gap-4 md:grid-cols-2">
-                                        {plans.map(plan => (
-                                            <Card key={plan.name}>
-                                                <CardHeader>
-                                                    <div className="flex items-center justify-between">
-                                                        <CardTitle className="flex items-center gap-2 text-xl">
-                                                            <Briefcase className="h-5 w-5" />
-                                                            {plan.name}
-                                                        </CardTitle>
-                                                        <DropdownMenu>
-                                                            <DropdownMenuTrigger asChild>
-                                                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                                    <MoreHorizontal className="h-4 w-4" />
-                                                                </Button>
-                                                            </DropdownMenuTrigger>
-                                                            <DropdownMenuContent>
-                                                                <DropdownMenuItem>
-                                                                    <Pencil className="mr-2 h-4 w-4" /> Edit
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuItem className="text-destructive focus:text-destructive">
-                                                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                                                </DropdownMenuItem>
-                                                            </DropdownMenuContent>
-                                                        </DropdownMenu>
-                                                    </div>
-                                                    <CardDescription className="text-2xl font-bold pt-1">{plan.price}</CardDescription>
-                                                </CardHeader>
-                                                <CardContent>
-                                                    <ul className="space-y-2 text-sm text-muted-foreground">
-                                                        {plan.features.map(feature => (
-                                                            <li key={feature} className="flex items-center gap-2">
-                                                                <CheckCircle className="h-4 w-4 text-green-500" />
-                                                                <span>{feature}</span>
-                                                            </li>
-                                                        ))}
-                                                    </ul>
-                                                </CardContent>
-                                            </Card>
-                                        ))}
-                                    </div>
-                                </TabsContent>
-                                <TabsContent value="features" className="pt-4 space-y-4">
-                                     {premiumFeatures.map(category => (
-                                        <div key={category.category}>
-                                            <h3 className="text-sm font-semibold mb-2">{category.category}</h3>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                {category.features.map(feature => (
-                                                    <Card key={feature.name}>
-                                                        <CardHeader className="flex flex-row items-start justify-between p-4">
-                                                            <div className="space-y-1">
-                                                                <CardTitle className="text-base">{feature.name}</CardTitle>
-                                                                <CardDescription className="text-xs">{feature.description}</CardDescription>
-                                                            </div>
-                                                            <Bot className="h-5 w-5 text-primary" />
-                                                        </CardHeader>
-                                                    </Card>
-                                                ))}
+                             <div className="grid gap-4 md:grid-cols-2">
+                                {plans.map(plan => (
+                                    <Card key={plan.name}>
+                                        <CardHeader>
+                                            <div className="flex items-center justify-between">
+                                                <CardTitle className="flex items-center gap-2 text-xl">
+                                                    <Briefcase className="h-5 w-5" />
+                                                    {plan.name}
+                                                </CardTitle>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                            <MoreHorizontal className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent>
+                                                        <DropdownMenuItem>
+                                                            <Pencil className="mr-2 h-4 w-4" /> Edit
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem className="text-destructive focus:text-destructive">
+                                                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
                                             </div>
-                                        </div>
-                                    ))}
-                                </TabsContent>
-                            </Tabs>
+                                            <CardDescription className="text-2xl font-bold pt-1">{plan.price}</CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <ul className="space-y-2 text-sm text-muted-foreground">
+                                                {plan.features.map(feature => (
+                                                    <li key={feature} className="flex items-center gap-2">
+                                                        <CheckCircle className="h-4 w-4 text-green-500" />
+                                                        <span>{feature}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
                         </CardContent>
                     </Card>
                 </TabsContent>
