@@ -123,7 +123,7 @@ const ImageUploadField = ({
 };
 
 export default function CompaniesPage() {
-  const { config, addCompany, updateCompany, deleteCompany, saveConfig } = useBrandsoft();
+  const { config, deleteCompany, saveConfig } = useBrandsoft(); // Removed addCompany/updateCompany needed here, we use saveConfig directly
   const { toast } = useToast();
   const router = useRouter();
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -197,72 +197,73 @@ export default function CompaniesPage() {
       if (action === 'view') setIsViewOpen(true);
   };
 
+    // --- THIS IS THE CRITICAL FIX ---
   const onSubmit = (data: CompanyFormData) => {
     if (!config) return;
 
-    // 1. Prepare Company Data
-    // We add 'referredBy' to the company object to permanently link it to the affiliate
-    const companyToSave: any = { // using 'any' or Partial<Company> & { referredBy?: string }
+    // 1. Generate ID if new, or use existing
+    const companyId = data.id || `COMP-${Date.now()}`;
+    
+    // 2. Prepare the Company Object (For Companies Page & Marketplace)
+    const companyToSave: Company = {
         ...data,
+        id: companyId,
         customerType: 'company',
-        referredBy: data.activationKey || undefined, // FOREVER LINK: Store the affiliate ID in the company record
-    };
-    
-    // 2. Save/Update Company in Global State
-    let savedCompany: Company;
+        referredBy: data.activationKey || undefined, // Store forever link
+    } as Company;
+
+    // 3. Prepare the updated List of Companies
+    let updatedCompanies = [...(config.companies || [])];
     if (data.id) {
-        updateCompany(data.id, companyToSave);
-        savedCompany = { ...config.companies.find(c => c.id === data.id)!, ...companyToSave };
+        // Update existing
+        updatedCompanies = updatedCompanies.map(c => c.id === data.id ? { ...c, ...companyToSave } : c);
     } else {
-        savedCompany = addCompany(companyToSave as Omit<Company, 'id'>);
+        // Add new
+        updatedCompanies = [companyToSave, ...updatedCompanies];
     }
-    
-    // 3. Affiliate Linking Logic
-    // We check if the entered key matches the CURRENT logged-in affiliate's ID
+
+    // 4. Prepare Affiliate Data (For Affiliate Client Page)
+    let updatedAffiliate = { ...(config.affiliate || {}) };
+    let wasAddedToAffiliate = false;
+
+    // Logic: If activation key matches MY staff ID
     if (data.activationKey && config.affiliate && data.activationKey === config.affiliate.staffId) {
         
-        const affiliateClients = config.affiliate.clients || [];
-        
-        // Check if this company is already in the client list to prevent duplicates
-        const isAlreadyClient = affiliateClients.some(c => c.id === savedCompany.id);
+        const existingClients = updatedAffiliate.clients || [];
+        const isAlreadyClient = existingClients.some(c => c.id === companyId);
 
         if (!isAlreadyClient) {
             const newClient: AffiliateClient = {
-                id: savedCompany.id, // This links back to the Company ID
-                name: savedCompany.companyName,
-                avatar: savedCompany.logo || `https://picsum.photos/seed/${savedCompany.id}/100`,
-                plan: 'Free Trial', // Default starting plan
+                id: companyId, // Link IDs
+                name: companyToSave.companyName,
+                avatar: companyToSave.logo || `https://picsum.photos/seed/${companyId}/100`,
+                plan: 'Free Trial',
                 status: 'active',
                 joinDate: new Date().toISOString(),
                 remainingDays: 30,
                 walletBalance: 0,
             };
-
-            // Update the configuration with the new client added to the affiliate
-            const newConfig = {
-                ...config,
-                // We also need to update the company list in config to ensure 'referredBy' is persisted if addCompany didn't handle it
-                companies: config.companies.map(c => c.id === savedCompany.id ? {...c, referredBy: data.activationKey} : c),
-                affiliate: {
-                    ...config.affiliate,
-                    clients: [newClient, ...affiliateClients], // Add to top of list
-                },
-            };
-
-            saveConfig(newConfig, { redirect: false });
             
-            toast({
-              title: "New Client Acquired!",
-              description: `${savedCompany.companyName} has been linked to your affiliate account.`
-            });
+            // Add to affiliate clients list
+            updatedAffiliate.clients = [newClient, ...existingClients];
+            wasAddedToAffiliate = true;
         }
+    }
+
+    // 5. ONE-SHOT SAVE: Update config with BOTH the new company list AND the new affiliate data
+    saveConfig({
+        ...config,
+        companies: updatedCompanies,
+        affiliate: updatedAffiliate as any // Cast to any if strict typing complains about partials
+    }, { redirect: false });
+
+    // 6. Notifications
+    if (wasAddedToAffiliate) {
+         toast({ title: "Success!", description: "Company created and linked to your Affiliate account." });
     } else if (data.activationKey) {
-        // Optional: Handle case where key exists but doesn't match current user (if multiple affiliates existed)
-        // For this single-user demo, we just warn if it doesn't match the current user
-         toast({
-          title: "Company Saved",
-          description: "Company saved, but Activation Key did not match your Staff ID."
-        });
+         toast({ title: "Company Saved", description: "Saved to Companies list (Key did not match your Staff ID)." });
+    } else {
+         toast({ title: "Company Saved", description: "Company added to list." });
     }
     
     setIsFormOpen(false);
@@ -464,5 +465,3 @@ export default function CompaniesPage() {
     </div>
   );
 }
-
-    

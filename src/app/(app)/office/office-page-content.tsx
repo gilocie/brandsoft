@@ -719,5 +719,3 @@ export function OfficePageContent() {
     </div>
   );
 }
-
-    

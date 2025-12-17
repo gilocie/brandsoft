@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, createContext, useContext, ReactNode, useCallback } from 'react';
@@ -35,8 +34,15 @@ const initialAffiliateData: Affiliate = {
     creditBalance: 0,
     bonus: 0,
     staffId: 'BS-AFF-12345678',
-    clients: [], // Demo data removed
-    transactions: [], // Demo data removed
+    clients: [], // EMPTY THIS ARRAY to remove demo data
+    transactions: [], // You might want to empty this too
+    withdrawalMethods: {
+        airtel: undefined,
+        tnm: undefined,
+        bank: undefined,
+        bsCredits: undefined,
+    },
+    securityQuestionData: undefined,
 };
 
 interface BrandsoftContextType {
@@ -315,6 +321,3 @@ export function useBrandsoft() {
   }
   return context;
 }
-
-    
-    
