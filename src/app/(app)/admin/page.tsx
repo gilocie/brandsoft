@@ -268,12 +268,6 @@ export default function AdminPage() {
     };
 
    
-    const allClients = useMemo(() => {
-        // This now correctly shows ONLY clients referred by an affiliate.
-        if (!config?.affiliate?.clients) return [];
-        return config.affiliate.clients;
-    }, [config?.affiliate?.clients]);
-    
     const adminClients = useMemo(() => {
         if (!config?.companies) return [];
         // Find companies referred by Admin.
@@ -415,9 +409,8 @@ export default function AdminPage() {
             </div>
 
              <Tabs defaultValue="staff" className="w-full">
-                <TabsList className="grid w-full grid-cols-5">
+                <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="staff">Staff</TabsTrigger>
-                    <TabsTrigger value="clients">Affiliate Clients</TabsTrigger>
                     <TabsTrigger value="admin-clients">Admin Clients ({adminClients.length})</TabsTrigger>
                     <TabsTrigger value="plans">Plans</TabsTrigger>
                     <TabsTrigger value="options">Options</TabsTrigger>
@@ -435,19 +428,6 @@ export default function AdminPage() {
                                     affiliate={affiliate} 
                                     onSelectAction={(action) => handleSelectAction(action, affiliate)}
                                 />
-                            ))}
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-                <TabsContent value="clients" className="pt-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>All Affiliate Clients</CardTitle>
-                            <CardDescription>Clients referred by all your affiliates.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                            {allClients.map((client: AffiliateClient) => (
-                                <ClientCard key={client.id} client={client} baseUrl="/admin" />
                             ))}
                         </CardContent>
                     </Card>
