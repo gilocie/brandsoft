@@ -92,17 +92,52 @@ export default function ClientDetailsPage() {
 
       <div className="grid gap-4 md:grid-cols-2">
         <StatCard title="Client Wallet" value={client.walletBalance || 0} isCurrency icon={Wallet} footer="Funds available to the client">
+             <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => setIsTopUpOpen(true)}>
+                <CirclePlus className="mr-2 h-4 w-4" /> Top Up Wallet
+            </Button>
         </StatCard>
         <Card>
             <CardHeader>
-                <CardTitle>Details</CardTitle>
-                <CardDescription>Other client information.</CardDescription>
+                <CardTitle>Client Actions</CardTitle>
+                <CardDescription>Manage this client's account.</CardDescription>
             </CardHeader>
             <CardContent>
-                <p className="text-sm text-muted-foreground">More details will be shown here.</p>
+                <Button variant="outline" className="w-full" onClick={() => setIsSuspendOpen(true)}>
+                    <Ban className="mr-2 h-4 w-4" /> Suspend Client
+                </Button>
             </CardContent>
         </Card>
       </div>
+
+       <AlertDialog open={isSuspendOpen} onOpenChange={setIsSuspendOpen}>
+          <AlertDialogContent>
+              <AlertDialogHeader>
+                  <AlertDialogTitle>Suspend {client.name}?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                      This will temporarily disable their account. Are you sure?
+                  </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleSuspend}>Suspend</AlertDialogAction>
+              </AlertDialogFooter>
+          </AlertDialogContent>
+      </AlertDialog>
+
+       <AlertDialog open={isTopUpOpen} onOpenChange={setIsTopUpOpen}>
+          <AlertDialogContent>
+              <AlertDialogHeader>
+                  <AlertDialogTitle>Top Up Wallet</AlertDialogTitle>
+                  <AlertDialogDescription>
+                      This functionality is not yet implemented.
+                  </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => handleTopUp()}>OK</AlertDialogAction>
+              </AlertDialogFooter>
+          </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
