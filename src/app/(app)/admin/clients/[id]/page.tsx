@@ -247,8 +247,8 @@ export default function ClientDetailsPage() {
                 <CirclePlus className="mr-2 h-4 w-4" /> Top Up Wallet
             </Button>
         </StatCard>
-        <Card>
-            <CardHeader>
+        <Card className="flex flex-col">
+            <CardHeader className="flex-grow">
                 <CardTitle>Admin Actions</CardTitle>
                 <CardDescription>Manage this client's account.</CardDescription>
             </CardHeader>
