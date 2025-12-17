@@ -78,13 +78,13 @@ const ManageReserveDialog = ({
     isOpen,
     onOpenChange,
     onSubmit,
-    totalReserve,
+    distributionReserve,
     maxCredits
 }: {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
     onSubmit: (data: ManageReserveFormData) => void;
-    totalReserve: number;
+    distributionReserve: number;
     maxCredits: number;
 }) => {
     const form = useForm<ManageReserveFormData>({
@@ -100,8 +100,8 @@ const ManageReserveDialog = ({
     }, [isOpen, form]);
     
     const finalReserve = watchedAction === 'add' 
-        ? totalReserve + (Number(watchedAmount) || 0)
-        : totalReserve - (Number(watchedAmount) || 0);
+        ? distributionReserve + (Number(watchedAmount) || 0)
+        : distributionReserve - (Number(watchedAmount) || 0);
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -134,7 +134,7 @@ const ManageReserveDialog = ({
                                             </FormLabel>
                                              <div className="text-right">
                                                 <p className="text-xs text-muted-foreground">Current</p>
-                                                <p className="text-lg font-bold">{totalReserve.toLocaleString()}</p>
+                                                <p className="text-lg font-bold">{distributionReserve.toLocaleString()}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -411,7 +411,7 @@ export default function AdminPage() {
                     description={`Value: K${(soldCredits * (adminSettings.sellPrice || 0)).toLocaleString()}`} 
                     icon={TrendingUp} 
                  />
-                 <StatCard title="Circulating Credits" value={`BS ${circulatingCredits.toLocaleString()}`} description="Held by affiliates" icon={TrendingDown} />
+                 <StatCard title="Circulating Credits" value={`BS ${circulatingCredits.toLocaleString()}`} description={`Value: K${(circulatingCredits * (adminSettings.buyPrice || 0)).toLocaleString()}`} icon={TrendingDown} />
                  <StatCard title="Net Profit" value={`K${netProfit.toLocaleString()}`} description="Overall credit profit" icon={BarChart} />
             </div>
 
@@ -664,11 +664,13 @@ export default function AdminPage() {
                 isOpen={isManageReserveOpen}
                 onOpenChange={setIsManageReserveOpen}
                 onSubmit={handleManageReserve}
-                totalReserve={adminSettings.availableCredits || 0}
+                distributionReserve={adminSettings.availableCredits || 0}
                 maxCredits={adminSettings.maxCredits || 0}
             />
         </div>
     );
 }
+
+    
 
     
