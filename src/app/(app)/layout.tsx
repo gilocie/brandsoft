@@ -55,30 +55,30 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { WalletBalance } from '@/components/wallet-balance';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 
 const mainNavItems = [
-  { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', enabledKey: null },
-  { href: '/history', icon: Wallet, label: 'Wallet', enabledKey: null },
-  { href: '/office', icon: BriefcaseBusiness, label: 'Office', enabledKey: null },
-  { href: '/invoices', icon: FileText, label: 'Invoices', enabledKey: 'invoice' },
-  { href: '/quotations', icon: FileBarChart2, label: 'Quotations', enabledKey: 'quotation' },
-  { href: '/quotation-requests', icon: MessageSquareQuote, label: 'Requests', enabledKey: 'quotation' },
-  { href: '/products', icon: Package, label: 'Products', enabledKey: 'invoice' },
-  { href: '/companies', icon: Users, label: 'Companies', enabledKey: null },
-  { href: '/marketplace', icon: Store, label: 'Suppliers', enabledKey: null },
-  { href: '/admin', icon: Shield, label: 'Admin', enabledKey: null },
+  { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', enabledKey: null, roles: ['client'] },
+  { href: '/history', icon: Wallet, label: 'Wallet', enabledKey: null, roles: ['client'] },
+  { href: '/office', icon: BriefcaseBusiness, label: 'Office', enabledKey: null, roles: ['staff'] },
+  { href: '/invoices', icon: FileText, label: 'Invoices', enabledKey: 'invoice', roles: ['client'] },
+  { href: '/quotations', icon: FileBarChart2, label: 'Quotations', enabledKey: 'quotation', roles: ['client'] },
+  { href: '/quotation-requests', icon: MessageSquareQuote, label: 'Requests', enabledKey: 'quotation', roles: ['client'] },
+  { href: '/products', icon: Package, label: 'Products', enabledKey: 'invoice', roles: ['client'] },
+  { href: '/companies', icon: Users, label: 'Companies', enabledKey: null, roles: ['admin'] },
+  { href: '/marketplace', icon: Store, label: 'Suppliers', enabledKey: null, roles: ['client'] },
+  { href: '/admin', icon: Shield, label: 'Admin', enabledKey: null, roles: ['admin'] },
 ];
 
 const upcomingNavItems = [
-  { href: '/certificates', icon: Award, label: 'Certificates', enabledKey: 'certificate' },
-  { href: '/id-cards', icon: CreditCard, label: 'ID Cards', enabledKey: 'idCard' },
-  { href: '/marketing-materials', icon: Brush, label: 'Marketing', enabledKey: 'marketing' },
-  { href: '/templates', icon: Library, label: 'Templates', enabledKey: null },
+  { href: '/certificates', icon: Award, label: 'Certificates', enabledKey: 'certificate', roles: ['admin'] },
+  { href: '/id-cards', icon: CreditCard, label: 'ID Cards', enabledKey: 'idCard', roles: ['admin'] },
+  { href: '/marketing-materials', icon: Brush, label: 'Marketing', enabledKey: 'marketing', roles: ['admin'] },
+  { href: '/templates', icon: Library, label: 'Templates', enabledKey: null, roles: ['admin'] },
 ];
-
-const navItems = [...mainNavItems, ...upcomingNavItems];
 
 const HeaderWalletCard = () => {
   const { config } = useBrandsoft();
@@ -123,6 +123,7 @@ const HeaderWalletCard = () => {
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { config } = useBrandsoft();
+  const [role, setRole] = useState<'admin' | 'staff' | 'client'>('admin');
 
   const currentUserId = useMemo(() => {
     if (!config || !config.brand) return null;
@@ -138,11 +139,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, [config]);
 
 
-  const getVisibleNavItems = (items: typeof mainNavItems) => {
+  const getVisibleNavItems = (items: typeof mainNavItems, currentRole: typeof role) => {
     if (!config) return [];
     return items.filter(item => {
-      if (item.enabledKey === null) return true;
-      return config.modules[item.enabledKey as keyof typeof config.modules];
+        const roleMatch = item.roles.includes(currentRole);
+        if (!roleMatch) return false;
+        if (item.enabledKey === null) return true;
+        return config.modules[item.enabledKey as keyof typeof config.modules];
     });
   };
 
@@ -155,10 +158,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const visibleMainNavItems = getVisibleNavItems(mainNavItems);
-  const visibleUpcomingNavItems = getVisibleNavItems(upcomingNavItems);
+  const visibleMainNavItems = getVisibleNavItems(mainNavItems, role);
+  const visibleUpcomingNavItems = getVisibleNavItems(upcomingNavItems, role);
   
-  const pageTitle = navItems.find(item => pathname.startsWith(item.href))?.label || 'Dashboard';
+  const pageTitle = [...mainNavItems, ...upcomingNavItems].find(item => pathname.startsWith(item.href))?.label || 'Dashboard';
 
   return (
     <SidebarProvider>
@@ -210,34 +213,37 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             )}
           </SidebarMenu>
           
-          <SidebarSeparator className="my-2" />
-
-          <Accordion type="single" collapsible className="w-full px-2">
-            <AccordionItem value="upcoming-tools" className="border-none">
-              <AccordionTrigger className="text-sidebar-foreground/70 hover:text-sidebar-foreground hover:no-underline text-xs font-medium rounded-md px-2 [&[data-state=open]>svg]:text-sidebar-foreground">
-                <span className="flex-1 text-left">Upcoming Tools</span>
-              </AccordionTrigger>
-              <AccordionContent className="pt-2">
-                <SidebarMenu className="px-0">
-                    {config ? visibleUpcomingNavItems.map((item) => (
-                    <SidebarMenuItem key={item.href}>
-                        <SidebarMenuButton
-                            disabled
-                            isActive={pathname.startsWith(item.href)}
-                            tooltip={item.label}
-                        >
-                            <item.icon />
-                            <span>{item.label}</span>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    )) : (
-                    // Skeleton loading for nav items
-                    Array.from({length: 4}).map((_, i) => <SidebarMenuSkeleton key={i} showIcon />)
-                    )}
-                </SidebarMenu>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+          {visibleUpcomingNavItems.length > 0 && (
+            <>
+              <SidebarSeparator className="my-2" />
+              <Accordion type="single" collapsible defaultValue="upcoming-tools" className="w-full px-2">
+                <AccordionItem value="upcoming-tools" className="border-none">
+                  <AccordionTrigger className="text-sidebar-foreground/70 hover:text-sidebar-foreground hover:no-underline text-xs font-medium rounded-md px-2 [&[data-state=open]>svg]:text-sidebar-foreground">
+                    <span className="flex-1 text-left">Upcoming Tools</span>
+                  </AccordionTrigger>
+                  <AccordionContent className="pt-2">
+                    <SidebarMenu className="px-0">
+                        {config ? visibleUpcomingNavItems.map((item) => (
+                        <SidebarMenuItem key={item.href}>
+                            <SidebarMenuButton
+                                disabled
+                                isActive={pathname.startsWith(item.href)}
+                                tooltip={item.label}
+                            >
+                                <item.icon />
+                                <span>{item.label}</span>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                        )) : (
+                        // Skeleton loading for nav items
+                        Array.from({length: 4}).map((_, i) => <SidebarMenuSkeleton key={i} showIcon />)
+                        )}
+                    </SidebarMenu>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </>
+          )}
 
         </SidebarContent>
         <SidebarFooter className="mt-auto mb-4">
@@ -264,28 +270,42 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <SidebarInset className="flex flex-col h-screen overflow-hidden">
         <header className="flex h-14 items-center gap-4 border-b bg-background/95 backdrop-blur-sm sticky top-0 px-4 md:px-6 z-10 min-w-0 flex-shrink-0">
           <SidebarTrigger className="md:hidden flex-shrink-0" />
-          <h1 className="text-lg font-semibold font-headline flex-1 truncate">
+          <h1 className="text-lg font-semibold font-headline flex-1 truncate hidden sm:block">
             {pageTitle}
           </h1>
-          <div className="flex items-center gap-2">
-            <HeaderWalletCard />
-            <Button variant="ghost" size="icon" asChild className="flex-shrink-0 relative">
-              <Link href="/quotation-requests?subtab=incoming">
-                <Bell className="h-6 w-6" />
-                {notificationCount > 0 && (
-                  <span className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs font-bold text-destructive-foreground">
-                    {notificationCount}
-                  </span>
-                )}
-                <span className="sr-only">Notifications</span>
-              </Link>
-            </Button>
-            <Button variant="ghost" size="icon" asChild className="flex-shrink-0">
-              <Link href="/settings">
-                <Settings className="h-5 w-5" />
-                <span className="sr-only">Settings</span>
-              </Link>
-            </Button>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+             <div className="sm:ml-auto flex-1 sm:flex-none">
+                <Select value={role} onValueChange={(value) => setRole(value as any)}>
+                    <SelectTrigger className="w-full sm:w-[130px] h-9">
+                        <SelectValue placeholder="Select a role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="staff">Staff</SelectItem>
+                        <SelectItem value="client">Client</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <HeaderWalletCard />
+              <Button variant="ghost" size="icon" asChild className="flex-shrink-0 relative">
+                <Link href="/quotation-requests?subtab=incoming">
+                  <Bell className="h-6 w-6" />
+                  {notificationCount > 0 && (
+                    <span className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs font-bold text-destructive-foreground">
+                      {notificationCount}
+                    </span>
+                  )}
+                  <span className="sr-only">Notifications</span>
+                </Link>
+              </Button>
+              <Button variant="ghost" size="icon" asChild className="flex-shrink-0">
+                <Link href="/settings">
+                  <Settings className="h-5 w-5" />
+                  <span className="sr-only">Settings</span>
+                </Link>
+              </Button>
+            </div>
           </div>
         </header>
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
