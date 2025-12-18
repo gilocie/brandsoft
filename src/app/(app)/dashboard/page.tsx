@@ -332,6 +332,9 @@ export default function DashboardPage() {
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
 
+    const activePlan = purchases.find(p => p.status === 'active');
+    if (activePlan) return activePlan;
+    
     // Priority 1: Check for any unacknowledged declined orders first
     const unacknowledgedDeclined = purchases.find(p => p.status === 'declined' && !p.isAcknowledged);
     if (unacknowledgedDeclined) return unacknowledgedDeclined;
@@ -339,17 +342,14 @@ export default function DashboardPage() {
     // Priority 2: Check for any pending order
     const pending = purchases.find((p) => p.status === 'pending');
     if (pending) return pending;
-
-    // Priority 3: Fallback to any active plan
-    const active = purchases.find((p) => p.status === 'active');
-    if (active) return active;
     
-    // Priority 4: If no active plan, find the most recently expired one
+    // Priority 3: If no active plan, find the most recently expired one
     const expiredPlans = purchases.filter(p => p.status === 'inactive' && p.expiresAt);
     if(expiredPlans.length > 0) {
         return expiredPlans.sort((a,b) => new Date(b.expiresAt!).getTime() - new Date(a.expiresAt!).getTime())[0];
     }
-
+    
+    // Fallback: No relevant plan, which will result in showing the Free Trial card.
     return null;
   }, [config?.purchases]);
 
