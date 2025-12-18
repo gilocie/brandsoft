@@ -88,10 +88,6 @@ export default function AdminPage() {
 
     const affiliates = useMemo(() => (config?.affiliate ? [config.affiliate] : []), [config?.affiliate]);
     
-    const circulatingCredits = useMemo(() => {
-        return affiliates.reduce((sum, aff) => sum + (aff.creditBalance || 0), 0);
-    }, [affiliates]);
-    
     const distributionReserve = adminSettings.availableCredits || 0;
 
     const withdrawalRequests = useMemo(() => {
@@ -118,8 +114,21 @@ export default function AdminPage() {
     }, [distributionReserve, watchedMaxCredits]);
     
     const soldCredits = adminSettings.soldCredits || 0;
-    const boughtBackCredits = circulatingCredits; // This is a simplification
-    const netProfit = (soldCredits * (adminSettings.sellPrice || 0)) - (boughtBackCredits * (adminSettings.buyPrice || 0));
+    const netCreditProfit = soldCredits * ((adminSettings.sellPrice || 0) - (adminSettings.buyPrice || 0));
+
+    const revenueFromKeys = (adminSettings.keysSold || 0) * (adminSettings.keyPrice || 0);
+    
+    const revenueFromPlans = useMemo(() => {
+        if (!config?.purchases) return 0;
+        return config.purchases
+            .filter(p => p.status === 'active' && !p.planName.toLowerCase().includes('key') && !p.planName.toLowerCase().includes('credit'))
+            .reduce((sum, p) => {
+                const price = parseFloat(p.planPrice.replace(/[^0-9.-]+/g,""));
+                return sum + (isNaN(price) ? 0 : price);
+            }, 0);
+    }, [config?.purchases]);
+
+    const combinedRevenue = revenueFromKeys + revenueFromPlans;
 
 
     const onCreditSettingsSubmit = (data: CreditSettingsFormData) => {
@@ -328,8 +337,18 @@ export default function AdminPage() {
                     description={`Value: K${(soldCredits * (adminSettings.sellPrice || 0)).toLocaleString()}`} 
                     icon={TrendingUp} 
                  />
-                 <StatCard title="Circulating Credits" value={`BS ${circulatingCredits.toLocaleString()}`} description={`Value: K${(circulatingCredits * (adminSettings.buyPrice || 0)).toLocaleString()}`} icon={TrendingDown} />
-                 <StatCard title="Net Profit" value={`K${netProfit.toLocaleString()}`} description="Overall credit profit" icon={BarChart} />
+                 <StatCard 
+                    title="Net Credit Profit" 
+                    value={`K${netCreditProfit.toLocaleString()}`} 
+                    description="Profit from selling credits" 
+                    icon={BarChart} 
+                />
+                 <StatCard 
+                    title="Combined Revenue" 
+                    value={`K${combinedRevenue.toLocaleString()}`} 
+                    description="From Plans & Keys" 
+                    icon={BarChart} 
+                />
             </div>
 
             <div className="grid gap-4 md:grid-cols-3">
