@@ -49,13 +49,13 @@ import {
   Wallet,
 } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useBrandsoft } from '@/hooks/use-brandsoft';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { WalletBalance } from '@/components/wallet-balance';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
@@ -122,6 +122,7 @@ const HeaderWalletCard = () => {
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { config } = useBrandsoft();
   const [role, setRole] = useState<'admin' | 'staff' | 'client'>('admin');
 
@@ -138,6 +139,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return incomingCount + responseCount;
   }, [config]);
 
+  useEffect(() => {
+    if (role === 'admin' && pathname !== '/admin') {
+      router.push('/admin');
+    } else if (role === 'staff' && pathname !== '/office') {
+      router.push('/office');
+    }
+  }, [role, pathname, router]);
 
   const getVisibleNavItems = (items: typeof mainNavItems, currentRole: typeof role) => {
     if (!config) return [];
@@ -299,9 +307,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     </SelectContent>
                 </Select>
             </div>
-            <div className="flex items-center gap-2">
-              {role === 'client' && (
-                <>
+            {role === 'client' && (
+              <div className="flex items-center gap-2">
                     <HeaderWalletCard />
                     <Button variant="ghost" size="icon" asChild className="flex-shrink-0 relative">
                         <Link href="/quotation-requests?subtab=incoming">
@@ -320,9 +327,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         <span className="sr-only">Settings</span>
                         </Link>
                     </Button>
-                </>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </header>
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
