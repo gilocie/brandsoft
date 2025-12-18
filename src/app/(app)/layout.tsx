@@ -169,6 +169,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <SidebarHeader>
           <div className="flex items-center gap-2">
             {config ? (
+              (role === 'admin' || role === 'staff') ? (
+                  <Link href="/admin" className="flex items-center gap-2 text-sidebar-foreground">
+                      <Avatar className="h-8 w-8">
+                           <AvatarFallback>
+                                <BriefcaseBusiness className="h-5 w-5" />
+                           </AvatarFallback>
+                      </Avatar>
+                      <h1 className="text-base font-bold">
+                          BrandSoft Studio
+                      </h1>
+                  </Link>
+              ) : (
                 <Link href="/settings" className="flex items-center gap-2 text-sidebar-foreground">
                     <Avatar className="h-8 w-8">
                         <AvatarImage src={config.brand.logo} alt={config.brand.businessName} />
@@ -180,6 +192,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         {config.brand.businessName}
                     </h1>
                 </Link>
+              )
             ) : (
                 <>
                     <Skeleton className="h-8 w-8 rounded-full" />
