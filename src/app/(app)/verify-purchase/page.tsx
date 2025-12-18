@@ -86,9 +86,9 @@ const TopUpActivationDialog = ({
                                         <FormControl>
                                             <Input type="number" step="0.01" {...field} />
                                         </FormControl>
-                                        <FormDescription>
+                                         <FormDescription>
                                             {!hasEnoughCredits
-                                                ? <span className="text-destructive">Insufficient balance. Your current balance is BS {affiliateCreditBalance.toLocaleString()}.</span>
+                                                ? <span className="text-destructive">Your current credit balance is BS {affiliateCreditBalance.toLocaleString()}. Please add more before continuing.</span>
                                                 : `Your balance will be BS ${remainingBalance.toLocaleString()} after this sale.`
                                             }
                                         </FormDescription>
@@ -482,7 +482,7 @@ function VerifyPurchaseContent() {
                 {order && (
                     <CardFooter>
                         <Button asChild variant="outline">
-                            <Link href="/history"><Wallet className="mr-2 h-4 w-4" /> Return to Wallet</Link>
+                            <Link href={isAdminMode ? '/office?tab=transactions' : '/history'}><Wallet className="mr-2 h-4 w-4" /> Return to {isAdminMode ? 'Office' : 'Wallet'}</Link>
                         </Button>
                     </CardFooter>
                 )}
