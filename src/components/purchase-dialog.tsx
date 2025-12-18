@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -169,6 +168,8 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
             const newOrderId = `BSO-${Date.now()}`;
             setOrderId(newOrderId);
             
+            const myCompany = config?.companies.find(c => c.companyName === config?.brand.businessName);
+            
             const newOrder = {
                 orderId: newOrderId,
                 planName: plan.name,
@@ -179,6 +180,7 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                 date: new Date().toISOString(),
                 receipt: receiptDataUrl || 'none',
                 whatsappNumber: whatsappNumber,
+                customerId: myCompany?.id, // Store who made the purchase
             };
             addPurchaseOrder(newOrder);
 

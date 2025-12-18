@@ -143,6 +143,25 @@ export function usePurchases(
                     const newReserve = p.periodReserve - daysToActivate;
                     const activationMs = daysToActivate * 24 * 60 * 60 * 1000;
                     
+                     // Add commission to affiliate if applicable
+                    if (newConfig.affiliate && p.customerId) {
+                        const client = newConfig.companies.find(c => c.id === p.customerId);
+                        if(client && client.referredBy === newConfig.affiliate.staffId) {
+                            const commissionAmount = 10000;
+                            newConfig.affiliate.unclaimedCommission = (newConfig.affiliate.unclaimedCommission || 0) + commissionAmount;
+                            newConfig.affiliate.transactions = [
+                                {
+                                    id: `TRN-RENEW-${Date.now()}`,
+                                    date: new Date().toISOString(),
+                                    description: `Monthly renewal commission for ${client.companyName}`,
+                                    amount: commissionAmount,
+                                    type: 'credit'
+                                },
+                                ...(newConfig.affiliate.transactions || [])
+                            ];
+                        }
+                    }
+
                     return {
                         ...p,
                         status: 'active' as const,
