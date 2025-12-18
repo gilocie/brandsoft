@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -24,11 +25,9 @@ type BuyCreditsFormData = z.infer<typeof buyCreditsSchema>;
 
 export const BuyCreditsDialog = ({
     walletBalance,
-    adminAvailableCredits,
     onManualPayment,
 }: {
     walletBalance: number,
-    adminAvailableCredits: number,
     onManualPayment: (details: { name: 'Credit Purchase', price: string, period: string }) => void,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -47,14 +46,6 @@ export const BuyCreditsDialog = ({
   const handleNextStep = async () => {
       const isValid = await form.trigger(['credits']);
       if (isValid) {
-          if (creditsToBuy > adminAvailableCredits) {
-              toast({
-                variant: 'destructive',
-                title: "Apology",
-                description: `We only have BS ${adminAvailableCredits.toLocaleString()} in reserve. Please try a smaller amount.`,
-              });
-              return;
-          }
           setStep(2);
       }
   }

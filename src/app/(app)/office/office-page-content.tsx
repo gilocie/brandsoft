@@ -6,7 +6,7 @@ import { useBrandsoft, type Transaction, type Affiliate, type Purchase } from '@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Copy, DollarSign, ExternalLink, ShieldCheck, ShieldOff, UserCheck, Users, Edit, CreditCard, Gift, KeyRound, Phone, TrendingUp, TrendingDown, MoreHorizontal, ArrowRight, Wallet, Banknote, Smartphone, CheckCircle, Pencil, Eye, EyeOff, Send, Bell, RefreshCw, PlusCircle, User, Loader2 } from 'lucide-react';
+import { Copy, DollarSign, ExternalLink, ShieldCheck, ShieldOff, UserCheck, Users, Edit, CreditCard, Gift, KeyRound, Phone, TrendingUp, TrendingDown, MoreHorizontal, ArrowRight, Wallet, Banknote, Smartphone, CheckCircle, Pencil, Eye, EyeOff, Send, Bell, RefreshCw, PlusCircle, User, Loader2, BarChart } from 'lucide-react';
 import { ClientCard } from '@/components/affiliate/client-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -48,6 +48,7 @@ const affiliateSchema = z.object({
 type AffiliateFormData = z.infer<typeof affiliateSchema>;
 
 const CREDIT_TO_MWK = 1000;
+const CREDIT_PURCHASE_PRICE = 900;
 const ITEMS_PER_PAGE = 10;
 
 const statusVariantMap: { [key: string]: 'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'accent' | 'primary' } = {
@@ -214,7 +215,13 @@ export function OfficePageContent() {
   const unclaimedCommission = affiliate.unclaimedCommission || 0;
   const mwkBalance = affiliate.myWallet || 0;
   const activeClients = syncedClients.filter(c => c.status === 'active').length;
-  const totalSales = affiliate.totalSales || 0;
+  
+  const totalCreditsSold = affiliate.transactions
+    ?.filter(t => t.description.toLowerCase().startsWith('credit sale to'))
+    .reduce((sum, t) => sum + t.amount, 0) || 0;
+
+  const creditSalesProfit = totalCreditsSold * (CREDIT_TO_MWK - CREDIT_PURCHASE_PRICE);
+
 
   const handleWithdraw = (amount: number, source: 'commission' | 'combined' | 'bonus') => {
     if (!config || !affiliate) return;
@@ -416,14 +423,14 @@ export function OfficePageContent() {
                             </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                             <DropdownMenu>
+                            <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="ghost" size="icon" disabled={req.status !== 'pending'}>
                                         <MoreHorizontal className="h-4 w-4"/>
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent>
-                                    <DropdownMenuItem onClick={() => handleStatusChange(req.orderId, 'processing')}>
+                                    <DropdownMenuItem onClick={() => handleStatusChange(req.orderId, 'processing')} disabled={req.status === 'processing' || req.status === 'active'}>
                                         <RefreshCw className="mr-2 h-4 w-4" /> Mark as Processing
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
@@ -615,8 +622,15 @@ export function OfficePageContent() {
                         </CardContent>
                      </Card>
                 </div>
-                 <div className="grid md:grid-cols-2 gap-6">
+                 <div className="grid md:grid-cols-3 gap-6">
                     <StatCard icon={Users} title="Active Clients" value={activeClients} footer={`${syncedClients.length - activeClients} expired`} />
+                    <StatCard 
+                        icon={BarChart} 
+                        title="Credit Sales Profit" 
+                        value={creditSalesProfit} 
+                        isCurrency
+                        footer="Profit from selling credits"
+                    />
                     <StatCard icon={UserCheck} title="Total Referrals" value={syncedClients.length} footer="All-time client sign-ups" />
                 </div>
                  <Card>
@@ -672,7 +686,6 @@ export function OfficePageContent() {
             <Tabs defaultValue="top-ups">
                 <TabsList>
                     <TabsTrigger value="top-ups">Top-ups</TabsTrigger>
-                    <TabsTrigger value="sales">Sales</TabsTrigger>
                     <TabsTrigger value="commissions">Commissions</TabsTrigger>
                     <TabsTrigger value="payouts">Payouts</TabsTrigger>
                 </TabsList>
@@ -701,11 +714,6 @@ export function OfficePageContent() {
                             </Tabs>
                         </CardContent>
                     </Card>
-                </TabsContent>
-                <TabsContent value="sales" className="pt-4">
-                    <div className="flex h-60 items-center justify-center rounded-lg border-2 border-dashed">
-                        <p className="text-muted-foreground">Sales transaction history will be shown here.</p>
-                    </div>
                 </TabsContent>
                 <TabsContent value="commissions" className="pt-4">
                     <Card>
