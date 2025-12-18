@@ -43,6 +43,7 @@ export type GeneratedKey = {
     status: 'unused' | 'used';
     generatedDate: string;
     usedBy?: string; // e.g., company ID
+    remainingDays?: number;
 };
 
 

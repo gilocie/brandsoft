@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -80,7 +81,7 @@ export default function OfficeKeysPage() {
                                             <TableCell>
                                                 <Badge variant={isUsed ? "secondary" : "success"} className="flex items-center gap-1 w-fit">
                                                     {isUsed ? <CheckCircle className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
-                                                    {isUsed ? 'Used' : 'Unused'}
+                                                    {isUsed ? `Used (${item.remainingDays || 0} days)` : 'Unused'}
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="text-right">

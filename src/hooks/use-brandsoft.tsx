@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, createContext, useContext, ReactNode, useCallback } from 'react';
@@ -88,6 +89,8 @@ interface BrandsoftContextType {
   addCurrency: (currency: string) => void;
   // Review methods
   addReview: (review: Omit<Review, 'id'>) => void;
+  // Key activation
+  useActivationKey: (key: string, companyId: string) => boolean;
 }
 
 const BrandsoftContext = createContext<BrandsoftContextType | undefined>(undefined);
@@ -137,6 +140,35 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
 
         saveConfig({ ...config, affiliate: newAffiliateData }, { revalidate: true });
     };
+    
+    const useActivationKey = (key: string, companyId: string): boolean => {
+        if (!config?.affiliate?.generatedKeys) return false;
+
+        const keyIndex = config.affiliate.generatedKeys.findIndex(k => k.key === key && k.status === 'unused');
+        
+        if (keyIndex === -1) {
+            return false;
+        }
+
+        const newConfig = { ...config };
+        const keyData = newConfig.affiliate!.generatedKeys[keyIndex];
+
+        const freeDays = newConfig.admin?.keyFreeDays || 30;
+        const paidDays = newConfig.admin?.keyPeriodReserveDays || 30;
+        const totalDays = freeDays + paidDays;
+        
+        keyData.status = 'used';
+        keyData.usedBy = companyId;
+        keyData.remainingDays = totalDays; // Store the initial days
+
+        newConfig.affiliate!.generatedKeys[keyIndex] = keyData;
+
+        // You might want to update the company's subscription here as well
+        // For now, we just mark the key as used.
+
+        saveConfig(newConfig, { revalidate: true });
+        return true;
+    };
 
     return {
         ...companyMethods,
@@ -149,6 +181,7 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
         ...currencyMethods,
         addReview,
         addCreditPurchaseToAffiliate,
+        useActivationKey,
     };
 }
 
