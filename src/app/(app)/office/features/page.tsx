@@ -17,8 +17,6 @@ import { SecurityQuestionsDialog, type SecurityQuestionFormData } from '@/compon
 import { WithdrawalMethodDialog, type WithdrawalMethodFormData, type EditableWithdrawalMethod } from '@/components/office/dialogs/withdrawal-method-dialog';
 import { BankWithdrawalDialog, type BankWithdrawalFormData } from '@/components/office/dialogs/bank-withdrawal-dialog';
 import { BsCreditsDialog, type BsCreditsFormData } from '@/components/office/dialogs/bs-credits-dialog';
-import { GenerateKeyDialog } from '@/components/office/dialogs/generate-key-dialog';
-import { PurchaseDialog, type PlanDetails } from '@/components/purchase-dialog';
 
 export default function FeaturesPage() {
     const { config, saveConfig } = useBrandsoft();
@@ -29,8 +27,6 @@ export default function FeaturesPage() {
     const [isBsCreditsDialogOpen, setIsBsCreditsDialogOpen] = useState(false);
     const [isPinDialogOpen, setIsPinDialogOpen] = useState(false);
     const [isSecurityQuestionsOpen, setIsSecurityQuestionsOpen] = useState(false);
-    const [isGenerateKeyOpen, setIsGenerateKeyOpen] = useState(false);
-    const [purchaseDetails, setPurchaseDetails] = useState<PlanDetails | null>(null);
 
     const affiliate = config?.affiliate;
 
@@ -150,8 +146,6 @@ export default function FeaturesPage() {
         });
     };
 
-    const mwkBalance = affiliate.myWallet || 0;
-
     return (
         <div className="space-y-6">
             <h1 className="text-3xl font-bold font-headline">Features & Settings</h1>
@@ -194,21 +188,6 @@ export default function FeaturesPage() {
                                 />
                             </div>
                         </div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <div>
-                            <CardTitle>Activation Keys</CardTitle>
-                            <CardDescription>Manage your generated activation keys.</CardDescription>
-                        </div>
-                         <Button onClick={() => setIsGenerateKeyOpen(true)}>
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            New Activation Key
-                        </Button>
-                    </CardHeader>
-                    <CardContent className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
-                        <p className="text-muted-foreground">Activation key management coming soon.</p>
                     </CardContent>
                 </Card>
             </div>
@@ -321,22 +300,6 @@ export default function FeaturesPage() {
                 onSave={handleSaveSecurityQuestions}
                 currentData={affiliate.securityQuestionData}
             />
-            <GenerateKeyDialog
-                isOpen={isGenerateKeyOpen}
-                onClose={() => setIsGenerateKeyOpen(false)}
-                staffId={affiliate.staffId || ''}
-                walletBalance={mwkBalance}
-                creditBalance={affiliate.creditBalance || 0}
-            />
-            {purchaseDetails && (
-                <PurchaseDialog
-                    plan={purchaseDetails}
-                    isOpen={!!purchaseDetails}
-                    onClose={() => setPurchaseDetails(null)}
-                    onSuccess={() => { setPurchaseDetails(null); setIsGenerateKeyOpen(false); }}
-                    isTopUp
-                />
-            )}
         </div>
     );
 }
