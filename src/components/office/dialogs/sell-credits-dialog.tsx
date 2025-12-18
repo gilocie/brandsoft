@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -6,7 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormDescription, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -51,6 +52,9 @@ export const SellCreditsDialog = ({
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogTrigger asChild>
+                 <Button variant="outline" size="sm" className="w-full">Sell</Button>
+            </DialogTrigger>
             <DialogContent>
                 <DialogHeader className="flex-row justify-between items-center">
                     <div>
@@ -77,6 +81,7 @@ export const SellCreditsDialog = ({
                                                 <AmountInput
                                                     value={field.value}
                                                     onChange={field.onChange}
+                                                    prefix="BS "
                                                 />
                                             </FormControl>
                                             <FormDescription>

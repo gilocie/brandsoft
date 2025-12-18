@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useBrandsoft, type Transaction, type Affiliate, type Purchase } from '@/hooks/use-brandsoft';
@@ -352,7 +353,12 @@ export function OfficePageContent() {
                                 walletBalance={affiliate.myWallet || 0}
                                 onManualPayment={(details) => setPurchaseDetails(details)}
                              />
-                             <Button variant="outline" size="sm" className="w-full" onClick={() => setIsSellCreditsOpen(true)}>Sell</Button>
+                             <SellCreditsDialog
+                                creditBalance={affiliate.creditBalance || 0}
+                                buyPrice={config.admin?.buyPrice || 850}
+                                isOpen={isSellCreditsOpen}
+                                onOpenChange={setIsSellCreditsOpen}
+                             />
                         </div>
                     </StatCard>
                     <Card>
