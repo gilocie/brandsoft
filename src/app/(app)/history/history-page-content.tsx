@@ -7,7 +7,7 @@ import { useBrandsoft, type Purchase } from '@/hooks/use-brandsoft';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { HistoryTable } from './history-table';
-import { History as HistoryIcon, Wallet, Zap, TrendingUp, CreditCard, Trash2, Bell, AlertTriangle, RefreshCw } from 'lucide-react';
+import { History as HistoryIcon, Wallet, Zap, TrendingUp, CreditCard, Trash2, Bell, AlertTriangle, RefreshCw, Clock } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { WalletBalance } from '@/components/wallet-balance';
@@ -38,14 +38,17 @@ export function HistoryPageContent() {
         pendingTopups,
         processingTopups,
         declinedTopups,
+        periodReserve,
     } = useMemo(() => {
-        if (!config?.purchases) return { planPurchases: [], topUps: [], approvedPlans: [], pendingPlans: [], declinedPlans: [], approvedTopups: [], pendingTopups: [], processingTopups: [], declinedTopups: [] };
+        if (!config?.purchases) return { planPurchases: [], topUps: [], approvedPlans: [], pendingPlans: [], declinedPlans: [], approvedTopups: [], pendingTopups: [], processingTopups: [], declinedTopups: [], periodReserve: 0 };
 
         const allPurchases = config.purchases.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         
         const planPurchases = allPurchases.filter(p => !p.planName.toLowerCase().includes('top-up') && !p.planName.toLowerCase().includes('credit purchase'));
         const topUps = allPurchases.filter(p => p.planName.toLowerCase().includes('top-up') || p.planName.toLowerCase().includes('credit purchase'));
         
+        const totalReserve = planPurchases.reduce((sum, p) => sum + (p.periodReserve || 0), 0);
+
         return { 
             planPurchases, 
             topUps,
@@ -56,6 +59,7 @@ export function HistoryPageContent() {
             pendingTopups: topUps.filter(p => p.status === 'pending'),
             processingTopups: topUps.filter(p => p.status === 'processing'),
             declinedTopups: topUps.filter(p => p.status === 'declined'),
+            periodReserve: totalReserve,
         };
 
     }, [config?.purchases]);
@@ -241,26 +245,27 @@ export function HistoryPageContent() {
                     </CardContent>
                 </Card>
 
-                {/* Total Spent Card */}
+                {/* Period Reserve Card */}
                 <Card>
                     <CardHeader>
                         <div className="flex items-center justify-between">
-                            <CardTitle>Total Spent</CardTitle>
-                            <TrendingUp className="h-5 w-5 text-muted-foreground" />
+                            <CardTitle>Period Reserve</CardTitle>
+                            <Clock className="h-5 w-5 text-muted-foreground" />
                         </div>
                          <CardDescription>
-                           All-time successful spending.
+                           Remaining subscription days.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-bold">
-                            {currencySymbol} {totalSpent.toLocaleString()}
+                            {periodReserve} Days
                         </div>
                          <p className="text-sm text-muted-foreground mt-2">
-                           {(planPurchases.length + topUps.length)} total transactions
+                           Activates automatically each month.
                         </p>
                     </CardContent>
                 </Card>
+
                 <TopUpNotificationCard orders={declinedTopups} title="Declined Top-ups" icon={AlertTriangle} variant="destructive" buttonText="See Why" />
                 <TopUpNotificationCard orders={processingTopups} title="Processing Top-ups" icon={RefreshCw} variant="accent" buttonText="View Status" />
                 <TopUpNotificationCard orders={pendingTopups} title="Pending Top-ups" icon={Bell} variant="primary" buttonText="View Orders" />

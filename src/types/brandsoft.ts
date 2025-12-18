@@ -165,6 +165,7 @@ export type Purchase = {
         unit: 'minutes' | 'days';
     };
     customerId?: string; // Link purchase to a company
+    periodReserve?: number; // Days held in reserve
 }
 
 export type BrandsoftTemplate = {

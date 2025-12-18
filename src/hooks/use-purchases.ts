@@ -40,7 +40,6 @@ export function usePurchases(
     const now = Date.now();
     let remainingMsFromOldPlan = 0;
 
-    // Find the current active plan and calculate its remaining time in milliseconds
     const currentActivePlan = config.purchases.find(p => p.status === 'active' && p.expiresAt);
     if (currentActivePlan) {
         const expiryTime = new Date(currentActivePlan.expiresAt).getTime();
@@ -49,48 +48,48 @@ export function usePurchases(
         }
     }
 
-
     const period = purchaseToActivate.planPeriod;
     const isTestPlan = isTestPlanPeriod(period);
 
-    // Determine plan duration in minutes or days
-    const newPlanDuration = isTestPlan
-        ? TEST_PERIOD_MINUTES[period]
-        : {
-            '1 Month': 30,
-            '3 Months': 90,
-            '6 Months': 180,
-            '1 Year': 365,
-            'Once OFF': 365 * 3
-        }[period] ?? 0;
+    const planDurations: Record<string, {days: number, isTest: boolean, unit: 'days' | 'minutes'}> = {
+      '1 Month': { days: isTestPlan ? TEST_PERIOD_MINUTES['1 Month'] : 30, isTest: isTestPlan, unit: isTestPlan ? 'minutes' : 'days' },
+      '3 Months': { days: isTestPlan ? TEST_PERIOD_MINUTES['3 Months'] : 90, isTest: isTestPlan, unit: isTestPlan ? 'minutes' : 'days' },
+      '6 Months': { days: isTestPlan ? TEST_PERIOD_MINUTES['6 Months'] : 180, isTest: isTestPlan, unit: isTestPlan ? 'minutes' : 'days' },
+      '1 Year': { days: isTestPlan ? TEST_PERIOD_MINUTES['1 Year'] : 365, isTest: isTestPlan, unit: isTestPlan ? 'minutes' : 'days' },
+      'Once OFF': { days: 365 * 3, isTest: false, unit: 'days' },
+    };
 
-    const unit = isTestPlan ? 'minutes' : 'days';
-    const multiplier = isTestPlan ? 60 * 1000 : 24 * 60 * 60 * 1000; // ms in a minute or a day
+    const durationInfo = planDurations[period] || { days: 0, isTest: false, unit: 'days' };
+    let totalDaysOrMinutes = durationInfo.days;
+    let periodReserve = 0;
+    let activationDuration = totalDaysOrMinutes;
 
-    const newPlanDurationMs = newPlanDuration * multiplier;
-    const expiresAt = new Date(now + newPlanDurationMs + remainingMsFromOldPlan).toISOString();
-    
-    // Calculate total remaining time for display
-    const totalRemainingMs = newPlanDurationMs + remainingMsFromOldPlan;
-    const totalRemainingValue = isTestPlan 
-        ? Math.ceil(totalRemainingMs / (1000 * 60))
-        : Math.ceil(totalRemainingMs / (1000 * 60 * 60 * 24));
+    if (!isTestPlan && totalDaysOrMinutes > 30) {
+        activationDuration = 30;
+        periodReserve = totalDaysOrMinutes - 30;
+    }
 
+    const multiplier = durationInfo.unit === 'minutes' ? 60 * 1000 : 24 * 60 * 60 * 1000;
+    const activationMs = activationDuration * multiplier;
+    const expiresAt = new Date(now + activationMs + remainingMsFromOldPlan).toISOString();
+
+    const remainingValue = isTestPlan
+        ? Math.ceil((activationMs + remainingMsFromOldPlan) / (1000 * 60))
+        : Math.ceil((activationMs + remainingMsFromOldPlan) / (1000 * 60 * 60 * 24));
 
     const updatedPurchases = config.purchases.map(p => {
-        // Activate the new plan
         if (p.orderId === orderId) {
             return {
                 ...p,
                 status: 'active' as const,
                 date: new Date().toISOString(),
-                remainingTime: { value: totalRemainingValue, unit },
-                expiresAt
+                remainingTime: { value: remainingValue, unit: durationInfo.unit },
+                expiresAt,
+                periodReserve,
             };
         }
-        // Deactivate other active plans
         if (p.status === 'active') {
-            return { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: 'days' as 'days' } };
+            return { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: 'days' as 'days' }, periodReserve: (p.periodReserve || 0) };
         }
         return p;
     });
@@ -109,7 +108,6 @@ export function usePurchases(
           isAcknowledged: false,
         };
       }
-      // Also deactivate any active plan when one is declined
       if (p.status === 'active') {
         return { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: 'days' as 'days'} };
       }
@@ -131,42 +129,58 @@ export function usePurchases(
 
     let changed = false;
     const now = Date.now();
+    let newConfig = { ...config };
 
-    const updatedPurchases = config.purchases.map(p => {
+    const updatedPurchases = newConfig.purchases.map(p => {
         if (p.status === 'active' && p.expiresAt) {
             const expiryTime = new Date(p.expiresAt).getTime();
-            const remainingMs = expiryTime - now;
-            const isTest = isTestPlanPeriod(p.planPeriod);
-            const unit = isTest ? 'minutes' : 'days';
-
-            if (remainingMs <= 0) {
-                changed = true;
-                return { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit } };
-            }
-
-            const remaining = isTest
-                ? Math.ceil(remainingMs / (1000 * 60))         // minutes
-                : Math.ceil(remainingMs / (1000 * 60 * 60 * 24)); // days
-
-            if (p.remainingTime?.value !== remaining || p.remainingTime?.unit !== unit) {
-                changed = true;
-                return { ...p, remainingTime: { value: remaining, unit } };
+            
+            if (expiryTime <= now) {
+                // Plan expired, check for reserve
+                if (p.periodReserve && p.periodReserve > 0) {
+                    changed = true;
+                    const daysToActivate = Math.min(30, p.periodReserve);
+                    const newReserve = p.periodReserve - daysToActivate;
+                    const activationMs = daysToActivate * 24 * 60 * 60 * 1000;
+                    
+                    return {
+                        ...p,
+                        status: 'active' as const,
+                        expiresAt: new Date(now + activationMs).toISOString(),
+                        remainingTime: { value: daysToActivate, unit: 'days' as const },
+                        periodReserve: newReserve,
+                    };
+                } else {
+                    changed = true;
+                    return { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: 'days' as const } };
+                }
+            } else {
+                // Plan is still active, update remaining time
+                const remainingMs = expiryTime - now;
+                const isTest = isTestPlanPeriod(p.planPeriod);
+                const unit = isTest ? 'minutes' : 'days';
+                
+                const remaining = isTest
+                    ? Math.ceil(remainingMs / (1000 * 60))
+                    : Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
+                
+                if (p.remainingTime?.value !== remaining || p.remainingTime?.unit !== unit) {
+                    changed = true;
+                    return { ...p, remainingTime: { value: remaining, unit } };
+                }
             }
         }
         return p;
     });
 
     if (changed) {
-        saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: false });
+        saveConfig({ ...newConfig, purchases: updatedPurchases }, { redirect: false, revalidate: false });
     }
 };
 
   const downgradeToTrial = () => {
     if (!config) return;
-
-    // Remove all existing purchases
     const updatedPurchases: Purchase[] = [];
-
     saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: true });
   };
 
