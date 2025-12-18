@@ -6,7 +6,7 @@ import { useBrandsoft, type Transaction, type Affiliate, type Purchase } from '@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Copy, DollarSign, ExternalLink, ShieldCheck, ShieldOff, UserCheck, Users, Edit, CreditCard, Gift, KeyRound, Phone, TrendingUp, TrendingDown, MoreHorizontal, ArrowRight, Wallet, Banknote, Smartphone, CheckCircle, Pencil, Eye, EyeOff, Send, Bell, RefreshCw, PlusCircle, User, Loader2, BarChart } from 'lucide-react';
+import { Copy, DollarSign, ExternalLink, ShieldCheck, ShieldOff, UserCheck, Users, Edit, CreditCard, Gift, KeyRound, Phone, TrendingUp, TrendingDown, MoreHorizontal, ArrowRight, Wallet, Banknote, Smartphone, CheckCircle, Pencil, Eye, EyeOff, Send, Bell, RefreshCw, PlusCircle, User, Loader2, BarChart, ArrowLeftRight } from 'lucide-react';
 import { ClientCard } from '@/components/affiliate/client-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -57,33 +57,55 @@ const statusVariantMap: { [key: string]: 'default' | 'secondary' | 'destructive'
   active: 'success',
 };
 
-const ManageCreditsDialog = ({
+const SellCreditsDialog = ({
     creditBalance,
     isOpen,
     onOpenChange,
+    buyPrice
 }: {
     creditBalance: number,
     isOpen: boolean,
     onOpenChange: (open: boolean) => void,
+    buyPrice: number,
 }) => {
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Manage BS Credits</DialogTitle>
+                    <DialogTitle>Sell or Transfer Credits</DialogTitle>
                     <DialogDescription>
-                        View your credit balance and perform credit-related actions.
+                        Sell your BS Credits back to Brandsoft or transfer them to another affiliate.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="py-4 space-y-4">
+                <div className="py-4 space-y-6">
                     <div className="p-4 bg-muted rounded-lg text-center space-y-1">
                         <p className="text-sm text-muted-foreground">Current Credit Balance</p>
-                        <p className="text-2xl font-bold">BS {creditBalance.toLocaleString()}</p>
-                         <p className="text-xs text-muted-foreground">Value: K{(creditBalance * CREDIT_TO_MWK).toLocaleString()}</p>
+                        <p className="text-3xl font-bold">BS {creditBalance.toLocaleString()}</p>
+                         <p className="text-xs text-muted-foreground">Sell-back value: K{(creditBalance * buyPrice).toLocaleString()}</p>
                     </div>
-                    <p className="text-center text-sm text-muted-foreground">
-                        More credit management features coming soon.
-                    </p>
+
+                    <Tabs defaultValue="sell-back">
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="sell-back">Sell to Brandsoft</TabsTrigger>
+                            <TabsTrigger value="transfer">Transfer</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="sell-back" className="pt-4">
+                            <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
+                                <p className="text-sm text-muted-foreground text-center px-4">
+                                    This feature will allow you to sell your credits back at the current buy price of K{buyPrice}/credit.
+                                    Coming soon.
+                                </p>
+                            </div>
+                        </TabsContent>
+                        <TabsContent value="transfer" className="pt-4">
+                             <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
+                                <p className="text-sm text-muted-foreground text-center px-4">
+                                   This feature will allow you to transfer credits to another affiliate.
+                                   Coming soon.
+                                </p>
+                            </div>
+                        </TabsContent>
+                    </Tabs>
                 </div>
             </DialogContent>
         </Dialog>
@@ -105,7 +127,7 @@ export function OfficePageContent() {
   const [isSecurityQuestionsOpen, setIsSecurityQuestionsOpen] = useState(false);
   const [isGenerateKeyOpen, setIsGenerateKeyOpen] = useState(false);
   const [purchaseDetails, setPurchaseDetails] = useState<PlanDetails | null>(null);
-  const [isManageCreditsOpen, setIsManageCreditsOpen] = useState(false);
+  const [isSellCreditsOpen, setIsSellCreditsOpen] = useState(false);
 
   const affiliate = config?.affiliate;
 
@@ -617,7 +639,7 @@ export function OfficePageContent() {
                                 walletBalance={affiliate.myWallet || 0}
                                 onManualPayment={(details) => setPurchaseDetails(details)}
                              />
-                             <Button variant="outline" size="sm" onClick={() => setIsManageCreditsOpen(true)}>Manage</Button>
+                             <Button variant="outline" size="sm" onClick={() => setIsSellCreditsOpen(true)}>Sell</Button>
                         </div>
                     </StatCard>
                     <Card>
@@ -1016,12 +1038,12 @@ export function OfficePageContent() {
                 isTopUp
             />
         )}
-        <ManageCreditsDialog
+        <SellCreditsDialog
             creditBalance={affiliate.creditBalance || 0}
-            isOpen={isManageCreditsOpen}
-            onOpenChange={setIsManageCreditsOpen}
+            buyPrice={config.admin?.buyPrice || 850}
+            isOpen={isSellCreditsOpen}
+            onOpenChange={setIsSellCreditsOpen}
         />
     </div>
   );
 }
-
