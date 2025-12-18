@@ -60,7 +60,7 @@ export const SellCreditsDialog = ({
                         </DialogDescription>
                     </div>
                      <ToggleGroup type="single" value={activeTab} onValueChange={(value) => {if(value) setActiveTab(value)}} className="border rounded-md h-9 p-0.5 bg-muted">
-                        <ToggleGroupItem value="sell-back" className="h-full px-3 text-xs data-[state=on]:bg-background data-[state=on]:shadow-sm rounded-sm">Sell</ToggleGroupItem>
+                        <ToggleGroupItem value="sell-back" className="h-full px-3 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:shadow-sm rounded-sm">Sell</ToggleGroupItem>
                         <ToggleGroupItem value="transfer" className="h-full px-3 text-xs data-[state=on]:bg-background data-[state=on]:shadow-sm rounded-sm">Transfer</ToggleGroupItem>
                      </ToggleGroup>
                 </DialogHeader>
