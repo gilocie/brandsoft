@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -349,8 +350,8 @@ export default function DashboardPage() {
         return expiredPlans.sort((a,b) => new Date(b.expiresAt!).getTime() - new Date(a.expiresAt!).getTime())[0];
     }
     
-    // Fallback: No relevant plan, which will result in showing the Free Trial card.
-    return null;
+    // Fallback to latest purchase if nothing else matches
+    return purchases[0] || null;
   }, [config?.purchases]);
 
   if (!config) {

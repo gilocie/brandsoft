@@ -120,7 +120,7 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
 
     const getPlanCTA = (targetPlan: Plan) => {
         if (currentPlan?.planName === targetPlan) {
-            return currentPlan.status === 'active' ? "Renew Plan" : "Renew Expired Plan";
+            return currentPlan.status === 'active' ? "Current Plan" : "Renew Expired Plan";
         }
         if (!currentPlan) return "Get Started"; // On Free Trial
 

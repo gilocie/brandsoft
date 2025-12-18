@@ -37,6 +37,15 @@ export function usePurchases(
     const purchaseToActivate = config.purchases.find(p => p.orderId === orderId);
     if (!purchaseToActivate) return;
     
+    // Top-ups are simple activations without time logic.
+    if (purchaseToActivate.planName === 'Wallet Top-up' || purchaseToActivate.planName.startsWith('Credit Purchase')) {
+        const updatedPurchases = config.purchases.map(p => 
+            p.orderId === orderId ? { ...p, status: 'active' as const, date: new Date().toISOString() } : p
+        );
+        saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: true });
+        return;
+    }
+
     const now = Date.now();
     let remainingMsFromOldPlan = 0;
 
