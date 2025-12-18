@@ -1,4 +1,5 @@
 
+
 import { Page } from '@/stores/canvas-store';
 
 export type AffiliateClient = {
@@ -233,7 +234,6 @@ export type AdminSettings = {
   isReserveLocked?: boolean;
   keyPrice?: number;
   keyFreeDays?: number;
-  keyPeriodReserveDays?: number;
   keyUsageLimit?: number;
   keysSold?: number;
 };

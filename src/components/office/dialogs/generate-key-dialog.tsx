@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -189,10 +190,10 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
                               <p className="text-xs text-muted-foreground">The client starts with a free trial on any premium plan upon activation.</p>
                           </div>
                       </div>
-                      <div className="flex items-start gap-3 text-sm">
+                       <div className="flex items-start gap-3 text-sm">
                           <Calendar className="h-5 w-5 text-primary mt-0.5 shrink-0"/>
                           <div>
-                              <p className="font-medium">{config?.admin?.keyPeriodReserveDays || 30} Paid Reserve Days</p>
+                              <p className="font-medium">{config?.admin?.keyPeriodReserveDays || 0} Paid Reserve Days</p>
                               <p className="text-xs text-muted-foreground">Paid days are credited to the client's account, used automatically after the trial ends.</p>
                           </div>
                       </div>
