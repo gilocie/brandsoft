@@ -110,7 +110,6 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
           };
       }
       
-      // Add the generated key to the list
       const newKeyData: GeneratedKey = {
           key: generatedKey,
           status: 'unused',
@@ -135,7 +134,7 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
       });
       
       setPinConfirmation(null);
-      setStep(3); // Go to success step
+      setStep(3);
   };
 
   const handleManualPayment = () => {
