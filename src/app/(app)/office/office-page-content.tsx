@@ -803,16 +803,14 @@ export function OfficePageContent() {
                         <p className="text-xs text-muted-foreground mb-2">This WhatsApp number will be used for top-up notifications and affiliate queries.</p>
                         <div className="flex items-center gap-2">
                             <Input
-                                value={affiliate.phone || ''}
-                                onChange={(e) => {
-                                    if (!config || !affiliate) return;
-                                    const newAffiliateData = { ...affiliate, phone: e.target.value };
-                                    saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false });
-                                }}
-                                onBlur={() => toast({ title: "Phone Number Saved" })}
+                                readOnly
+                                value={affiliate.phone || 'Not set in profile'}
                                 icon={Phone}
-                                placeholder="Enter your WhatsApp number..."
+                                placeholder="Set in your profile..."
                             />
+                             <Button variant="secondary" size="sm" onClick={() => setIsEditDialogOpen(true)}>
+                                Edit Profile
+                            </Button>
                         </div>
                     </div>
                 </CardContent>

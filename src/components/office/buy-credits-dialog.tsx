@@ -162,10 +162,6 @@ export const BuyCreditsDialog = ({
                             <span>Available Wallet Balance:</span>
                             <span className="font-bold">K{walletBalance.toLocaleString()}</span>
                         </div>
-                         <div className="flex justify-between">
-                            <span>Admin Credit Reserve:</span>
-                            <span className="font-bold">BS {adminAvailableCredits.toLocaleString()}</span>
-                        </div>
                         <div className="flex justify-between text-primary">
                             <span>Your Purchase Price:</span>
                             <span className="font-bold">K{CREDIT_PURCHASE_PRICE}/Credit</span>
