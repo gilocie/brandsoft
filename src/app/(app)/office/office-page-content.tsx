@@ -64,6 +64,39 @@ const createSellCreditsSchema = (max: number) => z.object({
 
 type SellCreditsFormData = z.infer<ReturnType<typeof createSellCreditsSchema>>;
 
+const AmountInput = ({ value, onChange, className, prefix = 'BS ' }: { value: number; onChange: (value: number) => void; className?: string; prefix?: string; }) => {
+    const [displayValue, setDisplayValue] = useState<string>('');
+
+    useEffect(() => {
+        setDisplayValue(value > 0 ? value.toLocaleString() : '');
+    }, [value]);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const rawValue = e.target.value.replace(/,/g, '');
+        if (/^\d*\.?\d*$/.test(rawValue)) { 
+            const numValue = Number(rawValue);
+            setDisplayValue(numValue > 0 ? numValue.toLocaleString() : '');
+            onChange(numValue);
+        }
+    };
+    
+    return (
+        <div className="relative text-center">
+             <span className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 text-5xl font-bold text-muted-foreground pointer-events-none" style={{ left: `calc(50% - ${((displayValue.length + 2) / 2) * 1.5}rem)` }}>{prefix}</span>
+            <input
+                type="text"
+                value={displayValue}
+                onChange={handleInputChange}
+                className={cn(
+                    "w-full bg-transparent border-none text-5xl font-bold text-center focus:outline-none focus:ring-0",
+                    className
+                )}
+                placeholder="0"
+            />
+        </div>
+    );
+};
+
 
 const SellCreditsDialog = ({
     creditBalance,
@@ -113,35 +146,33 @@ const SellCreditsDialog = ({
                 </DialogHeader>
                 <div className="py-4">
                      {activeTab === 'sell-back' && (
-                       <div className="grid md:grid-cols-2 gap-6 items-start">
-                           <div className="p-4 bg-muted rounded-lg text-center space-y-2 h-full flex flex-col justify-center">
-                                <p className="text-sm text-muted-foreground">Current Credit Balance</p>
-                                <p className="text-3xl font-bold">BS {creditBalance.toLocaleString()}</p>
-                                 <p className="text-xs text-muted-foreground">Sell-back value: K{(creditBalance * buyPrice).toLocaleString()}</p>
-                            </div>
-                           <Form {...form}>
-                                <form onSubmit={form.handleSubmit(handleSellRequest)} className="space-y-4">
-                                     <FormField
-                                        control={form.control}
-                                        name="amount"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Credits to Sell</FormLabel>
-                                                <FormControl>
-                                                    <Input type="number" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <div className="p-4 bg-primary/10 rounded-lg text-center space-y-1 border border-primary/20">
-                                        <p className="text-sm text-primary/80">You Will Receive</p>
-                                        <p className="text-2xl font-bold text-primary">K{cashValue.toLocaleString()}</p>
-                                    </div>
-                                    <Button type="submit" className="w-full">Request Withdrawal</Button>
-                                </form>
-                            </Form>
-                       </div>
+                       <Form {...form}>
+                            <form onSubmit={form.handleSubmit(handleSellRequest)} className="space-y-4">
+                               <FormField
+                                    control={form.control}
+                                    name="amount"
+                                    render={({ field }) => (
+                                        <FormItem className="text-center">
+                                            <FormControl>
+                                                <AmountInput
+                                                    value={field.value}
+                                                    onChange={field.onChange}
+                                                />
+                                            </FormControl>
+                                            <FormDescription>
+                                                 Your balance: <span className="font-bold">BS {creditBalance.toLocaleString()}</span>
+                                            </FormDescription>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <div className="p-4 bg-primary/10 rounded-lg text-center space-y-1 border border-primary/20">
+                                    <p className="text-sm text-primary/80">You Will Receive</p>
+                                    <p className="text-2xl font-bold text-primary">K{cashValue.toLocaleString()}</p>
+                                </div>
+                                <Button type="submit" className="w-full">Request Withdrawal</Button>
+                            </form>
+                        </Form>
                     )}
                     {activeTab === 'transfer' && (
                          <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
