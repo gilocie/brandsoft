@@ -61,19 +61,19 @@ export function usePurchases(
 
     let period = purchaseToActivate.planPeriod;
     let periodReserve = purchaseToActivate.periodReserve || 0;
+    let totalInitialDays = 0;
 
     // Logic for new key activation
     if (purchaseToActivate.planName.toLowerCase().includes('key')) {
         const freeDays = config.admin?.keyFreeDays || 30;
-        const reserveDays = config.admin?.keyPeriodReserveDays || 30;
+        const paidDays = config.admin?.keyPeriodReserveDays || 30;
+        
+        // Combine free and paid days for the initial period
+        totalInitialDays = freeDays + paidDays;
         
         // Use a temporary period label for calculation
-        period = `${freeDays} days (trial)`;
-        
-        // Add the reserve days to any existing reserve
-        periodReserve += reserveDays;
+        period = `${totalInitialDays} days`;
     }
-
 
     const isTestPlan = isTestPlanPeriod(period);
 
@@ -84,23 +84,22 @@ export function usePurchases(
       '1 Year': { days: isTestPlan ? TEST_PERIOD_MINUTES['1 Year'] : 365, isTest: isTestPlan, unit: isTestPlan ? 'minutes' : 'days' },
       'Once OFF': { days: 365 * 3, isTest: false, unit: 'days' },
     };
-
+    
     let durationInfo = planDurations[period];
 
-    // Handle dynamic trial periods from keys
-    if (!durationInfo && period.includes('days (trial)')) {
-        const days = parseInt(period, 10) || 30;
+    if (!durationInfo && period.includes('days')) {
+        const days = parseInt(period, 10) || 0;
         durationInfo = { days, isTest: false, unit: 'days' };
     } else if (!durationInfo) {
         durationInfo = { days: 0, isTest: false, unit: 'days' };
     }
 
-    let totalDaysOrMinutes = durationInfo.days;
-    let activationDuration = totalDaysOrMinutes;
+    let activationDuration = durationInfo.days;
 
-    if (!isTestPlan && totalDaysOrMinutes > 30 && !purchaseToActivate.planName.toLowerCase().includes('key')) {
+    // The logic to split into reserve days is now removed for key activations
+    if (!isTestPlan && !purchaseToActivate.planName.toLowerCase().includes('key') && activationDuration > 30) {
+        periodReserve += (activationDuration - 30);
         activationDuration = 30;
-        periodReserve += (totalDaysOrMinutes - 30);
     }
     
     const multiplier = durationInfo.unit === 'minutes' ? 60 * 1000 : 24 * 60 * 60 * 1000;
@@ -123,7 +122,8 @@ export function usePurchases(
             };
         }
         if (p.status === 'active') {
-            return { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: 'days' as 'days' }, periodReserve: (p.periodReserve || 0) + periodReserve };
+            // Set old active plan to inactive, but preserve its reserve
+            return { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: 'days' as 'days' } };
         }
         return p;
     });

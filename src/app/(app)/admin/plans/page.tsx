@@ -44,7 +44,7 @@ type NewPlanFormData = z.infer<typeof newPlanSchema>;
 const activationKeySchema = z.object({
   keyPrice: z.coerce.number().min(0, "Price must be non-negative."),
   keyFreeDays: z.coerce.number().int().min(0, "Free days must be a non-negative integer."),
-  keyPeriodReserveDays: z.coerce.number().int().min(0, "Reserve days must be a non-negative integer."),
+  keyPeriodReserveDays: z.coerce.number().int().min(0, "Paid days must be a non-negative integer."),
   keyUsageLimit: z.coerce.number().int().min(1, "Usage limit must be at least 1."),
 });
 type ActivationKeyFormData = z.infer<typeof activationKeySchema>;
@@ -335,7 +335,7 @@ export default function AdminPlansPage() {
                                             <FormItem><FormLabel>Free Trial Days</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormDescription>Number of free premium days a new client receives.</FormDescription><FormMessage /></FormItem>
                                         )} />
                                         <FormField control={activationKeyForm.control} name="keyPeriodReserveDays" render={({ field }) => (
-                                            <FormItem><FormLabel>Period Reserve Days</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormDescription>Paid days credited to client account after trial.</FormDescription><FormMessage /></FormItem>
+                                            <FormItem><FormLabel>Paid Days</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormDescription>Paid days credited to client account after trial.</FormDescription><FormMessage /></FormItem>
                                         )} />
                                         <FormField control={activationKeyForm.control} name="keyUsageLimit" render={({ field }) => (
                                             <FormItem><FormLabel>Key Usage Limit</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormDescription>How many times a single key can be used.</FormDescription><FormMessage /></FormItem>
@@ -397,4 +397,3 @@ export default function AdminPlansPage() {
         </div>
     );
 }
-
