@@ -18,24 +18,19 @@ import { cn } from '@/lib/utils';
 import { useBrandsoft, type Purchase } from '@/hooks/use-brandsoft';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { PurchaseDialog } from './purchase-dialog';
+import { PurchaseDialog, type PlanDetails } from './purchase-dialog';
 import { useRouter } from 'next/navigation';
 
-type Plan = 'Free Trial' | 'Standard' | 'Pro' | 'Enterprise';
-export type PlanDetails = {
-    name: Plan;
-    price: string;
-    period: string;
-}
+type Plan = 'Free Trial' | 'Standard' | 'Pro' | 'Enterprise' | 'Credit Purchase'; // Allow Credit Purchase
 
-const planLevels: Record<Plan, number> = {
+const planLevels: Record<string, number> = {
   'Free Trial': 0,
   'Standard': 1,
   'Pro': 2,
   'Enterprise': 3,
 };
 
-const PlanCard = ({ title, price, features, isCurrent = false, cta, className, periodLabel, onBuyClick }: { title: Plan, price: string, features: string[], isCurrent?: boolean, cta: string, className?: string, periodLabel?: string, onBuyClick: () => void }) => (
+const PlanCard = ({ title, price, features, isCurrent = false, cta, className, periodLabel, onBuyClick }: { title: string, price: string, features: string[], isCurrent?: boolean, cta: string, className?: string, periodLabel?: string, onBuyClick: () => void }) => (
     <Card className={cn("flex flex-col h-full", isCurrent && "ring-2 ring-primary shadow-md", className)}>
         <CardHeader className="p-4 pb-2">
             <CardTitle className="flex items-center justify-between">
@@ -114,18 +109,18 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
     const proPrice = useMemo(() => calculatePrice('pro', selectedPeriod), [selectedPeriod, currencyCode]);
     const selectedPeriodLabel = periods.find(p => p.value === selectedPeriod)?.label;
     
-    const handleBuyClick = (planName: Plan, price: string, period: string) => {
+    const handleBuyClick = (planName: string, price: string, period: string) => {
         setPurchasePlan({ name: planName, price, period });
     };
 
-    const getPlanCTA = (targetPlan: Plan) => {
+    const getPlanCTA = (targetPlan: string) => {
         if (currentPlan?.planName === targetPlan) {
             return currentPlan.status === 'active' ? "Current Plan" : "Renew Expired Plan";
         }
         if (!currentPlan) return "Get Started"; // On Free Trial
 
         const currentLevel = planLevels[currentPlan.planName as Plan] ?? 0;
-        const targetLevel = planLevels[targetPlan];
+        const targetLevel = planLevels[targetPlan as Plan];
 
         if(targetLevel < currentLevel) {
             return `Downgrade to ${targetPlan}`;
@@ -232,3 +227,5 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
         </>
     );
 }
+
+    

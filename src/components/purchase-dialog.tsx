@@ -23,9 +23,8 @@ import { Checkbox } from './ui/checkbox';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
 
-type Plan = 'Free Trial' | 'Standard' | 'Pro' | 'Enterprise';
 export type PlanDetails = {
-    name: Plan;
+    name: string; // Changed from Plan type to string to be more flexible
     price: string;
     period: string;
 }
@@ -384,3 +383,5 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
         </Dialog>
     );
 }
+
+    
