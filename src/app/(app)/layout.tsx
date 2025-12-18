@@ -69,6 +69,7 @@ const mainNavItems = [
   { href: '/office/keys', icon: KeyRound, label: 'Keys', enabledKey: null, roles: ['staff'] },
   { href: '/admin', icon: LayoutDashboard, label: 'Dashboard', enabledKey: null, roles: ['admin'] },
   { href: '/admin/staff', icon: Users, label: 'Staff', enabledKey: null, roles: ['admin'] },
+  { href: '/admin/plans', icon: Briefcase, label: 'Plans', enabledKey: null, roles: ['admin'] },
   { href: '/companies', icon: Users, label: 'Companies', enabledKey: null, roles: ['admin'] },
   { href: '/invoices', icon: FileText, label: 'Invoices', enabledKey: 'invoice', roles: ['client'] },
   { href: '/quotations', icon: FileBarChart2, label: 'Quotations', enabledKey: 'quotation', roles: ['client'] },
