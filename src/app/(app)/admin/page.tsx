@@ -114,7 +114,7 @@ export default function AdminPage() {
     }, [distributionReserve, watchedMaxCredits]);
     
     const soldCredits = adminSettings.soldCredits || 0;
-    const netCreditProfit = soldCredits * ((adminSettings.sellPrice || 0) - (adminSettings.buyPrice || 0));
+    const netCreditRevenue = soldCredits * (adminSettings.sellPrice || 0);
 
     const revenueFromKeys = (adminSettings.keysSold || 0) * (adminSettings.keyPrice || 0);
     
@@ -128,7 +128,7 @@ export default function AdminPage() {
             }, 0);
     }, [config?.purchases]);
 
-    const combinedRevenue = revenueFromKeys + revenueFromPlans;
+    const combinedRevenue = (adminSettings.revenueFromKeys || 0) + (adminSettings.revenueFromPlans || 0);
 
 
     const onCreditSettingsSubmit = (data: CreditSettingsFormData) => {
@@ -294,6 +294,9 @@ export default function AdminPage() {
             ...config.admin,
             soldCredits: 0,
             availableCredits: 0,
+            revenueFromKeys: 0,
+            revenueFromPlans: 0,
+            keysSold: 0,
         };
 
         let newAffiliateData = config.affiliate;
@@ -306,10 +309,14 @@ export default function AdminPage() {
                 totalSales: 0,
                 unclaimedCommission: 0,
                 bonus: 0,
+                generatedKeys: [],
             };
         }
 
-        saveConfig({ ...config, admin: newAdminSettings, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
+        const updatedPurchases = (config.purchases || []).filter(p => !p.planName.toLowerCase().includes('key'));
+
+
+        saveConfig({ ...config, admin: newAdminSettings, affiliate: newAffiliateData, purchases: updatedPurchases }, { redirect: false, revalidate: true });
         toast({ title: 'Financial Records Reset!', description: 'All credit sales and affiliate balances have been reset.' });
         setIsResetFinancialsOpen(false);
     };
@@ -338,9 +345,9 @@ export default function AdminPage() {
                     icon={TrendingUp} 
                  />
                  <StatCard 
-                    title="Net Credit Profit" 
-                    value={`K${netCreditProfit.toLocaleString()}`} 
-                    description="Profit from selling credits" 
+                    title="Net Credit Revenues" 
+                    value={`K${netCreditRevenue.toLocaleString()}`} 
+                    description="Total revenue from credit sales" 
                     icon={BarChart} 
                 />
                  <StatCard 
