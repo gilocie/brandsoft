@@ -63,8 +63,9 @@ import { Label } from '@/components/ui/label';
 const mainNavItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', enabledKey: null, roles: ['client'] },
   { href: '/history', icon: Wallet, label: 'Wallet', enabledKey: null, roles: ['client'] },
-  { href: '/office', icon: User, label: 'Dashboard', enabledKey: null, roles: ['staff'] },
-  { href: '/admin', icon: Shield, label: 'Dashboard', enabledKey: null, roles: ['admin'] },
+  { href: '/office', icon: LayoutDashboard, label: 'Dashboard', enabledKey: null, roles: ['staff'] },
+  { href: '/office/clients', icon: Users, label: 'Clients', enabledKey: null, roles: ['staff'] },
+  { href: '/admin', icon: LayoutDashboard, label: 'Dashboard', enabledKey: null, roles: ['admin'] },
   { href: '/companies', icon: Users, label: 'Companies', enabledKey: null, roles: ['admin'] },
   { href: '/invoices', icon: FileText, label: 'Invoices', enabledKey: 'invoice', roles: ['client'] },
   { href: '/quotations', icon: FileBarChart2, label: 'Quotations', enabledKey: 'quotation', roles: ['client'] },
@@ -141,9 +142,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const nonClientPages = ['/admin', '/office'];
-    if (role === 'admin' && pathname !== '/admin') {
+    if (role === 'admin' && !pathname.startsWith('/admin')) {
       router.push('/admin');
-    } else if (role === 'staff' && pathname !== '/office') {
+    } else if (role === 'staff' && !pathname.startsWith('/office')) {
       router.push('/office');
     } else if (role === 'client' && (nonClientPages.some(p => pathname.startsWith(p)) || pathname === '/')) {
       router.push('/dashboard');
@@ -187,7 +188,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-2">
             {config ? (
               (role === 'admin' || role === 'staff') ? (
-                  <Link href="/admin" className="flex items-center gap-2 text-sidebar-foreground">
+                  <Link href={role === 'admin' ? '/admin' : '/office'} className="flex items-center gap-2 text-sidebar-foreground">
                       <Avatar className="h-8 w-8">
                            <AvatarFallback>
                                 <BriefcaseBusiness className="h-5 w-5" />
@@ -352,3 +353,5 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   );
 }
+
+    

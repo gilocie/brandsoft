@@ -678,7 +678,6 @@ export function OfficePageContent() {
        <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="clients">Clients ({syncedClients.length})</TabsTrigger>
             <TabsTrigger value="transactions">Transactions</TabsTrigger>
             <TabsTrigger value="invitations">Invitations</TabsTrigger>
             <TabsTrigger value="my-features">My Features</TabsTrigger>
@@ -802,20 +801,6 @@ export function OfficePageContent() {
                 </Card>
             </div>
         </TabsContent>
-         <TabsContent value="clients" className="pt-6">
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {syncedClients.length > 0 ? (
-                    syncedClients.map(client => (
-                        <ClientCard key={client.id} client={client} />
-                    ))
-                ) : (
-                    <div className="col-span-full flex flex-col items-center justify-center h-40 border-2 border-dashed rounded-lg text-muted-foreground">
-                        <p>No clients yet.</p>
-                        <p className="text-sm">Register a company with your Staff ID to see them here.</p>
-                    </div>
-                )}
-            </div>
-        </TabsContent>
          <TabsContent value="transactions" className="pt-6">
             <Tabs defaultValue="top-ups">
                 <TabsList>
@@ -919,15 +904,13 @@ export function OfficePageContent() {
                         )}
                     </Card>
                 </TabsContent>
-            </Tabs>
-        </TabsContent>
-        <TabsContent value="invitations" className="pt-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Your Invitation Link</CardTitle>
-                    <CardDescription>Share this link to invite new clients to BrandSoft. You'll earn commissions on their purchases.</CardDescription>
-                </CardHeader>
-                <CardContent>
+                <TabsContent value="invitations" className="pt-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Your Invitation Link</CardTitle>
+                            <CardDescription>Share this link to invite new clients to BrandSoft. You'll earn commissions on their purchases.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
                      <div className="flex items-center gap-2">
                         <Input value={affiliate.affiliateLink} readOnly className="h-9 text-sm" />
                         <Button size="sm" variant="outline" onClick={() => navigator.clipboard.writeText(affiliate.affiliateLink)}>
@@ -1123,3 +1106,5 @@ export function OfficePageContent() {
     </div>
   );
 }
+
+    
