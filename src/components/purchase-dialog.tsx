@@ -7,12 +7,13 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Loader2, UploadCloud, FileCheck, Building2, Smartphone, Banknote, Wallet } from 'lucide-react';
 import { PlanDetails } from './manage-plan-dialog';
-import { useBrandsoft, type Affiliate, type WithdrawalMethodDetails, type BankDetails } from '@/hooks/use-brandsoft';
+import { useBrandsoft } from '@/hooks/use-brandsoft';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -311,25 +312,27 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                         <div className="space-y-4">
                             <h3 className="font-semibold">Payment Method</h3>
                              <Accordion type="single" collapsible value={selectedPayment || ""} onValueChange={setSelectedPayment}>
-                                <AccordionItem value="wallet">
-                                     <AccordionTrigger
-                                        className={cn(
-                                            "hover:no-underline p-3 rounded-md",
-                                            selectedPayment === 'wallet' && "bg-primary/10 text-primary hover:bg-primary/20",
-                                        )}
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <Wallet className="h-5 w-5"/>
-                                            <span>Pay with Wallet</span>
-                                        </div>
-                                    </AccordionTrigger>
-                                     <AccordionContent className="p-3 space-y-2 text-sm border-t">
-                                        <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Available Balance:</span>
-                                            <span className="font-bold">K{balance.toLocaleString()}</span>
-                                        </div>
-                                    </AccordionContent>
-                                </AccordionItem>
+                                {!isTopUp && (
+                                    <AccordionItem value="wallet">
+                                        <AccordionTrigger
+                                            className={cn(
+                                                "hover:no-underline p-3 rounded-md",
+                                                selectedPayment === 'wallet' && "bg-primary/10 text-primary hover:bg-primary/20",
+                                            )}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <Wallet className="h-5 w-5"/>
+                                                <span>Pay with Wallet</span>
+                                            </div>
+                                        </AccordionTrigger>
+                                        <AccordionContent className="p-3 space-y-2 text-sm border-t">
+                                            <div className="flex justify-between">
+                                                <span className="text-muted-foreground">Available Balance:</span>
+                                                <span className="font-bold">K{balance.toLocaleString()}</span>
+                                            </div>
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                )}
 
                                 {paymentMethods.map(method => {
                                     const Icon = iconMap[method.id] || iconMap.default;
