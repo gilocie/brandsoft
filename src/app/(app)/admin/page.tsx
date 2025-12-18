@@ -116,19 +116,7 @@ export default function AdminPage() {
     const soldCredits = adminSettings.soldCredits || 0;
     const netCreditRevenue = soldCredits * (adminSettings.sellPrice || 0);
 
-    const revenueFromKeys = (adminSettings.keysSold || 0) * (adminSettings.keyPrice || 0);
-    
-    const revenueFromPlans = useMemo(() => {
-        if (!config?.purchases) return 0;
-        return config.purchases
-            .filter(p => p.status === 'active' && !p.planName.toLowerCase().includes('key') && !p.planName.toLowerCase().includes('credit'))
-            .reduce((sum, p) => {
-                const price = parseFloat(p.planPrice.replace(/[^0-9.-]+/g,""));
-                return sum + (isNaN(price) ? 0 : price);
-            }, 0);
-    }, [config?.purchases]);
-
-    const combinedRevenue = revenueFromKeys + revenueFromPlans;
+    const combinedRevenue = (adminSettings.revenueFromKeys || 0) + (adminSettings.revenueFromPlans || 0);
 
 
     const onCreditSettingsSubmit = (data: CreditSettingsFormData) => {
