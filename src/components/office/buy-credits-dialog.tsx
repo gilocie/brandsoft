@@ -132,7 +132,7 @@ export const BuyCreditsDialog = ({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button>Buy Credits</Button>
+        <Button size="sm" className="w-full mt-2">Buy Credits</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
