@@ -15,7 +15,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { MoreHorizontal, PackagePlus, Briefcase, CheckCircle, Pencil, Trash2 } from 'lucide-react';
+import { MoreHorizontal, PackagePlus, Briefcase, CheckCircle, Pencil, Trash2, KeyRound } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
@@ -103,6 +103,7 @@ export default function AdminPlansPage() {
                 <TabsList>
                     <TabsTrigger value="plans-list">Plans</TabsTrigger>
                     <TabsTrigger value="plan-features">Plan Features</TabsTrigger>
+                    <TabsTrigger value="activation-keys">Activation Key Options</TabsTrigger>
                 </TabsList>
                 <TabsContent value="plans-list" className="pt-4">
                     <Card>
@@ -238,6 +239,19 @@ export default function AdminPlansPage() {
                                         <Switch />
                                     </div>
                                 ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                <TabsContent value="activation-keys" className="pt-4">
+                     <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><KeyRound className="h-5 w-5" />Activation Key Options</CardTitle>
+                            <CardDescription>Configure the benefits associated with new client activation keys.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                             <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
+                                <p className="text-muted-foreground">Activation key settings coming soon.</p>
                             </div>
                         </CardContent>
                     </Card>
