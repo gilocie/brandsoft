@@ -41,7 +41,7 @@ import {
   ChevronDown,
   KeyRound,
   User,
-  Store,
+  Building,
   MessageSquareQuote,
   Bell,
   Shield,
@@ -70,7 +70,7 @@ const mainNavItems = [
   { href: '/quotations', icon: FileBarChart2, label: 'Quotations', enabledKey: 'quotation', roles: ['client'] },
   { href: '/quotation-requests', icon: MessageSquareQuote, label: 'Requests', enabledKey: 'quotation', roles: ['client'] },
   { href: '/products', icon: Package, label: 'Products', enabledKey: 'invoice', roles: ['client'] },
-  { href: '/marketplace', icon: Store, label: 'Suppliers', enabledKey: null, roles: ['client'] },
+  { href: '/marketplace', icon: Building, label: 'City Market', enabledKey: null, roles: ['client', 'staff', 'admin'] },
 ];
 
 const upcomingNavItems = [
