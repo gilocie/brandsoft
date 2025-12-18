@@ -346,15 +346,18 @@ export function OfficePageContent() {
     };
 
     const handleTogglePaymentMethod = (method: 'airtel' | 'tnm' | 'bank', enabled: boolean) => {
-        if (!config || !affiliate?.withdrawalMethods) return;
-
+        if (!config || !affiliate) return;
+    
         const newAffiliateData = { ...affiliate };
+        if (!newAffiliateData.withdrawalMethods) {
+            newAffiliateData.withdrawalMethods = {};
+        }
+    
         const methodDetails = newAffiliateData.withdrawalMethods[method];
         
         if(methodDetails) {
-            (methodDetails as any).isClientPaymentMethod = enabled;
+            methodDetails.isClientPaymentMethod = enabled;
         } else {
-             // If method details don't exist, we can't set this property.
             toast({
                 title: "Setup Required",
                 description: `Please set up your ${method.toUpperCase()} details before enabling it for clients.`,
@@ -364,7 +367,7 @@ export function OfficePageContent() {
         }
         
         saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
-
+    
         toast({
             title: "Payment Method Updated",
             description: `${method.toUpperCase()} is now ${enabled ? 'enabled' : 'disabled'} for client payments.`

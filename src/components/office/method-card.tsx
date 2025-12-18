@@ -10,7 +10,7 @@ import { Label } from '../ui/label';
 import { cn } from '@/lib/utils';
 
 interface MethodCardProps {
-    method?: EditableWithdrawalMethod | 'bsCredits';
+    method?: EditableWithdrawalMethod | 'bsCredits' | 'bank';
     name: string;
     description: string;
     icon: React.ElementType;

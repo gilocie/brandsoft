@@ -12,7 +12,6 @@ import {
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Loader2, UploadCloud, FileCheck, Building2, Smartphone, Banknote, Wallet } from 'lucide-react';
-import { PlanDetails } from './manage-plan-dialog';
 import { useBrandsoft } from '@/hooks/use-brandsoft';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -23,6 +22,13 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Checkbox } from './ui/checkbox';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
+
+type Plan = 'Free Trial' | 'Standard' | 'Pro' | 'Enterprise';
+export type PlanDetails = {
+    name: Plan;
+    price: string;
+    period: string;
+}
 
 interface PurchaseDialogProps {
   plan: PlanDetails;
