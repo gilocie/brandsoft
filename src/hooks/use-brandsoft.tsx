@@ -161,7 +161,8 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       for (const key in obj) {
         if (Object.prototype.hasOwnProperty.call(obj, key)) {
           const value = obj[key];
-          if (typeof value === 'string' && value.startsWith('data:image/')) {
+          // Critically, we preserve the `profilePic` to ensure it is saved.
+          if (typeof value === 'string' && value.startsWith('data:image/') && key !== 'profilePic') {
             // Keep the property with an empty string or a placeholder
             newObj[key] = ''; 
           } else {
