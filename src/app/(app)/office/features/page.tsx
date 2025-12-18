@@ -151,7 +151,7 @@ export default function FeaturesPage() {
             <h1 className="text-3xl font-bold font-headline">Features & Settings</h1>
             <p className="text-muted-foreground">Manage your affiliate account settings, keys, and security.</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card>
+                 <Card className="md:col-span-2">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><KeyRound className="h-5 w-5" /> My Features</CardTitle>
                         <CardDescription>Unique codes and features for your affiliate account.</CardDescription>
