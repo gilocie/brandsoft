@@ -376,7 +376,7 @@ export default function AdminPage() {
     return (
         <div className="container mx-auto space-y-8">
             <div>
-                <h1 className="text-3xl font-bold font-headline">Admin</h1>
+                <h1 className="text-3xl font-bold font-headline">Admin Dashboard</h1>
                 <p className="text-muted-foreground">Manage your team and their withdrawal requests.</p>
             </div>
 
@@ -406,30 +406,12 @@ export default function AdminPage() {
                 <StatCard title="Pending Withdrawals" value={`K${totalPendingAmount.toLocaleString()}`} icon={Clock} />
             </div>
 
-             <Tabs defaultValue="staff" className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
-                    <TabsTrigger value="staff">Staff</TabsTrigger>
+             <Tabs defaultValue="admin-clients" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="admin-clients">Admin Clients ({adminClients.length})</TabsTrigger>
                     <TabsTrigger value="plans">Plans</TabsTrigger>
                     <TabsTrigger value="options">Options</TabsTrigger>
                 </TabsList>
-                <TabsContent value="staff" className="pt-6">
-                     <Card>
-                        <CardHeader>
-                            <CardTitle>Affiliates</CardTitle>
-                            <CardDescription>Your registered affiliate partners.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                            {affiliates.map(affiliate => (
-                                <AffiliateCard 
-                                    key={affiliate.username} 
-                                    affiliate={affiliate} 
-                                    onSelectAction={(action) => handleSelectAction(action, affiliate)}
-                                />
-                            ))}
-                        </CardContent>
-                    </Card>
-                </TabsContent>
                  <TabsContent value="admin-clients" className="pt-6">
                     <Card>
                         <CardHeader>
