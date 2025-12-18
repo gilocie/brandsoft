@@ -234,8 +234,12 @@ export type AdminSettings = {
   isReserveLocked?: boolean;
   keyPrice?: number;
   keyFreeDays?: number;
+  keyPeriodReserveDays?: number;
   keyUsageLimit?: number;
   keysSold?: number;
+  trendingPlan?: string;
+  revenueFromKeys?: number;
+  revenueFromPlans?: number;
 };
 
 export type BrandsoftConfig = {

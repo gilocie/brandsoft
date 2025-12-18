@@ -260,6 +260,9 @@ export function useSetup(
     keyPeriodReserveDays: 30,
     keyUsageLimit: 1,
     keysSold: 0,
+    trendingPlan: 'None',
+    revenueFromKeys: 0,
+    revenueFromPlans: 0,
   };
 
 

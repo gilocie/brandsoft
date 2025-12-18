@@ -124,6 +124,7 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
 
       if(newConfig.admin) {
         newConfig.admin.keysSold = (newConfig.admin.keysSold || 0) + 1;
+        newConfig.admin.revenueFromKeys = (newConfig.admin.revenueFromKeys || 0) + (config.admin?.keyPrice || 0);
       }
 
       saveConfig(newConfig, { redirect: false, revalidate: true });
@@ -311,7 +312,11 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
           onClose={handleClose}
           onSuccess={() => { 
               if (config && config.admin) {
-                saveConfig({...config, admin: {...config.admin, keysSold: (config.admin.keysSold || 0) + 1}}, {redirect: false});
+                saveConfig({...config, admin: {
+                    ...config.admin, 
+                    keysSold: (config.admin.keysSold || 0) + 1,
+                    revenueFromKeys: (config.admin.revenueFromKeys || 0) + (config.admin.keyPrice || 0),
+                }}, {redirect: false});
               }
               setStep(3); 
               setPurchaseDetails(null); 

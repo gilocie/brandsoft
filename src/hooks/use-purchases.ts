@@ -32,11 +32,13 @@ export function usePurchases(
   };
 
   const activatePurchaseOrder = (orderId: string) => {
-    if (!config?.purchases) return;
+    if (!config?.purchases || !config.admin) return;
 
     const purchaseToActivate = config.purchases.find(p => p.orderId === orderId);
     if (!purchaseToActivate) return;
     
+    let newAdminSettings = { ...config.admin };
+
     // Top-ups are simple activations without time logic.
     if (purchaseToActivate.planName === 'Wallet Top-up' || purchaseToActivate.planName.startsWith('Credit Purchase')) {
         const updatedPurchases = config.purchases.map(p => 
@@ -109,7 +111,7 @@ export function usePurchases(
         ? Math.ceil((activationMs + remainingMsFromOldPlan) / (1000 * 60))
         : Math.ceil((activationMs + remainingMsFromOldPlan) / (1000 * 60 * 60 * 24));
 
-    const updatedPurchases = config.purchases.map(p => {
+    let updatedPurchases = config.purchases.map(p => {
         if (p.orderId === orderId) {
             return {
                 ...p,
@@ -126,7 +128,27 @@ export function usePurchases(
         return p;
     });
 
-    saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: true });
+    // Update revenue and trending plan stats
+    const newlyActivatedPurchase = updatedPurchases.find(p => p.orderId === orderId);
+    if (newlyActivatedPurchase && !newlyActivatedPurchase.planName.toLowerCase().includes('key')) {
+        const price = parseFloat(newlyActivatedPurchase.planPrice.replace(/[^0-9.-]+/g, ""));
+        if (!isNaN(price)) {
+            newAdminSettings.revenueFromPlans = (newAdminSettings.revenueFromPlans || 0) + price;
+        }
+
+        // Update trending plan
+        const activePlanPurchases = updatedPurchases.filter(p => p.status === 'active' && !p.planName.toLowerCase().includes('key'));
+        const planCounts = activePlanPurchases.reduce((acc, p) => {
+            acc[p.planName] = (acc[p.planName] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
+
+        const trending = Object.keys(planCounts).sort((a,b) => planCounts[b] - planCounts[a]);
+        newAdminSettings.trendingPlan = trending[0] || 'None';
+    }
+
+
+    saveConfig({ ...config, purchases: updatedPurchases, admin: newAdminSettings }, { redirect: false, revalidate: true });
 };
   
   const declinePurchaseOrder = (orderId: string, reason: string) => {
@@ -245,4 +267,3 @@ export function usePurchases(
     downgradeToTrial,
   };
 }
-

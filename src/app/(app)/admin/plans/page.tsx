@@ -45,6 +45,7 @@ type NewPlanFormData = z.infer<typeof newPlanSchema>;
 const activationKeySchema = z.object({
   keyPrice: z.coerce.number().min(0, "Price must be non-negative."),
   keyFreeDays: z.coerce.number().int().min(0, "Free days must be a non-negative integer."),
+  keyPeriodReserveDays: z.coerce.number().int().min(0, "Reserve days must be a non-negative integer."),
   keyUsageLimit: z.coerce.number().int().min(1, "Usage limit must be at least 1."),
 });
 type ActivationKeyFormData = z.infer<typeof activationKeySchema>;
@@ -68,6 +69,7 @@ export default function AdminPlansPage() {
         defaultValues: {
             keyPrice: adminSettings?.keyPrice || 5000,
             keyFreeDays: adminSettings?.keyFreeDays || 30,
+            keyPeriodReserveDays: adminSettings?.keyPeriodReserveDays || 30,
             keyUsageLimit: adminSettings?.keyUsageLimit || 1,
         }
     });
@@ -77,6 +79,7 @@ export default function AdminPlansPage() {
             activationKeyForm.reset({
                 keyPrice: adminSettings.keyPrice || 5000,
                 keyFreeDays: adminSettings.keyFreeDays || 30,
+                keyPeriodReserveDays: adminSettings.keyPeriodReserveDays || 30,
                 keyUsageLimit: adminSettings.keyUsageLimit || 1,
             });
         }
@@ -135,31 +138,10 @@ export default function AdminPlansPage() {
         });
     };
 
-    const trendingPlan = useMemo(() => {
-        if (!config?.purchases || config.purchases.length === 0) return 'None';
-        const planCounts = config.purchases.reduce((acc, p) => {
-            if (p.planName && p.status === 'active') {
-                acc[p.planName] = (acc[p.planName] || 0) + 1;
-            }
-            return acc;
-        }, {} as Record<string, number>);
-        const trending = Object.keys(planCounts).sort((a,b) => planCounts[b] - planCounts[a]);
-        return trending[0] || 'None';
-    }, [config?.purchases]);
-
+    const trendingPlan = adminSettings?.trendingPlan || 'None';
     const keysSold = adminSettings?.keysSold || 0;
-    const keyPrice = adminSettings?.keyPrice || 0;
-    const totalFromKeys = keysSold * keyPrice;
-
-    const totalFromPlans = useMemo(() => {
-        if (!config?.purchases) return 0;
-        return config.purchases
-            .filter(p => p.status === 'active' && !p.planName.toLowerCase().includes('key'))
-            .reduce((sum, p) => {
-                const price = parseFloat(p.planPrice.replace(/[^0-9.-]+/g,""));
-                return sum + (isNaN(price) ? 0 : price);
-            }, 0);
-    }, [config?.purchases]);
+    const totalFromKeys = adminSettings?.revenueFromKeys || 0;
+    const totalFromPlans = adminSettings?.revenueFromPlans || 0;
 
 
     return (
@@ -329,12 +311,15 @@ export default function AdminPlansPage() {
                         <CardContent>
                              <Form {...activationKeyForm}>
                                 <form onSubmit={activationKeyForm.handleSubmit(onActivationKeySubmit)} className="space-y-6">
-                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                                         <FormField control={activationKeyForm.control} name="keyPrice" render={({ field }) => (
                                             <FormItem><FormLabel>Key Price</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormDescription>The cost for a staff member to generate a new key.</FormDescription><FormMessage /></FormItem>
                                         )} />
                                         <FormField control={activationKeyForm.control} name="keyFreeDays" render={({ field }) => (
                                             <FormItem><FormLabel>Free Trial Days</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormDescription>Number of free premium days a new client receives.</FormDescription><FormMessage /></FormItem>
+                                        )} />
+                                        <FormField control={activationKeyForm.control} name="keyPeriodReserveDays" render={({ field }) => (
+                                            <FormItem><FormLabel>Period Reserve Days</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormDescription>Paid days credited to client account after trial.</FormDescription><FormMessage /></FormItem>
                                         )} />
                                         <FormField control={activationKeyForm.control} name="keyUsageLimit" render={({ field }) => (
                                             <FormItem><FormLabel>Key Usage Limit</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormDescription>How many times a single key can be used.</FormDescription><FormMessage /></FormItem>
