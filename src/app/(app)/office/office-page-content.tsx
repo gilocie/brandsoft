@@ -57,6 +57,13 @@ const statusVariantMap: { [key: string]: 'default' | 'secondary' | 'destructive'
   active: 'success',
 };
 
+const createSellCreditsSchema = (max: number) => z.object({
+  amount: z.coerce.number().min(1, "Minimum amount is 1 credit.").max(max, "Amount exceeds your balance."),
+});
+
+type SellCreditsFormData = z.infer<ReturnType<typeof createSellCreditsSchema>>;
+
+
 const SellCreditsDialog = ({
     creditBalance,
     isOpen,
@@ -68,6 +75,24 @@ const SellCreditsDialog = ({
     onOpenChange: (open: boolean) => void,
     buyPrice: number,
 }) => {
+    const { toast } = useToast();
+    const sellCreditsSchema = createSellCreditsSchema(creditBalance);
+    const form = useForm<SellCreditsFormData>({
+        resolver: zodResolver(sellCreditsSchema),
+        defaultValues: { amount: 1 },
+    });
+
+    const watchedAmount = form.watch('amount');
+    const cashValue = (watchedAmount || 0) * buyPrice;
+
+    const handleSellRequest = (data: SellCreditsFormData) => {
+        toast({
+            title: 'Withdrawal Request Submitted',
+            description: `Your request to sell ${data.amount} credits for K${(data.amount * buyPrice).toLocaleString()} has been submitted for processing.`,
+        });
+        onOpenChange(false);
+    };
+
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent>
@@ -90,12 +115,28 @@ const SellCreditsDialog = ({
                             <TabsTrigger value="transfer">Transfer</TabsTrigger>
                         </TabsList>
                         <TabsContent value="sell-back" className="pt-4">
-                            <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
-                                <p className="text-sm text-muted-foreground text-center px-4">
-                                    This feature will allow you to sell your credits back at the current buy price of K{buyPrice}/credit.
-                                    Coming soon.
-                                </p>
-                            </div>
+                           <Form {...form}>
+                                <form onSubmit={form.handleSubmit(handleSellRequest)} className="space-y-4">
+                                     <FormField
+                                        control={form.control}
+                                        name="amount"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Credits to Sell</FormLabel>
+                                                <FormControl>
+                                                    <Input type="number" {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <div className="p-4 bg-primary/10 rounded-lg text-center space-y-1 border border-primary/20">
+                                        <p className="text-sm text-primary/80">You Will Receive</p>
+                                        <p className="text-2xl font-bold text-primary">K{cashValue.toLocaleString()}</p>
+                                    </div>
+                                    <Button type="submit" className="w-full">Request Withdrawal</Button>
+                                </form>
+                            </Form>
                         </TabsContent>
                         <TabsContent value="transfer" className="pt-4">
                              <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
