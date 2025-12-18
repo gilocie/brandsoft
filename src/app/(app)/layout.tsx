@@ -269,7 +269,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         <BriefcaseBusiness className="h-8 w-8 text-primary" />
                     </AvatarFallback>
                   </Avatar>
-                  <p className="text-xs font-semibold text-sidebar-foreground/80">BrandSoft Studio</p>
+                  <p className="text-xs font-semibold text-sidebar-foreground/80">BrandSoft</p>
                 </div>
               ) : (
                 <div className="flex items-center justify-center p-2">
@@ -300,7 +300,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </Select>
             </div>
             <div className="flex items-center gap-2">
-              <HeaderWalletCard />
+              {role === 'client' && <HeaderWalletCard />}
               <Button variant="ghost" size="icon" asChild className="flex-shrink-0 relative">
                 <Link href="/quotation-requests?subtab=incoming">
                   <Bell className="h-6 w-6" />
