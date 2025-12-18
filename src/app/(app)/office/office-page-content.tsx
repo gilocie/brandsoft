@@ -892,7 +892,7 @@ export function OfficePageContent() {
                            <VerificationItem
                                 title="Withdrawal PIN"
                                 status={affiliate.isPinSet || false}
-                                actionText={isPinSet ? 'Change PIN' : 'Set PIN'}
+                                actionText={affiliate.isPinSet ? 'Change PIN' : 'Set PIN'}
                                 onAction={() => setIsPinDialogOpen(true)}
                             />
                             <VerificationItem
