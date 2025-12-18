@@ -27,6 +27,7 @@ export type PlanDetails = {
     name: string; // Changed from Plan type to string to be more flexible
     price: string;
     period: string;
+    affiliateId?: string;
 }
 
 interface PurchaseDialogProps {
@@ -197,11 +198,11 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                 date: new Date().toISOString(),
                 receipt: receiptDataUrl || 'none',
                 whatsappNumber: whatsappNumber,
-                customerId: myCompany?.id, // Store who made the purchase
+                customerId: myCompany?.id,
+                affiliateId: plan.affiliateId,
             };
             
             if (selectedPayment === 'wallet') {
-                // Deduct from wallet and save
                 const newBalance = balance - priceAmount;
                 saveConfig({ ...config!, profile: { ...config!.profile, walletBalance: newBalance }, purchases: [...(config!.purchases || []), newOrder]}, {redirect: false});
             } else {
@@ -383,5 +384,3 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
         </Dialog>
     );
 }
-
-    

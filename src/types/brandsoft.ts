@@ -174,6 +174,7 @@ export type Purchase = {
     };
     customerId?: string; // Link purchase to a company
     periodReserve?: number; // Days held in reserve
+    affiliateId?: string; // Link key purchase to an affiliate
 }
 
 export type BrandsoftTemplate = {

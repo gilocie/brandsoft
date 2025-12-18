@@ -32,26 +32,44 @@ export function usePurchases(
   };
 
   const activatePurchaseOrder = (orderId: string) => {
-    if (!config?.purchases || !config.admin) return;
+    if (!config || !config.admin) return;
 
     const purchaseToActivate = config.purchases.find(p => p.orderId === orderId);
     if (!purchaseToActivate) return;
     
-    let newAdminSettings = { ...config.admin };
+    let newConfig = { ...config };
+    let newAdminSettings = { ...newConfig.admin };
 
     // Top-ups are simple activations without time logic.
     if (purchaseToActivate.planName === 'Wallet Top-up' || purchaseToActivate.planName.startsWith('Credit Purchase')) {
-        const updatedPurchases = config.purchases.map(p => 
+        const updatedPurchases = newConfig.purchases.map(p => 
             p.orderId === orderId ? { ...p, status: 'active' as const, date: new Date().toISOString() } : p
         );
-        saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: true });
+        saveConfig({ ...newConfig, purchases: updatedPurchases }, { redirect: false, revalidate: true });
         return;
     }
+    
+    // Key Activation with Affiliate Commission
+    if (purchaseToActivate.planName.toLowerCase().includes('key') && purchaseToActivate.affiliateId) {
+        if(newConfig.affiliate && newConfig.affiliate.staffId === purchaseToActivate.affiliateId) {
+            newConfig.affiliate = {
+                ...newConfig.affiliate,
+                unclaimedCommission: (newConfig.affiliate.unclaimedCommission || 0) + 10000,
+                bonus: (newConfig.affiliate.bonus || 0) + 2000,
+                transactions: [
+                    { id: `TRN-COMM-${orderId}`, date: new Date().toISOString(), description: `Commission for Key Sale`, amount: 10000, type: 'credit' },
+                    { id: `TRN-BONUS-${orderId}`, date: new Date().toISOString(), description: `Bonus for Key Sale`, amount: 2000, type: 'credit' },
+                    ...(newConfig.affiliate.transactions || [])
+                ],
+            };
+        }
+    }
+
 
     const now = Date.now();
     let remainingMsFromOldPlan = 0;
 
-    const currentActivePlan = config.purchases.find(p => p.status === 'active' && p.expiresAt);
+    const currentActivePlan = newConfig.purchases.find(p => p.status === 'active' && p.expiresAt);
     if (currentActivePlan) {
         const expiryTime = new Date(currentActivePlan.expiresAt).getTime();
         if (expiryTime > now) {
@@ -65,13 +83,10 @@ export function usePurchases(
 
     // Logic for new key activation
     if (purchaseToActivate.planName.toLowerCase().includes('key')) {
-        const freeDays = config.admin?.keyFreeDays || 30;
-        const paidDays = config.admin?.keyPeriodReserveDays || 30;
+        const freeDays = newConfig.admin?.keyFreeDays || 30;
+        const paidDays = newConfig.admin?.keyPeriodReserveDays || 30;
         
-        // Combine free and paid days for the initial period
         totalInitialDays = freeDays + paidDays;
-        
-        // Use a temporary period label for calculation
         period = `${totalInitialDays} days`;
     }
 
@@ -96,7 +111,6 @@ export function usePurchases(
 
     let activationDuration = durationInfo.days;
 
-    // The logic to split into reserve days is now removed for key activations
     if (!isTestPlan && !purchaseToActivate.planName.toLowerCase().includes('key') && activationDuration > 30) {
         periodReserve += (activationDuration - 30);
         activationDuration = 30;
@@ -110,7 +124,7 @@ export function usePurchases(
         ? Math.ceil((activationMs + remainingMsFromOldPlan) / (1000 * 60))
         : Math.ceil((activationMs + remainingMsFromOldPlan) / (1000 * 60 * 60 * 24));
 
-    let updatedPurchases = config.purchases.map(p => {
+    let updatedPurchases = newConfig.purchases.map(p => {
         if (p.orderId === orderId) {
             return {
                 ...p,
@@ -122,13 +136,11 @@ export function usePurchases(
             };
         }
         if (p.status === 'active') {
-            // Set old active plan to inactive, but preserve its reserve
             return { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: 'days' as 'days' } };
         }
         return p;
     });
 
-    // Update revenue and trending plan stats
     const newlyActivatedPurchase = updatedPurchases.find(p => p.orderId === orderId);
     if (newlyActivatedPurchase && !newlyActivatedPurchase.planName.toLowerCase().includes('key')) {
         const price = parseFloat(newlyActivatedPurchase.planPrice.replace(/[^0-9.-]+/g, ""));
@@ -136,7 +148,6 @@ export function usePurchases(
             newAdminSettings.revenueFromPlans = (newAdminSettings.revenueFromPlans || 0) + price;
         }
 
-        // Update trending plan
         const activePlanPurchases = updatedPurchases.filter(p => p.status === 'active' && !p.planName.toLowerCase().includes('key'));
         const planCounts = activePlanPurchases.reduce((acc, p) => {
             acc[p.planName] = (acc[p.planName] || 0) + 1;
@@ -148,7 +159,7 @@ export function usePurchases(
     }
 
 
-    saveConfig({ ...config, purchases: updatedPurchases, admin: newAdminSettings }, { redirect: false, revalidate: true });
+    saveConfig({ ...newConfig, purchases: updatedPurchases, admin: newAdminSettings }, { redirect: false, revalidate: true });
 };
   
   const declinePurchaseOrder = (orderId: string, reason: string) => {

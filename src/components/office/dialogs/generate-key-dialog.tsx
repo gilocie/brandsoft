@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -34,7 +33,7 @@ interface GenerateKeyDialogProps {
 export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, creditBalance }: GenerateKeyDialogProps) => {
   const [step, setStep] = useState(1);
   const [generatedKey, setGeneratedKey] = useState('');
-  const { config, saveConfig } = useBrandsoft();
+  const { config, saveConfig, addPurchaseOrder } = useBrandsoft();
   const { toast } = useToast();
   const [purchaseDetails, setPurchaseDetails] = useState<PlanDetails | null>(null);
   const [pinConfirmation, setPinConfirmation] = useState<{method: 'wallet' | 'credits'} | null>(null);
@@ -142,6 +141,8 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
         name: `Activation Key (${maskedKey})` as any,
         price: `K${keyPrice.toLocaleString()}`,
         period: 'One-time Key Purchase',
+        // Add affiliate ID to track who generated the key for commission
+        affiliateId: config?.affiliate?.staffId,
     });
   };
 
@@ -305,21 +306,26 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
       
       {purchaseDetails && (
         <PurchaseDialog
-          plan={purchaseDetails}
-          isOpen={!!purchaseDetails}
-          onClose={handleClose}
-          onSuccess={() => { 
-              if (config && config.admin) {
-                saveConfig({...config, admin: {
-                    ...config.admin, 
-                    keysSold: (config.admin.keysSold || 0) + 1,
-                    revenueFromKeys: (config.admin.revenueFromKeys || 0) + (config.admin.keyPrice || 0),
-                }}, {redirect: false});
-              }
-              setStep(3); 
-              setPurchaseDetails(null); 
-          }}
-          isTopUp
+            plan={purchaseDetails}
+            isOpen={!!purchaseDetails}
+            onClose={handleClose}
+            onSuccess={() => {
+                addPurchaseOrder({
+                    orderId: `BSM-KEY-${Date.now()}`,
+                    planName: purchaseDetails.name,
+                    planPrice: purchaseDetails.price,
+                    planPeriod: purchaseDetails.period,
+                    paymentMethod: 'manual',
+                    status: 'pending',
+                    date: new Date().toISOString(),
+                    receipt: 'none', // Admin will verify manually
+                    affiliateId: config?.affiliate?.staffId,
+                });
+                toast({ title: "Manual Order Created", description: "The order is now pending admin activation." });
+                setStep(1); // Reset dialog for next key
+                setPurchaseDetails(null);
+            }}
+            isTopUp
         />
       )}
     </>
