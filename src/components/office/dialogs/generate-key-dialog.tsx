@@ -155,6 +155,10 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
         pinForm.reset();
     }, 200);
   }
+  
+  const freeDays = config?.admin?.keyFreeDays || 30;
+  const paidDays = config?.admin?.keyPeriodReserveDays || 30;
+  const totalDays = freeDays + paidDays;
 
   return (
     <>
@@ -186,15 +190,10 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
                       <div className="flex items-start gap-3 text-sm">
                           <Gift className="h-5 w-5 text-primary mt-0.5 shrink-0"/>
                           <div>
-                              <p className="font-medium">{config?.admin?.keyFreeDays || 30} Free Premium Days</p>
-                              <p className="text-xs text-muted-foreground">The client starts with a free trial on any premium plan upon activation.</p>
-                          </div>
-                      </div>
-                       <div className="flex items-start gap-3 text-sm">
-                          <Calendar className="h-5 w-5 text-primary mt-0.5 shrink-0"/>
-                          <div>
-                              <p className="font-medium">{config?.admin?.keyPeriodReserveDays || 0} Paid Reserve Days</p>
-                              <p className="text-xs text-muted-foreground">Paid days are credited to the client's account, used automatically after the trial ends.</p>
+                              <p className="font-medium">Total {totalDays} Day Subscription</p>
+                              <p className="text-xs text-muted-foreground">
+                                This key provides a new client with a combined {freeDays} free days and {paidDays} paid days as their first subscription period.
+                              </p>
                           </div>
                       </div>
                   </div>
