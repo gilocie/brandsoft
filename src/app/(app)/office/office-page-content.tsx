@@ -103,40 +103,41 @@ const SellCreditsDialog = ({
                     </DialogDescription>
                 </DialogHeader>
                 <div className="py-4 space-y-6">
-                    <div className="p-4 bg-muted rounded-lg text-center space-y-1">
-                        <p className="text-sm text-muted-foreground">Current Credit Balance</p>
-                        <p className="text-3xl font-bold">BS {creditBalance.toLocaleString()}</p>
-                         <p className="text-xs text-muted-foreground">Sell-back value: K{(creditBalance * buyPrice).toLocaleString()}</p>
-                    </div>
-
                     <Tabs defaultValue="sell-back">
                         <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="sell-back">Sell to Brandsoft</TabsTrigger>
                             <TabsTrigger value="transfer">Transfer</TabsTrigger>
                         </TabsList>
                         <TabsContent value="sell-back" className="pt-4">
-                           <Form {...form}>
-                                <form onSubmit={form.handleSubmit(handleSellRequest)} className="space-y-4">
-                                     <FormField
-                                        control={form.control}
-                                        name="amount"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Credits to Sell</FormLabel>
-                                                <FormControl>
-                                                    <Input type="number" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <div className="p-4 bg-primary/10 rounded-lg text-center space-y-1 border border-primary/20">
-                                        <p className="text-sm text-primary/80">You Will Receive</p>
-                                        <p className="text-2xl font-bold text-primary">K{cashValue.toLocaleString()}</p>
-                                    </div>
-                                    <Button type="submit" className="w-full">Request Withdrawal</Button>
-                                </form>
-                            </Form>
+                           <div className="grid md:grid-cols-2 gap-6 items-start">
+                               <div className="p-4 bg-muted rounded-lg text-center space-y-2 h-full flex flex-col justify-center">
+                                    <p className="text-sm text-muted-foreground">Current Credit Balance</p>
+                                    <p className="text-3xl font-bold">BS {creditBalance.toLocaleString()}</p>
+                                     <p className="text-xs text-muted-foreground">Sell-back value: K{(creditBalance * buyPrice).toLocaleString()}</p>
+                                </div>
+                               <Form {...form}>
+                                    <form onSubmit={form.handleSubmit(handleSellRequest)} className="space-y-4">
+                                         <FormField
+                                            control={form.control}
+                                            name="amount"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Credits to Sell</FormLabel>
+                                                    <FormControl>
+                                                        <Input type="number" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <div className="p-4 bg-primary/10 rounded-lg text-center space-y-1 border border-primary/20">
+                                            <p className="text-sm text-primary/80">You Will Receive</p>
+                                            <p className="text-2xl font-bold text-primary">K{cashValue.toLocaleString()}</p>
+                                        </div>
+                                        <Button type="submit" className="w-full">Request Withdrawal</Button>
+                                    </form>
+                                </Form>
+                           </div>
                         </TabsContent>
                         <TabsContent value="transfer" className="pt-4">
                              <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
@@ -1088,3 +1089,4 @@ export function OfficePageContent() {
     </div>
   );
 }
+
