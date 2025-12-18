@@ -2,11 +2,11 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useBrandsoft, type Plan } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Plan, type AdminSettings } from '@/hooks/use-brandsoft';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -41,6 +41,13 @@ const newPlanSchema = z.object({
 });
 type NewPlanFormData = z.infer<typeof newPlanSchema>;
 
+const activationKeySchema = z.object({
+  keyPrice: z.coerce.number().min(0, "Price must be non-negative."),
+  keyFreeDays: z.coerce.number().int().min(0, "Free days must be a non-negative integer."),
+  keyUsageLimit: z.coerce.number().int().min(1, "Usage limit must be at least 1."),
+});
+type ActivationKeyFormData = z.infer<typeof activationKeySchema>;
+
 export default function AdminPlansPage() {
     const { config, saveConfig } = useBrandsoft();
     const { toast } = useToast();
@@ -48,11 +55,32 @@ export default function AdminPlansPage() {
     const [planToDelete, setPlanToDelete] = useState<Plan | null>(null);
 
     const plans = config?.plans || [];
+    const adminSettings = config?.admin;
 
     const newPlanForm = useForm<NewPlanFormData>({
         resolver: zodResolver(newPlanSchema),
         defaultValues: { name: '', price: 0, features: [] },
     });
+    
+    const activationKeyForm = useForm<ActivationKeyFormData>({
+        resolver: zodResolver(activationKeySchema),
+        defaultValues: {
+            keyPrice: adminSettings?.keyPrice || 5000,
+            keyFreeDays: adminSettings?.keyFreeDays || 30,
+            keyUsageLimit: adminSettings?.keyUsageLimit || 1,
+        }
+    });
+    
+     useEffect(() => {
+        if (adminSettings) {
+            activationKeyForm.reset({
+                keyPrice: adminSettings.keyPrice || 5000,
+                keyFreeDays: adminSettings.keyFreeDays || 30,
+                keyUsageLimit: adminSettings.keyUsageLimit || 1,
+            });
+        }
+    }, [adminSettings, activationKeyForm]);
+
 
     const onNewPlanSubmit = (data: NewPlanFormData) => {
         if (!config) return;
@@ -91,6 +119,19 @@ export default function AdminPlansPage() {
         saveConfig({ ...config, plans: updatedPlans }, { redirect: false });
         toast({ title: `Plan "${planToDelete.name}" deleted` });
         setPlanToDelete(null); // This closes the dialog
+    };
+    
+    const onActivationKeySubmit = (data: ActivationKeyFormData) => {
+        if (!config) return;
+        const newAdminSettings: AdminSettings = {
+            ...(config.admin || {} as AdminSettings),
+            ...data,
+        };
+        saveConfig({ ...config, admin: newAdminSettings }, { redirect: false });
+        toast({
+            title: "Activation Key Settings Saved",
+            description: "Your settings for new keys have been updated.",
+        });
     };
 
     return (
@@ -250,9 +291,22 @@ export default function AdminPlansPage() {
                             <CardDescription>Configure the benefits associated with new client activation keys.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                             <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
-                                <p className="text-muted-foreground">Activation key settings coming soon.</p>
-                            </div>
+                             <Form {...activationKeyForm}>
+                                <form onSubmit={activationKeyForm.handleSubmit(onActivationKeySubmit)} className="space-y-6">
+                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        <FormField control={activationKeyForm.control} name="keyPrice" render={({ field }) => (
+                                            <FormItem><FormLabel>Key Price</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormDescription>The cost for a staff member to generate a new key.</FormDescription><FormMessage /></FormItem>
+                                        )} />
+                                        <FormField control={activationKeyForm.control} name="keyFreeDays" render={({ field }) => (
+                                            <FormItem><FormLabel>Free Trial Days</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormDescription>Number of free premium days a new client receives.</FormDescription><FormMessage /></FormItem>
+                                        )} />
+                                        <FormField control={activationKeyForm.control} name="keyUsageLimit" render={({ field }) => (
+                                            <FormItem><FormLabel>Key Usage Limit</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormDescription>How many times a single key can be used.</FormDescription><FormMessage /></FormItem>
+                                        )} />
+                                    </div>
+                                    <Button type="submit">Save Key Settings</Button>
+                                </form>
+                            </Form>
                         </CardContent>
                     </Card>
                 </TabsContent>

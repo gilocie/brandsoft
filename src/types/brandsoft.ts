@@ -224,6 +224,9 @@ export type AdminSettings = {
   availableCredits: number;
   soldCredits: number;
   isReserveLocked?: boolean;
+  keyPrice?: number;
+  keyFreeDays?: number;
+  keyUsageLimit?: number;
 };
 
 export type BrandsoftConfig = {
