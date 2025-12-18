@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useBrandsoft, type Purchase } from '@/hooks/use-brandsoft';
 import { useToast } from "@/hooks/use-toast";
-import { KeyRound, CheckCircle, XCircle, Loader2, Download, Eye, Info, Wallet } from 'lucide-react';
+import { KeyRound, CheckCircle, XCircle, Loader2, Download, Eye, Info, Wallet, CreditCard } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
@@ -23,6 +23,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle as ShadcnDialogTitle, 
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 
+
 const formSchema = z.object({
   orderId: z.string().min(1, "Order ID is required."),
 });
@@ -30,9 +31,74 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 const ADMIN_PIN_SUFFIX = '@8090';
 
+const topUpActivationSchema = z.object({
+    creditsToSell: z.coerce.number().min(1, 'Must sell at least 1 credit.')
+});
+type TopUpActivationFormData = z.infer<typeof topUpActivationSchema>;
+
+
+const TopUpActivationDialog = ({
+    order,
+    isOpen,
+    onClose,
+    onConfirm
+}: {
+    order: Purchase,
+    isOpen: boolean,
+    onClose: () => void,
+    onConfirm: (credits: number) => void
+}) => {
+    const { config } = useBrandsoft();
+    const exchangeValue = config?.admin?.exchangeValue || 1000;
+    const suggestedCredits = parseFloat(order.planPrice.replace(/[^0-9.-]+/g,"")) / exchangeValue;
+
+    const form = useForm<TopUpActivationFormData>({
+        resolver: zodResolver(topUpActivationSchema),
+        defaultValues: { creditsToSell: suggestedCredits }
+    });
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onClose}>
+            <DialogContent>
+                <DialogHeader>
+                    <ShadcnDialogTitle>Confirm Credit Sale</ShadcnDialogTitle>
+                    <p className="text-sm text-muted-foreground">Confirm the amount of BS Credits being sold for this top-up.</p>
+                </DialogHeader>
+                <div className="py-4 space-y-4">
+                    <div className="p-4 bg-muted rounded-lg text-center space-y-1">
+                        <p className="text-sm text-muted-foreground">Client Paid</p>
+                        <p className="text-2xl font-bold">{order.planPrice}</p>
+                    </div>
+                     <Form {...form}>
+                        <form id="topup-activation-form" onSubmit={form.handleSubmit(data => onConfirm(data.creditsToSell))}>
+                             <FormField
+                                control={form.control}
+                                name="creditsToSell"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>BS Credits to Sell</FormLabel>
+                                        <FormControl>
+                                            <Input type="number" step="0.01" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </form>
+                    </Form>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={onClose}>Cancel</Button>
+                    <Button type="submit" form="topup-activation-form">Confirm & Activate</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
 
 function VerifyPurchaseContent() {
-    const { config, getPurchaseOrder, activatePurchaseOrder, declinePurchaseOrder, acknowledgeDeclinedPurchase } = useBrandsoft();
+    const { config, getPurchaseOrder, activatePurchaseOrder, declinePurchaseOrder, acknowledgeDeclinedPurchase, addCreditPurchaseToAffiliate } = useBrandsoft();
     const { toast } = useToast();
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -45,6 +111,7 @@ function VerifyPurchaseContent() {
     const [declineReason, setDeclineReason] = useState('');
     const [progress, setProgress] = useState(0);
     const [declineDialogOpen, setDeclineDialogOpen] = useState(false);
+    const [isTopUpActivationOpen, setIsTopUpActivationOpen] = useState(false);
     
     const form = useForm<FormData>({
         resolver: zodResolver(formSchema),
@@ -96,7 +163,7 @@ function VerifyPurchaseContent() {
              setOrder(null);
              setIsLoading(false);
         }
-    }, [orderIdFromUrl, form]);
+    }, [orderIdFromUrl, form, handleSearch]);
 
      useEffect(() => {
         if (
@@ -161,10 +228,32 @@ function VerifyPurchaseContent() {
 
     const handleActivation = () => {
         if (order) {
-            activatePurchaseOrder(order.orderId);
-            toast({ title: "Activation Successful", description: `Order ${order.orderId} has been activated.` });
-            setOrder({ ...order, status: 'active' }); 
+            if (isAdminMode && (order.planName.startsWith('Credit Purchase') || order.planName === 'Wallet Top-up')) {
+                setIsTopUpActivationOpen(true);
+            } else {
+                activatePurchaseOrder(order.orderId);
+                toast({ title: "Activation Successful", description: `Order ${order.orderId} has been activated.` });
+                setOrder({ ...order, status: 'active' }); 
+            }
         }
+    };
+
+    const handleConfirmTopUpActivation = (creditsToSell: number) => {
+        if (!order || !config?.affiliate) return;
+
+        // Activate the client's plan (which just marks the purchase as 'active' for top-ups)
+        activatePurchaseOrder(order.orderId);
+
+        // Deduct credits from affiliate and record sale
+        addCreditPurchaseToAffiliate(creditsToSell, order.planPrice);
+        
+        toast({
+            title: "Top-Up Activated!",
+            description: `${creditsToSell} credits sold and order ${order.orderId} is complete.`,
+        });
+
+        setIsTopUpActivationOpen(false);
+        setOrder({ ...order, status: 'active' }); 
     };
     
     const handleDecline = () => {
@@ -359,30 +448,40 @@ function VerifyPurchaseContent() {
 
 
     return (
-        <Card className="w-full max-w-4xl">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <KeyRound className="h-6 w-6 text-primary" />
-                    {order ? 'Purchase Status' : 'Verify Purchase Order'}
-                </CardTitle>
-                <CardDescription>
-                     {order
-                        ? 'Here are the details for the purchase order.'
-                        : 'Enter the Order ID to view status or activate a purchase.'
-                     }
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                {renderContent()}
-            </CardContent>
-            {order && (
-                <CardFooter>
-                    <Button asChild variant="outline">
-                        <Link href="/history"><Wallet className="mr-2 h-4 w-4" /> Return to Wallet</Link>
-                    </Button>
-                </CardFooter>
+        <>
+            <Card className="w-full max-w-4xl">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <KeyRound className="h-6 w-6 text-primary" />
+                        {order ? 'Purchase Status' : 'Verify Purchase Order'}
+                    </CardTitle>
+                    <CardDescription>
+                         {order
+                            ? 'Here are the details for the purchase order.'
+                            : 'Enter the Order ID to view status or activate a purchase.'
+                         }
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {renderContent()}
+                </CardContent>
+                {order && (
+                    <CardFooter>
+                        <Button asChild variant="outline">
+                            <Link href="/history"><Wallet className="mr-2 h-4 w-4" /> Return to Wallet</Link>
+                        </Button>
+                    </CardFooter>
+                )}
+            </Card>
+             {order && (
+                <TopUpActivationDialog
+                    order={order}
+                    isOpen={isTopUpActivationOpen}
+                    onClose={() => setIsTopUpActivationOpen(false)}
+                    onConfirm={handleConfirmTopUpActivation}
+                />
             )}
-        </Card>
+        </>
     );
 }
 

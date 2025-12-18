@@ -83,6 +83,7 @@ interface BrandsoftContextType {
   acknowledgeDeclinedPurchase: (orderId: string) => void;
   updatePurchaseStatus: () => void;
   downgradeToTrial: () => void;
+  addCreditPurchaseToAffiliate: (credits: number, price: string) => void;
   // Currency methods
   addCurrency: (currency: string) => void;
   // Review methods
@@ -119,6 +120,23 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
       };
       saveConfig(newConfig, { redirect: false, revalidate: true });
     };
+    
+     const addCreditPurchaseToAffiliate = (credits: number, price: string) => {
+        if (!config || !config.affiliate || !config.admin) return;
+
+        const cost = parseFloat(price.replace(/[^0-9.-]+/g,""));
+        const commissionRate = 0.1; // 10%
+        const commission = cost * commissionRate;
+
+        const newAffiliateData = {
+            ...config.affiliate,
+            creditBalance: (config.affiliate.creditBalance || 0) - credits,
+            unclaimedCommission: (config.affiliate.unclaimedCommission || 0) + commission,
+            totalSales: (config.affiliate.totalSales || 0) + cost,
+        };
+
+        saveConfig({ ...config, affiliate: newAffiliateData }, { revalidate: true });
+    };
 
     return {
         ...companyMethods,
@@ -130,6 +148,7 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
         ...purchaseMethods,
         ...currencyMethods,
         addReview,
+        addCreditPurchaseToAffiliate,
     };
 }
 
