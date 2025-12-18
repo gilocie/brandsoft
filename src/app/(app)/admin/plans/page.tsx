@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -15,7 +14,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { MoreHorizontal, PackagePlus, Briefcase, CheckCircle, Pencil, Trash2, KeyRound, TrendingUp, BarChart } from 'lucide-react';
+import { MoreHorizontal, PackagePlus, Briefcase, CheckCircle, Pencil, Trash2, KeyRound, TrendingUp, BarChart, AlertTriangle } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
@@ -55,6 +54,7 @@ export default function AdminPlansPage() {
     const { toast } = useToast();
     const [isAddPlanOpen, setIsAddPlanOpen] = useState(false);
     const [planToDelete, setPlanToDelete] = useState<Plan | null>(null);
+    const [isResetRevenueOpen, setIsResetRevenueOpen] = useState(false);
 
     const plans = config?.plans || [];
     const adminSettings = config?.admin;
@@ -137,6 +137,22 @@ export default function AdminPlansPage() {
             description: "Your settings for new keys have been updated.",
         });
     };
+    
+    const handleResetRevenue = () => {
+        if (!config || !config.admin) return;
+
+        const newAdminSettings: AdminSettings = {
+            ...config.admin,
+            revenueFromKeys: 0,
+            revenueFromPlans: 0,
+            keysSold: 0,
+        };
+        
+        saveConfig({ ...config, admin: newAdminSettings }, { redirect: false, revalidate: true });
+        toast({ title: 'Revenue Records Reset!', description: 'Revenue from keys and plans has been set to zero.' });
+        setIsResetRevenueOpen(false);
+    };
+
 
     const trendingPlan = adminSettings?.trendingPlan || 'None';
     const keysSold = adminSettings?.keysSold || 0;
@@ -302,7 +318,7 @@ export default function AdminPlansPage() {
                         </CardContent>
                     </Card>
                 </TabsContent>
-                <TabsContent value="activation-keys" className="pt-4">
+                <TabsContent value="activation-keys" className="pt-4 space-y-6">
                      <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2"><KeyRound className="h-5 w-5" />Activation Key Options</CardTitle>
@@ -330,6 +346,36 @@ export default function AdminPlansPage() {
                             </Form>
                         </CardContent>
                     </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-destructive"><AlertTriangle className="h-5 w-5" />Danger Zone</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex items-center justify-between p-4 border border-destructive/50 bg-destructive/5 rounded-lg">
+                                <div>
+                                    <h3 className="font-semibold">Reset Revenue Data</h3>
+                                    <p className="text-sm text-muted-foreground">This will reset revenue from keys and plans, and the keys sold count to zero.</p>
+                                </div>
+                                 <AlertDialog open={isResetRevenueOpen} onOpenChange={setIsResetRevenueOpen}>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="destructive">Reset Revenue</Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                This will reset all revenue and sales counters for keys and plans. This action cannot be undone.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={handleResetRevenue} className="bg-destructive hover:bg-destructive/90">Yes, Reset Revenue</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </div>
+                        </CardContent>
+                    </Card>
                 </TabsContent>
             </Tabs>
              <AlertDialog open={!!planToDelete} onOpenChange={(open) => !open && setPlanToDelete(null)}>
@@ -351,6 +397,4 @@ export default function AdminPlansPage() {
         </div>
     );
 }
-
-
 
