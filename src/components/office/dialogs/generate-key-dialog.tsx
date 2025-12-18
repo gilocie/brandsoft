@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -15,6 +14,7 @@ import { useBrandsoft } from '@/hooks/use-brandsoft';
 import { cn } from '@/lib/utils';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { type GeneratedKey } from '@/types/brandsoft';
 
 const pinSchema = z.object({
   pin: z.string().length(4, "Your PIN must be 4 digits."),
@@ -109,6 +109,18 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
           };
       }
       
+      // Add the generated key to the list
+      const newKeyData: GeneratedKey = {
+          key: generatedKey,
+          status: 'unused',
+          generatedDate: new Date().toISOString(),
+      };
+      if (!newConfig.affiliate.generatedKeys) {
+        newConfig.affiliate.generatedKeys = [];
+      }
+      newConfig.affiliate.generatedKeys = [newKeyData, ...newConfig.affiliate.generatedKeys];
+
+
       if(newConfig.admin) {
         newConfig.admin.keysSold = (newConfig.admin.keysSold || 0) + 1;
       }

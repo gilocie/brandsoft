@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, createContext, useContext, ReactNode, useCallback } from 'react';
@@ -12,7 +11,7 @@ import { useQuotations } from './use-quotations';
 import { useQuotationRequests } from './use-quotation-requests';
 import { usePurchases } from './use-purchases';
 import { useCurrencies } from './use-currencies';
-import type { BrandsoftConfig, Company, Product, Invoice, Quotation, QuotationRequest, Purchase, Customer, Review, Affiliate, Transaction, AdminSettings, Plan } from '@/types/brandsoft';
+import type { BrandsoftConfig, Company, Product, Invoice, Quotation, QuotationRequest, Purchase, Customer, Review, Affiliate, Transaction, AdminSettings, Plan, GeneratedKey } from '@/types/brandsoft';
 
 export * from '@/types/brandsoft';
 
@@ -37,6 +36,7 @@ const initialAffiliateData: Affiliate = {
     staffId: 'BS-AFF-12345678',
     clients: [], // EMPTY THIS ARRAY to remove demo data
     transactions: [], // You might want to empty this too
+    generatedKeys: [],
     withdrawalMethods: {
         airtel: undefined,
         tnm: undefined,
@@ -258,7 +258,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
             needsSave = true;
         } else {
              // Ensure all new fields exist
-            const fieldsToCheck: (keyof Affiliate)[] = ['totalSales', 'creditBalance', 'bonus', 'staffId', 'phone', 'transactions', 'isPinSet', 'unclaimedCommission', 'myWallet'];
+            const fieldsToCheck: (keyof Affiliate)[] = ['totalSales', 'creditBalance', 'bonus', 'staffId', 'phone', 'transactions', 'isPinSet', 'unclaimedCommission', 'myWallet', 'generatedKeys'];
             fieldsToCheck.forEach(field => {
                 if (typeof parsedConfig.affiliate[field] === 'undefined') {
                     if (field === 'myWallet' && typeof parsedConfig.affiliate.balance !== 'undefined') {

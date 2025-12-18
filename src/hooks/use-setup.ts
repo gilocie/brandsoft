@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import type { BrandsoftConfig, Company, Customer, Invoice, Quotation, QuotationRequest, Affiliate, Transaction, AdminSettings, Plan } from '@/types/brandsoft';
@@ -238,6 +237,7 @@ export function useSetup(
         { id: 'TRN-2', date: '2024-07-18', description: 'Commission: Client B', amount: 75.50 * USD_TO_MWK_RATE, type: 'credit' },
         { id: 'TRN-3', date: '2024-07-15', description: 'Commission: Client A', amount: 50.00 * USD_TO_MWK_RATE, type: 'credit' },
     ],
+    generatedKeys: [],
     withdrawalMethods: {
         airtel: undefined,
         tnm: undefined,
@@ -370,4 +370,3 @@ export function useSetup(
 
   return { finalizeSetup };
 }
-

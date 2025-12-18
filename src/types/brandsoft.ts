@@ -1,5 +1,4 @@
 
-
 import { Page } from '@/stores/canvas-store';
 
 export type AffiliateClient = {
@@ -38,6 +37,13 @@ export type BsCreditsDetails = {
     staffId: string;
 };
 
+export type GeneratedKey = {
+    key: string;
+    status: 'unused' | 'used';
+    generatedDate: string;
+    usedBy?: string; // e.g., company ID
+};
+
 
 export type Affiliate = {
   fullName: string;
@@ -67,6 +73,7 @@ export type Affiliate = {
     bank?: BankDetails;
     bsCredits?: BsCreditsDetails;
   };
+  generatedKeys?: GeneratedKey[];
 };
 
 export type Company = {
@@ -364,4 +371,3 @@ export type Quotation = {
     design?: DesignSettings;
     isRequest?: boolean;
 };
-
