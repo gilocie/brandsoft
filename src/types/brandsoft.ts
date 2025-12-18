@@ -226,6 +226,7 @@ export type AdminSettings = {
   isReserveLocked?: boolean;
   keyPrice?: number;
   keyFreeDays?: number;
+  keyPeriodReserveDays?: number;
   keyUsageLimit?: number;
   keysSold?: number;
 };
@@ -363,3 +364,4 @@ export type Quotation = {
     design?: DesignSettings;
     isRequest?: boolean;
 };
+

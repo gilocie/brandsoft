@@ -57,7 +57,22 @@ export function usePurchases(
         }
     }
 
-    const period = purchaseToActivate.planPeriod;
+    let period = purchaseToActivate.planPeriod;
+    let periodReserve = purchaseToActivate.periodReserve || 0;
+
+    // Logic for new key activation
+    if (purchaseToActivate.planName.toLowerCase().includes('key')) {
+        const freeDays = config.admin?.keyFreeDays || 30;
+        const reserveDays = config.admin?.keyPeriodReserveDays || 30;
+        
+        // Use a temporary period label for calculation
+        period = `${freeDays} days (trial)`;
+        
+        // Add the reserve days to any existing reserve
+        periodReserve += reserveDays;
+    }
+
+
     const isTestPlan = isTestPlanPeriod(period);
 
     const planDurations: Record<string, {days: number, isTest: boolean, unit: 'days' | 'minutes'}> = {
@@ -68,16 +83,24 @@ export function usePurchases(
       'Once OFF': { days: 365 * 3, isTest: false, unit: 'days' },
     };
 
-    const durationInfo = planDurations[period] || { days: 0, isTest: false, unit: 'days' };
-    let totalDaysOrMinutes = durationInfo.days;
-    let periodReserve = 0;
-    let activationDuration = totalDaysOrMinutes;
+    let durationInfo = planDurations[period];
 
-    if (!isTestPlan && totalDaysOrMinutes > 30) {
-        activationDuration = 30;
-        periodReserve = totalDaysOrMinutes - 30;
+    // Handle dynamic trial periods from keys
+    if (!durationInfo && period.includes('days (trial)')) {
+        const days = parseInt(period, 10) || 30;
+        durationInfo = { days, isTest: false, unit: 'days' };
+    } else if (!durationInfo) {
+        durationInfo = { days: 0, isTest: false, unit: 'days' };
     }
 
+    let totalDaysOrMinutes = durationInfo.days;
+    let activationDuration = totalDaysOrMinutes;
+
+    if (!isTestPlan && totalDaysOrMinutes > 30 && !purchaseToActivate.planName.toLowerCase().includes('key')) {
+        activationDuration = 30;
+        periodReserve += (totalDaysOrMinutes - 30);
+    }
+    
     const multiplier = durationInfo.unit === 'minutes' ? 60 * 1000 : 24 * 60 * 60 * 1000;
     const activationMs = activationDuration * multiplier;
     const expiresAt = new Date(now + activationMs + remainingMsFromOldPlan).toISOString();
@@ -98,7 +121,7 @@ export function usePurchases(
             };
         }
         if (p.status === 'active') {
-            return { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: 'days' as 'days' }, periodReserve: (p.periodReserve || 0) };
+            return { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: 'days' as 'days' }, periodReserve: (p.periodReserve || 0) + periodReserve };
         }
         return p;
     });
@@ -222,3 +245,4 @@ export function usePurchases(
     downgradeToTrial,
   };
 }
+

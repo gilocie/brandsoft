@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import type { BrandsoftConfig, Company, Customer, Invoice, Quotation, QuotationRequest, Affiliate, Transaction, AdminSettings, Plan } from '@/types/brandsoft';
@@ -254,6 +255,11 @@ export function useSetup(
     availableCredits: 200000,
     soldCredits: 0,
     isReserveLocked: false,
+    keyPrice: 5000,
+    keyFreeDays: 30,
+    keyPeriodReserveDays: 30,
+    keyUsageLimit: 1,
+    keysSold: 0,
   };
 
 
@@ -364,3 +370,4 @@ export function useSetup(
 
   return { finalizeSetup };
 }
+
