@@ -140,7 +140,7 @@ export default function AdminPlansPage() {
 
     const trendingPlan = adminSettings?.trendingPlan || 'None';
     const keysSold = adminSettings?.keysSold || 0;
-    const totalFromKeys = (adminSettings?.keysSold || 0) * (adminSettings?.keyPrice || 0);
+    const totalFromKeys = adminSettings?.revenueFromKeys || 0;
     const totalFromPlans = adminSettings?.revenueFromPlans || 0;
 
 
@@ -351,4 +351,5 @@ export default function AdminPlansPage() {
         </div>
     );
 }
+
 
