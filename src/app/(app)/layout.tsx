@@ -65,6 +65,7 @@ const mainNavItems = [
   { href: '/history', icon: Wallet, label: 'Wallet', enabledKey: null, roles: ['client'] },
   { href: '/office', icon: LayoutDashboard, label: 'Dashboard', enabledKey: null, roles: ['staff'] },
   { href: '/office/clients', icon: Users, label: 'Clients', enabledKey: null, roles: ['staff'] },
+  { href: '/office/features', icon: KeyRound, label: 'Features', enabledKey: null, roles: ['staff'] },
   { href: '/admin', icon: LayoutDashboard, label: 'Dashboard', enabledKey: null, roles: ['admin'] },
   { href: '/companies', icon: Users, label: 'Companies', enabledKey: null, roles: ['admin'] },
   { href: '/invoices', icon: FileText, label: 'Invoices', enabledKey: 'invoice', roles: ['client'] },
@@ -353,5 +354,3 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   );
 }
-
-    

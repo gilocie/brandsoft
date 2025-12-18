@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useBrandsoft, type Transaction, type Affiliate, type Purchase } from '@/hooks/use-brandsoft';
@@ -19,23 +18,14 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { StatCard } from '@/components/office/stat-card';
-import { VerificationItem } from '@/components/office/verification-item';
-import { WithdrawDialog } from '@/components/office/withdraw-dialog';
-import { BuyCreditsDialog } from '@/components/office/buy-credits-dialog';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { SimpleImageUploadButton } from '@/components/simple-image-upload-button';
-import { MethodCard } from '@/components/office/method-card';
-import { SetPinDialog } from '@/components/office/dialogs/set-pin-dialog';
-import { SecurityQuestionsDialog, type SecurityQuestionFormData } from '@/components/office/dialogs/security-questions-dialog';
-import { WithdrawalMethodDialog, type WithdrawalMethodFormData, type EditableWithdrawalMethod } from '@/components/office/dialogs/withdrawal-method-dialog';
-import { BankWithdrawalDialog, type BankWithdrawalFormData } from '@/components/office/dialogs/bank-withdrawal-dialog';
-import { BsCreditsDialog, type BsCreditsFormData } from '@/components/office/dialogs/bs-credits-dialog';
 import Link from 'next/link';
-import { GenerateKeyDialog } from '@/components/office/dialogs/generate-key-dialog';
 import { PurchaseDialog, type PlanDetails } from '@/components/purchase-dialog';
 import { SellCreditsDialog } from '@/components/office/dialogs/sell-credits-dialog';
 import { TopUpNotificationCard } from '@/components/office/top-up-notification-card';
 import { TopUpTable } from '@/components/office/top-up-table';
+import { BuyCreditsDialog } from '@/components/office/buy-credits-dialog';
 
 
 const affiliateSchema = z.object({
@@ -57,13 +47,6 @@ export function OfficePageContent() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [payoutsPage, setPayoutsPage] = useState(0);
   const { toast } = useToast();
-
-  const [editingMethod, setEditingMethod] = useState<EditableWithdrawalMethod | null>(null);
-  const [isBankDialogOpen, setIsBankDialogOpen] = useState(false);
-  const [isBsCreditsDialogOpen, setIsBsCreditsDialogOpen] = useState(false);
-  const [isPinDialogOpen, setIsPinDialogOpen] = useState(false);
-  const [isSecurityQuestionsOpen, setIsSecurityQuestionsOpen] = useState(false);
-  const [isGenerateKeyOpen, setIsGenerateKeyOpen] = useState(false);
   const [purchaseDetails, setPurchaseDetails] = useState<PlanDetails | null>(null);
   const [isSellCreditsOpen, setIsSellCreditsOpen] = useState(false);
 
@@ -216,120 +199,6 @@ export function OfficePageContent() {
   const creditSalesProfit = totalCreditsSold * (CREDIT_TO_MWK - (config.admin?.buyPrice || 900));
 
 
-  const handleWithdraw = (amount: number, source: 'commission' | 'combined' | 'bonus') => {
-    if (!config || !affiliate) return;
-    
-    const TRANSACTION_FEE = 3000;
-
-    const newTransaction: Transaction = {
-      id: `TRN-${Date.now()}`,
-      date: new Date().toISOString(),
-      description: `Withdrawal`,
-      amount: amount,
-      type: 'debit',
-    };
-    
-     const feeTransaction: Transaction = {
-      id: `TRN-FEE-${Date.now()}`,
-      date: new Date().toISOString(),
-      description: 'Transaction Fee',
-      amount: TRANSACTION_FEE,
-      type: 'debit',
-    };
-
-    const newAffiliateData = { ...affiliate };
-    
-    const amountToWithdraw = amount;
-
-    if (source === 'combined') {
-        let remainingAmount = amountToWithdraw + TRANSACTION_FEE;
-        
-        const bonusDeduction = Math.min(newAffiliateData.bonus || 0, remainingAmount);
-        newAffiliateData.bonus = (newAffiliateData.bonus || 0) - bonusDeduction;
-        remainingAmount -= bonusDeduction;
-        
-        if (remainingAmount > 0) {
-            newAffiliateData.myWallet = (newAffiliateData.myWallet || 0) - remainingAmount;
-        }
-
-    } else { // 'commission'
-        newAffiliateData.myWallet = (newAffiliateData.myWallet || 0) - (amountToWithdraw + TRANSACTION_FEE);
-    }
-    
-    newAffiliateData.transactions = [newTransaction, feeTransaction, ...(affiliate.transactions || [])];
-    
-    saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
-  }
-
-  const handleSaveWithdrawalMethod = (method: EditableWithdrawalMethod, data: WithdrawalMethodFormData) => {
-    if (!config || !affiliate) return;
-
-    const newAffiliateData = { ...affiliate };
-    if (!newAffiliateData.withdrawalMethods) {
-        newAffiliateData.withdrawalMethods = {};
-    }
-    newAffiliateData.withdrawalMethods[method] = data;
-
-    saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
-    toast({ title: `${method.toUpperCase()} Details Saved!`});
-    setEditingMethod(null);
-  };
-
-  const handleSaveBankDetails = (data: BankWithdrawalFormData) => {
-    if (!config || !affiliate) return;
-    const newAffiliateData = { ...affiliate };
-    if (!newAffiliateData.withdrawalMethods) {
-        newAffiliateData.withdrawalMethods = {};
-    }
-    newAffiliateData.withdrawalMethods.bank = data;
-    saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
-    toast({ title: "Bank Details Saved!" });
-    setIsBankDialogOpen(false);
-  };
-
-  const handleSaveBsCredits = (data: BsCreditsFormData) => {
-    if (!config || !affiliate) return;
-    const newAffiliateData = { ...affiliate };
-    if (!newAffiliateData.withdrawalMethods) {
-        newAffiliateData.withdrawalMethods = {};
-    }
-    newAffiliateData.withdrawalMethods.bsCredits = data;
-    saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
-    toast({ title: "BS Credits Details Saved!" });
-    setIsBsCreditsDialogOpen(false);
-  };
-
-  const handleSavePin = (pin: string) => {
-    if (!config || !affiliate) return;
-    const newAffiliateData = { ...affiliate, isPinSet: true, pin: pin };
-    saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
-    toast({ title: 'PIN has been set successfully!' });
-    setIsPinDialogOpen(false);
-  };
-  
-  const handleSaveSecurityQuestions = (data: SecurityQuestionFormData) => {
-      if (!config || !affiliate) return;
-      
-      const questionToSave = data.question === 'custom' ? data.customQuestion : data.question;
-
-      if (!questionToSave) {
-          toast({ variant: 'destructive', title: 'Error', description: 'Question cannot be empty.' });
-          return;
-      }
-
-      const newAffiliateData = {
-          ...affiliate,
-          securityQuestion: true, // Mark as set
-          securityQuestionData: {
-              question: questionToSave,
-              answer: data.answer,
-          },
-      };
-      saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
-      toast({ title: 'Security Question Saved!' });
-      setIsSecurityQuestionsOpen(false);
-  };
-  
   const handleStatusChange = (orderId: string, newStatus: 'pending' | 'processing' | 'active') => {
         if (!config?.purchases) return;
 
@@ -345,37 +214,7 @@ export function OfficePageContent() {
         });
     };
 
-    const handleTogglePaymentMethod = (method: 'airtel' | 'tnm' | 'bank', enabled: boolean) => {
-        if (!config || !affiliate) return;
-    
-        const newAffiliateData = { ...affiliate };
-        if (!newAffiliateData.withdrawalMethods) {
-            newAffiliateData.withdrawalMethods = {};
-        }
-    
-        const methodDetails = newAffiliateData.withdrawalMethods[method];
-        
-        if(methodDetails) {
-            methodDetails.isClientPaymentMethod = enabled;
-        } else {
-            toast({
-                title: "Setup Required",
-                description: `Please set up your ${method.toUpperCase()} details before enabling it for clients.`,
-                variant: 'destructive',
-            });
-            return;
-        }
-        
-        saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
-    
-        toast({
-            title: "Payment Method Updated",
-            description: `${method.toUpperCase()} is now ${enabled ? 'enabled' : 'disabled'} for client payments.`
-        });
-    };
-
-
-  return (
+    return (
     <div className="space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div className="flex items-center gap-4 col-span-1 md:col-span-2">
@@ -481,8 +320,6 @@ export function OfficePageContent() {
             <TabsTrigger value="clients">Clients ({syncedClients.length})</TabsTrigger>
             <TabsTrigger value="transactions">Transactions</TabsTrigger>
             <TabsTrigger value="invitations">Invitations</TabsTrigger>
-            <TabsTrigger value="my-features">My Features</TabsTrigger>
-            <TabsTrigger value="keys">Keys</TabsTrigger>
         </TabsList>
         <TabsContent value="dashboard" className="pt-6">
             <div className="grid gap-6">
@@ -547,12 +384,12 @@ export function OfficePageContent() {
                             <p className="text-3xl font-bold">K{mwkBalance.toLocaleString()}</p>
                         </CardContent>
                         <CardContent>
-                            <WithdrawDialog 
+                            {/* <WithdrawDialog 
                                 commissionBalance={affiliate.myWallet || 0} 
                                 bonusBalance={bonusAmount} 
                                 onWithdraw={handleWithdraw} 
                                 isVerified={true}
-                            />
+                            /> */}
                         </CardContent>
                      </Card>
                 </div>
@@ -740,177 +577,13 @@ export function OfficePageContent() {
                 </CardContent>
             </Card>
         </TabsContent>
-        <TabsContent value="my-features" className="pt-6 space-y-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><KeyRound className="h-5 w-5" /> My Features</CardTitle>
-                    <CardDescription>Unique codes and features for your affiliate account.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="space-y-3">
-                        <h3 className="text-sm font-semibold mb-2">Staff ID Code</h3>
-                        <p className="text-xs text-muted-foreground mb-2">Provide this code to your staff when they are selling credits on your behalf.</p>
-                        <div className="flex items-center gap-2">
-                            <Input readOnly value={affiliate.staffId || 'No code generated'} className="font-mono" />
-                            <Button size="sm" variant="outline" onClick={() => navigator.clipboard.writeText(affiliate.staffId || '')} disabled={!affiliate.staffId}>
-                                <Copy className="h-4 w-4 mr-2"/> Copy ID
-                            </Button>
-                        </div>
-                    </div>
-                     <Separator />
-                     <div className="space-y-3 pt-4">
-                        <h3 className="text-sm font-semibold mb-2">Affiliate Phone Number</h3>
-                        <p className="text-xs text-muted-foreground mb-2">This WhatsApp number will be used for top-up notifications and affiliate queries.</p>
-                        <div className="flex items-center gap-2">
-                             <Input
-                                readOnly
-                                value={affiliate.phone || 'Not set in profile'}
-                                icon={Phone}
-                                placeholder="Set in your profile..."
-                            />
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader>
-                    <CardTitle>Account Settings</CardTitle>
-                    <CardDescription>Manage your withdrawal and security preferences.</CardDescription>
-                </CardHeader>
-                <CardContent className="p-0">
-                    <Tabs defaultValue="withdraw" className="w-full">
-                        <TabsList className="grid w-full grid-cols-3">
-                            <TabsTrigger value="withdraw">Withdraw Options</TabsTrigger>
-                            <TabsTrigger value="security">Security</TabsTrigger>
-                            <TabsTrigger value="verification">Verification</TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="withdraw" className="p-6">
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <MethodCard 
-                                    method="airtel" 
-                                    name="Airtel Money" 
-                                    description="Fee: K3,000" 
-                                    icon={Smartphone} 
-                                    isSetup={!!affiliate.withdrawalMethods?.airtel} 
-                                    onAction={() => setEditingMethod('airtel')} 
-                                    isPaymentMethod={affiliate.withdrawalMethods?.airtel?.isClientPaymentMethod}
-                                    onTogglePaymentMethod={(enabled) => handleTogglePaymentMethod('airtel', enabled)}
-                                />
-                                <MethodCard 
-                                    method="tnm" 
-                                    name="TNM Mpamba" 
-                                    description="Fee: K3,000" 
-                                    icon={Smartphone} 
-                                    isSetup={!!affiliate.withdrawalMethods?.tnm} 
-                                    onAction={() => setEditingMethod('tnm')} 
-                                    isPaymentMethod={affiliate.withdrawalMethods?.tnm?.isClientPaymentMethod}
-                                    onTogglePaymentMethod={(enabled) => handleTogglePaymentMethod('tnm', enabled)}
-                                />
-                                <MethodCard 
-                                    method="bank" 
-                                    name="Bank Transfer" 
-                                    description="Fee: K5,000" 
-                                    icon={Banknote} 
-                                    isSetup={!!affiliate.withdrawalMethods?.bank} 
-                                    onAction={() => setIsBankDialogOpen(true)}
-                                    isPaymentMethod={affiliate.withdrawalMethods?.bank?.isClientPaymentMethod}
-                                    onTogglePaymentMethod={(enabled) => handleTogglePaymentMethod('bank', enabled)}
-                                />
-                                <MethodCard 
-                                    method="bsCredits" 
-                                    name="BS Credits" 
-                                    description="No fees" 
-                                    icon={Wallet} 
-                                    isSetup={!!affiliate.withdrawalMethods?.bsCredits} 
-                                    onAction={() => setIsBsCreditsDialogOpen(true)} 
-                                />
-                            </div>
-                        </TabsContent>
-                         <TabsContent value="security" className="p-6 space-y-4">
-                           <VerificationItem
-                                title="Withdrawal PIN"
-                                status={affiliate.isPinSet || false}
-                                actionText={affiliate.isPinSet ? 'Change PIN' : 'Set PIN'}
-                                onAction={() => setIsPinDialogOpen(true)}
-                            />
-                            <VerificationItem
-                                title="Security Questions"
-                                status={!!affiliate.securityQuestionData}
-                                actionText={!!affiliate.securityQuestionData ? 'Verified' : 'Set Questions'}
-                                onAction={() => setIsSecurityQuestionsOpen(true)}
-                                actionDisabled={!!affiliate.securityQuestionData}
-                            />
-                        </TabsContent>
-                        <TabsContent value="verification" className="p-6">
-                             <VerificationItem title="Identity Verification" status={affiliate.idUploaded} actionText="Upload ID" onAction={() => alert("Open ID upload dialog")} />
-                        </TabsContent>
-                    </Tabs>
-                </CardContent>
-            </Card>
-        </TabsContent>
-        <TabsContent value="keys" className="pt-6">
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                        <CardTitle>Activation Keys</CardTitle>
-                        <CardDescription>Manage your generated activation keys.</CardDescription>
-                    </div>
-                     <Button onClick={() => setIsGenerateKeyOpen(true)}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        New Activation Key
-                    </Button>
-                </CardHeader>
-                <CardContent className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
-                    <p className="text-muted-foreground">Activation key management coming soon.</p>
-                </CardContent>
-            </Card>
-        </TabsContent>
        </Tabs>
-        <WithdrawalMethodDialog
-            method={editingMethod!}
-            isOpen={!!editingMethod}
-            onClose={() => setEditingMethod(null)}
-            onSave={handleSaveWithdrawalMethod}
-            currentData={editingMethod ? affiliate.withdrawalMethods?.[editingMethod] : undefined}
-        />
-        <BankWithdrawalDialog
-            isOpen={isBankDialogOpen}
-            onClose={() => setIsBankDialogOpen(false)}
-            onSave={handleSaveBankDetails}
-            currentData={affiliate.withdrawalMethods?.bank}
-        />
-         <BsCreditsDialog
-            isOpen={isBsCreditsDialogOpen}
-            onClose={() => setIsBsCreditsDialogOpen(false)}
-            onSave={handleSaveBsCredits}
-            currentData={affiliate.withdrawalMethods?.bsCredits}
-            staffId={affiliate.staffId}
-        />
-         <SetPinDialog
-            isOpen={isPinDialogOpen}
-            onClose={() => setIsPinDialogOpen(false)}
-            onSave={handleSavePin}
-            isPinSet={affiliate.isPinSet || false}
-        />
-        <SecurityQuestionsDialog
-            isOpen={isSecurityQuestionsOpen}
-            onClose={() => setIsSecurityQuestionsOpen(false)}
-            onSave={handleSaveSecurityQuestions}
-            currentData={affiliate.securityQuestionData}
-        />
-        <GenerateKeyDialog
-            isOpen={isGenerateKeyOpen}
-            onClose={() => setIsGenerateKeyOpen(false)}
-            staffId={affiliate.staffId || ''}
-            walletBalance={mwkBalance}
-            creditBalance={affiliate.creditBalance || 0}
-        />
         {purchaseDetails && (
             <PurchaseDialog
                 plan={purchaseDetails}
                 isOpen={!!purchaseDetails}
                 onClose={() => setPurchaseDetails(null)}
-                onSuccess={() => { setPurchaseDetails(null); setIsGenerateKeyOpen(false); }}
+                onSuccess={() => { setPurchaseDetails(null); }}
                 isTopUp
             />
         )}
@@ -923,5 +596,3 @@ export function OfficePageContent() {
     </div>
   );
 }
-
-    
