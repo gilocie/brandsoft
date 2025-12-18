@@ -140,10 +140,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, [config]);
 
   useEffect(() => {
+    const nonClientPages = ['/admin', '/office'];
     if (role === 'admin' && pathname !== '/admin') {
       router.push('/admin');
     } else if (role === 'staff' && pathname !== '/office') {
       router.push('/office');
+    } else if (role === 'client' && nonClientPages.some(p => pathname.startsWith(p))) {
+      router.push('/dashboard');
     }
   }, [role, pathname, router]);
 
