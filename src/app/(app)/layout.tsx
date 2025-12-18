@@ -64,13 +64,13 @@ const mainNavItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', enabledKey: null, roles: ['client'] },
   { href: '/history', icon: Wallet, label: 'Wallet', enabledKey: null, roles: ['client'] },
   { href: '/office', icon: User, label: 'Office', enabledKey: null, roles: ['staff'] },
+  { href: '/admin', icon: Shield, label: 'Admin', enabledKey: null, roles: ['admin'] },
+  { href: '/companies', icon: Users, label: 'Companies', enabledKey: null, roles: ['admin'] },
   { href: '/invoices', icon: FileText, label: 'Invoices', enabledKey: 'invoice', roles: ['client'] },
   { href: '/quotations', icon: FileBarChart2, label: 'Quotations', enabledKey: 'quotation', roles: ['client'] },
   { href: '/quotation-requests', icon: MessageSquareQuote, label: 'Requests', enabledKey: 'quotation', roles: ['client'] },
   { href: '/products', icon: Package, label: 'Products', enabledKey: 'invoice', roles: ['client'] },
   { href: '/marketplace', icon: Store, label: 'Suppliers', enabledKey: null, roles: ['client'] },
-  { href: '/admin', icon: Shield, label: 'Admin', enabledKey: null, roles: ['admin'] },
-  { href: '/companies', icon: Users, label: 'Companies', enabledKey: null, roles: ['admin'] },
 ];
 
 const upcomingNavItems = [
@@ -173,6 +173,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const visibleUpcomingNavItems = getVisibleNavItems(upcomingNavItems, role);
   
   const pageTitle = [...mainNavItems, ...upcomingNavItems].find(item => pathname.startsWith(item.href))?.label || 'Dashboard';
+  
+  const headerTitle = useMemo(() => {
+    if (role === 'admin') return 'Admin Room';
+    if (role === 'staff') return 'Office Room';
+    return config?.brand.businessName;
+  }, [role, config?.brand.businessName]);
 
   return (
     <SidebarProvider>
@@ -188,7 +194,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                            </AvatarFallback>
                       </Avatar>
                       <h1 className="text-base font-bold">
-                          BrandSoft
+                          {headerTitle}
                       </h1>
                   </Link>
               ) : (
@@ -200,7 +206,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                         </AvatarFallback>
                     </Avatar>
                     <h1 className={cn('text-base font-bold', getFontClass(config.brand.font))}>
-                        {config.brand.businessName}
+                        {headerTitle}
                     </h1>
                 </Link>
               )
