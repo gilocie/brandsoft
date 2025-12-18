@@ -313,11 +313,10 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                              <Accordion type="single" collapsible value={selectedPayment || ""} onValueChange={setSelectedPayment}>
                                 <AccordionItem value="wallet">
                                      <AccordionTrigger
-                                        disabled={!canAffordWithWallet}
                                         className={cn(
                                             "hover:no-underline p-3 rounded-md",
                                             selectedPayment === 'wallet' && "bg-primary/10 text-primary hover:bg-primary/20",
-                                            !canAffordWithWallet && "opacity-50 cursor-not-allowed"
+                                            !canAffordWithWallet && "opacity-50"
                                         )}
                                     >
                                         <div className="flex items-center gap-3">
@@ -334,7 +333,10 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                                             <span className="text-muted-foreground">Order Total:</span>
                                             <span className="font-bold">K{priceAmount.toLocaleString()}</span>
                                         </div>
-                                        <div className="flex justify-between font-bold text-lg text-primary pt-2 border-t">
+                                        <div className={cn(
+                                            "flex justify-between font-bold text-lg pt-2 border-t",
+                                            canAffordWithWallet ? "text-primary" : "text-destructive"
+                                        )}>
                                             <span>Remaining Balance:</span>
                                             <span>K{(balance - priceAmount).toLocaleString()}</span>
                                         </div>
