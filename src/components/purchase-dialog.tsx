@@ -223,7 +223,7 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
         }, 1500);
     };
     
-    const isConfirmDisabled = purchaseState !== 'idle' || !selectedPayment || !whatsappNumber || (selectedPayment !== 'wallet' && !receiptFile);
+    const isConfirmDisabled = purchaseState !== 'idle' || !selectedPayment || !whatsappNumber || (selectedPayment !== 'wallet' && !receiptFile) || (selectedPayment === 'wallet' && !canAffordWithWallet);
 
     const handleDialogClose = () => {
         if (purchaseState !== 'processing') {
@@ -316,7 +316,6 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                                         className={cn(
                                             "hover:no-underline p-3 rounded-md",
                                             selectedPayment === 'wallet' && "bg-primary/10 text-primary hover:bg-primary/20",
-                                            !canAffordWithWallet && "opacity-50"
                                         )}
                                     >
                                         <div className="flex items-center gap-3">
@@ -328,17 +327,6 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                                         <div className="flex justify-between">
                                             <span className="text-muted-foreground">Available Balance:</span>
                                             <span className="font-bold">K{balance.toLocaleString()}</span>
-                                        </div>
-                                         <div className="flex justify-between">
-                                            <span className="text-muted-foreground">Order Total:</span>
-                                            <span className="font-bold">K{priceAmount.toLocaleString()}</span>
-                                        </div>
-                                        <div className={cn(
-                                            "flex justify-between font-bold text-lg pt-2 border-t",
-                                            canAffordWithWallet ? "text-primary" : "text-destructive"
-                                        )}>
-                                            <span>Remaining Balance:</span>
-                                            <span>K{(balance - priceAmount).toLocaleString()}</span>
                                         </div>
                                     </AccordionContent>
                                 </AccordionItem>
