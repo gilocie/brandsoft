@@ -416,16 +416,15 @@ export function OfficePageContent() {
                             </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                            <DropdownMenu>
+                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4"/></Button>
+                                    <Button variant="ghost" size="icon" disabled={req.status !== 'pending'}>
+                                        <MoreHorizontal className="h-4 w-4"/>
+                                    </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent>
-                                    <DropdownMenuItem onClick={() => handleStatusChange(req.orderId, 'processing')} disabled={req.status === 'processing' || req.status === 'active'}>
+                                    <DropdownMenuItem onClick={() => handleStatusChange(req.orderId, 'processing')}>
                                         <RefreshCw className="mr-2 h-4 w-4" /> Mark as Processing
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleStatusChange(req.orderId, 'active')} disabled={req.status === 'active'}>
-                                        <CheckCircle className="mr-2 h-4 w-4" /> Mark as Completed
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
@@ -976,3 +975,4 @@ export function OfficePageContent() {
     </div>
   );
 }
+
