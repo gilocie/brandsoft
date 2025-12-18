@@ -63,7 +63,7 @@ import { Label } from '@/components/ui/label';
 const mainNavItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', enabledKey: null, roles: ['client'] },
   { href: '/history', icon: Wallet, label: 'Wallet', enabledKey: null, roles: ['client'] },
-  { href: '/office', icon: BriefcaseBusiness, label: 'Office', enabledKey: null, roles: ['staff'] },
+  { href: '/office', icon: User, label: 'Office', enabledKey: null, roles: ['staff'] },
   { href: '/invoices', icon: FileText, label: 'Invoices', enabledKey: 'invoice', roles: ['client'] },
   { href: '/quotations', icon: FileBarChart2, label: 'Quotations', enabledKey: 'quotation', roles: ['client'] },
   { href: '/quotation-requests', icon: MessageSquareQuote, label: 'Requests', enabledKey: 'quotation', roles: ['client'] },
