@@ -300,24 +300,28 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </Select>
             </div>
             <div className="flex items-center gap-2">
-              {role === 'client' && <HeaderWalletCard />}
-              <Button variant="ghost" size="icon" asChild className="flex-shrink-0 relative">
-                <Link href="/quotation-requests?subtab=incoming">
-                  <Bell className="h-6 w-6" />
-                  {notificationCount > 0 && (
-                    <span className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs font-bold text-destructive-foreground">
-                      {notificationCount}
-                    </span>
-                  )}
-                  <span className="sr-only">Notifications</span>
-                </Link>
-              </Button>
-              <Button variant="ghost" size="icon" asChild className="flex-shrink-0">
-                <Link href="/settings">
-                  <Settings className="h-5 w-5" />
-                  <span className="sr-only">Settings</span>
-                </Link>
-              </Button>
+              {role === 'client' && (
+                <>
+                    <HeaderWalletCard />
+                    <Button variant="ghost" size="icon" asChild className="flex-shrink-0 relative">
+                        <Link href="/quotation-requests?subtab=incoming">
+                        <Bell className="h-6 w-6" />
+                        {notificationCount > 0 && (
+                            <span className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs font-bold text-destructive-foreground">
+                            {notificationCount}
+                            </span>
+                        )}
+                        <span className="sr-only">Notifications</span>
+                        </Link>
+                    </Button>
+                    <Button variant="ghost" size="icon" asChild className="flex-shrink-0">
+                        <Link href="/settings">
+                        <Settings className="h-5 w-5" />
+                        <span className="sr-only">Settings</span>
+                        </Link>
+                    </Button>
+                </>
+              )}
             </div>
           </div>
         </header>
