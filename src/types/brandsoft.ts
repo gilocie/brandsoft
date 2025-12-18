@@ -227,6 +227,7 @@ export type AdminSettings = {
   keyPrice?: number;
   keyFreeDays?: number;
   keyUsageLimit?: number;
+  keysSold?: number;
 };
 
 export type BrandsoftConfig = {

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -14,8 +15,6 @@ import { useBrandsoft } from '@/hooks/use-brandsoft';
 import { cn } from '@/lib/utils';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-
-const KEY_PRICE = 5000;
 
 const pinSchema = z.object({
   pin: z.string().length(4, "Your PIN must be 4 digits."),
@@ -40,7 +39,8 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
   const [pinConfirmation, setPinConfirmation] = useState<{method: 'wallet' | 'credits'} | null>(null);
 
   const exchangeValue = config?.admin?.exchangeValue || 1000;
-  const creditCost = KEY_PRICE / exchangeValue;
+  const keyPrice = config?.admin?.keyPrice || 5000;
+  const creditCost = keyPrice / exchangeValue;
 
   const pinForm = useForm<PinFormData>({
     resolver: zodResolver(pinSchema),
@@ -66,8 +66,9 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
   
   const handlePayment = (pin: string) => {
       if (!pinConfirmation) return;
+      if (!config || !config.affiliate) return;
 
-      if (!config?.affiliate?.isPinSet) {
+      if (!config.affiliate.isPinSet) {
           toast({ variant: 'destructive', title: "PIN Not Set", description: "Please set your withdrawal PIN in 'My Features' first." });
           return;
       }
@@ -78,23 +79,21 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
       }
       
       const method = pinConfirmation.method;
+      let newConfig = { ...config };
 
       if (method === 'wallet') {
           const newTransaction = {
             id: `TRN-KEY-${Date.now()}`,
             date: new Date().toISOString(),
             description: `Key Purchase: ${generatedKey}`,
-            amount: KEY_PRICE,
+            amount: keyPrice,
             type: 'debit' as 'debit',
           };
-          saveConfig({
-            ...config,
-            affiliate: {
-              ...config.affiliate,
-              myWallet: (config.affiliate.myWallet || 0) - KEY_PRICE,
-              transactions: [newTransaction, ...(config.affiliate.transactions || [])],
-            }
-          }, { redirect: false, revalidate: true });
+          newConfig.affiliate = {
+              ...newConfig.affiliate,
+              myWallet: (newConfig.affiliate.myWallet || 0) - keyPrice,
+              transactions: [newTransaction, ...(newConfig.affiliate.transactions || [])],
+          };
       } else if (method === 'credits') {
           const newTransaction = {
             id: `TRN-KEY-CREDIT-${Date.now()}`,
@@ -103,15 +102,18 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
             amount: creditCost,
             type: 'debit' as 'debit',
           };
-           saveConfig({
-            ...config,
-            affiliate: {
-              ...config.affiliate,
-              creditBalance: (config.affiliate.creditBalance || 0) - creditCost,
-              transactions: [newTransaction, ...(config.affiliate.transactions || [])],
-            }
-          }, { redirect: false, revalidate: true });
+          newConfig.affiliate = {
+              ...newConfig.affiliate,
+              creditBalance: (newConfig.affiliate.creditBalance || 0) - creditCost,
+              transactions: [newTransaction, ...(newConfig.affiliate.transactions || [])],
+          };
       }
+      
+      if(newConfig.admin) {
+        newConfig.admin.keysSold = (newConfig.admin.keysSold || 0) + 1;
+      }
+
+      saveConfig(newConfig, { redirect: false, revalidate: true });
 
       toast({
           title: "Payment Successful!",
@@ -125,7 +127,7 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
   const handleManualPayment = () => {
       setPurchaseDetails({
         name: `Activation Key (${maskedKey})` as any,
-        price: `K${KEY_PRICE.toLocaleString()}`,
+        price: `K${keyPrice.toLocaleString()}`,
         period: 'One-time Key Purchase',
     });
   };
@@ -171,8 +173,8 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
                       <div className="flex items-start gap-3 text-sm">
                           <Calendar className="h-5 w-5 text-primary mt-0.5 shrink-0"/>
                           <div>
-                              <p className="font-medium">30 Free Premium Days</p>
-                              <p className="text-xs text-muted-foreground">The client starts with a 30-day free trial on any premium plan upon activation.</p>
+                              <p className="font-medium">{config?.admin?.keyFreeDays || 30} Free Premium Days</p>
+                              <p className="text-xs text-muted-foreground">The client starts with a free trial on any premium plan upon activation.</p>
                           </div>
                       </div>
                       <div className="flex items-start gap-3 text-sm">
@@ -186,7 +188,7 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
                 </div>
               
                 <div className="text-center font-bold text-lg pt-4 border-t">
-                  Cost: K{KEY_PRICE.toLocaleString()}
+                  Cost: K{keyPrice.toLocaleString()}
                 </div>
                 <DialogFooter>
                   <Button type="button" variant="outline" onClick={handleClose}>Cancel</Button>
@@ -199,13 +201,13 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
             <div className="pt-4 space-y-4">
                 <div className="p-4 bg-muted rounded-lg text-center space-y-1">
                   <p className="text-sm text-muted-foreground">You are purchasing a new key for</p>
-                  <p className="text-4xl font-bold">K{KEY_PRICE.toLocaleString()}</p>
+                  <p className="text-4xl font-bold">K{keyPrice.toLocaleString()}</p>
                   <p className="text-xs text-muted-foreground pt-2">Generated Key: <span className="font-mono">{maskedKey}</span></p>
                 </div>
               <h3 className="text-sm font-semibold text-center">Choose Payment Method</h3>
                <div className="grid grid-cols-3 gap-2">
                   <Button onClick={() => {
-                      if (walletBalance < KEY_PRICE) {
+                      if (walletBalance < keyPrice) {
                           toast({ variant: 'destructive', title: 'Insufficient Wallet Balance' });
                       } else {
                           setPinConfirmation({ method: 'wallet' });
@@ -260,7 +262,7 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
             <DialogTitle>Confirm with PIN</DialogTitle>
             <DialogDescription>
                 {pinConfirmation?.method === 'wallet' 
-                    ? `Enter your PIN to confirm payment of K${KEY_PRICE.toLocaleString()} from your wallet.`
+                    ? `Enter your PIN to confirm payment of K${keyPrice.toLocaleString()} from your wallet.`
                     : `Enter your PIN to confirm payment of BS ${creditCost.toLocaleString()} from your credit balance.`
                 }
             </DialogDescription>
@@ -294,7 +296,13 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
           plan={purchaseDetails}
           isOpen={!!purchaseDetails}
           onClose={handleClose}
-          onSuccess={() => { setStep(3); setPurchaseDetails(null); }}
+          onSuccess={() => { 
+              if (config && config.admin) {
+                saveConfig({...config, admin: {...config.admin, keysSold: (config.admin.keysSold || 0) + 1}}, {redirect: false});
+              }
+              setStep(3); 
+              setPurchaseDetails(null); 
+          }}
           isTopUp
         />
       )}

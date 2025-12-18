@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -15,10 +15,11 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { MoreHorizontal, PackagePlus, Briefcase, CheckCircle, Pencil, Trash2, KeyRound } from 'lucide-react';
+import { MoreHorizontal, PackagePlus, Briefcase, CheckCircle, Pencil, Trash2, KeyRound, TrendingUp, BarChart } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
+import { StatCard } from '@/components/office/stat-card';
 
 
 const premiumFeatures = [
@@ -134,12 +135,47 @@ export default function AdminPlansPage() {
         });
     };
 
+    const trendingPlan = useMemo(() => {
+        if (!config?.purchases || config.purchases.length === 0) return 'None';
+        const planCounts = config.purchases.reduce((acc, p) => {
+            if (p.planName && p.status === 'active') {
+                acc[p.planName] = (acc[p.planName] || 0) + 1;
+            }
+            return acc;
+        }, {} as Record<string, number>);
+        const trending = Object.keys(planCounts).sort((a,b) => planCounts[b] - planCounts[a]);
+        return trending[0] || 'None';
+    }, [config?.purchases]);
+
+    const keysSold = adminSettings?.keysSold || 0;
+    const keyPrice = adminSettings?.keyPrice || 0;
+    const totalFromKeys = keysSold * keyPrice;
+
+    const totalFromPlans = useMemo(() => {
+        if (!config?.purchases) return 0;
+        return config.purchases
+            .filter(p => p.status === 'active' && !p.planName.toLowerCase().includes('key'))
+            .reduce((sum, p) => {
+                const price = parseFloat(p.planPrice.replace(/[^0-9.-]+/g,""));
+                return sum + (isNaN(price) ? 0 : price);
+            }, 0);
+    }, [config?.purchases]);
+
+
     return (
         <div className="container mx-auto space-y-8">
              <div>
                 <h1 className="text-3xl font-bold font-headline">Plan & Pricing</h1>
                 <p className="text-muted-foreground">Manage subscription plans and available features.</p>
             </div>
+
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <StatCard title="Trending Plan" value={trendingPlan} icon={TrendingUp} footer="Most popular subscription" />
+                <StatCard title="Keys Sold" value={keysSold} icon={KeyRound} footer="Total activation keys sold" />
+                <StatCard title="Revenue from Keys" value={totalFromKeys} isCurrency icon={BarChart} footer="Lifetime key sales" />
+                <StatCard title="Revenue from Plans" value={totalFromPlans} isCurrency icon={BarChart} footer="Lifetime plan sales" />
+            </div>
+
              <Tabs defaultValue="plans-list" className="w-full">
                 <TabsList>
                     <TabsTrigger value="plans-list">Plans</TabsTrigger>
