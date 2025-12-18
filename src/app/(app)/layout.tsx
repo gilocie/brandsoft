@@ -63,8 +63,8 @@ import { Label } from '@/components/ui/label';
 const mainNavItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', enabledKey: null, roles: ['client'] },
   { href: '/history', icon: Wallet, label: 'Wallet', enabledKey: null, roles: ['client'] },
-  { href: '/office', icon: User, label: 'Office', enabledKey: null, roles: ['staff'] },
-  { href: '/admin', icon: Shield, label: 'Admin', enabledKey: null, roles: ['admin'] },
+  { href: '/office', icon: User, label: 'Dashboard', enabledKey: null, roles: ['staff'] },
+  { href: '/admin', icon: Shield, label: 'Dashboard', enabledKey: null, roles: ['admin'] },
   { href: '/companies', icon: Users, label: 'Companies', enabledKey: null, roles: ['admin'] },
   { href: '/invoices', icon: FileText, label: 'Invoices', enabledKey: 'invoice', roles: ['client'] },
   { href: '/quotations', icon: FileBarChart2, label: 'Quotations', enabledKey: 'quotation', roles: ['client'] },
@@ -145,7 +145,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       router.push('/admin');
     } else if (role === 'staff' && pathname !== '/office') {
       router.push('/office');
-    } else if (role === 'client' && nonClientPages.some(p => pathname.startsWith(p))) {
+    } else if (role === 'client' && (nonClientPages.some(p => pathname.startsWith(p)) || pathname === '/')) {
       router.push('/dashboard');
     }
   }, [role, pathname, router]);
