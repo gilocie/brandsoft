@@ -68,9 +68,9 @@ const mainNavItems = [
   { href: '/quotations', icon: FileBarChart2, label: 'Quotations', enabledKey: 'quotation', roles: ['client'] },
   { href: '/quotation-requests', icon: MessageSquareQuote, label: 'Requests', enabledKey: 'quotation', roles: ['client'] },
   { href: '/products', icon: Package, label: 'Products', enabledKey: 'invoice', roles: ['client'] },
-  { href: '/companies', icon: Users, label: 'Companies', enabledKey: null, roles: ['admin'] },
   { href: '/marketplace', icon: Store, label: 'Suppliers', enabledKey: null, roles: ['client'] },
   { href: '/admin', icon: Shield, label: 'Admin', enabledKey: null, roles: ['admin'] },
+  { href: '/companies', icon: Users, label: 'Companies', enabledKey: null, roles: ['admin'] },
 ];
 
 const upcomingNavItems = [
