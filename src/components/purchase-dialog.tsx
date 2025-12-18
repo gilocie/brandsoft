@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Loader2, UploadCloud, FileCheck, Building2, Smartphone, Banknote } from 'lucide-react';
+import { CheckCircle, Loader2, UploadCloud, FileCheck, Building2, Smartphone, Banknote, Wallet } from 'lucide-react';
 import { PlanDetails } from './manage-plan-dialog';
 import { useBrandsoft, type Affiliate, type WithdrawalMethodDetails, type BankDetails } from '@/hooks/use-brandsoft';
 import { useToast } from '@/hooks/use-toast';
@@ -147,18 +147,29 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
             setReceiptDataUrl(null);
         }
     };
+    
+    const balance = config?.profile.walletBalance || 0;
+    const priceAmount = parseFloat(plan.price.replace(/[^0-9.-]+/g,""));
+    const canAffordWithWallet = balance >= priceAmount;
 
     const handleConfirmPurchase = () => {
         if (!selectedPayment) {
             toast({ variant: 'destructive', title: 'Payment Method Required', description: 'Please select a payment method.' });
             return;
         }
-        if (!receiptFile) {
-            toast({ variant: 'destructive', title: 'Receipt Required', description: 'Please upload your transaction receipt.' });
+
+        if (selectedPayment !== 'wallet' && !receiptFile) {
+            toast({ variant: 'destructive', title: 'Receipt Required', description: 'Please upload your transaction receipt for manual payments.' });
             return;
         }
+
         if (!whatsappNumber) {
             toast({ variant: 'destructive', title: 'WhatsApp Number Required', description: 'Please enter your WhatsApp number.' });
+            return;
+        }
+        
+        if (selectedPayment === 'wallet' && !canAffordWithWallet) {
+            toast({ variant: 'destructive', title: 'Insufficient Funds', description: 'Your wallet balance is not enough for this purchase.' });
             return;
         }
 
@@ -176,22 +187,20 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                 planPrice: plan.price,
                 planPeriod: plan.period,
                 paymentMethod: selectedPayment,
-                status: 'pending' as 'pending',
+                status: selectedPayment === 'wallet' ? 'active' as const : 'pending' as const,
                 date: new Date().toISOString(),
                 receipt: receiptDataUrl || 'none',
                 whatsappNumber: whatsappNumber,
                 customerId: myCompany?.id, // Store who made the purchase
             };
-            addPurchaseOrder(newOrder);
-
-            if (saveWhatsapp && config && config.profile.phone !== whatsappNumber) {
-                saveConfig({
-                    ...config,
-                    profile: { ...config.profile, phone: whatsappNumber }
-                }, { redirect: false, revalidate: false });
-            }
-
-            const message = `*Please Activate My New Order!*
+            
+            if (selectedPayment === 'wallet') {
+                // Deduct from wallet and save
+                const newBalance = balance - priceAmount;
+                saveConfig({ ...config!, profile: { ...config!.profile, walletBalance: newBalance }, purchases: [...(config!.purchases || []), newOrder]}, {redirect: false});
+            } else {
+                addPurchaseOrder(newOrder);
+                 const message = `*Please Activate My New Order!*
 %0A%0AOrder ID: ${newOrderId}
 %0APlan: ${plan.name} (${plan.period})
 %0APrice: ${plan.price}
@@ -199,13 +208,22 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
 %0AUser WhatsApp: ${whatsappNumber}
 %0A%0AView Status: ${window.location.origin}/verify-purchase?orderId=${newOrderId}
 %0A%0AMy regards`;
-            window.open(`https://wa.me/${affiliateWhatsappNumber}?text=${message}`, '_blank');
+                window.open(`https://wa.me/${affiliateWhatsappNumber}?text=${message}`, '_blank');
+            }
+
+
+            if (saveWhatsapp && config && config.profile.phone !== whatsappNumber) {
+                saveConfig({
+                    ...config,
+                    profile: { ...config.profile, phone: whatsappNumber }
+                }, { redirect: false, revalidate: false });
+            }
             
             setPurchaseState('success');
         }, 1500);
     };
     
-    const isConfirmDisabled = purchaseState !== 'idle' || !selectedPayment || !whatsappNumber || !receiptFile;
+    const isConfirmDisabled = purchaseState !== 'idle' || !selectedPayment || !whatsappNumber || (selectedPayment !== 'wallet' && !receiptFile);
 
     const handleDialogClose = () => {
         if (purchaseState !== 'processing') {
@@ -256,7 +274,7 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                      <div className="py-10 text-center space-y-4">
                         <CheckCircle className="h-16 w-16 text-green-500 mx-auto" />
                         <h2 className="text-2xl font-bold">Purchase Successful!</h2>
-                        <p className="text-muted-foreground">Your order <code className="bg-muted px-2 py-1 rounded-md">{orderId}</code> is pending approval. You will be notified once your plan is activated.</p>
+                        <p className="text-muted-foreground">Your order <code className="bg-muted px-2 py-1 rounded-md">{orderId}</code> is {selectedPayment === 'wallet' ? 'complete' : 'pending approval'}. You will be notified once your plan is activated.</p>
                         <Button onClick={handleDialogClose}>Close</Button>
                     </div>
                 ) : (
@@ -276,7 +294,7 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                             <div className="space-y-4">
                                 <StepIndicator step={1} label="Enter WhatsApp Number" isComplete={!!whatsappNumber} />
                                 <StepIndicator step={2} label="Select Payment Method" isComplete={!!selectedPayment} />
-                                <StepIndicator step={3} label="Upload Receipt" isComplete={!!receiptFile} />
+                                <StepIndicator step={3} label={selectedPayment === 'wallet' ? "Confirm" : "Upload Receipt"} isComplete={selectedPayment === 'wallet' ? true : !!receiptFile} />
                                 <StepIndicator step={4} label="Confirm Purchase" isComplete={purchaseState === 'success'} />
                             </div>
 
@@ -293,6 +311,36 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                         <div className="space-y-4">
                             <h3 className="font-semibold">Payment Method</h3>
                              <Accordion type="single" collapsible value={selectedPayment || ""} onValueChange={setSelectedPayment}>
+                                <AccordionItem value="wallet">
+                                     <AccordionTrigger
+                                        disabled={!canAffordWithWallet}
+                                        className={cn(
+                                            "hover:no-underline p-3 rounded-md",
+                                            selectedPayment === 'wallet' && "bg-primary/10 text-primary hover:bg-primary/20",
+                                            !canAffordWithWallet && "opacity-50 cursor-not-allowed"
+                                        )}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <Wallet className="h-5 w-5"/>
+                                            <span>Pay with Wallet</span>
+                                        </div>
+                                    </AccordionTrigger>
+                                     <AccordionContent className="p-3 space-y-2 text-sm border-t">
+                                        <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Available Balance:</span>
+                                            <span className="font-bold">K{balance.toLocaleString()}</span>
+                                        </div>
+                                         <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Order Total:</span>
+                                            <span className="font-bold">K{priceAmount.toLocaleString()}</span>
+                                        </div>
+                                        <div className="flex justify-between font-bold text-lg text-primary pt-2 border-t">
+                                            <span>Remaining Balance:</span>
+                                            <span>K{(balance - priceAmount).toLocaleString()}</span>
+                                        </div>
+                                    </AccordionContent>
+                                </AccordionItem>
+
                                 {paymentMethods.map(method => {
                                     const Icon = iconMap[method.id] || iconMap.default;
                                     return (
@@ -311,11 +359,11 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                                                     </div>
                                                 ))}
                                                 <div className="pt-4">
-                                                    <label htmlFor="receipt-upload" className={cn("w-full cursor-pointer flex items-center justify-center gap-2 border-2 border-dashed rounded-md p-4 text-sm hover:bg-muted", receiptFile && selectedPayment === method.id && "border-green-500 bg-green-50 text-green-700")}>
+                                                    <label htmlFor={`receipt-upload-${method.id}`} className={cn("w-full cursor-pointer flex items-center justify-center gap-2 border-2 border-dashed rounded-md p-4 text-sm hover:bg-muted", receiptFile && selectedPayment === method.id && "border-green-500 bg-green-50 text-green-700")}>
                                                         {receiptFile && selectedPayment === method.id ? <FileCheck className="h-4 w-4" /> : <UploadCloud className="h-4 w-4" />}
                                                         {receiptFile && selectedPayment === method.id ? receiptFile.name : "Upload Transaction Receipt"}
                                                     </label>
-                                                    <Input id="receipt-upload" type="file" className="hidden" onChange={handleReceiptUpload} />
+                                                    <Input id={`receipt-upload-${method.id}`} type="file" className="hidden" onChange={handleReceiptUpload} />
                                                 </div>
                                             </AccordionContent>
                                         </AccordionItem>
