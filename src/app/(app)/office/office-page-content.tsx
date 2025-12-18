@@ -41,14 +41,13 @@ import { PurchaseDialog, type PlanDetails } from '@/components/purchase-dialog';
 const affiliateSchema = z.object({
     fullName: z.string().min(2, "Full name is required"),
     username: z.string().min(3, "Username must be at least 3 characters"),
-    phone: z.string().min(1, "Phone number is required"),
+    phone: z.string().optional(),
     profilePic: z.string().optional(),
 });
 
 type AffiliateFormData = z.infer<typeof affiliateSchema>;
 
 const CREDIT_TO_MWK = 1000;
-const CREDIT_PURCHASE_PRICE = 900;
 const ITEMS_PER_PAGE = 10;
 
 const statusVariantMap: { [key: string]: 'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'accent' | 'primary' } = {
@@ -56,6 +55,39 @@ const statusVariantMap: { [key: string]: 'default' | 'secondary' | 'destructive'
   processing: 'primary',
   completed: 'success',
   active: 'success',
+};
+
+const ManageCreditsDialog = ({
+    creditBalance,
+    isOpen,
+    onOpenChange,
+}: {
+    creditBalance: number,
+    isOpen: boolean,
+    onOpenChange: (open: boolean) => void,
+}) => {
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Manage BS Credits</DialogTitle>
+                    <DialogDescription>
+                        View your credit balance and perform credit-related actions.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4 space-y-4">
+                    <div className="p-4 bg-muted rounded-lg text-center space-y-1">
+                        <p className="text-sm text-muted-foreground">Current Credit Balance</p>
+                        <p className="text-2xl font-bold">BS {creditBalance.toLocaleString()}</p>
+                         <p className="text-xs text-muted-foreground">Value: K{(creditBalance * CREDIT_TO_MWK).toLocaleString()}</p>
+                    </div>
+                    <p className="text-center text-sm text-muted-foreground">
+                        More credit management features coming soon.
+                    </p>
+                </div>
+            </DialogContent>
+        </Dialog>
+    );
 };
 
 
@@ -73,6 +105,7 @@ export function OfficePageContent() {
   const [isSecurityQuestionsOpen, setIsSecurityQuestionsOpen] = useState(false);
   const [isGenerateKeyOpen, setIsGenerateKeyOpen] = useState(false);
   const [purchaseDetails, setPurchaseDetails] = useState<PlanDetails | null>(null);
+  const [isManageCreditsOpen, setIsManageCreditsOpen] = useState(false);
 
   const affiliate = config?.affiliate;
 
@@ -220,7 +253,7 @@ export function OfficePageContent() {
     ?.filter(t => t.description.toLowerCase().startsWith('credit sale to'))
     .reduce((sum, t) => sum + t.amount, 0) || 0;
 
-  const creditSalesProfit = totalCreditsSold * (CREDIT_TO_MWK - CREDIT_PURCHASE_PRICE);
+  const creditSalesProfit = totalCreditsSold * (CREDIT_TO_MWK - (config.admin?.buyPrice || 900));
 
 
   const handleWithdraw = (amount: number, source: 'commission' | 'combined' | 'bonus') => {
@@ -579,10 +612,13 @@ export function OfficePageContent() {
                         valuePrefix={`BS `}
                         footer={`Value: K${((affiliate.creditBalance || 0) * CREDIT_TO_MWK).toLocaleString()}`}
                     >
-                        <BuyCreditsDialog
-                            walletBalance={affiliate.myWallet || 0}
-                            onManualPayment={(details) => setPurchaseDetails(details)}
-                         />
+                       <div className="flex gap-2">
+                            <BuyCreditsDialog
+                                walletBalance={affiliate.myWallet || 0}
+                                onManualPayment={(details) => setPurchaseDetails(details)}
+                             />
+                             <Button variant="outline" size="sm" onClick={() => setIsManageCreditsOpen(true)}>Manage</Button>
+                        </div>
                     </StatCard>
                     <Card>
                         <CardHeader>
@@ -828,7 +864,7 @@ export function OfficePageContent() {
                         <h3 className="text-sm font-semibold mb-2">Affiliate Phone Number</h3>
                         <p className="text-xs text-muted-foreground mb-2">This WhatsApp number will be used for top-up notifications and affiliate queries.</p>
                         <div className="flex items-center gap-2">
-                            <Input
+                             <Input
                                 readOnly
                                 value={affiliate.phone || 'Not set in profile'}
                                 icon={Phone}
@@ -980,6 +1016,11 @@ export function OfficePageContent() {
                 isTopUp
             />
         )}
+        <ManageCreditsDialog
+            creditBalance={affiliate.creditBalance || 0}
+            isOpen={isManageCreditsOpen}
+            onOpenChange={setIsManageCreditsOpen}
+        />
     </div>
   );
 }
