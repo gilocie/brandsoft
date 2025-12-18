@@ -36,7 +36,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Badge } from '@/components/ui/badge';
 import { GenerateKeyDialog } from '@/components/office/dialogs/generate-key-dialog';
 import { PurchaseDialog, type PlanDetails } from '@/components/purchase-dialog';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 
 const affiliateSchema = z.object({
@@ -67,6 +67,7 @@ export function OfficePageContent() {
   const [payoutsPage, setPayoutsPage] = useState(0);
   const { toast } = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [editingMethod, setEditingMethod] = useState<EditableWithdrawalMethod | null>(null);
   const [isBankDialogOpen, setIsBankDialogOpen] = useState(false);
@@ -87,6 +88,13 @@ export function OfficePageContent() {
           profilePic: affiliate?.profilePic || '',
       }
   });
+  
+   useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   const pendingTopUps = useMemo(() => {
     if (!config?.purchases) return [];
@@ -884,7 +892,7 @@ export function OfficePageContent() {
                            <VerificationItem
                                 title="Withdrawal PIN"
                                 status={affiliate.isPinSet || false}
-                                actionText={affiliate.isPinSet ? 'Change PIN' : 'Set PIN'}
+                                actionText={isPinSet ? 'Change PIN' : 'Set PIN'}
                                 onAction={() => setIsPinDialogOpen(true)}
                             />
                             <VerificationItem
