@@ -168,20 +168,20 @@ export const GenerateKeyDialog = ({ isOpen, onClose, staffId, walletBalance, cre
                       <p className="font-mono text-2xl font-bold tracking-wider my-4 break-all">{maskedKey}</p>
                       <p className="text-xs text-muted-foreground">The full key will be revealed after purchase.</p>
                   </div>
-                  <div className="space-y-3 rounded-lg border p-4">
+                   <div className="space-y-3 rounded-lg border p-4">
                       <h3 className="text-sm font-semibold">Key Benefits for Your New Client:</h3>
                       <div className="flex items-start gap-3 text-sm">
-                          <Calendar className="h-5 w-5 text-primary mt-0.5 shrink-0"/>
+                          <Gift className="h-5 w-5 text-primary mt-0.5 shrink-0"/>
                           <div>
                               <p className="font-medium">{config?.admin?.keyFreeDays || 30} Free Premium Days</p>
                               <p className="text-xs text-muted-foreground">The client starts with a free trial on any premium plan upon activation.</p>
                           </div>
                       </div>
                       <div className="flex items-start gap-3 text-sm">
-                          <Gift className="h-5 w-5 text-primary mt-0.5 shrink-0"/>
+                          <Calendar className="h-5 w-5 text-primary mt-0.5 shrink-0"/>
                           <div>
-                              <p className="font-medium">K30,000 Starter Wallet</p>
-                              <p className="text-xs text-muted-foreground">A K30,000 balance is credited to their account to automatically renew their plan after the free trial.</p>
+                              <p className="font-medium">{config?.admin?.keyPeriodReserveDays || 30} Paid Reserve Days</p>
+                              <p className="text-xs text-muted-foreground">Paid days are credited to the client's account, used automatically after the trial ends.</p>
                           </div>
                       </div>
                   </div>

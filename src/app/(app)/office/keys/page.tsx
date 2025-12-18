@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useBrandsoft } from '@/hooks/use-brandsoft';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Gift, Calendar } from 'lucide-react';
 import { GenerateKeyDialog } from '@/components/office/dialogs/generate-key-dialog';
 import { PurchaseDialog, type PlanDetails } from '@/components/purchase-dialog';
 import { useRouter } from 'next/navigation';
