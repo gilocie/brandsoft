@@ -36,7 +36,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Badge } from '@/components/ui/badge';
 import { GenerateKeyDialog } from '@/components/office/dialogs/generate-key-dialog';
 import { PurchaseDialog, type PlanDetails } from '@/components/purchase-dialog';
-import { useRouter, useSearchParams } from 'next/navigation';
 
 
 const affiliateSchema = z.object({
@@ -50,7 +49,6 @@ type AffiliateFormData = z.infer<typeof affiliateSchema>;
 
 const CREDIT_TO_MWK = 1000;
 const ITEMS_PER_PAGE = 10;
-const ADMIN_PIN_SUFFIX = '@8090';
 
 const statusVariantMap: { [key: string]: 'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'accent' | 'primary' } = {
   pending: 'accent',
@@ -66,8 +64,6 @@ export function OfficePageContent() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [payoutsPage, setPayoutsPage] = useState(0);
   const { toast } = useToast();
-  const router = useRouter();
-  const searchParams = useSearchParams();
 
   const [editingMethod, setEditingMethod] = useState<EditableWithdrawalMethod | null>(null);
   const [isBankDialogOpen, setIsBankDialogOpen] = useState(false);
@@ -88,13 +84,6 @@ export function OfficePageContent() {
           profilePic: affiliate?.profilePic || '',
       }
   });
-  
-   useEffect(() => {
-    const tab = searchParams.get('tab');
-    if (tab) {
-      setActiveTab(tab);
-    }
-  }, [searchParams]);
 
   const pendingTopUps = useMemo(() => {
     if (!config?.purchases) return [];
@@ -196,6 +185,13 @@ export function OfficePageContent() {
     if (!affiliate?.transactions) return [];
     return affiliate.transactions
       .filter(t => t.type === 'debit')
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [affiliate?.transactions]);
+
+  const commissionTransactions = useMemo(() => {
+    if (!affiliate?.transactions) return [];
+    return affiliate.transactions
+      .filter(t => t.type === 'credit')
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [affiliate?.transactions]);
   
@@ -382,14 +378,6 @@ export function OfficePageContent() {
     const isSingleOrder = pendingOrders.length === 1;
     const orderId = isSingleOrder ? pendingOrders[0].orderId : '';
 
-    const handleClick = () => {
-        if(isSingleOrder) {
-            router.push(`/verify-purchase?orderId=${orderId}${ADMIN_PIN_SUFFIX}`);
-        } else {
-            setActiveTab('transactions');
-        }
-    }
-
     return (
         <StatCard
             icon={Bell}
@@ -398,7 +386,7 @@ export function OfficePageContent() {
             footer={isSingleOrder ? `Order ID: ${orderId}` : `${pendingOrders.length} orders need verification.`}
             className="border-primary"
         >
-            <Button size="sm" className="w-full mt-2" onClick={handleClick}>
+            <Button size="sm" className="w-full mt-2" onClick={() => setActiveTab('transactions')}>
                 {isSingleOrder ? 'View Order' : 'View All'}
             </Button>
         </StatCard>
@@ -587,7 +575,6 @@ export function OfficePageContent() {
                     >
                         <BuyCreditsDialog
                             walletBalance={affiliate.myWallet || 0}
-                            adminAvailableCredits={config?.admin?.availableCredits || 0}
                             onManualPayment={(details) => setPurchaseDetails(details)}
                          />
                     </StatCard>
@@ -687,6 +674,7 @@ export function OfficePageContent() {
                 <TabsList>
                     <TabsTrigger value="top-ups">Top-ups</TabsTrigger>
                     <TabsTrigger value="sales">Sales</TabsTrigger>
+                    <TabsTrigger value="commissions">Commissions</TabsTrigger>
                     <TabsTrigger value="payouts">Payouts</TabsTrigger>
                 </TabsList>
                 <TabsContent value="top-ups" className="pt-4">
@@ -719,6 +707,37 @@ export function OfficePageContent() {
                     <div className="flex h-60 items-center justify-center rounded-lg border-2 border-dashed">
                         <p className="text-muted-foreground">Sales transaction history will be shown here.</p>
                     </div>
+                </TabsContent>
+                <TabsContent value="commissions" className="pt-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Commission History</CardTitle>
+                            <CardDescription>All incoming funds from sales and renewals.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                                {commissionTransactions.map(t => (
+                                    <div key={t.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
+                                                <TrendingUp className="h-4 w-4 text-green-600" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-medium">{t.description}</p>
+                                                <p className="text-xs text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
+                                            </div>
+                                        </div>
+                                        <p className="text-sm font-semibold text-green-600">+ K{t.amount.toLocaleString()}</p>
+                                    </div>
+                                ))}
+                                {commissionTransactions.length === 0 && (
+                                     <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
+                                        <p className="text-muted-foreground">No commission transactions found.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
                 </TabsContent>
                 <TabsContent value="payouts" className="pt-4">
                     <Card>
@@ -808,9 +827,6 @@ export function OfficePageContent() {
                                 icon={Phone}
                                 placeholder="Set in your profile..."
                             />
-                             <Button variant="secondary" size="sm" onClick={() => setIsEditDialogOpen(true)}>
-                                Edit Profile
-                            </Button>
                         </div>
                     </div>
                 </CardContent>
