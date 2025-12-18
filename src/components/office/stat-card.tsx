@@ -46,7 +46,7 @@ export const StatCard = ({
             </CardContent>
             {children && (
               <CardContent className="pt-0">
-                  <div className="mt-4">{children}</div>
+                  {children}
               </CardContent>
             )}
         </Card>

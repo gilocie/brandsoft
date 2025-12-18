@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useState, useEffect, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -31,12 +31,11 @@ import { WithdrawalMethodDialog, type WithdrawalMethodFormData, type EditableWit
 import { BankWithdrawalDialog, type BankWithdrawalFormData } from '@/components/office/dialogs/bank-withdrawal-dialog';
 import { BsCreditsDialog, type BsCreditsFormData } from '@/components/office/dialogs/bs-credits-dialog';
 import Link from 'next/link';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Badge } from '@/components/ui/badge';
 import { GenerateKeyDialog } from '@/components/office/dialogs/generate-key-dialog';
 import { PurchaseDialog, type PlanDetails } from '@/components/purchase-dialog';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { SellCreditsDialog } from '@/components/office/dialogs/sell-credits-dialog';
+import { TopUpNotificationCard } from '@/components/office/top-up-notification-card';
+import { TopUpTable } from '@/components/office/top-up-table';
 
 
 const affiliateSchema = z.object({
@@ -50,143 +49,6 @@ type AffiliateFormData = z.infer<typeof affiliateSchema>;
 
 const CREDIT_TO_MWK = 1000;
 const ITEMS_PER_PAGE = 10;
-
-const statusVariantMap: { [key: string]: 'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'accent' | 'primary' } = {
-  pending: 'accent',
-  processing: 'primary',
-  completed: 'success',
-  active: 'success',
-};
-
-const createSellCreditsSchema = (max: number) => z.object({
-  amount: z.coerce.number().min(1, "Minimum amount is 1 credit.").max(max, "Amount exceeds your balance."),
-});
-
-type SellCreditsFormData = z.infer<ReturnType<typeof createSellCreditsSchema>>;
-
-const AmountInput = ({ value, onChange, className, prefix = 'BS ' }: { value: number; onChange: (value: number) => void; className?: string; prefix?: string; }) => {
-    const [displayValue, setDisplayValue] = useState<string>('');
-
-    useEffect(() => {
-        setDisplayValue(value > 0 ? value.toLocaleString() : '');
-    }, [value]);
-
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const rawValue = e.target.value.replace(/,/g, '');
-        if (/^\d*\.?\d*$/.test(rawValue)) { 
-            const numValue = Number(rawValue);
-            setDisplayValue(numValue > 0 ? numValue.toLocaleString() : '');
-            onChange(numValue);
-        }
-    };
-    
-    return (
-        <div className="relative text-center">
-             <span className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 text-5xl font-bold text-muted-foreground pointer-events-none" style={{ left: `calc(50% - ${((displayValue.length + 2) / 2) * 1.5}rem)` }}>{prefix}</span>
-            <input
-                type="text"
-                value={displayValue}
-                onChange={handleInputChange}
-                className={cn(
-                    "w-full bg-transparent border-none text-5xl font-bold text-center focus:outline-none focus:ring-0",
-                    className
-                )}
-                placeholder="0"
-            />
-        </div>
-    );
-};
-
-
-const SellCreditsDialog = ({
-    creditBalance,
-    isOpen,
-    onOpenChange,
-    buyPrice
-}: {
-    creditBalance: number,
-    isOpen: boolean,
-    onOpenChange: (open: boolean) => void,
-    buyPrice: number,
-}) => {
-    const { toast } = useToast();
-    const [activeTab, setActiveTab] = useState('sell-back');
-
-    const sellCreditsSchema = createSellCreditsSchema(creditBalance);
-    const form = useForm<SellCreditsFormData>({
-        resolver: zodResolver(sellCreditsSchema),
-        defaultValues: { amount: 1 },
-    });
-
-    const watchedAmount = form.watch('amount');
-    const cashValue = (watchedAmount || 0) * buyPrice;
-
-    const handleSellRequest = (data: SellCreditsFormData) => {
-        toast({
-            title: 'Withdrawal Request Submitted',
-            description: `Your request to sell ${data.amount} credits for K${(data.amount * buyPrice).toLocaleString()} has been submitted for processing.`,
-        });
-        onOpenChange(false);
-    };
-
-    return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent>
-                <DialogHeader className="flex-row justify-between items-center">
-                    <div>
-                        <DialogTitle>Sell or Transfer Credits</DialogTitle>
-                        <DialogDescription>
-                            Sell your BS Credits back to Brandsoft or transfer them to another affiliate.
-                        </DialogDescription>
-                    </div>
-                     <ToggleGroup type="single" value={activeTab} onValueChange={(value) => {if(value) setActiveTab(value)}} className="border rounded-md h-9 p-0.5 bg-muted">
-                        <ToggleGroupItem value="sell-back" className="h-full px-3 text-xs data-[state=on]:bg-background data-[state=on]:shadow-sm rounded-sm">Sell</ToggleGroupItem>
-                        <ToggleGroupItem value="transfer" className="h-full px-3 text-xs data-[state=on]:bg-background data-[state=on]:shadow-sm rounded-sm">Transfer</ToggleGroupItem>
-                     </ToggleGroup>
-                </DialogHeader>
-                <div className="py-4">
-                     {activeTab === 'sell-back' && (
-                       <Form {...form}>
-                            <form onSubmit={form.handleSubmit(handleSellRequest)} className="space-y-4">
-                               <FormField
-                                    control={form.control}
-                                    name="amount"
-                                    render={({ field }) => (
-                                        <FormItem className="text-center">
-                                            <FormControl>
-                                                <AmountInput
-                                                    value={field.value}
-                                                    onChange={field.onChange}
-                                                />
-                                            </FormControl>
-                                            <FormDescription>
-                                                 Your balance: <span className="font-bold">BS {creditBalance.toLocaleString()}</span>
-                                            </FormDescription>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <div className="p-4 bg-primary/10 rounded-lg text-center space-y-1 border border-primary/20">
-                                    <p className="text-sm text-primary/80">You Will Receive</p>
-                                    <p className="text-2xl font-bold text-primary">K{cashValue.toLocaleString()}</p>
-                                </div>
-                                <Button type="submit" className="w-full">Request Withdrawal</Button>
-                            </form>
-                        </Form>
-                    )}
-                    {activeTab === 'transfer' && (
-                         <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
-                            <p className="text-sm text-muted-foreground text-center px-4">
-                               This feature will allow you to transfer credits to another affiliate.
-                               Coming soon.
-                            </p>
-                        </div>
-                    )}
-                </div>
-            </DialogContent>
-        </Dialog>
-    );
-};
 
 
 export function OfficePageContent() {
@@ -509,74 +371,6 @@ export function OfficePageContent() {
         });
     };
 
-  const TopUpNotificationCard = () => {
-    const pendingOrders = pendingTopUps.filter(p => p.status === 'pending');
-    if (pendingOrders.length === 0) return null;
-    
-    const isSingleOrder = pendingOrders.length === 1;
-    const orderId = isSingleOrder ? pendingOrders[0].orderId : '';
-
-    return (
-        <StatCard
-            icon={Bell}
-            title="Pending Top-ups"
-            value={pendingOrders.length}
-            footer={isSingleOrder ? `Order ID: ${orderId}` : `${pendingOrders.length} orders need verification.`}
-            className="border-primary"
-        >
-            <Button size="sm" className="w-full mt-2" onClick={() => setActiveTab('transactions')}>
-                {isSingleOrder ? 'View Order' : 'View All'}
-            </Button>
-        </StatCard>
-    );
-  };
-
-  const renderTopUpTable = (orders: Purchase[], emptyMessage: string) => (
-       <Table>
-            <TableHeader>
-                <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Order ID</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                {orders.length > 0 ? orders.map(req => (
-                    <TableRow key={req.orderId}>
-                        <TableCell>{new Date(req.date).toLocaleDateString()}</TableCell>
-                        <TableCell>{req.orderId}</TableCell>
-                        <TableCell>{req.planPrice}</TableCell>
-                        <TableCell>
-                            <Badge variant={statusVariantMap[req.status] || 'default'} className="capitalize">
-                                {req.status}
-                            </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" disabled={req.status !== 'pending'}>
-                                        <MoreHorizontal className="h-4 w-4"/>
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                    <DropdownMenuItem onClick={() => handleStatusChange(req.orderId, 'processing')} disabled={req.status === 'processing' || req.status === 'active'}>
-                                        <RefreshCw className="mr-2 h-4 w-4" /> Mark as Processing
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </TableCell>
-                    </TableRow>
-                )) : (
-                    <TableRow>
-                        <TableCell colSpan={5} className="text-center h-24">{emptyMessage}</TableCell>
-                    </TableRow>
-                )}
-            </TableBody>
-        </Table>
-  );
-
 
   return (
     <div className="space-y-8">
@@ -672,12 +466,16 @@ export function OfficePageContent() {
             </Dialog>
           </div>
         </div>
-        <TopUpNotificationCard />
+        <TopUpNotificationCard
+          pendingOrders={pendingTopUpOrders}
+          onViewAll={() => setActiveTab('transactions')}
+        />
       </div>
 
        <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+            <TabsTrigger value="clients">Clients ({syncedClients.length})</TabsTrigger>
             <TabsTrigger value="transactions">Transactions</TabsTrigger>
             <TabsTrigger value="invitations">Invitations</TabsTrigger>
             <TabsTrigger value="my-features">My Features</TabsTrigger>
@@ -801,6 +599,20 @@ export function OfficePageContent() {
                 </Card>
             </div>
         </TabsContent>
+         <TabsContent value="clients" className="pt-6">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {syncedClients.length > 0 ? (
+                    syncedClients.map(client => (
+                        <ClientCard key={client.id} client={client} />
+                    ))
+                ) : (
+                    <div className="col-span-full flex flex-col items-center justify-center h-40 border-2 border-dashed rounded-lg text-muted-foreground">
+                        <p>No clients yet.</p>
+                        <p className="text-sm">Register a company with your Staff ID to see them here.</p>
+                    </div>
+                )}
+            </div>
+        </TabsContent>
          <TabsContent value="transactions" className="pt-6">
             <Tabs defaultValue="top-ups">
                 <TabsList>
@@ -822,13 +634,13 @@ export function OfficePageContent() {
                                     <TabsTrigger value="completed">Completed</TabsTrigger>
                                 </TabsList>
                                 <TabsContent value="pending" className="pt-4">
-                                    {renderTopUpTable(pendingTopUpOrders, "No pending top-ups.")}
+                                    <TopUpTable orders={pendingTopUpOrders} onStatusChange={handleStatusChange} emptyMessage="No pending top-ups." />
                                 </TabsContent>
                                 <TabsContent value="processing" className="pt-4">
-                                     {renderTopUpTable(processingTopUpOrders, "No top-ups being processed.")}
+                                     <TopUpTable orders={processingTopUpOrders} onStatusChange={handleStatusChange} emptyMessage="No top-ups being processed." />
                                 </TabsContent>
                                 <TabsContent value="completed" className="pt-4">
-                                     {renderTopUpTable(completedTopUpOrders, "No completed top-ups.")}
+                                     <TopUpTable orders={completedTopUpOrders} onStatusChange={handleStatusChange} emptyMessage="No completed top-ups." />
                                 </TabsContent>
                             </Tabs>
                         </CardContent>
@@ -904,13 +716,15 @@ export function OfficePageContent() {
                         )}
                     </Card>
                 </TabsContent>
-                <TabsContent value="invitations" className="pt-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Your Invitation Link</CardTitle>
-                            <CardDescription>Share this link to invite new clients to BrandSoft. You'll earn commissions on their purchases.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
+        </Tabs>
+        </TabsContent>
+        <TabsContent value="invitations" className="pt-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Your Invitation Link</CardTitle>
+                    <CardDescription>Share this link to invite new clients to BrandSoft. You'll earn commissions on their purchases.</CardDescription>
+                </CardHeader>
+                <CardContent>
                      <div className="flex items-center gap-2">
                         <Input value={affiliate.affiliateLink} readOnly className="h-9 text-sm" />
                         <Button size="sm" variant="outline" onClick={() => navigator.clipboard.writeText(affiliate.affiliateLink)}>
