@@ -177,7 +177,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                            </AvatarFallback>
                       </Avatar>
                       <h1 className="text-base font-bold">
-                          BrandSoft Studio
+                          BrandSoft
                       </h1>
                   </Link>
               ) : (
