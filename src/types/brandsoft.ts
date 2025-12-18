@@ -153,7 +153,7 @@ export type Purchase = {
     planPrice: string;
     planPeriod: string;
     paymentMethod: string;
-    status: 'pending' | 'active' | 'declined' | 'inactive';
+    status: 'pending' | 'active' | 'declined' | 'inactive' | 'processing';
     date: string;
     receipt?: string | 'none';
     whatsappNumber?: string;
