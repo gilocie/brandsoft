@@ -60,6 +60,7 @@ const TopUpActivationDialog = ({
     });
 
     const creditsToSell = form.watch('creditsToSell');
+    const hasEnoughCredits = affiliateCreditBalance >= creditsToSell;
     const remainingBalance = affiliateCreditBalance - creditsToSell;
 
     return (
@@ -86,7 +87,10 @@ const TopUpActivationDialog = ({
                                             <Input type="number" step="0.01" {...field} />
                                         </FormControl>
                                         <FormDescription>
-                                            Your balance will be <span className="font-bold text-primary">BS {remainingBalance.toLocaleString()}</span> after this sale.
+                                            {!hasEnoughCredits
+                                                ? <span className="text-destructive">Insufficient balance. Your current balance is BS {affiliateCreditBalance.toLocaleString()}.</span>
+                                                : `Your balance will be BS ${remainingBalance.toLocaleString()} after this sale.`
+                                            }
                                         </FormDescription>
                                         <FormMessage />
                                     </FormItem>
@@ -97,7 +101,7 @@ const TopUpActivationDialog = ({
                 </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={onClose}>Cancel</Button>
-                    <Button type="submit" form="topup-activation-form">Confirm & Activate</Button>
+                    <Button type="submit" form="topup-activation-form" disabled={!hasEnoughCredits}>Confirm & Activate</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
