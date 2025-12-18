@@ -9,7 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useBrandsoft, type Purchase } from '@/hooks/use-brandsoft';
@@ -19,7 +19,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Dialog, DialogContent, DialogHeader, DialogTitle as ShadcnDialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle as ShadcnDialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 
@@ -41,12 +41,14 @@ const TopUpActivationDialog = ({
     order,
     isOpen,
     onClose,
-    onConfirm
+    onConfirm,
+    affiliateCreditBalance,
 }: {
     order: Purchase,
     isOpen: boolean,
     onClose: () => void,
-    onConfirm: (credits: number) => void
+    onConfirm: (credits: number) => void,
+    affiliateCreditBalance: number,
 }) => {
     const { config } = useBrandsoft();
     const exchangeValue = config?.admin?.exchangeValue || 1000;
@@ -56,6 +58,9 @@ const TopUpActivationDialog = ({
         resolver: zodResolver(topUpActivationSchema),
         defaultValues: { creditsToSell: suggestedCredits }
     });
+
+    const creditsToSell = form.watch('creditsToSell');
+    const remainingBalance = affiliateCreditBalance - creditsToSell;
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -80,6 +85,9 @@ const TopUpActivationDialog = ({
                                         <FormControl>
                                             <Input type="number" step="0.01" {...field} />
                                         </FormControl>
+                                        <FormDescription>
+                                            Your balance will be <span className="font-bold text-primary">BS {remainingBalance.toLocaleString()}</span> after this sale.
+                                        </FormDescription>
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -279,6 +287,8 @@ function VerifyPurchaseContent() {
         }, 100);
       }
     };
+    
+    const affiliateCreditBalance = config?.affiliate?.creditBalance || 0;
 
     const renderContent = () => {
         if (isLoading) {
@@ -479,6 +489,7 @@ function VerifyPurchaseContent() {
                     isOpen={isTopUpActivationOpen}
                     onClose={() => setIsTopUpActivationOpen(false)}
                     onConfirm={handleConfirmTopUpActivation}
+                    affiliateCreditBalance={affiliateCreditBalance}
                 />
             )}
         </>
