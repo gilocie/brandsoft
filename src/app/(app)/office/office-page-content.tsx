@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { useState, useEffect, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -710,12 +710,12 @@ export function OfficePageContent() {
                         valuePrefix={`BS `}
                         footer={`Value: K${((affiliate.creditBalance || 0) * CREDIT_TO_MWK).toLocaleString()}`}
                     >
-                       <div className="flex gap-2">
+                       <div className="flex gap-2 mt-2">
                             <BuyCreditsDialog
                                 walletBalance={affiliate.myWallet || 0}
                                 onManualPayment={(details) => setPurchaseDetails(details)}
                              />
-                             <Button variant="outline" size="sm" onClick={() => setIsSellCreditsOpen(true)}>Sell</Button>
+                             <Button variant="outline" size="sm" className="w-full" onClick={() => setIsSellCreditsOpen(true)}>Sell</Button>
                         </div>
                     </StatCard>
                     <Card>
@@ -1123,4 +1123,3 @@ export function OfficePageContent() {
     </div>
   );
 }
-
