@@ -128,7 +128,7 @@ export default function AdminPage() {
             }, 0);
     }, [config?.purchases]);
 
-    const combinedRevenue = (adminSettings.revenueFromKeys || 0) + (adminSettings.revenueFromPlans || 0);
+    const combinedRevenue = revenueFromKeys + revenueFromPlans;
 
 
     const onCreditSettingsSubmit = (data: CreditSettingsFormData) => {
