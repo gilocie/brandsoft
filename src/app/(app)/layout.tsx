@@ -127,7 +127,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { config } = useBrandsoft();
-  const [role, setRole] = useState<'admin' | 'staff' | 'client'>('admin');
+  const [role, setRole] = useState<'admin' | 'staff' | 'client'>(() => {
+    if (typeof window !== 'undefined') {
+      return (localStorage.getItem('brandsoft-role') as any) || 'admin';
+    }
+    return 'admin';
+  });
 
   const currentUserId = useMemo(() => {
     if (!config || !config.brand) return null;
@@ -141,6 +146,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     const responseCount = config.requestResponses?.length || 0;
     return incomingCount + responseCount;
   }, [config]);
+  
+  useEffect(() => {
+    localStorage.setItem('brandsoft-role', role);
+  }, [role]);
+
 
   useEffect(() => {
     const nonClientPages = ['/admin', '/office'];
