@@ -333,25 +333,26 @@ export default function DashboardPage() {
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
 
+    // Priority 1: Always show the active plan if one exists.
     const activePlan = purchases.find(p => p.status === 'active');
     if (activePlan) return activePlan;
     
-    // Priority 1: Check for any unacknowledged declined orders first
+    // Priority 2: Check for any unacknowledged declined orders.
     const unacknowledgedDeclined = purchases.find(p => p.status === 'declined' && !p.isAcknowledged);
     if (unacknowledgedDeclined) return unacknowledgedDeclined;
     
-    // Priority 2: Check for any pending order
+    // Priority 3: Check for any pending order.
     const pending = purchases.find((p) => p.status === 'pending');
     if (pending) return pending;
     
-    // Priority 3: If no active plan, find the most recently expired one
+    // Priority 4: If no active plan, find the most recently expired one.
     const expiredPlans = purchases.filter(p => p.status === 'inactive' && p.expiresAt);
     if(expiredPlans.length > 0) {
         return expiredPlans.sort((a,b) => new Date(b.expiresAt!).getTime() - new Date(a.expiresAt!).getTime())[0];
     }
     
-    // Fallback to latest purchase if nothing else matches
-    return purchases[0] || null;
+    // Fallback: If nothing else matches (e.g., only an acknowledged declined plan exists), return null to show Free Trial.
+    return null;
   }, [config?.purchases]);
 
   if (!config) {
