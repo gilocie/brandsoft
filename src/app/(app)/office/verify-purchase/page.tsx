@@ -51,7 +51,7 @@ const TopUpActivationDialog = ({
     order: Purchase,
     isOpen: boolean,
     onClose: () => void,
-    onConfirm: (credits: number, pin: string) => void,
+    onConfirm: (credits: number) => void,
     affiliateCreditBalance: number,
     affiliatePin?: string;
     isPinSet?: boolean;
@@ -91,7 +91,7 @@ const TopUpActivationDialog = ({
             form.setError('pin', { message: 'The entered PIN is incorrect.' });
             return;
         }
-        onConfirm(data.creditsToSell, data.pin);
+        onConfirm(data.creditsToSell);
     };
     
     useEffect(() => {
@@ -319,11 +319,9 @@ function VerifyPurchaseContent() {
         }
     };
 
-    const handleConfirmTopUpActivation = (creditsToSell: number, pin: string) => {
+    const handleConfirmTopUpActivation = (creditsToSell: number) => {
         if (!order || !config?.affiliate) return;
-
-        // The PIN is already verified in the dialog's logic.
-        activatePurchaseOrder(order.orderId);
+        
         addCreditPurchaseToAffiliate(creditsToSell, order.orderId);
         
         toast({

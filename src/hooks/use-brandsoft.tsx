@@ -131,12 +131,11 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
         if (!order) return;
 
         const costInMWK = parseFloat(order.planPrice.replace(/[^0-9.-]+/g,""));
-        const commissionRate = 0.1; // 10%
-        const commission = costInMWK * commissionRate;
         
-        let newAffiliateData = { ...config.affiliate };
+        let newConfig = { ...config };
+        let newAffiliateData = { ...newConfig.affiliate };
 
-        // 1. Deduct credits from affiliate
+        // 1. Deduct credits from affiliate's balance
         newAffiliateData.creditBalance = (newAffiliateData.creditBalance || 0) - credits;
 
         // 2. Add cash value to client's wallet
@@ -148,18 +147,23 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
                 walletBalance: (client.walletBalance || 0) + costInMWK,
             };
         }
+        newConfig.affiliate = newAffiliateData;
+
+        // 3. Mark the purchase as 'active' (completed)
+        const updatedPurchases = newConfig.purchases.map(p =>
+            p.orderId === orderId ? { ...p, status: 'active' as const } : p
+        );
+        newConfig.purchases = updatedPurchases;
         
-        // 3. DO NOT add commission for top-ups, affiliate profits from spread.
-
-        // 4. Update admin stats
+        // 4. Update admin's sold credits stats (don't change available, as they were pre-sold)
         const newAdminSettings = {
-            ...config.admin,
-            // These credits were sold by the affiliate, not added to admin reserve.
-            // But total sold in ecosystem increases.
-            soldCredits: (config.admin.soldCredits || 0) + credits,
+            ...newConfig.admin,
+            soldCredits: (newConfig.admin.soldCredits || 0) + credits,
         };
+        newConfig.admin = newAdminSettings;
 
-        saveConfig({ ...config, affiliate: newAffiliateData, admin: newAdminSettings }, { revalidate: true });
+
+        saveConfig(newConfig, { revalidate: true });
     };
     
     const useActivationKey = (key: string, companyId: string): boolean => {
