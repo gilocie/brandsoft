@@ -99,23 +99,34 @@ export function PlanSettingsDialog({ isOpen, onClose, plan, onSave }: PlanSettin
 
                       <div className="space-y-2">
                         <Label>Promotional Discount</Label>
-                        <div className="flex gap-2">
-                            <ToggleGroup
-                                type="single"
-                                value={customization.discountType}
-                                onValueChange={(value: 'flat' | 'percentage') => handleChange('discountType', value)}
-                                className="border rounded-md"
-                            >
-                                <ToggleGroupItem value="percentage" className="h-10 px-3">%</ToggleGroupItem>
-                                <ToggleGroupItem value="flat" className="h-10 px-3">K</ToggleGroupItem>
-                            </ToggleGroup>
-                          <Input
-                            type="number"
-                            value={customization.discountValue || ''}
-                            onChange={(e) => handleChange('discountValue', e.target.value ? Number(e.target.value) : undefined)}
-                            placeholder="e.g., 10 or 500"
-                            className="flex-1"
-                          />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="flex gap-2">
+                                <ToggleGroup
+                                    type="single"
+                                    value={customization.discountType}
+                                    onValueChange={(value: 'flat' | 'percentage') => handleChange('discountType', value)}
+                                    className="border rounded-md"
+                                >
+                                    <ToggleGroupItem value="percentage" className="h-10 px-3">%</ToggleGroupItem>
+                                    <ToggleGroupItem value="flat" className="h-10 px-3">K</ToggleGroupItem>
+                                </ToggleGroup>
+                              <Input
+                                type="number"
+                                value={customization.discountValue || ''}
+                                onChange={(e) => handleChange('discountValue', e.target.value ? Number(e.target.value) : undefined)}
+                                placeholder="e.g., 10 or 500"
+                                className="flex-1"
+                              />
+                            </div>
+                            <div>
+                                <Input
+                                    type="number"
+                                    value={customization.discountMonths || ''}
+                                    onChange={(e) => handleChange('discountMonths', e.target.value ? Number(e.target.value) : undefined)}
+                                    placeholder="Months (optional)"
+                                />
+                                <p className="text-xs text-muted-foreground mt-1">For how many months does this apply?</p>
+                            </div>
                         </div>
                       </div>
                        <div className="space-y-2">

@@ -231,6 +231,7 @@ export type PlanCustomization = {
   isRecommended?: boolean;
   discountType?: 'flat' | 'percentage';
   discountValue?: number;
+  discountMonths?: number;
   titleColor?: string;
   headerBgColor?: string;
   footerBgColor?: string;
