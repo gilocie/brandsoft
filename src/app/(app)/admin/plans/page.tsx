@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -109,7 +110,7 @@ const AdminPlanCard = ({ plan, onEdit, onCustomize, onDelete }: { plan: Plan, on
                     {badgeText}
                 </div>
             )}
-             <div className="absolute top-2 right-2">
+             <div className="absolute top-2 right-2 z-20">
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="secondary" size="icon" className="h-8 w-8" style={{ background: 'rgba(255,255,255,0.1)', color: 'white' }}>
