@@ -127,16 +127,33 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
     const addCreditPurchaseToAffiliate = (credits: number, orderId: string) => {
         if (!config || !config.affiliate || !config.admin) return;
 
-        const order = config.purchases.find(p => p.orderId === orderId);
+        const order = (config.purchases || []).find(p => p.orderId === orderId);
         if (!order || !order.customerId) return;
 
         const costInMWK = parseFloat(order.planPrice.replace(/[^0-9.-]+/g,""));
+        const profitPerCredit = (config.admin.exchangeValue - config.admin.buyPrice);
+        const commission = credits * profitPerCredit;
         
         let newConfig = { ...config };
         let newAffiliateData = { ...newConfig.affiliate };
 
         // 1. Deduct credits from affiliate's balance
         newAffiliateData.creditBalance = (newAffiliateData.creditBalance || 0) - credits;
+
+        // Add commission
+        newAffiliateData.unclaimedCommission = (newAffiliateData.unclaimedCommission || 0) + commission;
+        
+        newAffiliateData.transactions = [
+            ...(newAffiliateData.transactions || []),
+            {
+                id: `TRN-SALE-${Date.now()}`,
+                date: new Date().toISOString(),
+                description: `Commission for ${credits} credits sale`,
+                amount: commission,
+                type: 'credit'
+            }
+        ];
+
 
         // 2. Add cash value to client's wallet
         const companyIndex = newConfig.companies.findIndex(c => c.id === order.customerId);
@@ -146,22 +163,36 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
                 ...company,
                 walletBalance: (company.walletBalance || 0) + costInMWK,
             };
+            
+            // Also update the client record in the affiliate's list
+            if(newAffiliateData.clients) {
+                const affiliateClientIndex = newAffiliateData.clients.findIndex(c => c.id === order.customerId);
+                if (affiliateClientIndex > -1) {
+                    const client = newAffiliateData.clients[affiliateClientIndex];
+                    newAffiliateData.clients[affiliateClientIndex] = {
+                        ...client,
+                        walletBalance: (client.walletBalance || 0) + costInMWK
+                    };
+                }
+            }
         }
-        newConfig.affiliate = newAffiliateData;
-
+        
         // 3. Mark the purchase as 'active' (completed)
-        const updatedPurchases = newConfig.purchases.map(p =>
+        const updatedPurchases = (newConfig.purchases || []).map(p =>
             p.orderId === orderId ? { ...p, status: 'active' as const } : p
         );
         newConfig.purchases = updatedPurchases;
         
-        // 4. Update admin's sold credits stats (don't change available, as they were pre-sold)
-        const newAdminSettings = {
+        // 4. Update admin's records
+        const newAdminSettings: AdminSettings = {
             ...newConfig.admin,
+            // Credits were already out of the main reserve when sold to affiliate,
+            // so we don't change `availableCredits`. We just record the final sale.
             soldCredits: (newConfig.admin.soldCredits || 0) + credits,
         };
+        
         newConfig.admin = newAdminSettings;
-
+        newConfig.affiliate = newAffiliateData;
 
         saveConfig(newConfig, { revalidate: true });
     };
@@ -176,7 +207,9 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
         }
 
         const newConfig = { ...config };
-        const keyData = newConfig.affiliate!.generatedKeys[keyIndex];
+        if (!newConfig.affiliate) return false;
+
+        const keyData = newConfig.affiliate.generatedKeys[keyIndex];
 
         const freeDays = newConfig.admin?.keyFreeDays || 30;
         const paidDays = newConfig.admin?.keyPeriodReserveDays || 30;
@@ -186,7 +219,7 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
         keyData.usedBy = companyId;
         keyData.remainingDays = totalDays; // Store the initial days
 
-        newConfig.affiliate!.generatedKeys[keyIndex] = keyData;
+        newConfig.affiliate.generatedKeys[keyIndex] = keyData;
 
         // You might want to update the company's subscription here as well
         // For now, we just mark the key as used.
@@ -254,14 +287,6 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
 
   const saveConfig = (newConfig: BrandsoftConfig, options: { redirect?: boolean; revalidate?: boolean } = {}) => {
     const { redirect = true, revalidate: shouldRevalidate = false } = options;
-    
-    // Migrate old quotationRequests to new structure
-    if (newConfig.quotationRequests && !newConfig.outgoingRequests) {
-        const myUserId = newConfig.customers.find(c => c.companyName === newConfig.brand.businessName)?.id || 'CUST-DEMO-ME';
-        newConfig.outgoingRequests = newConfig.quotationRequests.filter(r => r.requesterId === myUserId);
-        newConfig.incomingRequests = newConfig.quotationRequests.filter(r => r.requesterId !== myUserId);
-        delete (newConfig as any).quotationRequests;
-    }
 
     setConfig(newConfig);
     
@@ -300,16 +325,6 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
         
         let needsSave = false;
 
-        // Migration logic for quotation requests
-        if (parsedConfig.quotationRequests && !parsedConfig.outgoingRequests) {
-          const myUserId = parsedConfig.customers.find((c: Customer) => c.companyName === parsedConfig.brand.businessName)?.id || 'CUST-DEMO-ME';
-          parsedConfig.outgoingRequests = parsedConfig.quotationRequests.filter((r: QuotationRequest) => r.requesterId === myUserId);
-          parsedConfig.incomingRequests = parsedConfig.quotationRequests.filter((r: QuotationRequest) => r.requesterId !== myUserId);
-          parsedConfig.requestResponses = parsedConfig.quotations?.filter((q: Quotation) => q.isRequest) || [];
-          delete parsedConfig.quotationRequests;
-          needsSave = true;
-        }
-
         // Migration logic for affiliate data
         if (!parsedConfig.affiliate) {
             parsedConfig.affiliate = initialAffiliateData;
@@ -319,17 +334,17 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
             const fieldsToCheck: (keyof Affiliate)[] = ['totalSales', 'creditBalance', 'bonus', 'staffId', 'phone', 'transactions', 'isPinSet', 'unclaimedCommission', 'myWallet', 'generatedKeys'];
             fieldsToCheck.forEach(field => {
                 if (typeof parsedConfig.affiliate[field] === 'undefined') {
-                    if (field === 'myWallet' && typeof parsedConfig.affiliate.balance !== 'undefined') {
-                        parsedConfig.affiliate.myWallet = parsedConfig.affiliate.balance;
-                        delete parsedConfig.affiliate.balance;
+                    if (field === 'myWallet' && typeof (parsedConfig.affiliate as any).balance !== 'undefined') {
+                        parsedConfig.affiliate.myWallet = (parsedConfig.affiliate as any).balance;
+                        delete (parsedConfig.affiliate as any).balance;
                     } else {
-                         parsedConfig.affiliate[field] = initialAffiliateData[field];
+                         (parsedConfig.affiliate as any)[field] = initialAffiliateData[field as keyof Affiliate];
                     }
                     needsSave = true;
                 }
             });
-            if (typeof parsedConfig.affiliate.balance !== 'undefined') {
-                delete parsedConfig.affiliate.balance;
+            if (typeof (parsedConfig.affiliate as any).balance !== 'undefined') {
+                delete (parsedConfig.affiliate as any).balance;
                 needsSave = true;
             }
         }
@@ -357,7 +372,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
         
         // Add ID to profile for client lookups
         if (parsedConfig.profile && !(parsedConfig.profile as any).id) {
-           const userCompany = parsedConfig.companies.find((c:Company) => c.companyName === parsedConfig.brand.businessName);
+           const userCompany = (parsedConfig.companies || []).find((c:Company) => c.companyName === parsedConfig.brand.businessName);
            if (userCompany) {
               (parsedConfig.profile as any).id = userCompany.id;
               needsSave = true;
