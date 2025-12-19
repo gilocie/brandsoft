@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useBrandsoft, type Transaction, type Affiliate, type Purchase } from '@/hooks/use-brandsoft';
@@ -218,8 +219,8 @@ export function OfficePageContent() {
   const totalCreditsSold = affiliate.transactions
     ?.filter(t => t.description.toLowerCase().startsWith('credit sale to'))
     .reduce((sum, t) => sum + t.amount, 0) || 0;
-
-  const creditSalesProfit = totalCreditsSold * (CREDIT_TO_MWK - (config.admin?.buyPrice || 900));
+    
+  const creditSalesRevenue = totalCreditsSold * CREDIT_TO_MWK;
 
     return (
     <div className="space-y-8">
@@ -388,10 +389,10 @@ export function OfficePageContent() {
                     <StatCard icon={Users} title="Active Clients" value={activeClients} footer={`${syncedClients.length - activeClients} expired`} />
                     <StatCard 
                         icon={BarChart} 
-                        title="Credit Sales Profit" 
-                        value={creditSalesProfit} 
+                        title="Credit Sales Revenue" 
+                        value={creditSalesRevenue} 
                         isCurrency
-                        footer="Profit from selling credits"
+                        footer="Gross revenue from selling credits"
                     />
                     <StatCard icon={UserCheck} title="Total Referrals" value={syncedClients.length} footer="All-time client sign-ups" />
                 </div>
