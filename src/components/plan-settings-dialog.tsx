@@ -105,7 +105,7 @@ export function PlanSettingsDialog({ isOpen, onClose, plan, onSave }: PlanSettin
 
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 min-h-0 gap-0">
           {/* Left side - Settings */}
-          <div className="flex flex-col min-h-0">
+          <div className="flex flex-col min-h-0 border-r">
             <ScrollArea className="flex-1">
               <div className="p-6">
                  <Tabs defaultValue="promo" className="w-full">
@@ -248,9 +248,8 @@ export function PlanSettingsDialog({ isOpen, onClose, plan, onSave }: PlanSettin
               </div>
             </ScrollArea>
           </div>
-
           {/* Right side - Live Preview */}
-          <div className="lg:col-span-1 bg-gradient-to-br from-slate-950 to-slate-900 flex items-center justify-center p-6 border-l">
+          <div className="lg:col-span-1 bg-gradient-to-br from-slate-950 to-slate-900 flex items-center justify-center p-6">
             <div className="w-full max-w-xs">
                 <p className="text-xs text-slate-400 mb-3 text-center">Live Preview</p>
                 <Card
