@@ -1,11 +1,11 @@
 
 'use client';
 
+import { useBrandsoft } from '@/hooks/use-brandsoft';
+import { useRouter, usePathname } from 'next/navigation';
+import { useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { Loader2 } from 'lucide-react';
-import { useBrandsoft } from '@/hooks/use-brandsoft';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
 
 const OfficePageContent = dynamic(
   () => import('@/components/office/office-page-content').then(mod => mod.OfficePageContent),
@@ -22,16 +22,20 @@ const OfficePageContent = dynamic(
 export default function OfficePage() {
   const { config } = useBrandsoft();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     // This logic ensures that if the affiliate data is cleared (e.g., in admin),
     // the user is redirected away from the office page to prevent crashes.
-    if (config === null) {
-      // Still loading
-    } else if (!config.affiliate) {
-      router.push('/dashboard');
+    // CRITICAL FIX: Only run this check if we are on the main /office page itself.
+    if (pathname === '/office') {
+        if (config === null) {
+          // Still loading
+        } else if (!config.affiliate) {
+          router.push('/dashboard');
+        }
     }
-  }, [config, router]);
+  }, [config, router, pathname]);
 
 
   return <OfficePageContent />;
