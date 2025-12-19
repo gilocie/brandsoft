@@ -6,7 +6,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useBrandsoft, type Plan, type AdminSettings } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Plan, type AdminSettings, type PlanCustomization } from '@/hooks/use-brandsoft';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -15,12 +15,13 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { MoreHorizontal, PackagePlus, Briefcase, CheckCircle, Pencil, Trash2, KeyRound, TrendingUp, BarChart, AlertTriangle } from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { MoreHorizontal, PackagePlus, Briefcase, CheckCircle, Pencil, Trash2, KeyRound, TrendingUp, BarChart, AlertTriangle, Settings } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { StatCard } from '@/components/office/stat-card';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { PlanSettingsDialog } from '@/components/plan-settings-dialog';
 
 
 const premiumFeatures = [
@@ -65,6 +66,7 @@ export default function AdminPlansPage() {
     const { toast } = useToast();
     const [isAddPlanOpen, setIsAddPlanOpen] = useState(false);
     const [planToEdit, setPlanToEdit] = useState<Plan | null>(null);
+    const [planToCustomize, setPlanToCustomize] = useState<Plan | null>(null);
     const [planToDelete, setPlanToDelete] = useState<Plan | null>(null);
     const [isResetRevenueOpen, setIsResetRevenueOpen] = useState(false);
 
@@ -230,6 +232,15 @@ export default function AdminPlansPage() {
         toast({ title: 'Revenue Records Reset!', description: 'Revenue from keys and plans has been set to zero.' });
         setIsResetRevenueOpen(false);
     };
+    
+    const handleSaveCustomization = (planName: string, customization: PlanCustomization) => {
+        if (!config) return;
+        const updatedPlans = config.plans.map(p =>
+            p.name === planName ? { ...p, customization } : p
+        );
+        saveConfig({ ...config, plans: updatedPlans }, {redirect: false});
+        setPlanToCustomize(null);
+    };
 
     const trendingPlan = adminSettings?.trendingPlan || 'None';
     const keysSold = adminSettings?.keysSold || 0;
@@ -364,6 +375,10 @@ export default function AdminPlansPage() {
                                                         <DropdownMenuItem onSelect={() => handleEditPlan(plan)}>
                                                             <Pencil className="mr-2 h-4 w-4" /> Edit
                                                         </DropdownMenuItem>
+                                                         <DropdownMenuItem onSelect={() => setPlanToCustomize(plan)}>
+                                                            <Settings className="mr-2 h-4 w-4" /> Customize
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuSeparator />
                                                         <DropdownMenuItem onSelect={() => setPlanToDelete(plan)} className="text-destructive focus:text-destructive">
                                                             <Trash2 className="mr-2 h-4 w-4" /> Delete
                                                         </DropdownMenuItem>
@@ -482,6 +497,12 @@ export default function AdminPlansPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+            <PlanSettingsDialog
+                isOpen={!!planToCustomize}
+                onClose={() => setPlanToCustomize(null)}
+                plan={planToCustomize}
+                onSave={handleSaveCustomization}
+            />
         </div>
     );
 }

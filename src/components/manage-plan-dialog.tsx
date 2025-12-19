@@ -30,7 +30,7 @@ const planLevels: Record<string, number> = {
   'Enterprise': 3,
 };
 
-const PlanCard = ({ plan, isCurrent = false, cta, className, onBuyClick, onCustomizeClick }: { plan: Plan, isCurrent?: boolean, cta: string, className?: string, onBuyClick: () => void, onCustomizeClick: () => void }) => {
+const PlanCard = ({ plan, isCurrent = false, cta, className, onBuyClick, onCustomizeClick }: { plan: Plan, isCurrent?: boolean, cta: string, className?: string, onBuyClick: () => void, onCustomizeClick?: () => void }) => {
     
     const customization = plan.customization || {};
 
@@ -227,7 +227,6 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
                                 isCurrent={!currentPlanPurchase}
                                 cta={currentPlanPurchase ? "Downgrade to Trial" : "Current Plan"}
                                 onBuyClick={currentPlanPurchase ? handleDowngrade : () => {}}
-                                onCustomizeClick={() => alert("The default Free Trial plan cannot be customized. Create a new plan with the name 'Free Trial' to override it.")}
                             />
                         )}
 
