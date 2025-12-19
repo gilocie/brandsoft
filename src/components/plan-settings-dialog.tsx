@@ -42,6 +42,13 @@ export function PlanSettingsDialog({ isOpen, onClose, plan, onSave }: PlanSettin
 
   if (!plan) return null;
 
+  const isRecommended = customization.isRecommended;
+  const cardBgColor = customization?.bgColor || (isRecommended ? 'rgb(88, 80, 236)' : 'rgb(30, 30, 35)');
+  const cardTextColor = customization?.textColor || 'rgb(255, 255, 255)';
+  const borderColor = customization?.borderColor || (isRecommended ? 'rgb(88, 80, 236)' : 'rgb(45, 45, 50)');
+  const badgeColor = customization?.badgeColor || 'rgb(255, 107, 53)';
+  const badgeText = customization?.badgeText || 'Most popular';
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl h-[90vh] p-0 flex flex-col">
@@ -79,7 +86,10 @@ export function PlanSettingsDialog({ isOpen, onClose, plan, onSave }: PlanSettin
                     </CardHeader>
                     <CardContent className="space-y-4">
                        <div className="flex items-center justify-between rounded-lg border p-3">
-                          <Label htmlFor="isRecommended">Mark as "Recommended"</Label>
+                          <div>
+                            <Label htmlFor="isRecommended" className="font-medium">Mark as "Recommended"</Label>
+                            <p className="text-sm text-muted-foreground">Highlight this plan with special styling</p>
+                          </div>
                           <Switch
                             id="isRecommended"
                             checked={customization.isRecommended || false}
@@ -114,14 +124,14 @@ export function PlanSettingsDialog({ isOpen, onClose, plan, onSave }: PlanSettin
                           id="badgeText"
                           value={customization.badgeText || ''}
                           onChange={(e) => handleChange('badgeText', e.target.value)}
-                          placeholder="e.g., Best Value"
+                          placeholder="e.g., Most popular, Best Value"
                         />
                       </div>
                        <div className="space-y-2">
                         <Label htmlFor="badgeColor">Badge Color</Label>
                         <div className="flex gap-2">
-                          <Input id="badgeColor" type="color" value={customization.badgeColor || '#ef4444'} onChange={(e) => handleChange('badgeColor', e.target.value)} className="w-20 h-10"/>
-                          <Input type="text" value={customization.badgeColor || '#ef4444'} onChange={(e) => handleChange('badgeColor', e.target.value)} placeholder="#ef4444" className="flex-1"/>
+                          <Input id="badgeColor" type="color" value={customization.badgeColor || '#FF6B35'} onChange={(e) => handleChange('badgeColor', e.target.value)} className="w-20 h-10"/>
+                          <Input type="text" value={customization.badgeColor || '#FF6B35'} onChange={(e) => handleChange('badgeColor', e.target.value)} placeholder="#FF6B35" className="flex-1"/>
                         </div>
                       </div>
                     </CardContent>
@@ -138,24 +148,63 @@ export function PlanSettingsDialog({ isOpen, onClose, plan, onSave }: PlanSettin
                       <div className="space-y-2">
                         <Label htmlFor="bgColor">Background Color</Label>
                         <div className="flex gap-2">
-                          <Input id="bgColor" type="color" value={customization.bgColor || '#ffffff'} onChange={(e) => handleChange('bgColor', e.target.value)} className="w-20 h-10"/>
-                          <Input type="text" value={customization.bgColor || '#ffffff'} onChange={(e) => handleChange('bgColor', e.target.value)} placeholder="#ffffff" className="flex-1"/>
+                          <Input 
+                            id="bgColor" 
+                            type="color" 
+                            value={customization.bgColor || (isRecommended ? '#5850EC' : '#1E1E23')} 
+                            onChange={(e) => handleChange('bgColor', e.target.value)} 
+                            className="w-20 h-10"
+                          />
+                          <Input 
+                            type="text" 
+                            value={customization.bgColor || (isRecommended ? '#5850EC' : '#1E1E23')} 
+                            onChange={(e) => handleChange('bgColor', e.target.value)} 
+                            placeholder={isRecommended ? "#5850EC" : "#1E1E23"} 
+                            className="flex-1"
+                          />
                         </div>
+                        <p className="text-xs text-muted-foreground">
+                          {isRecommended ? 'Recommended: vibrant purple (#5850EC)' : 'Default: dark gray (#1E1E23)'}
+                        </p>
                       </div>
 
                       <div className="space-y-2">
                         <Label htmlFor="textColor">Text Color</Label>
                         <div className="flex gap-2">
-                          <Input id="textColor" type="color" value={customization.textColor || '#000000'} onChange={(e) => handleChange('textColor', e.target.value)} className="w-20 h-10"/>
-                          <Input type="text" value={customization.textColor || '#000000'} onChange={(e) => handleChange('textColor', e.target.value)} placeholder="#000000" className="flex-1"/>
+                          <Input 
+                            id="textColor" 
+                            type="color" 
+                            value={customization.textColor || '#FFFFFF'} 
+                            onChange={(e) => handleChange('textColor', e.target.value)} 
+                            className="w-20 h-10"
+                          />
+                          <Input 
+                            type="text" 
+                            value={customization.textColor || '#FFFFFF'} 
+                            onChange={(e) => handleChange('textColor', e.target.value)} 
+                            placeholder="#FFFFFF" 
+                            className="flex-1"
+                          />
                         </div>
                       </div>
 
                       <div className="space-y-2">
                         <Label htmlFor="borderColor">Border Color</Label>
                         <div className="flex gap-2">
-                          <Input id="borderColor" type="color" value={customization.borderColor || '#e5e7eb'} onChange={(e) => handleChange('borderColor', e.target.value)} className="w-20 h-10"/>
-                          <Input type="text" value={customization.borderColor || '#e5e7eb'} onChange={(e) => handleChange('borderColor', e.target.value)} placeholder="#e5e7eb" className="flex-1"/>
+                          <Input 
+                            id="borderColor" 
+                            type="color" 
+                            value={customization.borderColor || (isRecommended ? '#5850EC' : '#2D2D32')} 
+                            onChange={(e) => handleChange('borderColor', e.target.value)} 
+                            className="w-20 h-10"
+                          />
+                          <Input 
+                            type="text" 
+                            value={customization.borderColor || (isRecommended ? '#5850EC' : '#2D2D32')} 
+                            onChange={(e) => handleChange('borderColor', e.target.value)} 
+                            placeholder={isRecommended ? "#5850EC" : "#2D2D32"} 
+                            className="flex-1"
+                          />
                         </div>
                       </div>
                     </CardContent>
@@ -176,12 +225,22 @@ export function PlanSettingsDialog({ isOpen, onClose, plan, onSave }: PlanSettin
 
                       <div className="space-y-2">
                         <Label htmlFor="customDescription">Custom Description</Label>
-                        <Input id="customDescription" value={customization.customDescription || ''} onChange={(e) => handleChange('customDescription', e.target.value)} placeholder="Add a custom description..."/>
+                        <Input 
+                          id="customDescription" 
+                          value={customization.customDescription || ''} 
+                          onChange={(e) => handleChange('customDescription', e.target.value)} 
+                          placeholder="Add a custom description..."
+                        />
                       </div>
 
                       <div className="space-y-2">
                         <Label htmlFor="ctaText">Call-to-Action Button Text</Label>
-                        <Input id="ctaText" value={customization.ctaText || ''} onChange={(e) => handleChange('ctaText', e.target.value)} placeholder="Get Started"/>
+                        <Input 
+                          id="ctaText" 
+                          value={customization.ctaText || ''} 
+                          onChange={(e) => handleChange('ctaText', e.target.value)} 
+                          placeholder="Choose this plan"
+                        />
                       </div>
                     </CardContent>
                   </Card>
@@ -195,38 +254,77 @@ export function PlanSettingsDialog({ isOpen, onClose, plan, onSave }: PlanSettin
                 </CardHeader>
                 <CardContent>
                   <div
-                    className="border-2 rounded-lg p-6 space-y-4 text-left"
+                    className="border-2 rounded-2xl p-8 space-y-6 text-left relative"
                     style={{
-                      backgroundColor: customization.bgColor || '#ffffff',
-                      borderColor: customization.borderColor || '#e5e7eb',
-                      color: customization.textColor || '#000000',
+                      backgroundColor: cardBgColor,
+                      borderColor: borderColor,
+                      color: cardTextColor,
                     }}
                   >
-                    {customization.badgeText && (
-                      <div className="flex justify-start">
-                        <span className="text-xs font-bold px-3 py-1 rounded-full text-white" style={{ backgroundColor: customization.badgeColor || '#ef4444' }}>
-                          {customization.badgeText}
+                    {(isRecommended && badgeText) && (
+                      <div className="absolute top-6 right-6">
+                        <span 
+                          className="text-xs font-bold px-3 py-1.5 rounded-full text-white" 
+                          style={{ backgroundColor: badgeColor }}
+                        >
+                          {badgeText}
                         </span>
                       </div>
                     )}
-                    <h3 className="text-2xl font-bold">
-                      {customization.customTitle || plan.name}
-                    </h3>
-                    <p className="text-sm opacity-80 h-5">
-                      {customization.customDescription}
-                    </p>
-                    <div className="text-3xl font-bold">K{plan.price.toLocaleString()}/mo</div>
-                    <div className="space-y-2 pt-2">
-                      {plan.features.map((feature, index) => (
-                        <div key={index} className="flex items-center gap-3 text-sm">
-                            <Check className="h-4 w-4" />
-                            <span>{feature}</span>
+                    
+                    <div className="flex items-start gap-4">
+                      <div 
+                        className="h-14 w-14 rounded-2xl flex items-center justify-center flex-shrink-0" 
+                        style={{ backgroundColor: isRecommended ? 'rgba(255, 255, 255, 0.15)' : 'rgba(99, 102, 241, 0.15)' }}
+                      >
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" stroke={isRecommended ? '#FFFFFF' : 'rgb(99, 102, 241)'} strokeWidth="2" strokeLinejoin="round"/>
+                          <path d="M2 7L12 12L22 7" stroke={isRecommended ? '#FFFFFF' : 'rgb(99, 102, 241)'} strokeWidth="2" strokeLinejoin="round"/>
+                          <path d="M12 12V22" stroke={isRecommended ? '#FFFFFF' : 'rgb(99, 102, 241)'} strokeWidth="2" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
+                      
+                      <div className="flex-1">
+                        <h3 className="text-2xl font-bold mb-2">
+                          {customization.customTitle || plan.name}
+                        </h3>
+                        <p 
+                          className="text-sm opacity-80 leading-relaxed"
+                        >
+                          {customization.customDescription || plan.features[0] || 'Plan description'}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-5xl font-bold tracking-tight">K{plan.price.toLocaleString()}</span>
+                      <span className="text-base opacity-70">/month</span>
+                    </div>
+                    
+                    <Button 
+                      className="w-full h-12 rounded-lg font-semibold" 
+                      style={{
+                        backgroundColor: isRecommended ? badgeColor : 'rgba(255, 255, 255, 0.1)',
+                        color: isRecommended ? 'white' : cardTextColor,
+                        border: isRecommended ? 'none' : '1px solid rgba(255, 255, 255, 0.1)'
+                      }}
+                    >
+                      {customization.ctaText || 'Choose this plan'}
+                    </Button>
+                    
+                    <div className="space-y-4 pt-2">
+                      {plan.features.slice(1).map((feature, index) => (
+                        <div key={index} className="flex items-start gap-3">
+                          <div 
+                            className="mt-0.5 rounded-full p-0.5"
+                            style={{ backgroundColor: isRecommended ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.1)' }}
+                          >
+                            <Check className="h-3.5 w-3.5" />
+                          </div>
+                          <span className="text-sm opacity-90 leading-relaxed">{feature}</span>
                         </div>
                       ))}
                     </div>
-                     <Button className="w-full mt-4" style={{ backgroundColor: customization.bgColor || '#000000' }}>
-                      {customization.ctaText || 'Get Started'}
-                    </Button>
                   </div>
                 </CardContent>
               </Card>
