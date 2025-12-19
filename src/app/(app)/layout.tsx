@@ -212,6 +212,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     ).length;
   }, [config?.purchases]);
   
+  const walletNotificationCount = useMemo(() => {
+    if (!config?.purchases) return 0;
+    return config.purchases.filter(
+      p => (p.planName.toLowerCase().includes('top-up') || p.planName.toLowerCase().includes('credit purchase')) &&
+           (p.status === 'pending' || p.status === 'processing')
+    ).length;
+  }, [config?.purchases]);
+  
   useEffect(() => {
     if (hasMounted) {
         localStorage.setItem('brandsoft-role', role || 'admin');
@@ -326,6 +334,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     {item.href === '/office/orders' && ordersNotificationCount > 0 && (
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs font-bold text-destructive-foreground">
                             {ordersNotificationCount}
+                        </span>
+                    )}
+                    {item.href === '/history' && walletNotificationCount > 0 && (
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs font-bold text-destructive-foreground">
+                            {walletNotificationCount}
                         </span>
                     )}
                   </SidebarMenuButton>
