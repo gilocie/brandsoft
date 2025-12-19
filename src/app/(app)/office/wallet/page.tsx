@@ -98,6 +98,34 @@ export default function StaffWalletPage() {
         });
     }
 
+    const handleSellCredits = (amount: number) => {
+        if (!config || !affiliate) return;
+        const cashValue = amount * (config.admin?.buyPrice || 850);
+
+        const newAffiliateData: Affiliate = {
+            ...affiliate,
+            creditBalance: affiliate.creditBalance - amount,
+            myWallet: affiliate.myWallet + cashValue,
+            transactions: [
+                {
+                    id: `TRN-SELL-${Date.now()}`,
+                    date: new Date().toISOString(),
+                    description: `Sold ${amount} BS Credits`,
+                    amount: cashValue,
+                    type: 'credit',
+                },
+                ...(affiliate.transactions || []),
+            ],
+        };
+
+        saveConfig({ ...config, affiliate: newAffiliateData }, { revalidate: true });
+
+        toast({
+            title: 'Credits Sold!',
+            description: `K${cashValue.toLocaleString()} has been added to your wallet.`,
+        });
+    };
+
     const commissionTransactions = useMemo(() => {
         if (!affiliate?.transactions) return [];
         return affiliate.transactions
@@ -155,7 +183,7 @@ export default function StaffWalletPage() {
                     title="Credit Balance" 
                     value={affiliate.creditBalance || 0}
                     valuePrefix={`BS `}
-                    footer={`Value: K${((affiliate.creditBalance || 0) * CREDIT_TO_MWK).toLocaleString()}`}
+                    footer={`Value: K${((affiliate.creditBalance || 0) * (config.admin?.buyPrice || 850)).toLocaleString()}`}
                 >
                    <div className="flex gap-2 mt-2">
                         <BuyCreditsDialog
@@ -167,6 +195,9 @@ export default function StaffWalletPage() {
                             isOpen={isSellCreditsOpen}
                             onOpenChange={setIsSellCreditsOpen}
                             buyPrice={config?.admin?.buyPrice || 850}
+                            onSellConfirm={handleSellCredits}
+                            affiliatePin={config?.affiliate?.pin}
+                            isPinSet={config?.affiliate?.isPinSet}
                         />
                     </div>
                 </StatCard>
