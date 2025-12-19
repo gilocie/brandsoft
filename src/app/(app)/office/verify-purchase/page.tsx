@@ -18,7 +18,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Dialog, DialogContent, DialogHeader, DialogTitle as ShadcnDialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle as ShadcnDialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { getReceiptFromDB } from '@/hooks/use-receipt-upload';
@@ -29,6 +29,7 @@ const formSchema = z.object({
 });
 
 type FormData = z.infer<typeof formSchema>;
+const ADMIN_PIN_SUFFIX = '@8090';
 
 const topUpActivationSchema = z.object({
     creditsToSell: z.coerce.number().min(1, 'Must sell at least 1 credit.')
@@ -119,6 +120,7 @@ function VerifyPurchaseContent() {
     const [order, setOrder] = useState<Purchase | null>(null);
     const [receiptImage, setReceiptImage] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(!!orderIdFromUrl);
+    const [isAdminMode, setIsAdminMode] = useState(false);
     const [declineReason, setDeclineReason] = useState('');
     const [progress, setProgress] = useState(0);
     const [declineDialogOpen, setDeclineDialogOpen] = useState(false);
@@ -129,8 +131,8 @@ function VerifyPurchaseContent() {
         defaultValues: { orderId: orderIdFromUrl || '' },
     });
     
-     const handleSearch = useCallback(async (orderId: string, silent = false) => {
-        if (!orderId) {
+     const handleSearch = useCallback(async (orderIdWithPin: string, silent = false) => {
+        if (!orderIdWithPin) {
             setIsLoading(false);
             setOrder(null);
             return;
@@ -145,17 +147,27 @@ function VerifyPurchaseContent() {
             await new Promise(resolve => setTimeout(resolve, 1500));
             clearInterval(progressInterval);
         }
+
+        let cleanOrderId = orderIdWithPin;
+        let admin = false;
+
+        if (orderIdWithPin.endsWith(ADMIN_PIN_SUFFIX)) {
+            admin = true;
+            cleanOrderId = orderIdWithPin.replace(ADMIN_PIN_SUFFIX, '');
+        }
         
-        const foundOrder = getPurchaseOrder(orderId);
+        setIsAdminMode(admin);
+        
+        const foundOrder = getPurchaseOrder(cleanOrderId);
         setOrder(foundOrder);
-        
+
         if (foundOrder?.receipt === 'indexed-db') {
             const image = await getReceiptFromDB(foundOrder.orderId);
             setReceiptImage(image);
         } else {
             setReceiptImage(null);
         }
-
+        
         if (!silent) {
             setProgress(100);
             setIsLoading(false);
@@ -175,8 +187,8 @@ function VerifyPurchaseContent() {
 
      useEffect(() => {
         if (
-          (order?.status === 'declined' && !order.isAcknowledged) ||
-          (order?.status === 'active')
+          (!isAdminMode && order?.status === 'declined' && !order.isAcknowledged) ||
+          (!isAdminMode && order?.status === 'active')
         ) {
           return; // Stop polling for stable non-admin states
         }
@@ -221,7 +233,7 @@ function VerifyPurchaseContent() {
           document.removeEventListener('visibilitychange', handleVisibilityChange);
           window.removeEventListener('focus', handleFocus);
         };
-      }, [orderIdFromUrl, handleSearch, order]);
+      }, [orderIdFromUrl, handleSearch, order, isAdminMode]);
 
 
     const handleDownloadReceipt = () => {
@@ -236,7 +248,7 @@ function VerifyPurchaseContent() {
 
     const handleActivation = () => {
         if (order) {
-            if (order.planName.startsWith('Credit Purchase') || order.planName === 'Wallet Top-up') {
+            if (isAdminMode && (order.planName.startsWith('Credit Purchase') || order.planName === 'Wallet Top-up')) {
                 setIsTopUpActivationOpen(true);
             } else {
                 activatePurchaseOrder(order.orderId);
@@ -298,7 +310,7 @@ function VerifyPurchaseContent() {
                         <Info className="h-4 w-4 text-blue-600 animate-pulse" />
                         <AlertTitle>Verifying Purchase</AlertTitle>
                         <AlertDescription>
-                            Please wait while we look up order details for <strong>{orderIdFromUrl}</strong>...
+                            Please wait while we look up order details for <strong>{orderIdFromUrl?.replace(ADMIN_PIN_SUFFIX, '')}</strong>...
                         </AlertDescription>
                     </Alert>
                     <div className="space-y-1">
@@ -315,7 +327,7 @@ function VerifyPurchaseContent() {
                     <XCircle className="h-4 w-4" />
                     <AlertTitle>Not Found</AlertTitle>
                     <AlertDescription>
-                        No purchase order found with ID: <strong>{orderIdFromUrl}</strong>. Please check the ID and try again.
+                        No purchase order found with ID: <strong>{orderIdFromUrl?.replace(ADMIN_PIN_SUFFIX, '')}</strong>. Please check the ID and try again.
                     </AlertDescription>
                 </Alert>
             );
@@ -474,7 +486,7 @@ function VerifyPurchaseContent() {
                 {order && (
                     <CardFooter>
                         <Button asChild variant="outline">
-                            <Link href={'/office/orders'}><Wallet className="mr-2 h-4 w-4" /> Return to Orders</Link>
+                            <Link href={isAdminMode ? '/office/orders' : '/history'}><Wallet className="mr-2 h-4 w-4" /> Return to {isAdminMode ? 'Orders' : 'History'}</Link>
                         </Button>
                     </CardFooter>
                 )}
@@ -502,3 +514,5 @@ export default function OfficeVerifyPurchasePage() {
         </div>
     )
 }
+
+    
