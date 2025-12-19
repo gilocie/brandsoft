@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Palette, Type, Sparkles, Check, UploadCloud, ShieldCheck, Users, HardDrive, Contact, Star, Package } from 'lucide-react';
+import { Palette, Type, Sparkles, Check, UploadCloud, ShieldCheck, Users, HardDrive, Contact, Star, Package, Gem, Crown, Award, Gift, Rocket } from 'lucide-react';
 import type { Plan, PlanCustomization } from '@/hooks/use-brandsoft';
 import { Switch } from './ui/switch';
 import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
@@ -17,12 +17,7 @@ import { Slider } from './ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 const iconMap: { [key: string]: React.ElementType } = {
-    ShieldCheck,
-    Users,
-    HardDrive,
-    Contact,
-    Star,
-    Package
+    Package, Users, HardDrive, Contact, Star, Gem, Crown, Award, Gift, Rocket, ShieldCheck,
 };
 
 interface PlanSettingsDialogProps {
@@ -342,7 +337,7 @@ export function PlanSettingsDialog({ isOpen, onClose, plan, onSave }: PlanSettin
                 </CardHeader>
                 <CardContent>
                   <div
-                    className="border-2 rounded-2xl text-left relative overflow-hidden"
+                    className="border-2 rounded-2xl p-8 space-y-6 text-left relative"
                     style={{
                       ...backgroundStyle,
                       borderColor: borderColor,
@@ -350,7 +345,7 @@ export function PlanSettingsDialog({ isOpen, onClose, plan, onSave }: PlanSettin
                     }}
                   >
                     {(isRecommended && badgeText) && (
-                      <div className="absolute top-6 right-6 z-10">
+                      <div className="absolute top-6 right-6">
                         <span 
                           className="text-xs font-bold px-3 py-1.5 rounded-full text-white" 
                           style={{ backgroundColor: badgeColor }}
@@ -361,8 +356,8 @@ export function PlanSettingsDialog({ isOpen, onClose, plan, onSave }: PlanSettin
                     )}
                     
                     <div 
-                        className="p-8 pb-6 bg-cover bg-center relative" 
-                        style={{ backgroundImage: customization?.headerBgImage ? `url(${customization.headerBgImage})` : 'none'}}
+                        className="relative" 
+                        style={{ backgroundImage: customization?.headerBgImage ? `url(${customization.headerBgImage})` : 'none', backgroundSize: 'cover', backgroundPosition: 'center' }}
                     >
                          {customization?.headerBgImage && <div className="absolute inset-0 bg-black/50" style={{opacity: 1 - (customization.headerBgImageOpacity ?? 1)}} />}
                          <div className="relative">
@@ -393,31 +388,29 @@ export function PlanSettingsDialog({ isOpen, onClose, plan, onSave }: PlanSettin
                          </div>
                     </div>
                     
-                    <div className="px-8 pb-8 space-y-6">
-                        <Button 
-                        className="w-full h-12 rounded-lg font-semibold" 
-                        style={{
-                            backgroundColor: isRecommended ? badgeColor : 'rgba(255, 255, 255, 0.1)',
-                            color: isRecommended ? 'white' : cardTextColor,
-                            border: isRecommended ? 'none' : '1px solid rgba(255, 255, 255, 0.1)'
-                        }}
-                        >
-                        {customization.ctaText || 'Choose this plan'}
-                        </Button>
-                        
-                        <div className="space-y-4 pt-2">
-                        {plan.features.slice(1).map((feature, index) => (
-                            <div key={index} className="flex items-start gap-3">
-                            <div 
-                                className="mt-0.5 rounded-full p-0.5"
-                                style={{ backgroundColor: isRecommended ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.1)' }}
-                            >
-                                <Check className="h-3.5 w-3.5" />
-                            </div>
-                            <span className="text-sm opacity-90 leading-relaxed">{feature}</span>
-                            </div>
-                        ))}
+                    <Button 
+                      className="w-full h-12 rounded-lg font-semibold" 
+                      style={{
+                        backgroundColor: isRecommended ? badgeColor : 'rgba(255, 255, 255, 0.1)',
+                        color: isRecommended ? 'white' : cardTextColor,
+                        border: isRecommended ? 'none' : '1px solid rgba(255, 255, 255, 0.1)'
+                      }}
+                    >
+                      {customization.ctaText || 'Choose this plan'}
+                    </Button>
+                    
+                    <div className="space-y-4 pt-2">
+                      {plan.features.slice(1).map((feature, index) => (
+                        <div key={index} className="flex items-start gap-3">
+                          <div 
+                            className="mt-0.5 rounded-full p-0.5"
+                            style={{ backgroundColor: isRecommended ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.1)' }}
+                          >
+                            <Check className="h-3.5 w-3.5" />
+                          </div>
+                          <span className="text-sm opacity-90 leading-relaxed">{feature}</span>
                         </div>
+                      ))}
                     </div>
                   </div>
                 </CardContent>
@@ -434,4 +427,3 @@ export function PlanSettingsDialog({ isOpen, onClose, plan, onSave }: PlanSettin
     </Dialog>
   );
 }
-

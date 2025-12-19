@@ -15,7 +15,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { MoreHorizontal, PackagePlus, Briefcase, CheckCircle, Pencil, Trash2, KeyRound, TrendingUp, BarChart, AlertTriangle, Settings, Check } from 'lucide-react';
+import { MoreHorizontal, PackagePlus, Briefcase, Check, Pencil, Trash2, KeyRound, TrendingUp, BarChart, AlertTriangle, Settings, Package, Users, HardDrive, Contact, Star, Gem, Crown, Award, Gift, Rocket, ShieldCheck } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
@@ -62,18 +62,22 @@ const activationKeySchema = z.object({
 });
 type ActivationKeyFormData = z.infer<typeof activationKeySchema>;
 
-const PlanIcon = ({ bgColor, iconColor }: { bgColor?: string; iconColor?: string }) => (
-    <div 
-        className="h-14 w-14 rounded-2xl flex items-center justify-center" 
-        style={{ backgroundColor: bgColor || 'rgba(99, 102, 241, 0.15)' }}
-    >
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" stroke={iconColor || 'rgb(99, 102, 241)'} strokeWidth="2" strokeLinejoin="round"/>
-            <path d="M2 7L12 12L22 7" stroke={iconColor || 'rgb(99, 102, 241)'} strokeWidth="2" strokeLinejoin="round"/>
-            <path d="M12 12V22" stroke={iconColor || 'rgb(99, 102, 241)'} strokeWidth="2" strokeLinejoin="round"/>
-        </svg>
-    </div>
-);
+const iconMap: { [key: string]: React.ElementType } = {
+    Package, Users, HardDrive, Contact, Star, Gem, Crown, Award, Gift, Rocket, ShieldCheck,
+};
+
+const PlanIcon = ({ iconName, bgColor, iconColor }: { iconName?: string; bgColor?: string; iconColor?: string }) => {
+    const Icon = iconName ? iconMap[iconName] : Package;
+    return (
+        <div 
+            className="h-14 w-14 rounded-2xl flex items-center justify-center" 
+            style={{ backgroundColor: bgColor || 'rgba(99, 102, 241, 0.15)' }}
+        >
+            <Icon style={{ color: iconColor || 'rgb(99, 102, 241)' }} className="h-7 w-7" />
+        </div>
+    )
+};
+
 
 const AdminPlanCard = ({ plan, onEdit, onCustomize, onDelete }: { plan: Plan, onEdit: () => void, onCustomize: () => void, onDelete: () => void }) => {
     const { customization } = plan;
@@ -84,12 +88,16 @@ const AdminPlanCard = ({ plan, onEdit, onCustomize, onDelete }: { plan: Plan, on
     const borderColor = customization?.borderColor || (isPopular ? 'rgb(88, 80, 236)' : 'rgb(45, 45, 50)');
     const badgeColor = customization?.badgeColor || 'rgb(255, 107, 53)';
     const badgeText = customization?.badgeText || 'Most popular';
+    
+    const backgroundStyle = customization?.backgroundType === 'gradient'
+        ? { background: `linear-gradient(to bottom right, ${customization.backgroundGradientStart || '#3a3a3a'}, ${customization.backgroundGradientEnd || '#1a1a1a'})` }
+        : { backgroundColor: cardBgColor };
 
     return (
         <Card
           className="flex flex-col h-full relative overflow-hidden transition-all duration-300 border-2"
           style={{
-            backgroundColor: cardBgColor,
+            ...backgroundStyle,
             borderColor: borderColor,
             color: cardTextColor
           }}
@@ -119,9 +127,13 @@ const AdminPlanCard = ({ plan, onEdit, onCustomize, onDelete }: { plan: Plan, on
                     </DropdownMenuContent>
                 </DropdownMenu>
             </div>
-            <CardHeader className="p-8 pb-6">
+             <CardHeader 
+                className="p-8 pb-6 bg-cover bg-center" 
+                style={{ backgroundImage: customization?.headerBgImage ? `url(${customization.headerBgImage})` : 'none', backgroundBlendMode: 'overlay', backgroundColor: 'rgba(0,0,0,0.3)' }}
+            >
                 <div className="flex items-start gap-4 mb-6">
                      <PlanIcon 
+                        iconName={customization?.icon}
                         bgColor={isPopular ? 'rgba(255, 255, 255, 0.15)' : undefined}
                         iconColor={isPopular ? 'rgb(255, 255, 255)' : undefined}
                     />
