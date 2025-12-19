@@ -1,5 +1,4 @@
 
-
 import { Page } from '@/stores/canvas-store';
 
 export type AffiliateClient = {
@@ -236,7 +235,7 @@ export type AdminSettings = {
   exchangeValue: number;
   availableCredits: number;
   soldCredits: number;
-  creditsBoughtBack?: number;
+  creditsBoughtBack: number;
   isReserveLocked?: boolean;
   keyPrice?: number;
   keyFreeDays?: number;
@@ -381,3 +380,5 @@ export type Quotation = {
     design?: DesignSettings;
     isRequest?: boolean;
 };
+
+    

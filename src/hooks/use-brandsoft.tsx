@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, createContext, useContext, ReactNode, useCallback } from 'react';
@@ -313,6 +312,8 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
             parsedConfig.admin = {
                 ...parsedConfig.affiliateSettings,
                 soldCredits: parsedConfig.affiliateSettings.maxCredits - parsedConfig.affiliateSettings.availableCredits,
+                creditsBoughtBack: 0, // Initialize new field
+                revenueFromKeys: 0, // Initialize new field
             };
             delete parsedConfig.affiliateSettings;
             needsSave = true;
@@ -418,3 +419,5 @@ export function useBrandsoft() {
   }
   return context;
 }
+
+    

@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -272,6 +271,26 @@ export default function AdminPage() {
         setIsManageReserveOpen(false);
     };
     
+    const handlePushToReserve = () => {
+        if (!config || !config.admin) return;
+
+        const creditsToPush = config.admin.creditsBoughtBack || 0;
+        if (creditsToPush <= 0) {
+            toast({ title: 'No credits to push', description: 'There are no bought-back credits to add to the reserve.' });
+            return;
+        }
+
+        const newAdminSettings: AdminSettings = {
+            ...config.admin,
+            availableCredits: (config.admin.availableCredits || 0) + creditsToPush,
+            creditsBoughtBack: 0,
+            revenueFromKeys: 0, // Assuming this tracks cost of buy-backs, resetting it
+        };
+
+        saveConfig({ ...config, admin: newAdminSettings }, { revalidate: true });
+        toast({ title: 'Reserve Updated', description: `${creditsToPush.toLocaleString()} credits have been added back to the distribution reserve.` });
+    };
+    
     const handleResetFinancials = () => {
         if (!config || !config.admin) return;
 
@@ -351,7 +370,9 @@ export default function AdminPage() {
                     value={`BS ${creditsBoughtBack.toLocaleString()}`}
                     description={`Value: K${valueOfCreditsBought.toLocaleString()}`}
                     icon={Banknote} 
-                />
+                >
+                    <Button size="sm" className="w-full mt-2" onClick={handlePushToReserve} disabled={creditsBoughtBack <= 0}>Push to Reserve</Button>
+                </StatCard>
                 <StatCard title="Pending Withdrawals" value={`K${totalPendingAmount.toLocaleString()}`} icon={Clock} />
             </div>
 
