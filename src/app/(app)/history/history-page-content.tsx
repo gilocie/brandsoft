@@ -267,11 +267,11 @@ export function HistoryPageContent() {
                         </p>
                     </CardContent>
                 </Card>
-                <TopUpNotificationCard orders={processingTopups} title="Processing Top-ups" icon={RefreshCw} variant="accent" buttonText="View Status" />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <TopUpNotificationCard orders={pendingTopups} title="Pending Top-ups" icon={Bell} variant="primary" buttonText="View Orders" />
+
+                {/* Status Cards */}
                 <TopUpNotificationCard orders={declinedTopups} title="Declined Top-ups" icon={AlertTriangle} variant="destructive" buttonText="See Why" />
+                <TopUpNotificationCard orders={pendingTopups} title="Pending Top-ups" icon={Bell} variant="primary" buttonText="View Orders" />
+                <TopUpNotificationCard orders={processingTopups} title="Processing Top-ups" icon={RefreshCw} variant="accent" buttonText="View Status" />
             </div>
 
             {/* Transactions Tabs */}
