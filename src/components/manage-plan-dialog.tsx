@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -14,7 +14,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Button } from '@/components/ui/button';
 import { Check, Star, Settings, Users, HardDrive, ShieldCheck, Contact, Package, Gem, Crown, Award, Gift, Rocket, Loader2, Mail, Phone } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useBrandsoft, type Plan, type PlanCustomization, type PlanPeriod } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Plan, type PlanCustomization, type PlanPeriod, type Company } from '@/hooks/use-brandsoft';
 import { usePlanImage } from '@/hooks/use-plan-image';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
@@ -312,9 +312,16 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
     const [isManagePlanOpen, setIsManagePlanOpen] = useState(false);
     const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
     const [contactInfo, setContactInfo] = useState<{ planName: string, email?: string, whatsapp?: string } | null>(null);
+    const [currentCompany, setCurrentCompany] = useState<Company | null>(null);
+    const [walletBalance, setWalletBalance] = useState(0);
 
-    const currentCompany = config?.companies?.find(c => c.id === config?.profile?.id);
-    const walletBalance = currentCompany?.walletBalance || 0;
+    useEffect(() => {
+        if (config && isManagePlanOpen) {
+            const company = config.companies?.find(c => c.id === config.profile?.id);
+            setCurrentCompany(company || null);
+            setWalletBalance(company?.walletBalance || 0);
+        }
+    }, [config, isManagePlanOpen]);
 
     const currentPlanPurchase = useMemo(() => {
         if (!config?.purchases || config.purchases.length === 0) return null;
