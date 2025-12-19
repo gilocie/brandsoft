@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 const OfficePageContent = dynamic(
-  () => import('./office-page-content').then(mod => mod.OfficePageContent),
+  () => import('@/components/office/office-page-content').then(mod => mod.OfficePageContent),
   {
     ssr: false,
     loading: () => (

@@ -1,12 +1,11 @@
 
-
 'use client';
 
 import { useBrandsoft, type Transaction, type Affiliate, type Purchase } from '@/hooks/use-brandsoft';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Copy, DollarSign, ExternalLink, ShieldCheck, ShieldOff, UserCheck, Users, Edit, CreditCard, Gift, KeyRound, Phone, TrendingUp, TrendingDown, MoreHorizontal, ArrowRight, Wallet, Banknote, Smartphone, CheckCircle, Pencil, Eye, EyeOff, Send, Bell, RefreshCw, PlusCircle, User, Loader2 } from 'lucide-react';
+import { Copy, DollarSign, ExternalLink, ShieldCheck, ShieldOff, UserCheck, Users, Edit, CreditCard, Gift, KeyRound, Phone, TrendingUp, TrendingDown, MoreHorizontal, ArrowRight, Wallet, Banknote, Smartphone, CheckCircle, Pencil, Eye, EyeOff, Send, Bell, RefreshCw, PlusCircle, User, Loader2, BarChart, ArrowLeftRight } from 'lucide-react';
 import { ClientCard } from '@/components/affiliate/client-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -36,12 +35,16 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Badge } from '@/components/ui/badge';
 import { GenerateKeyDialog } from '@/components/office/dialogs/generate-key-dialog';
 import { PurchaseDialog, type PlanDetails } from '@/components/purchase-dialog';
+import { SellCreditsDialog } from '@/components/office/dialogs/sell-credits-dialog';
+import { TopUpNotificationCard } from '@/components/office/top-up-notification-card';
+import { TopUpTable } from '@/components/office/top-up-table';
+import { BonusProgressDialog } from './bonus-progress-dialog';
 
 
 const affiliateSchema = z.object({
     fullName: z.string().min(2, "Full name is required"),
     username: z.string().min(3, "Username must be at least 3 characters"),
-    phone: z.string().min(1, "Phone number is required"),
+    phone: z.string().optional(),
     profilePic: z.string().optional(),
 });
 
@@ -50,13 +53,6 @@ type AffiliateFormData = z.infer<typeof affiliateSchema>;
 const CREDIT_TO_MWK = 1000;
 const ITEMS_PER_PAGE = 10;
 
-const statusVariantMap: { [key: string]: 'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'accent' | 'primary' } = {
-  pending: 'accent',
-  processing: 'primary',
-  completed: 'success',
-  active: 'success',
-};
-
 
 export function OfficePageContent() {
   const { config, saveConfig } = useBrandsoft();
@@ -64,14 +60,8 @@ export function OfficePageContent() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [payoutsPage, setPayoutsPage] = useState(0);
   const { toast } = useToast();
-
-  const [editingMethod, setEditingMethod] = useState<EditableWithdrawalMethod | null>(null);
-  const [isBankDialogOpen, setIsBankDialogOpen] = useState(false);
-  const [isBsCreditsDialogOpen, setIsBsCreditsDialogOpen] = useState(false);
-  const [isPinDialogOpen, setIsPinDialogOpen] = useState(false);
-  const [isSecurityQuestionsOpen, setIsSecurityQuestionsOpen] = useState(false);
-  const [isGenerateKeyOpen, setIsGenerateKeyOpen] = useState(false);
   const [purchaseDetails, setPurchaseDetails] = useState<PlanDetails | null>(null);
+  const [isSellCreditsOpen, setIsSellCreditsOpen] = useState(false);
 
   const affiliate = config?.affiliate;
 
@@ -146,20 +136,6 @@ export function OfficePageContent() {
     setIsEditDialogOpen(false);
   };
   
-  const generateNewStaffId = () => {
-    if (!config || !affiliate) return;
-
-    const randomDigits = Math.floor(10000000 + Math.random() * 90000000).toString();
-    const newStaffId = `BS-AFF-${randomDigits}`;
-    
-    saveConfig({ ...config, affiliate: { ...affiliate, staffId: newStaffId } }, { redirect: false });
-    
-    toast({
-        title: "New Staff ID Generated!",
-        description: "Your new staff ID has been saved.",
-    });
-  };
-  
   const handlePushToWallet = () => {
     if (!config || !affiliate) return;
     const amountToPush = affiliate.unclaimedCommission || 0;
@@ -187,6 +163,46 @@ export function OfficePageContent() {
     });
   };
   
+    const handleWithdraw = (amount: number, source: 'commission' | 'combined' | 'bonus', method: string) => {
+        if (!config || !affiliate) return;
+        
+        const TRANSACTION_FEE = 3000; // Example fee
+
+        const newTransaction: Transaction = {
+          id: `TRN-WTH-${Date.now()}`,
+          date: new Date().toISOString(),
+          description: `Withdrawal via ${method}`,
+          amount: amount,
+          type: 'debit',
+          status: 'pending',
+        } as any;
+
+        const newAffiliateData = { ...affiliate };
+        
+        const amountToWithdraw = amount;
+
+        if (source === 'combined') {
+            let remainingAmount = amountToWithdraw;
+            const bonusDeduction = Math.min(newAffiliateData.bonus || 0, remainingAmount);
+            newAffiliateData.bonus = (newAffiliateData.bonus || 0) - bonusDeduction;
+            remainingAmount -= bonusDeduction;
+            if (remainingAmount > 0) {
+                newAffiliateData.myWallet = (newAffiliateData.myWallet || 0) - remainingAmount;
+            }
+        } else { // 'commission'
+            newAffiliateData.myWallet = (newAffiliateData.myWallet || 0) - amountToWithdraw;
+        }
+        
+        newAffiliateData.transactions = [newTransaction, ...(affiliate.transactions || [])];
+        
+        saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
+
+        toast({
+            title: 'Withdrawal Request Submitted!',
+            description: `Your request for K${amount.toLocaleString()} is being processed.`,
+        });
+    }
+
   const recentTransactions = useMemo(() => {
     if (!affiliate?.transactions) return [];
     return affiliate.transactions
@@ -199,6 +215,13 @@ export function OfficePageContent() {
     if (!affiliate?.transactions) return [];
     return affiliate.transactions
       .filter(t => t.type === 'debit')
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [affiliate?.transactions]);
+
+  const commissionTransactions = useMemo(() => {
+    if (!affiliate?.transactions) return [];
+    return affiliate.transactions
+      .filter(t => t.type === 'credit')
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [affiliate?.transactions]);
   
@@ -221,122 +244,14 @@ export function OfficePageContent() {
   const unclaimedCommission = affiliate.unclaimedCommission || 0;
   const mwkBalance = affiliate.myWallet || 0;
   const activeClients = syncedClients.filter(c => c.status === 'active').length;
-  const totalSales = affiliate.totalSales || 0;
-
-  const handleWithdraw = (amount: number, source: 'commission' | 'combined' | 'bonus') => {
-    if (!config || !affiliate) return;
-    
-    const TRANSACTION_FEE = 3000;
-
-    const newTransaction: Transaction = {
-      id: `TRN-${Date.now()}`,
-      date: new Date().toISOString(),
-      description: `Withdrawal`,
-      amount: amount,
-      type: 'debit',
-    };
-    
-     const feeTransaction: Transaction = {
-      id: `TRN-FEE-${Date.now()}`,
-      date: new Date().toISOString(),
-      description: 'Transaction Fee',
-      amount: TRANSACTION_FEE,
-      type: 'debit',
-    };
-
-    const newAffiliateData = { ...affiliate };
-    
-    const amountToWithdraw = amount;
-
-    if (source === 'combined') {
-        let remainingAmount = amountToWithdraw + TRANSACTION_FEE;
-        
-        const bonusDeduction = Math.min(newAffiliateData.bonus || 0, remainingAmount);
-        newAffiliateData.bonus = (newAffiliateData.bonus || 0) - bonusDeduction;
-        remainingAmount -= bonusDeduction;
-        
-        if (remainingAmount > 0) {
-            newAffiliateData.myWallet = (newAffiliateData.myWallet || 0) - remainingAmount;
-        }
-
-    } else { // 'commission'
-        newAffiliateData.myWallet = (newAffiliateData.myWallet || 0) - (amountToWithdraw + TRANSACTION_FEE);
-    }
-    
-    newAffiliateData.transactions = [newTransaction, feeTransaction, ...(affiliate.transactions || [])];
-    
-    saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
-  }
-
-  const handleSaveWithdrawalMethod = (method: EditableWithdrawalMethod, data: WithdrawalMethodFormData) => {
-    if (!config || !affiliate) return;
-
-    const newAffiliateData = { ...affiliate };
-    if (!newAffiliateData.withdrawalMethods) {
-        newAffiliateData.withdrawalMethods = {};
-    }
-    newAffiliateData.withdrawalMethods[method] = data;
-
-    saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
-    toast({ title: `${method.toUpperCase()} Details Saved!`});
-    setEditingMethod(null);
-  };
-
-  const handleSaveBankDetails = (data: BankWithdrawalFormData) => {
-    if (!config || !affiliate) return;
-    const newAffiliateData = { ...affiliate };
-    if (!newAffiliateData.withdrawalMethods) {
-        newAffiliateData.withdrawalMethods = {};
-    }
-    newAffiliateData.withdrawalMethods.bank = data;
-    saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
-    toast({ title: "Bank Details Saved!" });
-    setIsBankDialogOpen(false);
-  };
-
-  const handleSaveBsCredits = (data: BsCreditsFormData) => {
-    if (!config || !affiliate) return;
-    const newAffiliateData = { ...affiliate };
-    if (!newAffiliateData.withdrawalMethods) {
-        newAffiliateData.withdrawalMethods = {};
-    }
-    newAffiliateData.withdrawalMethods.bsCredits = data;
-    saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
-    toast({ title: "BS Credits Details Saved!" });
-    setIsBsCreditsDialogOpen(false);
-  };
-
-  const handleSavePin = (pin: string) => {
-    if (!config || !affiliate) return;
-    const newAffiliateData = { ...affiliate, isPinSet: true, pin: pin };
-    saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
-    toast({ title: 'PIN has been set successfully!' });
-    setIsPinDialogOpen(false);
-  };
   
-  const handleSaveSecurityQuestions = (data: SecurityQuestionFormData) => {
-      if (!config || !affiliate) return;
-      
-      const questionToSave = data.question === 'custom' ? data.customQuestion : data.question;
+  const totalCreditsSold = affiliate.transactions
+    ?.filter(t => t.description.toLowerCase().startsWith('credit sale to'))
+    .reduce((sum, t) => sum + t.amount, 0) || 0;
 
-      if (!questionToSave) {
-          toast({ variant: 'destructive', title: 'Error', description: 'Question cannot be empty.' });
-          return;
-      }
+  const creditSalesProfit = totalCreditsSold * (CREDIT_TO_MWK - (config.admin?.buyPrice || 900));
 
-      const newAffiliateData = {
-          ...affiliate,
-          securityQuestion: true, // Mark as set
-          securityQuestionData: {
-              question: questionToSave,
-              answer: data.answer,
-          },
-      };
-      saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
-      toast({ title: 'Security Question Saved!' });
-      setIsSecurityQuestionsOpen(false);
-  };
-  
+
   const handleStatusChange = (orderId: string, newStatus: 'pending' | 'processing' | 'active') => {
         if (!config?.purchases) return;
 
@@ -352,103 +267,7 @@ export function OfficePageContent() {
         });
     };
 
-    const handleTogglePaymentMethod = (method: 'airtel' | 'tnm' | 'bank', enabled: boolean) => {
-        if (!config || !affiliate?.withdrawalMethods) return;
-
-        const newAffiliateData = { ...affiliate };
-        const methodDetails = newAffiliateData.withdrawalMethods[method];
-        
-        if(methodDetails) {
-            (methodDetails as any).isClientPaymentMethod = enabled;
-        } else {
-             // If method details don't exist, we can't set this property.
-            toast({
-                title: "Setup Required",
-                description: `Please set up your ${method.toUpperCase()} details before enabling it for clients.`,
-                variant: 'destructive',
-            });
-            return;
-        }
-        
-        saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
-
-        toast({
-            title: "Payment Method Updated",
-            description: `${method.toUpperCase()} is now ${enabled ? 'enabled' : 'disabled'} for client payments.`
-        });
-    };
-
-  const TopUpNotificationCard = () => {
-    const pendingOrders = pendingTopUps.filter(p => p.status === 'pending');
-    if (pendingOrders.length === 0) return null;
-    
-    const isSingleOrder = pendingOrders.length === 1;
-    const orderId = isSingleOrder ? pendingOrders[0].orderId : '';
-
     return (
-        <StatCard
-            icon={Bell}
-            title="Pending Top-ups"
-            value={pendingOrders.length}
-            footer={isSingleOrder ? `Order ID: ${orderId}` : `${pendingOrders.length} orders need verification.`}
-            className="border-primary"
-        >
-            <Button size="sm" className="w-full mt-2" onClick={() => setActiveTab('transactions')}>
-                {isSingleOrder ? 'View Order' : 'View All'}
-            </Button>
-        </StatCard>
-    );
-  };
-
-  const renderTopUpTable = (orders: Purchase[], emptyMessage: string) => (
-       <Table>
-            <TableHeader>
-                <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Order ID</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                {orders.length > 0 ? orders.map(req => (
-                    <TableRow key={req.orderId}>
-                        <TableCell>{new Date(req.date).toLocaleDateString()}</TableCell>
-                        <TableCell>{req.orderId}</TableCell>
-                        <TableCell>{req.planPrice}</TableCell>
-                        <TableCell>
-                            <Badge variant={statusVariantMap[req.status] || 'default'} className="capitalize">
-                                {req.status}
-                            </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4"/></Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                    <DropdownMenuItem onClick={() => handleStatusChange(req.orderId, 'processing')} disabled={req.status === 'processing' || req.status === 'active'}>
-                                        <RefreshCw className="mr-2 h-4 w-4" /> Mark as Processing
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleStatusChange(req.orderId, 'active')} disabled={req.status === 'active'}>
-                                        <CheckCircle className="mr-2 h-4 w-4" /> Mark as Completed
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </TableCell>
-                    </TableRow>
-                )) : (
-                    <TableRow>
-                        <TableCell colSpan={5} className="text-center h-24">{emptyMessage}</TableCell>
-                    </TableRow>
-                )}
-            </TableBody>
-        </Table>
-  );
-
-
-  return (
     <div className="space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div className="flex items-center gap-4 col-span-1 md:col-span-2">
@@ -542,7 +361,10 @@ export function OfficePageContent() {
             </Dialog>
           </div>
         </div>
-        <TopUpNotificationCard />
+        <TopUpNotificationCard
+          pendingOrders={pendingTopUpOrders}
+          onViewAll={() => setActiveTab('transactions')}
+        />
       </div>
 
        <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -551,8 +373,6 @@ export function OfficePageContent() {
             <TabsTrigger value="clients">Clients ({syncedClients.length})</TabsTrigger>
             <TabsTrigger value="transactions">Transactions</TabsTrigger>
             <TabsTrigger value="invitations">Invitations</TabsTrigger>
-            <TabsTrigger value="my-features">My Features</TabsTrigger>
-            <TabsTrigger value="keys">Keys</TabsTrigger>
         </TabsList>
         <TabsContent value="dashboard" className="pt-6">
             <div className="grid gap-6">
@@ -580,27 +400,20 @@ export function OfficePageContent() {
                         valuePrefix={`BS `}
                         footer={`Value: K${((affiliate.creditBalance || 0) * CREDIT_TO_MWK).toLocaleString()}`}
                     >
-                        <BuyCreditsDialog
-                            walletBalance={affiliate.myWallet || 0}
-                            adminAvailableCredits={config?.admin?.availableCredits || 0}
-                            onManualPayment={(details) => setPurchaseDetails(details)}
-                         />
+                       <div className="flex gap-2 mt-2">
+                            <BuyCreditsDialog
+                                walletBalance={affiliate.myWallet || 0}
+                                onManualPayment={(details) => setPurchaseDetails(details)}
+                             />
+                            <SellCreditsDialog
+                                creditBalance={affiliate.creditBalance || 0}
+                                isOpen={isSellCreditsOpen}
+                                onOpenChange={setIsSellCreditsOpen}
+                                buyPrice={config?.admin?.buyPrice || 850}
+                            />
+                        </div>
                     </StatCard>
-                    <Card>
-                        <CardHeader>
-                            <div className="flex items-center justify-between">
-                                <CardTitle>Bonus Tier</CardTitle>
-                                 <Gift className="h-5 w-5 text-muted-foreground" />
-                            </div>
-                            <CardDescription>Bonus for referring 10+ clients.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                             <p className="text-3xl font-bold">K{bonusAmount.toLocaleString()}</p>
-                        </CardContent>
-                        <CardContent>
-                           <Button variant="outline" disabled>View Progress</Button>
-                        </CardContent>
-                     </Card>
+                    <BonusProgressDialog affiliate={affiliate} />
                      <Card className="bg-gradient-to-br from-primary to-orange-500 text-white">
                         <CardHeader>
                             <div className="flex items-center justify-between">
@@ -624,8 +437,15 @@ export function OfficePageContent() {
                         </CardContent>
                      </Card>
                 </div>
-                 <div className="grid md:grid-cols-2 gap-6">
+                 <div className="grid md:grid-cols-3 gap-6">
                     <StatCard icon={Users} title="Active Clients" value={activeClients} footer={`${syncedClients.length - activeClients} expired`} />
+                    <StatCard 
+                        icon={BarChart} 
+                        title="Credit Sales Profit" 
+                        value={creditSalesProfit} 
+                        isCurrency
+                        footer="Profit from selling credits"
+                    />
                     <StatCard icon={UserCheck} title="Total Referrals" value={syncedClients.length} footer="All-time client sign-ups" />
                 </div>
                  <Card>
@@ -681,7 +501,7 @@ export function OfficePageContent() {
             <Tabs defaultValue="top-ups">
                 <TabsList>
                     <TabsTrigger value="top-ups">Top-ups</TabsTrigger>
-                    <TabsTrigger value="sales">Sales</TabsTrigger>
+                    <TabsTrigger value="commissions">Commissions</TabsTrigger>
                     <TabsTrigger value="payouts">Payouts</TabsTrigger>
                 </TabsList>
                 <TabsContent value="top-ups" className="pt-4">
@@ -698,22 +518,48 @@ export function OfficePageContent() {
                                     <TabsTrigger value="completed">Completed</TabsTrigger>
                                 </TabsList>
                                 <TabsContent value="pending" className="pt-4">
-                                    {renderTopUpTable(pendingTopUpOrders, "No pending top-ups.")}
+                                    <TopUpTable orders={pendingTopUpOrders} onStatusChange={handleStatusChange} emptyMessage="No pending top-ups." />
                                 </TabsContent>
                                 <TabsContent value="processing" className="pt-4">
-                                     {renderTopUpTable(processingTopUpOrders, "No top-ups being processed.")}
+                                     <TopUpTable orders={processingTopUpOrders} onStatusChange={handleStatusChange} emptyMessage="No top-ups being processed." />
                                 </TabsContent>
                                 <TabsContent value="completed" className="pt-4">
-                                     {renderTopUpTable(completedTopUpOrders, "No completed top-ups.")}
+                                     <TopUpTable orders={completedTopUpOrders} onStatusChange={handleStatusChange} emptyMessage="No completed top-ups." />
                                 </TabsContent>
                             </Tabs>
                         </CardContent>
                     </Card>
                 </TabsContent>
-                <TabsContent value="sales" className="pt-4">
-                    <div className="flex h-60 items-center justify-center rounded-lg border-2 border-dashed">
-                        <p className="text-muted-foreground">Sales transaction history will be shown here.</p>
-                    </div>
+                <TabsContent value="commissions" className="pt-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Commission History</CardTitle>
+                            <CardDescription>All incoming funds from sales and renewals.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                                {commissionTransactions.map(t => (
+                                    <div key={t.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
+                                                <TrendingUp className="h-4 w-4 text-green-600" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-medium">{t.description}</p>
+                                                <p className="text-xs text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
+                                            </div>
+                                        </div>
+                                        <p className="text-sm font-semibold text-green-600">+ K{t.amount.toLocaleString()}</p>
+                                    </div>
+                                ))}
+                                {commissionTransactions.length === 0 && (
+                                     <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
+                                        <p className="text-muted-foreground">No commission transactions found.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
                 </TabsContent>
                 <TabsContent value="payouts" className="pt-4">
                     <Card>
@@ -754,7 +600,7 @@ export function OfficePageContent() {
                         )}
                     </Card>
                 </TabsContent>
-            </Tabs>
+        </Tabs>
         </TabsContent>
         <TabsContent value="invitations" className="pt-6">
             <Card>
@@ -775,185 +621,13 @@ export function OfficePageContent() {
                 </CardContent>
             </Card>
         </TabsContent>
-        <TabsContent value="my-features" className="pt-6 space-y-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><KeyRound className="h-5 w-5" /> My Features</CardTitle>
-                    <CardDescription>Unique codes and features for your affiliate account.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="space-y-3">
-                        <h3 className="text-sm font-semibold mb-2">Staff ID Code</h3>
-                        <p className="text-xs text-muted-foreground mb-2">Provide this code to your staff when they are selling credits on your behalf.</p>
-                        <div className="flex items-center gap-2">
-                            <Input readOnly value={affiliate.staffId || 'No code generated'} className="font-mono" />
-                            <Button size="sm" variant="outline" onClick={() => navigator.clipboard.writeText(affiliate.staffId || '')} disabled={!affiliate.staffId}>
-                                <Copy className="h-4 w-4 mr-2"/> Copy ID
-                            </Button>
-                             <Button size="sm" onClick={generateNewStaffId}>
-                                Generate New Code
-                            </Button>
-                        </div>
-                    </div>
-                     <Separator />
-                     <div className="space-y-3 pt-4">
-                        <h3 className="text-sm font-semibold mb-2">Affiliate Phone Number</h3>
-                        <p className="text-xs text-muted-foreground mb-2">This WhatsApp number will be used for top-up notifications and affiliate queries.</p>
-                        <div className="flex items-center gap-2">
-                            <Input
-                                value={affiliate.phone || ''}
-                                onChange={(e) => {
-                                    if (!config || !affiliate) return;
-                                    const newAffiliateData = { ...affiliate, phone: e.target.value };
-                                    saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false });
-                                }}
-                                onBlur={() => toast({ title: "Phone Number Saved" })}
-                                icon={Phone}
-                                placeholder="Enter your WhatsApp number..."
-                            />
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader>
-                    <CardTitle>Account Settings</CardTitle>
-                    <CardDescription>Manage your withdrawal and security preferences.</CardDescription>
-                </CardHeader>
-                <CardContent className="p-0">
-                    <Tabs defaultValue="withdraw" className="w-full">
-                        <TabsList className="grid w-full grid-cols-3">
-                            <TabsTrigger value="withdraw">Withdraw Options</TabsTrigger>
-                            <TabsTrigger value="security">Security</TabsTrigger>
-                            <TabsTrigger value="verification">Verification</TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="withdraw" className="p-6">
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <MethodCard 
-                                    method="airtel" 
-                                    name="Airtel Money" 
-                                    description="Fee: K3,000" 
-                                    icon={Smartphone} 
-                                    isSetup={!!affiliate.withdrawalMethods?.airtel} 
-                                    onAction={() => setEditingMethod('airtel')} 
-                                    isPaymentMethod={affiliate.withdrawalMethods?.airtel?.isClientPaymentMethod}
-                                    onTogglePaymentMethod={(enabled) => handleTogglePaymentMethod('airtel', enabled)}
-                                />
-                                <MethodCard 
-                                    method="tnm" 
-                                    name="TNM Mpamba" 
-                                    description="Fee: K3,000" 
-                                    icon={Smartphone} 
-                                    isSetup={!!affiliate.withdrawalMethods?.tnm} 
-                                    onAction={() => setEditingMethod('tnm')} 
-                                    isPaymentMethod={affiliate.withdrawalMethods?.tnm?.isClientPaymentMethod}
-                                    onTogglePaymentMethod={(enabled) => handleTogglePaymentMethod('tnm', enabled)}
-                                />
-                                <MethodCard 
-                                    method="bank" 
-                                    name="Bank Transfer" 
-                                    description="Fee: K5,000" 
-                                    icon={Banknote} 
-                                    isSetup={!!affiliate.withdrawalMethods?.bank} 
-                                    onAction={() => setIsBankDialogOpen(true)}
-                                    isPaymentMethod={affiliate.withdrawalMethods?.bank?.isClientPaymentMethod}
-                                    onTogglePaymentMethod={(enabled) => handleTogglePaymentMethod('bank', enabled)}
-                                />
-                                <MethodCard 
-                                    method="bsCredits" 
-                                    name="BS Credits" 
-                                    description="No fees" 
-                                    icon={Wallet} 
-                                    isSetup={!!affiliate.withdrawalMethods?.bsCredits} 
-                                    onAction={() => setIsBsCreditsDialogOpen(true)} 
-                                />
-                            </div>
-                        </TabsContent>
-                         <TabsContent value="security" className="p-6 space-y-4">
-                           <VerificationItem
-                                title="Withdrawal PIN"
-                                status={affiliate.isPinSet || false}
-                                actionText={affiliate.isPinSet ? 'Change PIN' : 'Set PIN'}
-                                onAction={() => setIsPinDialogOpen(true)}
-                            />
-                            <VerificationItem
-                                title="Security Questions"
-                                status={!!affiliate.securityQuestionData}
-                                actionText={!!affiliate.securityQuestionData ? 'Verified' : 'Set Questions'}
-                                onAction={() => setIsSecurityQuestionsOpen(true)}
-                                actionDisabled={!!affiliate.securityQuestionData}
-                            />
-                        </TabsContent>
-                        <TabsContent value="verification" className="p-6">
-                             <VerificationItem title="Identity Verification" status={affiliate.idUploaded} actionText="Upload ID" onAction={() => alert("Open ID upload dialog")} />
-                        </TabsContent>
-                    </Tabs>
-                </CardContent>
-            </Card>
-        </TabsContent>
-        <TabsContent value="keys" className="pt-6">
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                        <CardTitle>Activation Keys</CardTitle>
-                        <CardDescription>Manage your generated activation keys.</CardDescription>
-                    </div>
-                     <Button onClick={() => setIsGenerateKeyOpen(true)}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        New Activation Key
-                    </Button>
-                </CardHeader>
-                <CardContent className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
-                    <p className="text-muted-foreground">Activation key management coming soon.</p>
-                </CardContent>
-            </Card>
-        </TabsContent>
        </Tabs>
-        <WithdrawalMethodDialog
-            method={editingMethod!}
-            isOpen={!!editingMethod}
-            onClose={() => setEditingMethod(null)}
-            onSave={handleSaveWithdrawalMethod}
-            currentData={editingMethod ? affiliate.withdrawalMethods?.[editingMethod] : undefined}
-        />
-        <BankWithdrawalDialog
-            isOpen={isBankDialogOpen}
-            onClose={() => setIsBankDialogOpen(false)}
-            onSave={handleSaveBankDetails}
-            currentData={affiliate.withdrawalMethods?.bank}
-        />
-         <BsCreditsDialog
-            isOpen={isBsCreditsDialogOpen}
-            onClose={() => setIsBsCreditsDialogOpen(false)}
-            onSave={handleSaveBsCredits}
-            currentData={affiliate.withdrawalMethods?.bsCredits}
-            staffId={affiliate.staffId}
-        />
-         <SetPinDialog
-            isOpen={isPinDialogOpen}
-            onClose={() => setIsPinDialogOpen(false)}
-            onSave={handleSavePin}
-            isPinSet={affiliate.isPinSet || false}
-        />
-        <SecurityQuestionsDialog
-            isOpen={isSecurityQuestionsOpen}
-            onClose={() => setIsSecurityQuestionsOpen(false)}
-            onSave={handleSaveSecurityQuestions}
-            currentData={affiliate.securityQuestionData}
-        />
-        <GenerateKeyDialog
-            isOpen={isGenerateKeyOpen}
-            onClose={() => setIsGenerateKeyOpen(false)}
-            staffId={affiliate.staffId || ''}
-            walletBalance={mwkBalance}
-            creditBalance={affiliate.creditBalance || 0}
-        />
         {purchaseDetails && (
             <PurchaseDialog
                 plan={purchaseDetails}
                 isOpen={!!purchaseDetails}
                 onClose={() => setPurchaseDetails(null)}
-                onSuccess={() => { setPurchaseDetails(null); setIsGenerateKeyOpen(false); }}
+                onSuccess={() => { setPurchaseDetails(null); }}
                 isTopUp
             />
         )}

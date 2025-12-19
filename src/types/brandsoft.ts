@@ -1,5 +1,4 @@
 
-
 import { Page } from '@/stores/canvas-store';
 
 export type AffiliateClient = {
@@ -66,6 +65,9 @@ export type Affiliate = {
   totalSales: number; // Lifetime total sales volume
   creditBalance: number;
   bonus: number;
+  bonusChallengeStartDate?: string;
+  bonusChallengeClients?: number;
+  isBonusTierActive?: boolean;
   staffId?: string;
   clients: AffiliateClient[];
   transactions?: Transaction[];
