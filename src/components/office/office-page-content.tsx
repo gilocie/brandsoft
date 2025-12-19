@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useBrandsoft, type Transaction, type Affiliate, type Purchase } from '@/hooks/use-brandsoft';
@@ -39,6 +38,7 @@ import { SellCreditsDialog } from '@/components/office/dialogs/sell-credits-dial
 import { TopUpNotificationCard } from '@/components/office/top-up-notification-card';
 import { TopUpTable } from '@/components/office/top-up-table';
 import { BonusProgressDialog } from './bonus-progress-dialog';
+import { useRouter } from 'next/navigation';
 
 
 const affiliateSchema = z.object({
@@ -62,6 +62,8 @@ export function OfficePageContent() {
   const { toast } = useToast();
   const [purchaseDetails, setPurchaseDetails] = useState<PlanDetails | null>(null);
   const [isSellCreditsOpen, setIsSellCreditsOpen] = useState(false);
+  const router = useRouter();
+
 
   const affiliate = config?.affiliate;
 
@@ -81,8 +83,6 @@ export function OfficePageContent() {
   }, [config?.purchases]);
 
   const pendingTopUpOrders = useMemo(() => pendingTopUps.filter(p => p.status === 'pending'), [pendingTopUps]);
-  const processingTopUpOrders = useMemo(() => pendingTopUps.filter(p => p.status === 'processing'), [pendingTopUps]);
-  const completedTopUpOrders = useMemo(() => pendingTopUps.filter(p => p.status === 'active'), [pendingTopUps]);
 
 
   // NEW: Create a synchronized list of clients
@@ -166,8 +166,6 @@ export function OfficePageContent() {
     const handleWithdraw = (amount: number, source: 'commission' | 'combined' | 'bonus', method: string) => {
         if (!config || !affiliate) return;
         
-        const TRANSACTION_FEE = 3000; // Example fee
-
         const newTransaction: Transaction = {
           id: `TRN-WTH-${Date.now()}`,
           date: new Date().toISOString(),
@@ -211,26 +209,6 @@ export function OfficePageContent() {
       .slice(0, 5);
   }, [affiliate?.transactions]);
   
-  const payoutTransactions = useMemo(() => {
-    if (!affiliate?.transactions) return [];
-    return affiliate.transactions
-      .filter(t => t.type === 'debit')
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [affiliate?.transactions]);
-
-  const commissionTransactions = useMemo(() => {
-    if (!affiliate?.transactions) return [];
-    return affiliate.transactions
-      .filter(t => t.type === 'credit')
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [affiliate?.transactions]);
-  
-  const paginatedPayouts = useMemo(() => {
-    const startIndex = payoutsPage * ITEMS_PER_PAGE;
-    return payoutTransactions.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [payoutTransactions, payoutsPage]);
-
-  const totalPayoutPages = Math.ceil(payoutTransactions.length / ITEMS_PER_PAGE);
 
   if (!config || !affiliate) {
     return (
@@ -250,22 +228,6 @@ export function OfficePageContent() {
     .reduce((sum, t) => sum + t.amount, 0) || 0;
 
   const creditSalesProfit = totalCreditsSold * (CREDIT_TO_MWK - (config.admin?.buyPrice || 900));
-
-
-  const handleStatusChange = (orderId: string, newStatus: 'pending' | 'processing' | 'active') => {
-        if (!config?.purchases) return;
-
-        const updatedPurchases = config.purchases.map(p => 
-            p.orderId === orderId ? { ...p, status: newStatus as 'pending' | 'active' | 'processing' } : p
-        );
-        
-        saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: true });
-        
-        toast({
-            title: "Status Updated",
-            description: `Top-up order status set to ${newStatus}.`,
-        });
-    };
 
     return (
     <div className="space-y-8">
@@ -363,7 +325,7 @@ export function OfficePageContent() {
         </div>
         <TopUpNotificationCard
           pendingOrders={pendingTopUpOrders}
-          onViewAll={() => setActiveTab('transactions')}
+          onViewAll={() => router.push('/office/orders')}
         />
       </div>
 
@@ -371,7 +333,6 @@ export function OfficePageContent() {
         <TabsList>
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="clients">Clients ({syncedClients.length})</TabsTrigger>
-            <TabsTrigger value="transactions">Transactions</TabsTrigger>
             <TabsTrigger value="invitations">Invitations</TabsTrigger>
         </TabsList>
         <TabsContent value="dashboard" className="pt-6">
@@ -454,8 +415,8 @@ export function OfficePageContent() {
                             <CardTitle>Recent Sales Transactions</CardTitle>
                             <CardDescription>Your last 5 sales commissions.</CardDescription>
                         </div>
-                        <Button variant="outline" size="sm" onClick={() => setActiveTab('transactions')}>
-                            View All <ArrowRight className="h-4 w-4 ml-2" />
+                         <Button variant="outline" size="sm" asChild>
+                           <Link href="/office/wallet">View All <ArrowRight className="h-4 w-4 ml-2" /></Link>
                         </Button>
                     </CardHeader>
                     <CardContent>
@@ -497,111 +458,6 @@ export function OfficePageContent() {
                 )}
             </div>
         </TabsContent>
-         <TabsContent value="transactions" className="pt-6">
-            <Tabs defaultValue="top-ups">
-                <TabsList>
-                    <TabsTrigger value="top-ups">Top-ups</TabsTrigger>
-                    <TabsTrigger value="commissions">Commissions</TabsTrigger>
-                    <TabsTrigger value="payouts">Payouts</TabsTrigger>
-                </TabsList>
-                <TabsContent value="top-ups" className="pt-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Client Top-up Requests</CardTitle>
-                            <CardDescription>Manage your client's wallet top-up orders.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <Tabs defaultValue="pending">
-                                <TabsList>
-                                    <TabsTrigger value="pending">Pending</TabsTrigger>
-                                    <TabsTrigger value="processing">Processing</TabsTrigger>
-                                    <TabsTrigger value="completed">Completed</TabsTrigger>
-                                </TabsList>
-                                <TabsContent value="pending" className="pt-4">
-                                    <TopUpTable orders={pendingTopUpOrders} onStatusChange={handleStatusChange} emptyMessage="No pending top-ups." />
-                                </TabsContent>
-                                <TabsContent value="processing" className="pt-4">
-                                     <TopUpTable orders={processingTopUpOrders} onStatusChange={handleStatusChange} emptyMessage="No top-ups being processed." />
-                                </TabsContent>
-                                <TabsContent value="completed" className="pt-4">
-                                     <TopUpTable orders={completedTopUpOrders} onStatusChange={handleStatusChange} emptyMessage="No completed top-ups." />
-                                </TabsContent>
-                            </Tabs>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-                <TabsContent value="commissions" className="pt-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Commission History</CardTitle>
-                            <CardDescription>All incoming funds from sales and renewals.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-4">
-                                {commissionTransactions.map(t => (
-                                    <div key={t.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
-                                                <TrendingUp className="h-4 w-4 text-green-600" />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-medium">{t.description}</p>
-                                                <p className="text-xs text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
-                                            </div>
-                                        </div>
-                                        <p className="text-sm font-semibold text-green-600">+ K{t.amount.toLocaleString()}</p>
-                                    </div>
-                                ))}
-                                {commissionTransactions.length === 0 && (
-                                     <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
-                                        <p className="text-muted-foreground">No commission transactions found.</p>
-                                    </div>
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-                <TabsContent value="payouts" className="pt-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Payout History</CardTitle>
-                            <CardDescription>Your history of withdrawals.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                             <div className="space-y-4">
-                                {paginatedPayouts.length > 0 ? paginatedPayouts.map(t => (
-                                    <div key={t.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100">
-                                                <TrendingDown className="h-4 w-4 text-red-600" />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-medium">{t.description}</p>
-                                                <p className="text-xs text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
-                                            </div>
-                                        </div>
-                                        <p className="text-sm font-semibold text-red-600">- K{(t.amount).toLocaleString()}</p>
-                                    </div>
-                                )) : (
-                                    <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
-                                        <p className="text-muted-foreground">No payout transactions found.</p>
-                                    </div>
-                                )}
-                            </div>
-                        </CardContent>
-                        {totalPayoutPages > 1 && (
-                            <CardContent className="pt-4 flex items-center justify-between">
-                                <span className="text-sm text-muted-foreground">Page {payoutsPage + 1} of {totalPayoutPages}</span>
-                                <div className="flex gap-2">
-                                    <Button variant="outline" size="sm" onClick={() => setPayoutsPage(p => p - 1)} disabled={payoutsPage === 0}>Previous</Button>
-                                    <Button variant="outline" size="sm" onClick={() => setPayoutsPage(p => p + 1)} disabled={payoutsPage >= totalPayoutPages - 1}>Next</Button>
-                                </div>
-                            </CardContent>
-                        )}
-                    </Card>
-                </TabsContent>
-        </Tabs>
-        </TabsContent>
         <TabsContent value="invitations" className="pt-6">
             <Card>
                 <CardHeader>
@@ -634,3 +490,5 @@ export function OfficePageContent() {
     </div>
   );
 }
+
+    
