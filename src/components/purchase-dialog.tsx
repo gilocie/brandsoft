@@ -94,13 +94,12 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
 
     const { methods: paymentMethods, number: affiliateWhatsappNumber } = useMemo(() => {
         const brandsoftNumber = '265991972336';
-        if (!clientReferredBy || clientReferredBy === 'BRANDSOFT-ADMIN') {
+        if (!clientReferredBy || clientReferredBy === 'BRANDSOFT-ADMIN' || !config?.affiliate) {
             return { methods: defaultPaymentMethods, number: brandsoftNumber };
         }
-
-        // Simplification for demo. In a real app, you'd find the affiliate by staffId.
-        const affiliate = config?.affiliate;
-        if (!affiliate || !affiliate.withdrawalMethods) {
+        
+        const affiliate = config.affiliate;
+        if (!affiliate.withdrawalMethods) {
             return { methods: defaultPaymentMethods, number: brandsoftNumber };
         }
         
@@ -206,11 +205,12 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                 whatsappNumber: whatsappNumber,
                 customerId: myCompany?.id,
                 affiliateId: plan.affiliateId,
+                remainingTime: { value: 0, unit: 'days' as const },
             };
             
-            if (selectedPayment === 'wallet') {
+            if (selectedPayment === 'wallet' && config) {
                 const newBalance = balance - priceAmount;
-                saveConfig({ ...config!, profile: { ...config!.profile, walletBalance: newBalance }, purchases: [...(config!.purchases || []), newOrder]}, {redirect: false});
+                saveConfig({ ...config, profile: { ...config.profile, walletBalance: newBalance }, purchases: [...(config.purchases || []), newOrder]}, {redirect: false});
             } else {
                 addPurchaseOrder(newOrder);
                  const message = `*Please Activate My New Order!*
@@ -239,18 +239,18 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
     const isConfirmDisabled = purchaseState !== 'idle' || !selectedPayment || !whatsappNumber || (selectedPayment !== 'wallet' && !receiptFile) || (selectedPayment === 'wallet' && !canAffordWithWallet);
 
     const handleDialogClose = () => {
-        if (purchaseState !== 'processing') {
-            if (purchaseState === 'success') {
-                onSuccess();
-            } else {
-                onClose();
-            }
-            setPurchaseState('idle');
-            setReceiptFile(null);
-            setSelectedPayment(null);
-            setWhatsappNumber('');
-            setSaveWhatsapp(false);
+        if (purchaseState === 'success') {
+            onSuccess();
+        } else if (purchaseState === 'idle') {
+            onClose();
         }
+        // If 'processing', do nothing to prevent accidental close
+        
+        setPurchaseState('idle');
+        setReceiptFile(null);
+        setSelectedPayment(null);
+        setWhatsappNumber('');
+        setSaveWhatsapp(false);
     };
     
     const StepIndicator = ({ step, label, isComplete }: { step: number, label: string, isComplete: boolean }) => (
