@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, createContext, useContext, ReactNode, useCallback } from 'react';
@@ -131,29 +130,17 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
         if (!order || !order.customerId) return;
 
         const costInMWK = parseFloat(order.planPrice.replace(/[^0-9.-]+/g,""));
-        const profitPerCredit = (config.admin.exchangeValue - config.admin.buyPrice);
-        const commission = credits * profitPerCredit;
         
         let newConfig = { ...config };
-        let newAffiliateData = { ...newConfig.affiliate };
-
+        
+        // Ensure newAffiliateData is a complete Affiliate object
+        const newAffiliateData: Affiliate = {
+          ...initialAffiliateData, // Start with a complete default object
+          ...newConfig.affiliate, // Spread existing properties
+        };
+        
         // 1. Deduct credits from affiliate's balance
         newAffiliateData.creditBalance = (newAffiliateData.creditBalance || 0) - credits;
-
-        // Add commission
-        newAffiliateData.unclaimedCommission = (newAffiliateData.unclaimedCommission || 0) + commission;
-        
-        newAffiliateData.transactions = [
-            ...(newAffiliateData.transactions || []),
-            {
-                id: `TRN-SALE-${Date.now()}`,
-                date: new Date().toISOString(),
-                description: `Commission for ${credits} credits sale`,
-                amount: commission,
-                type: 'credit'
-            }
-        ];
-
 
         // 2. Add cash value to client's wallet
         const companyIndex = newConfig.companies.findIndex(c => c.id === order.customerId);
@@ -185,10 +172,8 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
         
         // 4. Update admin's records
         const newAdminSettings: AdminSettings = {
-            ...newConfig.admin,
-            // Credits were already out of the main reserve when sold to affiliate,
-            // so we don't change `availableCredits`. We just record the final sale.
-            soldCredits: (newConfig.admin.soldCredits || 0) + credits,
+            ...(newConfig.admin as AdminSettings), // Assume admin exists, but provide a safe object
+            soldCredits: (newConfig.admin?.soldCredits || 0) + credits,
         };
         
         newConfig.admin = newAdminSettings;
@@ -200,13 +185,14 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
     const useActivationKey = (key: string, companyId: string): boolean => {
         if (!config?.affiliate?.generatedKeys) return false;
 
-        const keyIndex = config.affiliate.generatedKeys.findIndex(k => k.key === key && k.status === 'unused');
+        const keyIndex = (config.affiliate.generatedKeys || []).findIndex(k => k.key === key && k.status === 'unused');
         
         if (keyIndex === -1) {
             return false;
         }
-
-        const newConfig = { ...config };
+        
+        // Create a deep copy to avoid direct mutation
+        const newConfig = JSON.parse(JSON.stringify(config));
         if (!newConfig.affiliate) return false;
 
         const keyData = newConfig.affiliate.generatedKeys[keyIndex];
@@ -220,9 +206,6 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
         keyData.remainingDays = totalDays; // Store the initial days
 
         newConfig.affiliate.generatedKeys[keyIndex] = keyData;
-
-        // You might want to update the company's subscription here as well
-        // For now, we just mark the key as used.
 
         saveConfig(newConfig, { revalidate: true });
         return true;
