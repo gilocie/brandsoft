@@ -27,6 +27,14 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   BriefcaseBusiness,
   LayoutDashboard,
   FileText,
@@ -50,6 +58,10 @@ import {
   Briefcase,
   Sun,
   Moon,
+  MailQuestion,
+  FileCheck2,
+  Clock,
+  XCircle,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -167,20 +179,29 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return myCompany?.id || null;
   }, [config]);
 
-  const notificationCount = useMemo(() => {
-    if (!config) return 0;
+  const {
+    notificationCount,
+    incomingRequestsCount,
+    responsesCount,
+    pendingPurchasesCount,
+    declinedPurchasesCount,
+  } = useMemo(() => {
+    if (!config) return { notificationCount: 0, incomingRequestsCount: 0, responsesCount: 0, pendingPurchasesCount: 0, declinedPurchasesCount: 0 };
 
-    // Quotation-related notifications
     const incomingRequestsCount = config.incomingRequests?.length || 0;
     const responsesCount = config.requestResponses?.length || 0;
 
-    // Purchase-related notifications for the client
-    const purchaseNotifications = (config.purchases || []).filter(p =>
-      (p.status === 'pending' || p.status === 'processing') ||
-      (p.status === 'declined' && !p.isAcknowledged)
+    const pendingPurchasesCount = (config.purchases || []).filter(p =>
+      p.status === 'pending' || p.status === 'processing'
     ).length;
     
-    return incomingRequestsCount + responsesCount + purchaseNotifications;
+    const declinedPurchasesCount = (config.purchases || []).filter(p =>
+      p.status === 'declined' && !p.isAcknowledged
+    ).length;
+
+    const total = incomingRequestsCount + responsesCount + pendingPurchasesCount + declinedPurchasesCount;
+    
+    return { notificationCount: total, incomingRequestsCount, responsesCount, pendingPurchasesCount, declinedPurchasesCount };
   }, [config]);
   
   const ordersNotificationCount = useMemo(() => {
@@ -395,17 +416,63 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     <ThemeToggle />
                     {role === 'client' && (
                         <>
-                            <Button variant="ghost" size="icon" asChild className="flex-shrink-0 relative">
-                                <Link href="/history">
-                                <Bell className="h-6 w-6" />
-                                {notificationCount > 0 && (
-                                    <span className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs font-bold text-destructive-foreground">
-                                    {notificationCount}
-                                    </span>
-                                )}
-                                <span className="sr-only">Notifications</span>
-                                </Link>
-                            </Button>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="flex-shrink-0 relative">
+                                        <Bell className="h-6 w-6" />
+                                        {notificationCount > 0 && (
+                                            <span className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs font-bold text-destructive-foreground">
+                                            {notificationCount}
+                                            </span>
+                                        )}
+                                        <span className="sr-only">Notifications</span>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-80">
+                                    <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    {notificationCount > 0 ? (
+                                        <>
+                                            {incomingRequestsCount > 0 && (
+                                                <DropdownMenuItem asChild>
+                                                    <Link href="/quotation-requests?subtab=incoming" className="cursor-pointer">
+                                                        <MailQuestion className="mr-2 h-4 w-4 text-blue-500" />
+                                                        <span className="flex-1">You have {incomingRequestsCount} new quotation request(s).</span>
+                                                    </Link>
+                                                </DropdownMenuItem>
+                                            )}
+                                            {responsesCount > 0 && (
+                                                <DropdownMenuItem asChild>
+                                                    <Link href="/quotation-requests?subtab=response" className="cursor-pointer">
+                                                        <FileCheck2 className="mr-2 h-4 w-4 text-green-500" />
+                                                        <span className="flex-1">You have {responsesCount} new quotation response(s).</span>
+                                                    </Link>
+                                                </DropdownMenuItem>
+                                            )}
+                                             {pendingPurchasesCount > 0 && (
+                                                <DropdownMenuItem asChild>
+                                                    <Link href="/history" className="cursor-pointer">
+                                                        <Clock className="mr-2 h-4 w-4 text-amber-500" />
+                                                        <span className="flex-1">{pendingPurchasesCount} purchase(s) are pending/processing.</span>
+                                                    </Link>
+                                                </DropdownMenuItem>
+                                            )}
+                                            {declinedPurchasesCount > 0 && (
+                                                <DropdownMenuItem asChild>
+                                                    <Link href="/history" className="cursor-pointer">
+                                                        <XCircle className="mr-2 h-4 w-4 text-destructive" />
+                                                        <span className="flex-1">{declinedPurchasesCount} purchase(s) were declined.</span>
+                                                    </Link>
+                                                </DropdownMenuItem>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <div className="px-2 py-4 text-center text-sm text-muted-foreground">
+                                            No new notifications.
+                                        </div>
+                                    )}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                             <Button variant="ghost" size="icon" asChild className="flex-shrink-0">
                                 <Link href="/settings">
                                 <Settings className="h-5 w-5" />
