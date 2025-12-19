@@ -62,7 +62,7 @@ const PlanCard = ({ plan, isCurrent = false, cta, className, onBuyClick, onCusto
                  <CardHeader className="p-4 pb-2" style={headerStyle}>
                     <div className="flex justify-between items-center">
                         <CardTitle style={titleStyle}>{plan.name}</CardTitle>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onCustomizeClick}><Settings className="h-4 w-4" /></Button>
+                        {onCustomizeClick && <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onCustomizeClick}><Settings className="h-4 w-4" /></Button>}
                     </div>
                     <CardDescription className="text-4xl sm:text-3xl font-bold pt-2" style={priceStyle}>
                         {plan.price}
@@ -184,6 +184,8 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
         setEditingPlan(null);
     };
 
+    const hasCustomFreeTrial = useMemo(() => config?.plans?.some(p => p.name === 'Free Trial'), [config?.plans]);
+
     return (
         <>
         <Dialog open={isManagePlanOpen} onOpenChange={setIsManagePlanOpen}>
@@ -219,13 +221,15 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
                 <div className="flex-1 overflow-y-auto min-h-0 py-2">
                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         
-                        <PlanCard 
-                            plan={{ name: "Free Trial", price: 0, features: ["Up to 10 invoices", "Up to 10 customers", "Basic templates"] }}
-                            isCurrent={!currentPlanPurchase}
-                            cta={currentPlanPurchase ? "Downgrade to Trial" : "Current Plan"}
-                            onBuyClick={currentPlanPurchase ? handleDowngrade : () => {}}
-                            onCustomizeClick={() => alert("Free trial cannot be customized.")}
-                        />
+                        {!hasCustomFreeTrial && (
+                           <PlanCard 
+                                plan={{ name: "Free Trial", price: 0, features: ["Up to 10 invoices", "Up to 10 customers", "Basic templates"] }}
+                                isCurrent={!currentPlanPurchase}
+                                cta={currentPlanPurchase ? "Downgrade to Trial" : "Current Plan"}
+                                onBuyClick={currentPlanPurchase ? handleDowngrade : () => {}}
+                                onCustomizeClick={() => alert("The default Free Trial plan cannot be customized. Create a new plan with the name 'Free Trial' to override it.")}
+                            />
+                        )}
 
                         {config?.plans?.map(plan => {
                              const { original, discounted } = calculatePrice(plan.price, selectedPeriod, plan.customization?.discountValue, plan.customization?.discountType);
