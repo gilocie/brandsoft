@@ -402,7 +402,7 @@ function VerifyPurchaseContent() {
                         </div>
                     </div>
                      {order.status === 'declined' && order.declineReason && (
-                         <Alert variant="destructive" className="mt-4">
+                         <Alert variant="destructive" className="mt-4 bg-white text-destructive">
                             <div className="flex justify-between items-start">
                                 <div>
                                     <AlertTitle className="flex items-center gap-2"><XCircle className="h-4 w-4" />Order Declined</AlertTitle>
@@ -494,6 +494,3 @@ export default function OfficeVerifyPurchasePage() {
         </div>
     )
 }
-
-
-    
