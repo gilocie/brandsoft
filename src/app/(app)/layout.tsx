@@ -66,7 +66,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useBrandsoft } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Company } from '@/hooks/use-brandsoft';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -106,9 +106,20 @@ const upcomingNavItems = [
 
 const HeaderWalletCard = () => {
   const { config } = useBrandsoft();
+  
+  const { balance, currencyCode } = useMemo(() => {
+    if (!config || !config.profile?.id) {
+        return { balance: 0, currencyCode: 'K' };
+    }
+    const company = (config.companies || []).find((c: Company) => c.id === (config.profile as any).id);
+    const walletBalance = company?.walletBalance || 0;
+    const code = config.profile.defaultCurrency === 'MWK' ? 'K' : config.profile.defaultCurrency || 'K';
+    return { balance: walletBalance, currencyCode: code };
+  }, [config]);
+
+
   if (!config?.profile) return null;
 
-  const balance = config.profile.walletBalance || 0;
   const creditValue = config.admin?.exchangeValue || 1000;
   const bsCredits = balance / creditValue;
 
@@ -117,7 +128,7 @@ const HeaderWalletCard = () => {
       <PopoverTrigger asChild>
         <Button className="flex-shrink-0 bg-green-600 text-white hover:bg-green-700">
           <Wallet className="h-5 w-5 mr-2" />
-          <span className="font-bold mr-2">{config.profile.defaultCurrency || 'K'}{balance.toLocaleString()}</span>
+          <span className="font-bold mr-2">{currencyCode}{balance.toLocaleString()}</span>
           Wallet
         </Button>
       </PopoverTrigger>
@@ -131,7 +142,7 @@ const HeaderWalletCard = () => {
           </div>
           <div className="flex flex-col items-center justify-center space-y-2 rounded-lg border bg-muted p-4">
             <p className="text-4xl font-bold">
-                {config.profile.defaultCurrency || 'K'}{balance.toLocaleString()}
+                {currencyCode}{balance.toLocaleString()}
             </p>
             <p className="text-xs text-muted-foreground">
                 ≈ BS {bsCredits.toFixed(2)}
