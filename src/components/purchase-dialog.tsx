@@ -239,18 +239,21 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
     const isConfirmDisabled = purchaseState !== 'idle' || !selectedPayment || !whatsappNumber || (selectedPayment !== 'wallet' && !receiptFile) || (selectedPayment === 'wallet' && !canAffordWithWallet);
 
     const handleDialogClose = () => {
-        if (purchaseState === 'success') {
-            onSuccess();
-        } else if (purchaseState === 'idle') {
-            onClose();
-        }
-        // If 'processing', do nothing to prevent accidental close
-        
+        const successful = purchaseState === 'success';
+
+        // Reset state
         setPurchaseState('idle');
         setReceiptFile(null);
         setSelectedPayment(null);
         setWhatsappNumber('');
         setSaveWhatsapp(false);
+
+        // Call appropriate callback
+        if (successful) {
+            onSuccess();
+        } else {
+            onClose();
+        }
     };
     
     const StepIndicator = ({ step, label, isComplete }: { step: number, label: string, isComplete: boolean }) => (
