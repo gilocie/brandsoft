@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import type { BrandsoftConfig, Company, Customer, Invoice, Quotation, QuotationRequest, Affiliate, Transaction, AdminSettings, Plan } from '@/types/brandsoft';
@@ -264,6 +262,13 @@ export function useSetup(
     trendingPlan: 'None',
     revenueFromKeys: 0,
     revenueFromPlans: 0,
+    planPeriods: [
+        { value: '1', label: '1 Month' },
+        { value: '3', label: '3 Months' },
+        { value: '6', label: '6 Months' },
+        { value: '12', label: '1 Year' },
+        { value: 'once', label: 'Once OFF' },
+    ]
   };
 
 

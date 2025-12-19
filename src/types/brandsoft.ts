@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { Page } from '@/stores/canvas-store';
@@ -256,6 +254,11 @@ export type Plan = {
   customization?: PlanCustomization;
 };
 
+export type PlanPeriod = {
+    value: string;
+    label: string;
+};
+
 export type AdminSettings = {
   maxCredits: number;
   buyPrice: number;
@@ -263,7 +266,7 @@ export type AdminSettings = {
   exchangeValue: number;
   availableCredits: number;
   soldCredits: number;
-  creditsBoughtBack: number;
+  creditsBoughtBack?: number;
   isReserveLocked?: boolean;
   keyPrice?: number;
   keyFreeDays?: number;
@@ -273,6 +276,7 @@ export type AdminSettings = {
   trendingPlan?: string;
   revenueFromKeys?: number;
   revenueFromPlans?: number;
+  planPeriods?: PlanPeriod[];
 };
 
 export type BrandsoftConfig = {

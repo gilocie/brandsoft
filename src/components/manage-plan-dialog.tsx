@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useMemo } from 'react';
@@ -14,7 +13,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Button } from '@/components/ui/button';
 import { Check, Star, Settings, Users, HardDrive, ShieldCheck, Contact, Package, Gem, Crown, Award, Gift, Rocket, Loader2, Mail, Phone } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useBrandsoft, type Plan, type PlanCustomization } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Plan, type PlanCustomization, type PlanPeriod } from '@/hooks/use-brandsoft';
 import { usePlanImage } from '@/hooks/use-plan-image';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
@@ -153,7 +152,6 @@ const PlanCard = ({
             color: cardTextColor
           }}
         >
-            {/* Popular Badge */}
             {isPopular && badgeText && (
                 <div 
                     className="absolute top-4 right-4 text-xs font-bold px-3 py-1.5 rounded-full text-white z-10 shadow-lg"
@@ -163,9 +161,7 @@ const PlanCard = ({
                 </div>
             )}
 
-            {/* Header Section */}
             <CardHeader className="p-6 pb-4 relative">
-                {/* Header Background Image */}
                 {displayHeaderImage && (
                     <div className="absolute inset-0 overflow-hidden">
                         {isImageLoading ? (
@@ -188,9 +184,7 @@ const PlanCard = ({
                     </div>
                 )}
 
-                {/* Header Content */}
                 <div className="relative z-10">
-                    {/* Icon and Title */}
                     <div className="flex items-start gap-4 mb-5">
                         <PlanIcon 
                             iconName={customization?.icon}
@@ -213,7 +207,6 @@ const PlanCard = ({
                         </div>
                     </div>
                     
-                    {/* Price */}
                     {customization?.hidePrice ? (
                         <div className="h-14 flex items-center">
                             <span className="text-2xl font-bold" style={{ color: cardTextColor }}>
@@ -230,7 +223,7 @@ const PlanCard = ({
                                         className="text-4xl font-bold tracking-tight" 
                                         style={{ color: cardTextColor }}
                                     >
-                                        K{plan.price.toLocaleString()}
+                                        {plan.price}
                                     </span>
                                     <span 
                                         className="text-base font-medium"
@@ -245,9 +238,7 @@ const PlanCard = ({
                 </div>
             </CardHeader>
 
-            {/* Content Section */}
             <CardContent className="p-6 pt-2 space-y-5">
-                {/* CTA Button */}
                 <Button 
                     className={cn(
                         "w-full text-sm font-semibold h-11 rounded-xl transition-all",
@@ -264,7 +255,6 @@ const PlanCard = ({
                     {customization?.hidePrice ? 'Contact Us' : (customization?.ctaText || cta)}
                 </Button>
                 
-                {/* Features List */}
                 <div className="space-y-3">
                     {plan.features.slice(1).map((feature, index) => (
                         <div key={index} className="flex items-start gap-3">
@@ -295,7 +285,6 @@ const PlanCard = ({
                     ))}
                 </div>
 
-                {/* Current Plan Indicator */}
                 {isCurrent && cta === 'Current Plan' && (
                     <div 
                         className="text-center text-xs font-medium py-2 rounded-lg"
@@ -312,19 +301,12 @@ const PlanCard = ({
     );
 }
 
-const periods = [
-    { value: '1', label: '1 Month' },
-    { value: '3', label: '3 Months' },
-    { value: '6', label: '6 Months' },
-    { value: '12', label: '1 Year' },
-    { value: 'once', label: 'Once OFF' },
-];
-
 export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon?: boolean, isExpired?: boolean }) {
     const { config, downgradeToTrial, saveConfig } = useBrandsoft();
     const router = useRouter();
     const currencyCode = config?.profile.defaultCurrency || 'K';
-    const [selectedPeriod, setSelectedPeriod] = useState('1');
+    const planPeriods = config?.admin?.planPeriods || [];
+    const [selectedPeriod, setSelectedPeriod] = useState(planPeriods[0]?.value || '1');
     const [purchasePlan, setPurchasePlan] = useState<PlanDetails | null>(null);
     const [isManagePlanOpen, setIsManagePlanOpen] = useState(false);
     const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
@@ -368,7 +350,7 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
         };
     };
 
-    const selectedPeriodLabel = periods.find(p => p.value === selectedPeriod)?.label;
+    const selectedPeriodLabel = planPeriods.find(p => p.value === selectedPeriod)?.label;
     
     const handleBuyClick = (plan: Plan) => {
         if (plan.customization?.hidePrice) {
@@ -440,7 +422,6 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
             </DialogTrigger>
             
             <DialogContent className="max-w-7xl w-[95vw] h-[95vh] max-h-[95vh] flex flex-col p-0 gap-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border-slate-800 overflow-hidden">
-                {/* Fixed Header */}
                 <div className="flex-shrink-0 p-4 sm:p-6 pb-4 border-b border-slate-800/50">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
@@ -463,7 +444,7 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
                                     <SelectValue placeholder="Select period" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {periods.map(p => (
+                                    {planPeriods.map(p => (
                                         <SelectItem key={p.value} value={p.value}>
                                             {p.label}
                                         </SelectItem>
@@ -474,7 +455,6 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
                     </div>
                 </div>
 
-                {/* Scrollable Content Area */}
                 <ScrollArea className="flex-1 min-h-0">
                     <div className="p-4 sm:p-6 pt-4">
                         <div 
@@ -509,7 +489,7 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
                                     onBuyClick={currentPlanPurchase ? handleDowngrade : () => {}}
                                 />
                             )}
-                            {(config?.plans || []).map(plan => {
+                            {config?.plans?.map(plan => {
                                 const { discounted, original, isDiscounted } = calculatePrice(
                                     plan.price, 
                                     selectedPeriod, 
@@ -529,7 +509,7 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
                                     </div>
                                 ) : (
                                      <span className="text-4xl font-bold tracking-tight">
-                                        K{plan.price.toLocaleString()}
+                                        {discounted}
                                     </span>
                                 );
                                 
@@ -578,7 +558,7 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
                 onSuccess={handlePurchaseSuccess}
             />
         )}
-
+        
         {contactInfo && (
             <ContactDialog
                 isOpen={!!contactInfo}

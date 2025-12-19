@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useBrandsoft, type Plan, type AdminSettings, type PlanCustomization } from '@/hooks/use-brandsoft';
-import { usePlanImage } from '@/hooks/use-plan-image'; // Add this import
+import { useBrandsoft, type Plan, type AdminSettings, type PlanCustomization, type PlanPeriod } from '@/hooks/use-brandsoft';
+import { usePlanImage } from '@/hooks/use-plan-image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -22,7 +22,7 @@ import { StatCard } from '@/components/office/stat-card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { PlanSettingsDialog } from '@/components/plan-settings-dialog';
 import { cn } from '@/lib/utils';
-
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const premiumFeatures = [
     { id: 'fullTemplateEditor', label: 'Full Template Editor Access' },
@@ -61,6 +61,13 @@ const activationKeySchema = z.object({
 });
 type ActivationKeyFormData = z.infer<typeof activationKeySchema>;
 
+const newPeriodSchema = z.object({
+    value: z.string().min(1, "Value is required (e.g., '1', '6', 'once')"),
+    label: z.string().min(1, "Label is required (e.g., '1 Month')")
+});
+type NewPeriodFormData = z.infer<typeof newPeriodSchema>;
+
+
 const iconMap: { [key: string]: React.ElementType } = {
     Package, Users, HardDrive, Contact, Star, Gem, Crown, Award, Gift, Rocket, ShieldCheck,
 };
@@ -77,7 +84,6 @@ const PlanIcon = ({ iconName, bgColor, iconColor }: { iconName?: string; bgColor
     )
 };
 
-// Updated AdminPlanCard with image loading from IndexedDB
 const AdminPlanCard = ({ 
     plan, 
     onEdit, 
@@ -92,7 +98,6 @@ const AdminPlanCard = ({
     const { customization } = plan;
     const isPopular = customization?.isRecommended;
     
-    // Load header image from IndexedDB
     const { image: headerImage, isLoading: isImageLoading } = usePlanImage(plan.name, 'header');
 
     const cardBgColor = customization?.bgColor || (isPopular ? 'rgb(88, 80, 236)' : 'rgb(30, 30, 35)');
@@ -105,7 +110,6 @@ const AdminPlanCard = ({
         ? { background: `linear-gradient(to bottom right, ${customization.backgroundGradientStart || '#3a3a3a'}, ${customization.backgroundGradientEnd || '#1a1a1a'})` }
         : { backgroundColor: cardBgColor };
 
-    // Use the image from IndexedDB or fall back to customization value
     const displayHeaderImage = headerImage || customization?.headerBgImage;
 
     return (
@@ -145,7 +149,6 @@ const AdminPlanCard = ({
              <CardHeader 
                 className="p-8 pb-6 relative" 
             >
-                {/* Header Background Image from IndexedDB */}
                 {displayHeaderImage && (
                     <>
                         {isImageLoading ? (
@@ -189,7 +192,7 @@ const AdminPlanCard = ({
                     
                     {customization?.hidePrice ? (
                         <div className="h-[60px] flex items-center">
-                            <Button className="bg-white/90 text-black hover:bg-white w-full font-semibold">Contact Us</Button>
+                            <Button className="bg-white/90 text-black hover:bg-white w-full font-semibold" onClick={onBuyClick}>Contact Us</Button>
                         </div>
                     ) : (
                         <div className="flex items-baseline gap-2">
@@ -238,10 +241,14 @@ export default function AdminPlansPage() {
     const [planToEdit, setPlanToEdit] = useState<Plan | null>(null);
     const [planToCustomize, setPlanToCustomize] = useState<Plan | null>(null);
     const [planToDelete, setPlanToDelete] = useState<Plan | null>(null);
+    const [periodToDelete, setPeriodToDelete] = useState<PlanPeriod | null>(null);
     const [isResetRevenueOpen, setIsResetRevenueOpen] = useState(false);
+    
+    const [contactInfo, setContactInfo] = useState<{ planName: string, email?: string, whatsapp?: string } | null>(null);
 
     const plans = config?.plans || [];
     const adminSettings = config?.admin;
+    const planPeriods = adminSettings?.planPeriods || [];
 
     const newPlanForm = useForm<NewPlanFormData>({
         resolver: zodResolver(newPlanSchema),
@@ -258,6 +265,11 @@ export default function AdminPlansPage() {
           unlimitedCustomers: false,
           features: [],
         },
+    });
+    
+    const newPeriodForm = useForm<NewPeriodFormData>({
+        resolver: zodResolver(newPeriodSchema),
+        defaultValues: { value: '', label: ''},
     });
 
     const watchUnlimited = newPlanForm.watch([
@@ -312,7 +324,6 @@ export default function AdminPlansPage() {
         const existingPlanIndex = plans.findIndex(p => p.name === planToEdit?.name);
 
         if (existingPlanIndex > -1) {
-            // Preserve existing customization when editing
             const existingCustomization = plans[existingPlanIndex].customization;
             updatedPlans = [...plans];
             updatedPlans[existingPlanIndex] = { ...planToSave, customization: existingCustomization };
@@ -372,7 +383,7 @@ export default function AdminPlansPage() {
         const updatedPlans = plans.filter(p => p.name !== planToDelete.name);
         saveConfig({ ...config, plans: updatedPlans }, { redirect: false });
         toast({ title: `Plan "${planToDelete.name}" deleted` });
-        setPlanToDelete(null); // This closes the dialog
+        setPlanToDelete(null);
     };
     
     const onActivationKeySubmit = (data: ActivationKeyFormData) => {
@@ -417,6 +428,24 @@ export default function AdminPlansPage() {
         
         saveConfig({ ...config, plans: updatedPlans }, { redirect: false });
         setPlanToCustomize(null);
+    };
+    
+    const onNewPeriodSubmit = (data: NewPeriodFormData) => {
+        if (!config || !config.admin) return;
+        
+        const newPeriods = [...(config.admin.planPeriods || []), data];
+        saveConfig({ ...config, admin: { ...config.admin, planPeriods: newPeriods } }, { revalidate: true });
+        newPeriodForm.reset({ value: '', label: '' });
+        toast({ title: 'Plan Period Added', description: `"${data.label}" has been added.`});
+    };
+    
+    const handleDeletePeriod = () => {
+        if (!config || !config.admin || !periodToDelete) return;
+        
+        const newPeriods = (config.admin.planPeriods || []).filter(p => p.value !== periodToDelete.value);
+        saveConfig({ ...config, admin: { ...config.admin, planPeriods: newPeriods } }, { revalidate: true });
+        setPeriodToDelete(null);
+        toast({ title: 'Plan Period Removed', description: `"${periodToDelete.label}" has been removed.`});
     };
 
     const trendingPlan = adminSettings?.trendingPlan || 'None';
@@ -475,8 +504,7 @@ export default function AdminPlansPage() {
                                                             <FormItem><FormLabel>Price (per month)</FormLabel><FormControl><Input type="number" placeholder="25000" {...field} /></FormControl><FormMessage /></FormItem>
                                                         )} />
                                                         
-                                                         {/* Basic Limits */}
-                                                        <div className="space-y-4 pt-4">
+                                                         <div className="space-y-4 pt-4">
                                                             <LimitField control={newPlanForm.control} name="invoiceLimit" unlimitedName="unlimitedInvoices" label="Invoice Limit" disabled={watchUnlimited[0]}/>
                                                             <LimitField control={newPlanForm.control} name="quotationLimit" unlimitedName="unlimitedQuotations" label="Quotation Limit" disabled={watchUnlimited[1]}/>
                                                             <LimitField control={newPlanForm.control} name="productLimit" unlimitedName="unlimitedProducts" label="Product Limit" disabled={watchUnlimited[2]}/>
@@ -543,6 +571,7 @@ export default function AdminPlansPage() {
                                         onEdit={() => handleEditPlan(plan)}
                                         onCustomize={() => setPlanToCustomize(plan)}
                                         onDelete={() => setPlanToDelete(plan)}
+                                        onBuyClick={() => setContactInfo({ planName: plan.name, email: plan.customization?.contactEmail, whatsapp: plan.customization?.contactWhatsapp })}
                                     />
                                 ))}
                             </div>
@@ -550,22 +579,65 @@ export default function AdminPlansPage() {
                     </Card>
                 </TabsContent>
                 <TabsContent value="plan-features" className="pt-4">
-                     <Card>
-                        <CardHeader>
-                            <CardTitle>Premium Features</CardTitle>
-                            <CardDescription>Manage features available for subscription plans.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {premiumFeatures.map(feature => (
-                                    <div key={feature.id} className="flex items-center justify-between rounded-lg border p-3">
-                                        <p className="text-sm font-medium">{feature.label}</p>
-                                        <Switch />
-                                    </div>
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Premium Features</CardTitle>
+                                <CardDescription>Manage features available for subscription plans.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {premiumFeatures.map(feature => (
+                                        <div key={feature.id} className="flex items-center justify-between rounded-lg border p-3">
+                                            <p className="text-sm font-medium">{feature.label}</p>
+                                            <Switch />
+                                        </div>
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Plan Periods</CardTitle>
+                                <CardDescription>Manage the billing periods available for selection.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <Form {...newPeriodForm}>
+                                    <form onSubmit={newPeriodForm.handleSubmit(onNewPeriodSubmit)} className="flex items-end gap-2 mb-4">
+                                        <FormField control={newPeriodForm.control} name="label" render={({ field }) => (
+                                            <FormItem className="flex-1"><FormLabel>Label</FormLabel><FormControl><Input placeholder="e.g., 1 Year" {...field} /></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                        <FormField control={newPeriodForm.control} name="value" render={({ field }) => (
+                                            <FormItem className="flex-1"><FormLabel>Value</FormLabel><FormControl><Input placeholder="e.g., 12 or 'once'" {...field} /></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                        <Button type="submit" size="sm"><PackagePlus className="h-4 w-4" /></Button>
+                                    </form>
+                                </Form>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Label</TableHead>
+                                            <TableHead>Value</TableHead>
+                                            <TableHead className="text-right">Actions</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {planPeriods.map(period => (
+                                            <TableRow key={period.value}>
+                                                <TableCell>{period.label}</TableCell>
+                                                <TableCell>{period.value}</TableCell>
+                                                <TableCell className="text-right">
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setPeriodToDelete(period)}>
+                                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </CardContent>
+                        </Card>
+                    </div>
                 </TabsContent>
                 <TabsContent value="activation-keys" className="pt-4 space-y-6">
                      <Card>
@@ -638,6 +710,22 @@ export default function AdminPlansPage() {
                     <AlertDialogFooter>
                         <AlertDialogCancel onClick={() => setPlanToDelete(null)}>Cancel</AlertDialogCancel>
                         <AlertDialogAction onClick={handleDeletePlan} className="bg-destructive hover:bg-destructive/90">
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+            <AlertDialog open={!!periodToDelete} onOpenChange={(open) => !open && setPeriodToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete "{periodToDelete?.label}" Period?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will remove the period from the purchase options. This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setPeriodToDelete(null)}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeletePeriod} className="bg-destructive hover:bg-destructive/90">
                             Delete
                         </AlertDialogAction>
                     </AlertDialogFooter>
