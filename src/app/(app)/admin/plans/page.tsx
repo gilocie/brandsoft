@@ -19,6 +19,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { StatCard } from '@/components/office/stat-card';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 
 const premiumFeatures = [
@@ -37,10 +38,17 @@ const premiumFeatures = [
 const newPlanSchema = z.object({
   name: z.string().min(2, "Plan name is required."),
   price: z.coerce.number().min(0, "Price must be a non-negative number."),
-  invoiceLimit: z.coerce.number().int().min(0, "Invoice limit must be a non-negative number."),
-  quotationLimit: z.coerce.number().int().min(0, "Quotation limit must be a non-negative number."),
+  invoiceLimit: z.coerce.number().int().min(0).optional(),
+  unlimitedInvoices: z.boolean().default(false),
+  quotationLimit: z.coerce.number().int().min(0).optional(),
+  unlimitedQuotations: z.boolean().default(false),
+  productLimit: z.coerce.number().int().min(0).optional(),
+  unlimitedProducts: z.boolean().default(false),
+  customerLimit: z.coerce.number().int().min(0).optional(),
+  unlimitedCustomers: z.boolean().default(false),
   features: z.array(z.string()).optional(),
 });
+
 type NewPlanFormData = z.infer<typeof newPlanSchema>;
 
 const activationKeySchema = z.object({
@@ -64,8 +72,27 @@ export default function AdminPlansPage() {
 
     const newPlanForm = useForm<NewPlanFormData>({
         resolver: zodResolver(newPlanSchema),
-        defaultValues: { name: '', price: 0, invoiceLimit: 10, quotationLimit: 10, features: [] },
+        defaultValues: {
+          name: '',
+          price: 0,
+          invoiceLimit: 10,
+          unlimitedInvoices: false,
+          quotationLimit: 10,
+          unlimitedQuotations: false,
+          productLimit: 10,
+          unlimitedProducts: false,
+          customerLimit: 10,
+          unlimitedCustomers: false,
+          features: [],
+        },
     });
+
+    const watchUnlimited = newPlanForm.watch([
+        'unlimitedInvoices', 
+        'unlimitedQuotations', 
+        'unlimitedProducts', 
+        'unlimitedCustomers'
+    ]);
     
     const activationKeyForm = useForm<ActivationKeyFormData>({
         resolver: zodResolver(activationKeySchema),
@@ -92,11 +119,12 @@ export default function AdminPlansPage() {
     const onNewPlanSubmit = (data: NewPlanFormData) => {
         if (!config) return;
         
-        const baseFeatures = [
-            `${data.invoiceLimit} Invoices`,
-            `${data.quotationLimit} Quotations`,
-        ];
-        
+        const baseFeatures = [];
+        baseFeatures.push(data.unlimitedInvoices ? 'Unlimited Invoices' : `${data.invoiceLimit || 0} Invoices`);
+        baseFeatures.push(data.unlimitedQuotations ? 'Unlimited Quotations' : `${data.quotationLimit || 0} Quotations`);
+        baseFeatures.push(data.unlimitedProducts ? 'Unlimited Products' : `${data.productLimit || 0} Products`);
+        baseFeatures.push(data.unlimitedCustomers ? 'Unlimited Customers' : `${data.customerLimit || 0} Customers`);
+
         const selectedPremiumFeatures = data.features?.map(featureId => {
             return premiumFeatures.find(f => f.id === featureId)?.label || featureId;
         }) || [];
@@ -125,17 +153,23 @@ export default function AdminPlansPage() {
         });
         
         setIsAddPlanOpen(false);
-        newPlanForm.reset({ name: '', price: 0, invoiceLimit: 10, quotationLimit: 10, features: [] });
+        newPlanForm.reset();
         setPlanToEdit(null);
     };
 
     const handleEditPlan = (plan: Plan) => {
         setPlanToEdit(plan);
-        const invoiceFeature = plan.features.find(f => f.toLowerCase().includes('invoice'));
-        const quotationFeature = plan.features.find(f => f.toLowerCase().includes('quotation'));
+        const getLimit = (featureName: string) => {
+            const feature = plan.features.find(f => f.toLowerCase().includes(featureName));
+            if (!feature) return { limit: 0, unlimited: false };
+            if (feature.toLowerCase().includes('unlimited')) return { limit: 0, unlimited: true };
+            return { limit: parseInt(feature.split(' ')[0]) || 0, unlimited: false };
+        };
 
-        const invoiceLimit = invoiceFeature ? parseInt(invoiceFeature.split(' ')[0]) || 10 : 10;
-        const quotationLimit = quotationFeature ? parseInt(quotationFeature.split(' ')[0]) || 10 : 10;
+        const invoice = getLimit('invoice');
+        const quotation = getLimit('quotation');
+        const product = getLimit('product');
+        const customer = getLimit('customer');
 
         const premiumFeatureIds = plan.features.map(f => {
             const prem = premiumFeatures.find(pf => pf.label === f);
@@ -145,8 +179,14 @@ export default function AdminPlansPage() {
         newPlanForm.reset({
             name: plan.name,
             price: plan.price,
-            invoiceLimit: invoiceLimit,
-            quotationLimit: quotationLimit,
+            invoiceLimit: invoice.limit,
+            unlimitedInvoices: invoice.unlimited,
+            quotationLimit: quotation.limit,
+            unlimitedQuotations: quotation.unlimited,
+            productLimit: product.limit,
+            unlimitedProducts: product.unlimited,
+            customerLimit: customer.limit,
+            unlimitedCustomers: customer.unlimited,
             features: premiumFeatureIds,
         });
         setIsAddPlanOpen(true);
@@ -188,7 +228,6 @@ export default function AdminPlansPage() {
         setIsResetRevenueOpen(false);
     };
 
-
     const trendingPlan = adminSettings?.trendingPlan || 'None';
     const keysSold = adminSettings?.keysSold || 0;
     const totalFromKeys = adminSettings?.revenueFromKeys || 0;
@@ -222,11 +261,11 @@ export default function AdminPlansPage() {
                                 <CardTitle>Subscription Plans</CardTitle>
                                 <CardDescription>Plans available for clients to purchase.</CardDescription>
                             </div>
-                            <Dialog open={isAddPlanOpen} onOpenChange={(open) => { setIsAddPlanOpen(open); if(!open) setPlanToEdit(null)}}>
+                            <Dialog open={isAddPlanOpen} onOpenChange={(open) => { setIsAddPlanOpen(open); if(!open) { setPlanToEdit(null); newPlanForm.reset(); } }}>
                                 <DialogTrigger asChild>
                                     <Button><PackagePlus className="mr-2 h-4 w-4" /> Add New Plan</Button>
                                 </DialogTrigger>
-                                <DialogContent className="sm:max-w-2xl">
+                                <DialogContent className="sm:max-w-3xl h-[90vh] flex flex-col">
                                     <DialogHeader>
                                         <DialogTitle>{planToEdit ? 'Edit' : 'Add New'} Plan</DialogTitle>
                                         <DialogDescription>
@@ -234,61 +273,66 @@ export default function AdminPlansPage() {
                                         </DialogDescription>
                                     </DialogHeader>
                                     <Form {...newPlanForm}>
-                                        <form onSubmit={newPlanForm.handleSubmit(onNewPlanSubmit)} className="pt-4">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                <div className="space-y-4">
-                                                    <FormField control={newPlanForm.control} name="name" render={({ field }) => (
-                                                        <FormItem><FormLabel>Plan Name</FormLabel><FormControl><Input placeholder="e.g., Business Pro" {...field} /></FormControl><FormMessage /></FormItem>
-                                                    )} />
-                                                    <FormField control={newPlanForm.control} name="price" render={({ field }) => (
-                                                        <FormItem><FormLabel>Price (per month)</FormLabel><FormControl><Input type="number" placeholder="25000" {...field} /></FormControl><FormMessage /></FormItem>
-                                                    )} />
-                                                    <FormField control={newPlanForm.control} name="invoiceLimit" render={({ field }) => (
-                                                        <FormItem><FormLabel>Invoice Limit</FormLabel><FormControl><Input type="number" placeholder="10" {...field} /></FormControl><FormMessage /></FormItem>
-                                                    )} />
-                                                    <FormField control={newPlanForm.control} name="quotationLimit" render={({ field }) => (
-                                                        <FormItem><FormLabel>Quotation Limit</FormLabel><FormControl><Input type="number" placeholder="10" {...field} /></FormControl><FormMessage /></FormItem>
-                                                    )} />
+                                        <form onSubmit={newPlanForm.handleSubmit(onNewPlanSubmit)} className="flex-grow flex flex-col min-h-0">
+                                            <ScrollArea className="flex-grow pr-6 -mr-6">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                                                    <div className="space-y-4">
+                                                        <FormField control={newPlanForm.control} name="name" render={({ field }) => (
+                                                            <FormItem><FormLabel>Plan Name</FormLabel><FormControl><Input placeholder="e.g., Business Pro" {...field} /></FormControl><FormMessage /></FormItem>
+                                                        )} />
+                                                        <FormField control={newPlanForm.control} name="price" render={({ field }) => (
+                                                            <FormItem><FormLabel>Price (per month)</FormLabel><FormControl><Input type="number" placeholder="25000" {...field} /></FormControl><FormMessage /></FormItem>
+                                                        )} />
+                                                        
+                                                         {/* Basic Limits */}
+                                                        <div className="space-y-4 pt-4">
+                                                            <LimitField control={newPlanForm.control} name="invoiceLimit" unlimitedName="unlimitedInvoices" label="Invoice Limit" disabled={watchUnlimited[0]}/>
+                                                            <LimitField control={newPlanForm.control} name="quotationLimit" unlimitedName="unlimitedQuotations" label="Quotation Limit" disabled={watchUnlimited[1]}/>
+                                                            <LimitField control={newPlanForm.control} name="productLimit" unlimitedName="unlimitedProducts" label="Product Limit" disabled={watchUnlimited[2]}/>
+                                                            <LimitField control={newPlanForm.control} name="customerLimit" unlimitedName="unlimitedCustomers" label="Customer Limit" disabled={watchUnlimited[3]}/>
+                                                        </div>
+
+                                                    </div>
+                                                    <FormField
+                                                        control={newPlanForm.control}
+                                                        name="features"
+                                                        render={() => (
+                                                            <FormItem>
+                                                                <div className="mb-4">
+                                                                    <FormLabel className="text-base">Premium Features</FormLabel>
+                                                                    <FormDescription>Select the features for this plan.</FormDescription>
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                    {premiumFeatures.map((item) => (
+                                                                        <FormField
+                                                                            key={item.id}
+                                                                            control={newPlanForm.control}
+                                                                            name="features"
+                                                                            render={({ field }) => (
+                                                                                <FormItem key={item.id} className="flex flex-row items-start space-x-3 space-y-0">
+                                                                                    <FormControl>
+                                                                                        <Checkbox
+                                                                                            checked={field.value?.includes(item.id)}
+                                                                                            onCheckedChange={(checked) => (
+                                                                                                checked
+                                                                                                    ? field.onChange([...(field.value || []), item.id])
+                                                                                                    : field.onChange(field.value?.filter((value) => value !== item.id))
+                                                                                            )}
+                                                                                        />
+                                                                                    </FormControl>
+                                                                                    <FormLabel className="text-sm font-normal">{item.label}</FormLabel>
+                                                                                </FormItem>
+                                                                            )}
+                                                                        />
+                                                                    ))}
+                                                                </div>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
                                                 </div>
-                                                <FormField
-                                                    control={newPlanForm.control}
-                                                    name="features"
-                                                    render={() => (
-                                                        <FormItem>
-                                                            <div className="mb-4">
-                                                                <FormLabel className="text-base">Premium Features</FormLabel>
-                                                                <FormDescription>Select the features for this plan.</FormDescription>
-                                                            </div>
-                                                            <div className="space-y-2">
-                                                                {premiumFeatures.map((item) => (
-                                                                    <FormField
-                                                                        key={item.id}
-                                                                        control={newPlanForm.control}
-                                                                        name="features"
-                                                                        render={({ field }) => (
-                                                                            <FormItem key={item.id} className="flex flex-row items-start space-x-3 space-y-0">
-                                                                                <FormControl>
-                                                                                    <Checkbox
-                                                                                        checked={field.value?.includes(item.id)}
-                                                                                        onCheckedChange={(checked) => (
-                                                                                            checked
-                                                                                                ? field.onChange([...(field.value || []), item.id])
-                                                                                                : field.onChange(field.value?.filter((value) => value !== item.id))
-                                                                                        )}
-                                                                                    />
-                                                                                </FormControl>
-                                                                                <FormLabel className="text-sm font-normal">{item.label}</FormLabel>
-                                                                            </FormItem>
-                                                                        )}
-                                                                    />
-                                                                ))}
-                                                            </div>
-                                                            <FormMessage />
-                                                        </FormItem>
-                                                    )}
-                                                />
-                                            </div>
-                                            <DialogFooter className="pt-6">
+                                            </ScrollArea>
+                                            <DialogFooter className="pt-6 flex-shrink-0">
                                                 <Button type="button" variant="outline" onClick={() => setIsAddPlanOpen(false)}>Cancel</Button>
                                                 <Button type="submit">Save Plan</Button>
                                             </DialogFooter>
@@ -438,3 +482,56 @@ export default function AdminPlansPage() {
         </div>
     );
 }
+
+const LimitField = ({
+  control,
+  name,
+  unlimitedName,
+  label,
+  disabled
+}: {
+  control: any,
+  name: keyof NewPlanFormData,
+  unlimitedName: keyof NewPlanFormData,
+  label: string,
+  disabled: boolean,
+}) => (
+    <div className="space-y-2">
+        <FormLabel>{label}</FormLabel>
+        <div className="flex items-center gap-2">
+            <FormField
+                control={control}
+                name={name}
+                render={({ field }) => (
+                    <FormItem className="flex-grow">
+                        <FormControl>
+                            <Input
+                                type="number"
+                                placeholder="10"
+                                {...field}
+                                disabled={disabled}
+                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                            />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+            <FormField
+                control={control}
+                name={unlimitedName}
+                render={({ field }) => (
+                    <FormItem className="flex items-center space-x-2 pt-2">
+                        <FormControl>
+                            <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                            />
+                        </FormControl>
+                        <FormLabel className="text-sm font-normal">Unlimited</FormLabel>
+                    </FormItem>
+                )}
+            />
+        </div>
+    </div>
+);
