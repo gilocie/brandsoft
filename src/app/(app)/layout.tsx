@@ -169,9 +169,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const notificationCount = useMemo(() => {
     if (!config) return 0;
-    const incomingCount = config.incomingRequests?.length || 0;
-    const responseCount = config.requestResponses?.length || 0;
-    return incomingCount + responseCount;
+
+    // Quotation-related notifications
+    const incomingRequestsCount = config.incomingRequests?.length || 0;
+    const responsesCount = config.requestResponses?.length || 0;
+
+    // Purchase-related notifications for the client
+    const purchaseNotifications = (config.purchases || []).filter(p =>
+      (p.status === 'pending' || p.status === 'processing') ||
+      (p.status === 'declined' && !p.isAcknowledged)
+    ).length;
+    
+    return incomingRequestsCount + responsesCount + purchaseNotifications;
   }, [config]);
   
   const ordersNotificationCount = useMemo(() => {
@@ -387,7 +396,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     {role === 'client' && (
                         <>
                             <Button variant="ghost" size="icon" asChild className="flex-shrink-0 relative">
-                                <Link href="/quotation-requests?subtab=incoming">
+                                <Link href="/history">
                                 <Bell className="h-6 w-6" />
                                 {notificationCount > 0 && (
                                     <span className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs font-bold text-destructive-foreground">
