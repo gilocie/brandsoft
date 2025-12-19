@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Page } from '@/stores/canvas-store';
@@ -99,6 +100,7 @@ export type Company = {
   coverImage?: string;
   website?: string;
   referredBy?: string;
+  walletBalance?: number;
 };
 
 export type Customer = {
@@ -331,6 +333,7 @@ export type BrandsoftConfig = {
     defaultQuotationTemplate?: DesignSettings | string;
     walletBalance?: number;
     autoRenew?: boolean;
+    id?: string;
   };
   modules: {
     invoice: boolean;

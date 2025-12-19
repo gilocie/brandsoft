@@ -128,7 +128,7 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
         if (!config || !config.affiliate || !config.admin) return;
 
         const order = config.purchases.find(p => p.orderId === orderId);
-        if (!order) return;
+        if (!order || !order.customerId) return;
 
         const costInMWK = parseFloat(order.planPrice.replace(/[^0-9.-]+/g,""));
         
@@ -139,12 +139,12 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
         newAffiliateData.creditBalance = (newAffiliateData.creditBalance || 0) - credits;
 
         // 2. Add cash value to client's wallet
-        const clientIndex = newAffiliateData.clients.findIndex(c => c.id === order.customerId);
-        if (clientIndex > -1) {
-            const client = newAffiliateData.clients[clientIndex];
-            newAffiliateData.clients[clientIndex] = {
-                ...client,
-                walletBalance: (client.walletBalance || 0) + costInMWK,
+        const companyIndex = newConfig.companies.findIndex(c => c.id === order.customerId);
+        if (companyIndex > -1) {
+            const company = newConfig.companies[companyIndex];
+            newConfig.companies[companyIndex] = {
+                ...company,
+                walletBalance: (company.walletBalance || 0) + costInMWK,
             };
         }
         newConfig.affiliate = newAffiliateData;
@@ -343,6 +343,25 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
             };
             delete parsedConfig.affiliateSettings;
             needsSave = true;
+        }
+
+        // Migration for company wallet balance
+        if (parsedConfig.companies) {
+          parsedConfig.companies.forEach((c: Company) => {
+            if (c.walletBalance === undefined) {
+              c.walletBalance = 0;
+              needsSave = true;
+            }
+          });
+        }
+        
+        // Add ID to profile for client lookups
+        if (parsedConfig.profile && !(parsedConfig.profile as any).id) {
+           const userCompany = parsedConfig.companies.find((c:Company) => c.companyName === parsedConfig.brand.businessName);
+           if (userCompany) {
+              (parsedConfig.profile as any).id = userCompany.id;
+              needsSave = true;
+           }
         }
 
 

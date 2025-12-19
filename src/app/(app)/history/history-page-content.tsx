@@ -3,7 +3,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useBrandsoft, type Purchase } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Purchase, type Company } from '@/hooks/use-brandsoft';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { History as HistoryIcon, Wallet, Zap, TrendingUp, CreditCard, Trash2, Bell, AlertTriangle, RefreshCw, Clock } from 'lucide-react';
@@ -65,8 +65,15 @@ export function HistoryPageContent() {
         };
 
     }, [config?.purchases]);
+
+    const { company: currentCompany } = useMemo(() => {
+        if (!config || !config.profile?.id) return { company: undefined };
+        const foundCompany = config.companies.find((c: Company) => c.id === (config.profile as any).id);
+        return { company: foundCompany };
+    }, [config]);
+
+    const walletBalance = currentCompany?.walletBalance || 0;
     
-    const walletBalance = config?.profile.walletBalance || 0;
     const currencySymbol = config?.profile.defaultCurrency === 'MWK' ? 'K' : config?.profile.defaultCurrency || '';
     
     const handleAutoRenewToggle = (checked: boolean) => {
