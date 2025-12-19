@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -88,12 +89,14 @@ const AdminPlanCard = ({
     plan, 
     onEdit, 
     onCustomize, 
-    onDelete 
+    onDelete,
+    onBuyClick
 }: { 
     plan: Plan, 
     onEdit: () => void, 
     onCustomize: () => void, 
-    onDelete: () => void 
+    onDelete: () => void,
+    onBuyClick: () => void;
 }) => {
     const { customization } = plan;
     const isPopular = customization?.isRecommended;
