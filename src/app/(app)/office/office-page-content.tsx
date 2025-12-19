@@ -19,14 +19,26 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { StatCard } from '@/components/office/stat-card';
+import { VerificationItem } from '@/components/office/verification-item';
+import { WithdrawDialog } from '@/components/office/withdraw-dialog';
+import { BuyCreditsDialog } from '@/components/office/buy-credits-dialog';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { SimpleImageUploadButton } from '@/components/simple-image-upload-button';
+import { MethodCard } from '@/components/office/method-card';
+import { SetPinDialog } from '@/components/office/dialogs/set-pin-dialog';
+import { SecurityQuestionsDialog, type SecurityQuestionFormData } from '@/components/office/dialogs/security-questions-dialog';
+import { WithdrawalMethodDialog, type WithdrawalMethodFormData, type EditableWithdrawalMethod } from '@/components/office/dialogs/withdrawal-method-dialog';
+import { BankWithdrawalDialog, type BankWithdrawalFormData } from '@/components/office/dialogs/bank-withdrawal-dialog';
+import { BsCreditsDialog, type BsCreditsFormData } from '@/components/office/dialogs/bs-credits-dialog';
 import Link from 'next/link';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
+import { GenerateKeyDialog } from '@/components/office/dialogs/generate-key-dialog';
 import { PurchaseDialog, type PlanDetails } from '@/components/purchase-dialog';
 import { SellCreditsDialog } from '@/components/office/dialogs/sell-credits-dialog';
 import { TopUpNotificationCard } from '@/components/office/top-up-notification-card';
 import { TopUpTable } from '@/components/office/top-up-table';
-import { BuyCreditsDialog } from '@/components/office/buy-credits-dialog';
 
 
 const affiliateSchema = z.object({
@@ -593,12 +605,6 @@ export function OfficePageContent() {
                 isTopUp
             />
         )}
-        <SellCreditsDialog
-            creditBalance={affiliate.creditBalance || 0}
-            buyPrice={config.admin?.buyPrice || 850}
-            isOpen={isSellCreditsOpen}
-            onOpenChange={setIsSellCreditsOpen}
-        />
     </div>
   );
 }
