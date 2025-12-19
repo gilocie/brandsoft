@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import {
   Palette,
   Type,
@@ -39,6 +39,8 @@ import {
   Tablet,
   Smartphone,
   Trash2,
+  AlertCircle,
+  Loader2,
 } from 'lucide-react';
 import type { Plan, PlanCustomization } from '@/hooks/use-brandsoft';
 import { Switch } from './ui/switch';
@@ -53,6 +55,8 @@ import {
 } from './ui/select';
 import { cn } from '@/lib/utils';
 import { Badge } from './ui/badge';
+import { Alert, AlertDescription } from './ui/alert';
+import { toast } from 'sonner';
 
 const iconMap: { [key: string]: React.ElementType } = {
   Package,
@@ -75,33 +79,230 @@ interface PlanSettingsDialogProps {
   onSave: (planName: string, customization: PlanCustomization) => void;
 }
 
+// ============================================
+// Image Storage Utilities
+// ============================================
+
+const IMAGE_DB_NAME = 'PlanImagesDB';
+const IMAGE_STORE_NAME = 'images';
+const MAX_IMAGE_SIZE_KB = 500; // Maximum size after compression
+const MAX_IMAGE_DIMENSION = 800; // Maximum width/height
+
+// Open IndexedDB
+const openImageDB = (): Promise<IDBDatabase> => {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(IMAGE_DB_NAME, 1);
+    
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+    
+    request.onupgradeneeded = (event) => {
+      const db = (event.target as IDBOpenDBRequest).result;
+      if (!db.objectStoreNames.contains(IMAGE_STORE_NAME)) {
+        db.createObjectStore(IMAGE_STORE_NAME);
+      }
+    };
+  });
+};
+
+// Save image to IndexedDB
+const saveImageToDB = async (key: string, imageData: string): Promise<void> => {
+  const db = await openImageDB();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([IMAGE_STORE_NAME], 'readwrite');
+    const store = transaction.objectStore(IMAGE_STORE_NAME);
+    const request = store.put(imageData, key);
+    
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve();
+  });
+};
+
+// Get image from IndexedDB
+const getImageFromDB = async (key: string): Promise<string | null> => {
+  try {
+    const db = await openImageDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction([IMAGE_STORE_NAME], 'readonly');
+      const store = transaction.objectStore(IMAGE_STORE_NAME);
+      const request = store.get(key);
+      
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve(request.result || null);
+    });
+  } catch {
+    return null;
+  }
+};
+
+// Delete image from IndexedDB
+const deleteImageFromDB = async (key: string): Promise<void> => {
+  try {
+    const db = await openImageDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction([IMAGE_STORE_NAME], 'readwrite');
+      const store = transaction.objectStore(IMAGE_STORE_NAME);
+      const request = store.delete(key);
+      
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve();
+    });
+  } catch {
+    // Ignore errors on delete
+  }
+};
+
+// Compress image
+const compressImage = (
+  file: File,
+  maxSizeKB: number = MAX_IMAGE_SIZE_KB,
+  maxDimension: number = MAX_IMAGE_DIMENSION
+): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      const img = new Image();
+      
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let { width, height } = img;
+        
+        // Scale down if needed
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = (height / width) * maxDimension;
+            width = maxDimension;
+          } else {
+            width = (width / height) * maxDimension;
+            height = maxDimension;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Could not get canvas context'));
+          return;
+        }
+        
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Try different quality levels to meet size target
+        let quality = 0.9;
+        let result = canvas.toDataURL('image/jpeg', quality);
+        
+        while (result.length / 1024 > maxSizeKB && quality > 0.1) {
+          quality -= 0.1;
+          result = canvas.toDataURL('image/jpeg', quality);
+        }
+        
+        resolve(result);
+      };
+      
+      img.onerror = () => reject(new Error('Failed to load image'));
+      img.src = e.target?.result as string;
+    };
+    
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsDataURL(file);
+  });
+};
+
+// Generate storage key for plan image
+const getImageStorageKey = (planName: string, imageType: string) => {
+  return `plan-image-${planName}-${imageType}`;
+};
+
+// ============================================
 // Image Uploader Component
+// ============================================
+
 const ImageUploader = ({
   value,
   onChange,
   label,
   aspect,
+  planName,
+  imageType,
 }: {
   value?: string;
   onChange: (val: string) => void;
   label: string;
   aspect: 'wide' | 'normal';
+  planName: string;
+  imageType: string;
 }) => {
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [localPreview, setLocalPreview] = useState<string | null>(null);
+
+  const storageKey = getImageStorageKey(planName, imageType);
+
+  // Load image from IndexedDB on mount
+  useEffect(() => {
+    const loadStoredImage = async () => {
+      if (!value && planName) {
+        const storedImage = await getImageFromDB(storageKey);
+        if (storedImage) {
+          setLocalPreview(storedImage);
+          onChange(storedImage);
+        }
+      } else if (value) {
+        setLocalPreview(value);
+      }
+    };
+    loadStoredImage();
+  }, [planName, storageKey]);
+
+  // Update preview when value changes
+  useEffect(() => {
+    if (value) {
+      setLocalPreview(value);
+    }
+  }, [value]);
 
   const handleFileChange = useCallback(
-    (file: File) => {
-      if (file && file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const result = reader.result as string;
-          onChange(result);
-        };
-        reader.readAsDataURL(file);
+    async (file: File) => {
+      if (!file || !file.type.startsWith('image/')) {
+        setError('Please select a valid image file');
+        return;
+      }
+
+      // Check file size (max 10MB before compression)
+      if (file.size > 10 * 1024 * 1024) {
+        setError('Image is too large. Maximum size is 10MB');
+        return;
+      }
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        // Compress the image
+        const compressedImage = await compressImage(file);
+        
+        // Save to IndexedDB
+        await saveImageToDB(storageKey, compressedImage);
+        
+        // Update state
+        setLocalPreview(compressedImage);
+        onChange(compressedImage);
+        
+        toast.success('Image uploaded successfully');
+      } catch (err) {
+        console.error('Image upload error:', err);
+        setError('Failed to process image. Please try a smaller file.');
+        toast.error('Failed to upload image');
+      } finally {
+        setIsLoading(false);
       }
     },
-    [onChange]
+    [onChange, storageKey]
   );
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -109,6 +310,8 @@ const ImageUploader = ({
     if (file) {
       handleFileChange(file);
     }
+    // Reset input so the same file can be selected again
+    e.target.value = '';
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -129,20 +332,43 @@ const ImageUploader = ({
     setIsDragging(false);
   };
 
-  const handleRemove = () => {
-    onChange('');
+  const handleRemove = async () => {
+    setIsLoading(true);
+    try {
+      await deleteImageFromDB(storageKey);
+      setLocalPreview(null);
+      onChange('');
+      setError(null);
+      toast.success('Image removed');
+    } catch (err) {
+      console.error('Failed to remove image:', err);
+      toast.error('Failed to remove image');
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const displayImage = localPreview || value;
 
   return (
     <div className="space-y-3">
       <Label className="text-sm font-medium">{label}</Label>
+      
+      {error && (
+        <Alert variant="destructive" className="py-2">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="text-xs">{error}</AlertDescription>
+        </Alert>
+      )}
+      
       <div
         className={cn(
           'relative flex items-center justify-center rounded-xl border-2 border-dashed transition-all duration-200',
-          aspect === 'wide' ? 'h-24' : 'h-36',
+          aspect === 'wide' ? 'h-28' : 'h-40',
+          isLoading && 'pointer-events-none opacity-50',
           isDragging
             ? 'border-primary bg-primary/5'
-            : value
+            : displayImage
               ? 'border-transparent bg-transparent p-0'
               : 'border-muted-foreground/25 bg-muted/30 hover:border-muted-foreground/50 hover:bg-muted/50'
         )}
@@ -150,10 +376,15 @@ const ImageUploader = ({
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
       >
-        {value ? (
-          <div className="group relative h-full w-full overflow-hidden rounded-xl">
+        {isLoading ? (
+          <div className="flex flex-col items-center gap-2">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Processing image...</p>
+          </div>
+        ) : displayImage ? (
+          <div className="group relative h-full w-full overflow-hidden rounded-xl border">
             <img
-              src={value}
+              src={displayImage}
               alt={`${label} preview`}
               className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
             />
@@ -179,7 +410,7 @@ const ImageUploader = ({
           </div>
         ) : (
           <div
-            className="flex cursor-pointer flex-col items-center gap-2 text-muted-foreground"
+            className="flex cursor-pointer flex-col items-center gap-2 p-4 text-muted-foreground"
             onClick={() => inputRef.current?.click()}
           >
             <div className="rounded-full bg-muted p-3">
@@ -190,7 +421,7 @@ const ImageUploader = ({
                 {isDragging ? 'Drop image here' : 'Click or drag to upload'}
               </p>
               <p className="text-xs text-muted-foreground">
-                PNG, JPG up to 5MB
+                PNG, JPG up to 10MB (will be compressed)
               </p>
             </div>
           </div>
@@ -207,8 +438,10 @@ const ImageUploader = ({
   );
 };
 
+// ============================================
+// Helper Components
+// ============================================
 
-// Settings Section Component
 const SettingsSection = ({
   title,
   children,
@@ -226,7 +459,6 @@ const SettingsSection = ({
   </div>
 );
 
-// Form Field Component
 const FormField = ({
   label,
   children,
@@ -240,9 +472,7 @@ const FormField = ({
 }) => (
   <div
     className={cn(
-      horizontal
-        ? 'flex items-center justify-between gap-4'
-        : 'space-y-2'
+      horizontal ? 'flex items-center justify-between gap-4' : 'space-y-2'
     )}
   >
     <div className={cn(horizontal ? 'flex-1' : '')}>
@@ -255,7 +485,6 @@ const FormField = ({
   </div>
 );
 
-// Color Picker Component
 const ColorPicker = ({
   value,
   onChange,
@@ -289,7 +518,6 @@ const ColorPicker = ({
   </div>
 );
 
-// Preview Device Selector
 type DeviceType = 'mobile' | 'tablet' | 'desktop';
 
 const DeviceSelector = ({
@@ -327,7 +555,10 @@ const DeviceSelector = ({
   </div>
 );
 
+// ============================================
 // Plan Preview Card Component
+// ============================================
+
 const PlanPreviewCard = ({
   plan,
   customization,
@@ -403,7 +634,6 @@ const PlanPreviewCard = ({
         color: cardTextColor,
       }}
     >
-      {/* Badge */}
       {isRecommended && badgeText && (
         <div className="absolute right-3 top-3 sm:right-4 sm:top-4">
           <span
@@ -415,7 +645,6 @@ const PlanPreviewCard = ({
         </div>
       )}
 
-      {/* Header with Background Image */}
       <div
         className="relative overflow-hidden rounded-xl"
         style={{
@@ -473,11 +702,13 @@ const PlanPreviewCard = ({
             </div>
           </div>
 
-          {/* Price */}
           {customization.hidePrice ? (
             <div className="flex h-12 items-center sm:h-14">
               <span
-                className={cn('font-bold', deviceType === 'mobile' ? 'text-xl' : 'text-2xl')}
+                className={cn(
+                  'font-bold',
+                  deviceType === 'mobile' ? 'text-xl' : 'text-2xl'
+                )}
               >
                 Contact us
               </span>
@@ -493,7 +724,6 @@ const PlanPreviewCard = ({
         </div>
       </div>
 
-      {/* CTA Button */}
       <Button
         className={cn(
           'w-full rounded-xl font-semibold transition-all hover:scale-[1.02]',
@@ -504,7 +734,9 @@ const PlanPreviewCard = ({
             ? badgeColor
             : 'rgba(255, 255, 255, 0.1)',
           color: isRecommended ? 'white' : cardTextColor,
-          border: isRecommended ? 'none' : '1px solid rgba(255, 255, 255, 0.15)',
+          border: isRecommended
+            ? 'none'
+            : '1px solid rgba(255, 255, 255, 0.15)',
         }}
       >
         {customization.hidePrice
@@ -512,34 +744,40 @@ const PlanPreviewCard = ({
           : customization.ctaText || 'Choose this plan'}
       </Button>
 
-      {/* Features */}
       <div className="space-y-2.5 pt-2 sm:space-y-3">
-        {plan.features.slice(1, deviceType === 'mobile' ? 4 : 6).map((feature, index) => (
-          <div key={index} className="flex items-start gap-2.5 sm:gap-3">
-            <div
-              className="mt-0.5 flex-shrink-0 rounded-full p-1"
-              style={{
-                backgroundColor: isRecommended
-                  ? 'rgba(255, 255, 255, 0.2)'
-                  : 'rgba(255, 255, 255, 0.1)',
-              }}
-            >
-              <Check className="h-3 w-3" />
+        {plan.features
+          .slice(1, deviceType === 'mobile' ? 4 : 6)
+          .map((feature, index) => (
+            <div key={index} className="flex items-start gap-2.5 sm:gap-3">
+              <div
+                className="mt-0.5 flex-shrink-0 rounded-full p-1"
+                style={{
+                  backgroundColor: isRecommended
+                    ? 'rgba(255, 255, 255, 0.2)'
+                    : 'rgba(255, 255, 255, 0.1)',
+                }}
+              >
+                <Check className="h-3 w-3" />
+              </div>
+              <span className="text-xs leading-relaxed opacity-90 sm:text-sm">
+                {feature}
+              </span>
             </div>
-            <span className="text-xs leading-relaxed opacity-90 sm:text-sm">
-              {feature}
-            </span>
-          </div>
-        ))}
+          ))}
         {plan.features.length > (deviceType === 'mobile' ? 4 : 6) && (
           <p className="pt-1 text-center text-xs opacity-60">
-            +{plan.features.length - (deviceType === 'mobile' ? 4 : 6)} more features
+            +{plan.features.length - (deviceType === 'mobile' ? 4 : 6)} more
+            features
           </p>
         )}
       </div>
     </Card>
   );
 };
+
+// ============================================
+// Main Dialog Component
+// ============================================
 
 export function PlanSettingsDialog({
   isOpen,
@@ -550,16 +788,39 @@ export function PlanSettingsDialog({
   const [customization, setCustomization] = useState<PlanCustomization>({});
   const [activeView, setActiveView] = useState<'settings' | 'preview'>('settings');
   const [previewDevice, setPreviewDevice] = useState<DeviceType>('desktop');
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    if (plan) {
-      setCustomization(plan.customization || {});
-    }
+    const loadPlanData = async () => {
+      if (plan) {
+        const baseCustomization = { ...(plan.customization || {}) };
+        
+        const storageKey = getImageStorageKey(plan.name, 'header');
+        const storedImage = await getImageFromDB(storageKey);
+        
+        if (storedImage) {
+          baseCustomization.headerBgImage = storedImage;
+        }
+
+        setCustomization(baseCustomization);
+      }
+    };
+    loadPlanData();
   }, [plan]);
 
-  const handleSave = () => {
-    if (plan) {
+  const handleSave = async () => {
+    if (!plan) return;
+    
+    setIsSaving(true);
+    try {
       onSave(plan.name, customization);
+      toast.success('Customization saved successfully');
+      onClose();
+    } catch (error) {
+      console.error('Failed to save:', error);
+      toast.error('Failed to save customization');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -592,7 +853,6 @@ export function PlanSettingsDialog({
               </div>
             </div>
 
-            {/* Mobile View Toggle */}
             <div className="flex items-center gap-2 lg:hidden">
               <Button
                 variant={activeView === 'settings' ? 'secondary' : 'ghost'}
@@ -614,7 +874,6 @@ export function PlanSettingsDialog({
               </Button>
             </div>
 
-            {/* Desktop Close Button */}
             <Button
               variant="ghost"
               size="icon"
@@ -669,7 +928,6 @@ export function PlanSettingsDialog({
                     </TabsTrigger>
                   </TabsList>
 
-                  {/* Promo Tab */}
                   <TabsContent value="promo" className="mt-0 space-y-4">
                     <SettingsSection title="Highlight Settings">
                       <FormField
@@ -770,7 +1028,6 @@ export function PlanSettingsDialog({
                     </SettingsSection>
                   </TabsContent>
 
-                  {/* Colors Tab */}
                   <TabsContent value="colors" className="mt-0 space-y-4">
                     <SettingsSection title="Background">
                       <FormField label="Background Type">
@@ -850,6 +1107,8 @@ export function PlanSettingsDialog({
                         value={customization.headerBgImage}
                         onChange={(v) => handleChange('headerBgImage', v)}
                         aspect="wide"
+                        planName={plan.name}
+                        imageType="header"
                       />
                       {customization.headerBgImage && (
                         <div className="space-y-3">
@@ -878,7 +1137,6 @@ export function PlanSettingsDialog({
                     </SettingsSection>
                   </TabsContent>
 
-                  {/* Text Tab */}
                   <TabsContent value="text" className="mt-0 space-y-4">
                     <SettingsSection title="Price Display">
                       <FormField
@@ -906,7 +1164,6 @@ export function PlanSettingsDialog({
                             placeholder={plan.name}
                           />
                         </FormField>
-
                         <FormField label="Description">
                           <Input
                             value={customization.customDescription || ''}
@@ -916,7 +1173,6 @@ export function PlanSettingsDialog({
                             placeholder="Short description for the plan..."
                           />
                         </FormField>
-
                         <FormField label="Button Text">
                           <Input
                             value={customization.ctaText || ''}
@@ -930,7 +1186,6 @@ export function PlanSettingsDialog({
                     </SettingsSection>
                   </TabsContent>
 
-                  {/* Icon Tab */}
                   <TabsContent value="icon" className="mt-0 space-y-4">
                     <SettingsSection title="Plan Icon">
                       <FormField
@@ -965,9 +1220,10 @@ export function PlanSettingsDialog({
                         </Select>
                       </FormField>
 
-                      {/* Icon Preview Grid */}
                       <div className="mt-4">
-                        <Label className="mb-3 block text-sm">Quick Select</Label>
+                        <Label className="mb-3 block text-sm">
+                          Quick Select
+                        </Label>
                         <div className="grid grid-cols-6 gap-2">
                           {Object.keys(iconMap).map((iconName) => {
                             const IconComponent = iconMap[iconName];
@@ -994,14 +1250,13 @@ export function PlanSettingsDialog({
             </ScrollArea>
           </div>
 
-          {/* Right Panel - Live Preview */}
+          {/* Preview Panel */}
           <div
             className={cn(
               'flex flex-1 flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950',
               activeView === 'settings' && 'hidden lg:flex'
             )}
           >
-            {/* Preview Header */}
             <div className="flex flex-shrink-0 items-center justify-between border-b border-white/10 px-4 py-3 sm:px-6">
               <div className="flex items-center gap-2">
                 <Eye className="h-4 w-4 text-slate-400" />
@@ -1009,10 +1264,12 @@ export function PlanSettingsDialog({
                   Live Preview
                 </span>
               </div>
-              <DeviceSelector device={previewDevice} onChange={setPreviewDevice} />
+              <DeviceSelector
+                device={previewDevice}
+                onChange={setPreviewDevice}
+              />
             </div>
 
-            {/* Scrollable Preview Area */}
             <ScrollArea className="flex-1">
               <div className="flex min-h-full items-center justify-center p-6 sm:p-8 lg:p-12">
                 <div
@@ -1020,7 +1277,8 @@ export function PlanSettingsDialog({
                     'transition-all duration-300',
                     previewDevice === 'mobile' && 'scale-100',
                     previewDevice === 'tablet' && 'scale-95 sm:scale-100',
-                    previewDevice === 'desktop' && 'scale-90 sm:scale-95 lg:scale-100'
+                    previewDevice === 'desktop' &&
+                      'scale-90 sm:scale-95 lg:scale-100'
                   )}
                 >
                   <PlanPreviewCard
@@ -1038,15 +1296,28 @@ export function PlanSettingsDialog({
         <div className="flex-shrink-0 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-4">
             <p className="hidden text-sm text-muted-foreground lg:block">
-              Changes will be applied when you click &ldquo;Save Changes&rdquo;
+              Images are compressed and stored locally in your browser.
             </p>
             <div className="flex w-full gap-3 sm:w-auto">
-              <Button variant="outline" onClick={onClose} className="flex-1 sm:flex-none">
+              <Button
+                variant="outline"
+                onClick={onClose}
+                className="flex-1 sm:flex-none"
+                disabled={isSaving}
+              >
                 Cancel
               </Button>
-              <Button onClick={handleSave} className="flex-1 gap-2 sm:flex-none">
-                <Check className="h-4 w-4" />
-                Save Changes
+              <Button
+                onClick={handleSave}
+                className="flex-1 gap-2 sm:flex-none"
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Check className="h-4 w-4" />
+                )}
+                {isSaving ? 'Saving...' : 'Save Changes'}
               </Button>
             </div>
           </div>
