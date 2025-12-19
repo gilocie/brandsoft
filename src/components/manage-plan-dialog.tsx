@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check, Star, Settings } from 'lucide-react';
+import { Check, Star, Settings, Users, HardDrive, ShieldCheck, Contact } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBrandsoft, type Plan, type PlanCustomization } from '@/hooks/use-brandsoft';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -30,59 +30,70 @@ const planLevels: Record<string, number> = {
   'Enterprise': 3,
 };
 
+const PlanIcon = () => (
+    <div className="h-12 w-12 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" stroke="hsl(var(--primary))" strokeWidth="2" strokeLinejoin="round"/>
+            <path d="M2 7L12 12L22 7" stroke="hsl(var(--primary))" strokeWidth="2" strokeLinejoin="round"/>
+            <path d="M12 12V22" stroke="hsl(var(--primary))" strokeWidth="2" strokeLinejoin="round"/>
+        </svg>
+    </div>
+);
+
+
 const PlanCard = ({ plan, isCurrent = false, cta, className, onBuyClick, onCustomizeClick }: { plan: Plan, isCurrent?: boolean, cta: string, className?: string, onBuyClick: () => void, onCustomizeClick?: () => void }) => {
     
-    const customization = plan.customization || {};
-
-    const cardStyle: React.CSSProperties = {
-        backgroundColor: customization.bgColor || customization.cardBgColor,
-        color: customization.textColor,
-        borderColor: customization.borderColor,
-    };
-    
-    const titleStyle: React.CSSProperties = { color: customization.titleColor };
-    const priceStyle: React.CSSProperties = { color: customization.priceColor };
+    const { customization } = plan;
+    const isPopular = customization?.isRecommended;
 
     return (
         <Card 
-          className={cn("flex flex-col h-full relative overflow-hidden", isCurrent && "ring-2 ring-primary shadow-md", className)}
-          style={cardStyle}
+          className={cn(
+              "flex flex-col h-full relative overflow-hidden transition-all duration-300",
+              "bg-card/80 backdrop-blur-xl border-border/20",
+              isPopular ? "border-primary/50 ring-2 ring-primary/30" : "hover:border-primary/30",
+              className
+          )}
         >
-            {customization.badgeText && (
-                 <div className="absolute top-0 right-0 text-xs font-bold px-3 py-1 rounded-bl-lg text-white" style={{ backgroundColor: customization.badgeColor || 'hsl(var(--primary))' }}>
-                    {customization.badgeText}
+            {isPopular && (
+                 <div className="absolute top-4 right-4 text-xs font-bold px-3 py-1 rounded-full text-primary-foreground bg-primary/80">
+                    Most Popular
                 </div>
             )}
-            <div className="relative z-10 flex flex-col flex-grow p-4">
-                 <CardHeader className="p-0 pb-2">
-                    <div className="flex justify-between items-center">
-                        <CardTitle style={titleStyle}>{customization.customTitle || plan.name}</CardTitle>
-                        {onCustomizeClick && <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onCustomizeClick}><Settings className="h-4 w-4" /></Button>}
+            <CardHeader className="p-6">
+                <div className="flex items-center gap-4">
+                    <PlanIcon />
+                    <div>
+                        <CardTitle className="text-xl font-bold">{plan.name}</CardTitle>
+                        <CardDescription className="text-muted-foreground mt-1">
+                            {plan.features.slice(0, 1).join(', ')}
+                        </CardDescription>
                     </div>
-                    {customization.customDescription && <CardDescription className="pt-1">{customization.customDescription}</CardDescription>}
-                    <div className="text-4xl sm:text-3xl font-bold pt-2" style={priceStyle}>
-                        {plan.price}
-                    </div>
-                </CardHeader>
-                <CardContent className="flex-grow space-y-2 p-0 pt-4">
-                    {plan.features.map((feature, index) => (
-                        <div key={index} className="flex items-center gap-2">
-                            <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
-                            <span className="text-sm text-muted-foreground" style={{ color: customization.textColor ? `rgba(${parseInt(customization.textColor.slice(1,3),16)},${parseInt(customization.textColor.slice(3,5),16)},${parseInt(customization.textColor.slice(5,7),16)},0.7)` : undefined }}>{feature}</span>
+                </div>
+                
+                <div className="flex items-baseline gap-2 pt-6">
+                    <span className="text-4xl font-bold">{plan.price}</span>
+                    <span className="text-muted-foreground">/month</span>
+                </div>
+            </CardHeader>
+            <CardContent className="flex-grow space-y-3 p-6 pt-0">
+                 <Button 
+                    className={cn("w-full text-base font-semibold h-12", isPopular && 'bg-primary hover:bg-primary/90')}
+                    variant={isPopular ? 'default' : 'secondary'}
+                    onClick={onBuyClick}
+                    disabled={cta === 'Current Plan'}
+                 >
+                    {cta}
+                </Button>
+                <div className="pt-4 space-y-3">
+                    {plan.features.slice(1).map((feature, index) => (
+                        <div key={index} className="flex items-center gap-3">
+                            <Check className="h-4 w-4 text-primary flex-shrink-0" />
+                            <span className="text-sm text-muted-foreground">{feature}</span>
                         </div>
                     ))}
-                </CardContent>
-                <CardFooter className="p-0 pt-4">
-                     <Button 
-                        className="w-full" 
-                        variant={isCurrent ? "secondary" : "default"}
-                        onClick={onBuyClick}
-                        disabled={cta === 'Current Plan'}
-                     >
-                        {customization.ctaText || cta}
-                    </Button>
-                </CardFooter>
-            </div>
+                </div>
+            </CardContent>
         </Card>
     );
 }
@@ -191,7 +202,7 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
                 </Button>
             </DialogTrigger>
             
-            <DialogContent className="max-w-7xl w-[90vw] max-h-[90vh] flex flex-col p-4 sm:p-6">
+            <DialogContent className="max-w-7xl w-[90vw] max-h-[90vh] flex flex-col p-4 sm:p-6 bg-transparent border-none shadow-none">
                 <DialogHeader className="flex-shrink-0 mb-4 flex flex-row items-center justify-between">
                     <div>
                         <DialogTitle className="text-3xl font-headline">Manage Your Plan</DialogTitle>
@@ -214,8 +225,8 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
                     </div>
                 </DialogHeader>
 
-                <div className="flex-1 overflow-y-auto min-h-0 py-2">
-                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="flex-1 overflow-y-auto min-h-0 py-2 -mx-4 px-4">
+                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
                         
                         {!hasCustomFreeTrial && (
                            <PlanCard 
@@ -227,15 +238,15 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
                         )}
 
                         {config?.plans?.map(plan => {
-                             const { original, discounted } = calculatePrice(plan.price, selectedPeriod, plan.customization?.discountValue, plan.customization?.discountType);
-                             const displayPrice = plan.customization?.discountValue ? (
+                            const { discounted } = calculatePrice(plan.price, selectedPeriod, plan.customization?.discountValue, plan.customization?.discountType);
+                            const displayPrice = plan.customization?.discountValue ? (
                                 <>
-                                    <span className="line-through text-muted-foreground/80 text-xl mr-2">{original}</span>
+                                    <span className="line-through text-muted-foreground/80 text-xl mr-2">{calculatePrice(plan.price, selectedPeriod).original}</span>
                                     <span>{discounted}</span>
                                 </>
-                             ) : discounted;
-                             
-                             return (
+                            ) : discounted;
+                            
+                            return (
                                 <PlanCard
                                     key={plan.name}
                                     plan={{...plan, price: displayPrice as any}}
@@ -243,8 +254,9 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
                                     cta={getPlanCTA(plan)}
                                     onBuyClick={() => handleBuyClick(plan)}
                                     onCustomizeClick={() => setEditingPlan(plan)}
+                                    className={plan.customization?.isRecommended ? "lg:scale-105" : ""}
                                 />
-                             )
+                            )
                         })}
                     </div>
                 </div>
