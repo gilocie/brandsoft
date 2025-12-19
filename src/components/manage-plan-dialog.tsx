@@ -35,55 +35,51 @@ const PlanCard = ({ plan, isCurrent = false, cta, className, onBuyClick, onCusto
     const customization = plan.customization || {};
 
     const cardStyle: React.CSSProperties = {
-        backgroundColor: customization.cardBgColor,
-        backgroundImage: customization.cardBgImage ? `url(${customization.cardBgImage})` : undefined,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
+        backgroundColor: customization.bgColor || customization.cardBgColor,
+        color: customization.textColor,
+        borderColor: customization.borderColor,
     };
     
     const titleStyle: React.CSSProperties = { color: customization.titleColor };
     const priceStyle: React.CSSProperties = { color: customization.priceColor };
-    const headerStyle: React.CSSProperties = { backgroundColor: customization.headerBgColor };
-    const footerStyle: React.CSSProperties = { backgroundColor: customization.footerBgColor };
-    const featureIconStyle: React.CSSProperties = { color: customization.featureIconColor };
 
     return (
         <Card 
           className={cn("flex flex-col h-full relative overflow-hidden", isCurrent && "ring-2 ring-primary shadow-md", className)}
           style={cardStyle}
         >
-            {customization.isRecommended && (
-                 <div className="absolute top-0 right-0 bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-bl-lg flex items-center gap-1">
-                    <Star className="h-3 w-3" /> Recommended
+            {customization.badgeText && (
+                 <div className="absolute top-0 right-0 text-xs font-bold px-3 py-1 rounded-bl-lg text-white" style={{ backgroundColor: customization.badgeColor || 'hsl(var(--primary))' }}>
+                    {customization.badgeText}
                 </div>
             )}
-             {customization.cardBgImage && <div className="absolute inset-0 bg-black/50" style={{ opacity: 1 - (customization.cardBgImageOpacity || 1) }} />}
-            <div className="relative z-10 flex flex-col flex-grow">
-                 <CardHeader className="p-4 pb-2" style={headerStyle}>
+            <div className="relative z-10 flex flex-col flex-grow p-4">
+                 <CardHeader className="p-0 pb-2">
                     <div className="flex justify-between items-center">
-                        <CardTitle style={titleStyle}>{plan.name}</CardTitle>
+                        <CardTitle style={titleStyle}>{customization.customTitle || plan.name}</CardTitle>
                         {onCustomizeClick && <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onCustomizeClick}><Settings className="h-4 w-4" /></Button>}
                     </div>
-                    <CardDescription className="text-4xl sm:text-3xl font-bold pt-2" style={priceStyle}>
+                    {customization.customDescription && <CardDescription className="pt-1">{customization.customDescription}</CardDescription>}
+                    <div className="text-4xl sm:text-3xl font-bold pt-2" style={priceStyle}>
                         {plan.price}
-                    </CardDescription>
+                    </div>
                 </CardHeader>
-                <CardContent className="flex-grow space-y-2 p-4 pt-4">
+                <CardContent className="flex-grow space-y-2 p-0 pt-4">
                     {plan.features.map((feature, index) => (
                         <div key={index} className="flex items-center gap-2">
-                            <Check className="h-4 w-4 text-green-500 flex-shrink-0" style={featureIconStyle} />
-                            <span className="text-sm text-muted-foreground">{feature}</span>
+                            <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                            <span className="text-sm text-muted-foreground" style={{ color: customization.textColor ? `rgba(${parseInt(customization.textColor.slice(1,3),16)},${parseInt(customization.textColor.slice(3,5),16)},${parseInt(customization.textColor.slice(5,7),16)},0.7)` : undefined }}>{feature}</span>
                         </div>
                     ))}
                 </CardContent>
-                <CardFooter className="p-4 pt-0" style={footerStyle}>
+                <CardFooter className="p-0 pt-4">
                      <Button 
                         className="w-full" 
                         variant={isCurrent ? "secondary" : "default"}
                         onClick={onBuyClick}
                         disabled={cta === 'Current Plan'}
                      >
-                        {cta}
+                        {customization.ctaText || cta}
                     </Button>
                 </CardFooter>
             </div>
@@ -223,7 +219,7 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
                         
                         {!hasCustomFreeTrial && (
                            <PlanCard 
-                                plan={{ name: "Free Trial", price: 0, features: ["Up to 10 invoices", "Up to 10 customers", "Basic templates"] }}
+                                plan={{ name: "Free Trial", price: 0, features: ["Up to 10 invoices", "Up to 10 customers", "Basic templates"], customization: {} }}
                                 isCurrent={!currentPlanPurchase}
                                 cta={currentPlanPurchase ? "Downgrade to Trial" : "Current Plan"}
                                 onBuyClick={currentPlanPurchase ? handleDowngrade : () => {}}

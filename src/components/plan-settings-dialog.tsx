@@ -1,58 +1,16 @@
 
 'use client';
 
-import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-  FormDescription,
-} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Label } from '@/components/ui/label';
-import { SimpleImageUploadButton } from './simple-image-upload-button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Palette, Type, Sparkles } from 'lucide-react';
 import type { Plan, PlanCustomization } from '@/hooks/use-brandsoft';
-
-const planCustomizationSchema = z.object({
-  planType: z.enum(['Standard', 'Premium', 'VIP', 'Once Off', 'Free Trial']).optional(),
-  isRecommended: z.boolean().optional(),
-  discountType: z.enum(['flat', 'percentage']).optional(),
-  discountValue: z.coerce.number().optional(),
-  titleColor: z.string().optional(),
-  headerBgColor: z.string().optional(),
-  footerBgColor: z.string().optional(),
-  featureIconColor: z.string().optional(),
-  priceColor: z.string().optional(),
-  cardBgColor: z.string().optional(),
-  cardBgImage: z.string().optional(),
-  cardBgImageOpacity: z.number().min(0).max(1).optional(),
-});
-
-type PlanCustomizationFormData = z.infer<typeof planCustomizationSchema>;
 
 interface PlanSettingsDialogProps {
   isOpen: boolean;
@@ -61,170 +19,252 @@ interface PlanSettingsDialogProps {
   onSave: (planName: string, customization: PlanCustomization) => void;
 }
 
-const ColorInput = ({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value?: string;
-  onChange: (value: string) => void;
-}) => (
-  <div className="flex items-center gap-2">
-    <Input type="color" value={value || '#000000'} onChange={(e) => onChange(e.target.value)} className="w-10 h-10 p-1"/>
-    <div className="flex-1">
-      <Label className="text-xs">{label}</Label>
-      <Input value={value || ''} onChange={(e) => onChange(e.target.value)} placeholder="#RRGGBB" />
-    </div>
-  </div>
-);
-
 export function PlanSettingsDialog({ isOpen, onClose, plan, onSave }: PlanSettingsDialogProps) {
-  const form = useForm<PlanCustomizationFormData>({
-    resolver: zodResolver(planCustomizationSchema),
-  });
+  const [customization, setCustomization] = useState<PlanCustomization>({});
 
   useEffect(() => {
     if (plan) {
-      form.reset(plan.customization || {});
+      setCustomization(plan.customization || {});
     }
-  }, [plan, form]);
+  }, [plan]);
 
-  const onSubmit = (data: PlanCustomizationFormData) => {
+  const handleSave = () => {
     if (plan) {
-      onSave(plan.name, data);
+      onSave(plan.name, customization);
+      onClose();
     }
+  };
+
+  const handleChange = (key: keyof PlanCustomization, value: string | undefined) => {
+    setCustomization(prev => ({ ...prev, [key]: value }));
   };
 
   if (!plan) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <DialogTitle>Customize "{plan.name}" Plan</DialogTitle>
           <DialogDescription>
-            Tailor the appearance and promotional details for this plan.
+            Personalize the appearance and messaging for this subscription plan.
           </DialogDescription>
         </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex-grow overflow-hidden flex flex-col">
-            <ScrollArea className="flex-1 pr-6 -mr-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Left Column - Promotion */}
-                <div className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="planType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Plan Type / Tag</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger><SelectValue placeholder="Select a tag" /></SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="Standard">Standard</SelectItem>
-                            <SelectItem value="Premium">Premium</SelectItem>
-                            <SelectItem value="VIP">VIP</SelectItem>
-                            <SelectItem value="Once Off">Once Off</SelectItem>
-                            <SelectItem value="Free Trial">Free Trial</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="isRecommended"
-                    render={({ field }) => (
-                      <FormItem className="flex items-center justify-between rounded-lg border p-3">
-                        <FormLabel>Mark as Recommended</FormLabel>
-                        <FormControl>
-                          <Switch checked={field.value} onCheckedChange={field.onChange} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <div className="space-y-2 pt-4">
-                    <FormLabel>Promotional Discount</FormLabel>
-                    <div className="grid grid-cols-2 gap-2">
-                      <FormField
-                        control={form.control}
-                        name="discountType"
-                        render={({ field }) => (
-                          <FormItem>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl><SelectTrigger><SelectValue placeholder="Type" /></SelectTrigger></FormControl>
-                              <SelectContent>
-                                <SelectItem value="percentage">% Percentage</SelectItem>
-                                <SelectItem value="flat">K Flat Amount</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="discountValue"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl><Input type="number" placeholder="e.g. 10" {...field} /></FormControl>
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </div>
-                </div>
 
-                {/* Right Column - Styling */}
-                <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <FormField name="titleColor" control={form.control} render={({ field }) => <ColorInput label="Title Color" {...field} />} />
-                        <FormField name="priceColor" control={form.control} render={({ field }) => <ColorInput label="Price Color" {...field} />} />
-                    </div>
-                     <div className="grid grid-cols-2 gap-4">
-                        <FormField name="headerBgColor" control={form.control} render={({ field }) => <ColorInput label="Header BG" {...field} />} />
-                        <FormField name="footerBgColor" control={form.control} render={({ field }) => <ColorInput label="Footer BG" {...field} />} />
-                    </div>
-                     <div className="grid grid-cols-2 gap-4">
-                        <FormField name="featureIconColor" control={form.control} render={({ field }) => <ColorInput label="Feature Icon" {...field} />} />
-                        <FormField name="cardBgColor" control={form.control} render={({ field }) => <ColorInput label="Card BG Color" {...field} />} />
-                    </div>
-                    <FormField
-                        name="cardBgImage"
-                        control={form.control}
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Card Background Image</FormLabel>
-                                <SimpleImageUploadButton value={field.value} onChange={field.onChange} />
-                            </FormItem>
-                        )}
-                    />
-                    {form.watch('cardBgImage') && (
-                        <FormField
-                            name="cardBgImageOpacity"
-                            control={form.control}
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>BG Image Opacity</FormLabel>
-                                    <Input type="range" min="0" max="1" step="0.1" {...field} />
-                                </FormItem>
-                            )}
+        <ScrollArea className="flex-1 px-6">
+          <div className="py-4 space-y-6">
+            <Tabs defaultValue="colors" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="colors">
+                  <Palette className="h-4 w-4 mr-2" />
+                  Colors
+                </TabsTrigger>
+                <TabsTrigger value="text">
+                  <Type className="h-4 w-4 mr-2" />
+                  Text
+                </TabsTrigger>
+                <TabsTrigger value="badge">
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Badge
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="colors" className="space-y-4 mt-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Color Scheme</CardTitle>
+                    <CardDescription>Customize the colors for this plan's card</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="bgColor">Background Color</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="bgColor"
+                          type="color"
+                          value={customization.bgColor || '#ffffff'}
+                          onChange={(e) => handleChange('bgColor', e.target.value)}
+                          className="w-20 h-10"
                         />
-                    )}
+                        <Input
+                          type="text"
+                          value={customization.bgColor || '#ffffff'}
+                          onChange={(e) => handleChange('bgColor', e.target.value)}
+                          placeholder="#ffffff"
+                          className="flex-1"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="textColor">Text Color</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="textColor"
+                          type="color"
+                          value={customization.textColor || '#000000'}
+                          onChange={(e) => handleChange('textColor', e.target.value)}
+                          className="w-20 h-10"
+                        />
+                        <Input
+                          type="text"
+                          value={customization.textColor || '#000000'}
+                          onChange={(e) => handleChange('textColor', e.target.value)}
+                          placeholder="#000000"
+                          className="flex-1"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="borderColor">Border Color</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="borderColor"
+                          type="color"
+                          value={customization.borderColor || '#e5e7eb'}
+                          onChange={(e) => handleChange('borderColor', e.target.value)}
+                          className="w-20 h-10"
+                        />
+                        <Input
+                          type="text"
+                          value={customization.borderColor || '#e5e7eb'}
+                          onChange={(e) => handleChange('borderColor', e.target.value)}
+                          placeholder="#e5e7eb"
+                          className="flex-1"
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="text" className="space-y-4 mt-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Custom Text</CardTitle>
+                    <CardDescription>Override default text for this plan</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="customTitle">Custom Title</Label>
+                      <Input
+                        id="customTitle"
+                        value={customization.customTitle || ''}
+                        onChange={(e) => handleChange('customTitle', e.target.value)}
+                        placeholder={plan.name}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="customDescription">Custom Description</Label>
+                      <Input
+                        id="customDescription"
+                        value={customization.customDescription || ''}
+                        onChange={(e) => handleChange('customDescription', e.target.value)}
+                        placeholder="Add a custom description..."
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="ctaText">Call-to-Action Button Text</Label>
+                      <Input
+                        id="ctaText"
+                        value={customization.ctaText || ''}
+                        onChange={(e) => handleChange('ctaText', e.target.value)}
+                        placeholder="Get Started"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="badge" className="space-y-4 mt-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Badge Settings</CardTitle>
+                    <CardDescription>Add a promotional badge to this plan</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="badgeText">Badge Text</Label>
+                      <Input
+                        id="badgeText"
+                        value={customization.badgeText || ''}
+                        onChange={(e) => handleChange('badgeText', e.target.value)}
+                        placeholder="Popular, Best Value, etc."
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="badgeColor">Badge Color</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="badgeColor"
+                          type="color"
+                          value={customization.badgeColor || '#ef4444'}
+                          onChange={(e) => handleChange('badgeColor', e.target.value)}
+                          className="w-20 h-10"
+                        />
+                        <Input
+                          type="text"
+                          value={customization.badgeColor || '#ef4444'}
+                          onChange={(e) => handleChange('badgeColor', e.target.value)}
+                          placeholder="#ef4444"
+                          className="flex-1"
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+
+            {/* Preview Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Preview</CardTitle>
+                <CardDescription>See how your customizations will look</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div 
+                  className="border-2 rounded-lg p-6 text-center space-y-4"
+                  style={{
+                    backgroundColor: customization.bgColor || '#ffffff',
+                    borderColor: customization.borderColor || '#e5e7eb',
+                    color: customization.textColor || '#000000',
+                  }}
+                >
+                  {customization.badgeText && (
+                    <div className="flex justify-center">
+                      <span 
+                        className="text-xs font-bold px-3 py-1 rounded-full text-white"
+                        style={{ backgroundColor: customization.badgeColor || '#ef4444' }}
+                      >
+                        {customization.badgeText}
+                      </span>
+                    </div>
+                  )}
+                  <h3 className="text-2xl font-bold">
+                    {customization.customTitle || plan.name}
+                  </h3>
+                  {customization.customDescription && (
+                    <p className="text-sm opacity-80">{customization.customDescription}</p>
+                  )}
+                  <div className="text-3xl font-bold">K{plan.price.toLocaleString()}/mo</div>
+                  <Button style={{ backgroundColor: customization.bgColor || '#000000' }}>
+                    {customization.ctaText || 'Get Started'}
+                  </Button>
                 </div>
-              </div>
-            </ScrollArea>
-            <DialogFooter className="flex-shrink-0 pt-4">
-              <Button type="button" variant="outline" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button type="submit">Save Customization</Button>
-            </DialogFooter>
-          </form>
-        </Form>
+              </CardContent>
+            </Card>
+          </div>
+        </ScrollArea>
+
+        <DialogFooter className="px-6 py-4 border-t">
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={handleSave}>Save Customization</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
