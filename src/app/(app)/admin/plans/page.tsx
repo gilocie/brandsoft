@@ -360,16 +360,22 @@ export default function AdminPlansPage() {
                         <CardContent>
                             <div className="grid gap-4 md:grid-cols-2">
                                 {plans.map(plan => (
-                                    <Card key={plan.name}>
-                                        <CardHeader>
-                                            <div className="flex items-center justify-between">
+                                    <Card key={plan.name} className="overflow-hidden">
+                                        <CardHeader className="relative p-0 h-20">
+                                            {plan.customization?.headerBgImage && (
+                                                <img src={plan.customization.headerBgImage} alt={plan.name} className="w-full h-full object-cover" style={{ opacity: plan.customization.headerBgImageOpacity || 1 }} />
+                                            )}
+                                            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" />
+                                            <div className="absolute bottom-4 left-4">
                                                 <CardTitle className="flex items-center gap-2 text-xl">
                                                     <Briefcase className="h-5 w-5" />
                                                     {plan.name}
                                                 </CardTitle>
+                                            </div>
+                                            <div className="absolute top-2 right-2">
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                        <Button variant="secondary" size="icon" className="h-8 w-8">
                                                             <MoreHorizontal className="h-4 w-4" />
                                                         </Button>
                                                     </DropdownMenuTrigger>
@@ -387,10 +393,10 @@ export default function AdminPlansPage() {
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
                                             </div>
-                                            <CardDescription className="text-2xl font-bold pt-1">K{plan.price.toLocaleString()}/mo</CardDescription>
                                         </CardHeader>
-                                        <CardContent>
-                                            <ul className="space-y-2 text-sm text-muted-foreground">
+                                        <CardContent className="p-4">
+                                             <CardDescription className="text-2xl font-bold pt-1">K{plan.price.toLocaleString()}/mo</CardDescription>
+                                            <ul className="space-y-2 text-sm text-muted-foreground mt-4">
                                                 {plan.features.map(feature => (
                                                     <li key={feature} className="flex items-center gap-2">
                                                         <CheckCircle className="h-4 w-4 text-green-500" />

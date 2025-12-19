@@ -226,22 +226,10 @@ export type Review = {
 };
 
 export type PlanCustomization = {
-  // From old implementation
-  planType?: 'Premium' | 'VIP' | 'Once Off' | 'Free Trial' | 'Standard';
   isRecommended?: boolean;
   discountType?: 'flat' | 'percentage';
   discountValue?: number;
   discountMonths?: number;
-  titleColor?: string;
-  headerBgColor?: string;
-  footerBgColor?: string;
-  featureIconColor?: string;
-  priceColor?: string;
-  cardBgColor?: string;
-  cardBgImage?: string;
-  cardBgImageOpacity?: number;
-
-  // From new implementation
   bgColor?: string;
   textColor?: string;
   borderColor?: string;
@@ -250,6 +238,8 @@ export type PlanCustomization = {
   ctaText?: string;
   badgeText?: string;
   badgeColor?: string;
+  headerBgImage?: string;
+  headerBgImageOpacity?: number;
 };
 
 export type Plan = {

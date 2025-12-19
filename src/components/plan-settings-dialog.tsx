@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -9,10 +8,11 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Palette, Type, Sparkles, Check } from 'lucide-react';
+import { Palette, Type, Sparkles, Check, UploadCloud } from 'lucide-react';
 import type { Plan, PlanCustomization } from '@/hooks/use-brandsoft';
 import { Switch } from './ui/switch';
 import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
+import { Slider } from './ui/slider';
 
 interface PlanSettingsDialogProps {
   isOpen: boolean;
@@ -20,6 +20,39 @@ interface PlanSettingsDialogProps {
   plan: Plan | null;
   onSave: (planName: string, customization: PlanCustomization) => void;
 }
+
+const ImageUploader = ({ value, onChange, label, aspect }: { value?: string, onChange: (val: string) => void, label: string, aspect: 'wide' | 'normal' }) => {
+    const inputRef = React.useRef<HTMLInputElement>(null);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                onChange(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    return (
+        <div className="space-y-2">
+            <Label>{label}</Label>
+            <div className={`relative flex items-center justify-center space-y-2 rounded-md border border-dashed p-2 w-full ${aspect === 'wide' ? 'h-16' : 'h-32'}`}>
+                {value ? (
+                    <img src={value} alt={`${label} preview`} className="max-h-full max-w-full object-contain" />
+                ) : (
+                    <p className="text-xs text-muted-foreground">No image</p>
+                )}
+            </div>
+            <Input type="file" accept="image/*" className="hidden" ref={inputRef} onChange={handleFileChange} />
+            <Button type="button" variant="outline" size="sm" onClick={() => inputRef.current?.click()} className="w-full h-8 text-xs">
+                <UploadCloud className="mr-2 h-3 w-3" /> {value ? 'Change' : 'Upload'}
+            </Button>
+        </div>
+    );
+};
+
 
 export function PlanSettingsDialog({ isOpen, onClose, plan, onSave }: PlanSettingsDialogProps) {
   const [customization, setCustomization] = useState<PlanCustomization>({});
@@ -70,7 +103,7 @@ export function PlanSettingsDialog({ isOpen, onClose, plan, onSave }: PlanSettin
                   </TabsTrigger>
                   <TabsTrigger value="colors">
                     <Palette className="h-4 w-4 mr-2" />
-                    Colors
+                    Appearance
                   </TabsTrigger>
                   <TabsTrigger value="text">
                     <Type className="h-4 w-4 mr-2" />
@@ -99,34 +132,23 @@ export function PlanSettingsDialog({ isOpen, onClose, plan, onSave }: PlanSettin
 
                       <div className="space-y-2">
                         <Label>Promotional Discount</Label>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="flex gap-2">
-                                <ToggleGroup
-                                    type="single"
-                                    value={customization.discountType}
-                                    onValueChange={(value: 'flat' | 'percentage') => handleChange('discountType', value)}
-                                    className="border rounded-md"
-                                >
-                                    <ToggleGroupItem value="percentage" className="h-10 px-3">%</ToggleGroupItem>
-                                    <ToggleGroupItem value="flat" className="h-10 px-3">K</ToggleGroupItem>
-                                </ToggleGroup>
-                              <Input
-                                type="number"
-                                value={customization.discountValue || ''}
-                                onChange={(e) => handleChange('discountValue', e.target.value ? Number(e.target.value) : undefined)}
-                                placeholder="e.g., 10 or 500"
-                                className="flex-1"
-                              />
-                            </div>
-                            <div>
-                                <Input
-                                    type="number"
-                                    value={customization.discountMonths || ''}
-                                    onChange={(e) => handleChange('discountMonths', e.target.value ? Number(e.target.value) : undefined)}
-                                    placeholder="Months (optional)"
-                                />
-                                <p className="text-xs text-muted-foreground mt-1">For how many months does this apply?</p>
-                            </div>
+                        <div className="flex gap-2">
+                            <ToggleGroup
+                                type="single"
+                                value={customization.discountType}
+                                onValueChange={(value: 'flat' | 'percentage') => handleChange('discountType', value)}
+                                className="border rounded-md"
+                            >
+                                <ToggleGroupItem value="percentage" className="h-10 px-3">%</ToggleGroupItem>
+                                <ToggleGroupItem value="flat" className="h-10 px-3">K</ToggleGroupItem>
+                            </ToggleGroup>
+                          <Input
+                            type="number"
+                            value={customization.discountValue || ''}
+                            onChange={(e) => handleChange('discountValue', e.target.value ? Number(e.target.value) : undefined)}
+                            placeholder="e.g., 10 or 500"
+                            className="flex-1"
+                          />
                         </div>
                       </div>
                        <div className="space-y-2">
@@ -156,6 +178,24 @@ export function PlanSettingsDialog({ isOpen, onClose, plan, onSave }: PlanSettin
                       <CardDescription>Customize the colors for this plan's card</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                       <ImageUploader 
+                          label="Header Background Image" 
+                          value={customization.headerBgImage}
+                          onChange={(v) => handleChange('headerBgImage', v)}
+                          aspect="wide"
+                       />
+                       {customization.headerBgImage && (
+                          <div className="space-y-2">
+                              <Label>Header Image Opacity</Label>
+                              <Slider
+                                  value={[(customization.headerBgImageOpacity ?? 1) * 100]}
+                                  onValueChange={([v]) => handleChange('headerBgImageOpacity', v / 100)}
+                                  max={100}
+                                  step={1}
+                              />
+                          </div>
+                       )}
+
                       <div className="space-y-2">
                         <Label htmlFor="bgColor">Background Color</Label>
                         <div className="flex gap-2">
@@ -284,16 +324,20 @@ export function PlanSettingsDialog({ isOpen, onClose, plan, onSave }: PlanSettin
                     )}
                     
                     <div className="flex items-start gap-4">
-                      <div 
-                        className="h-14 w-14 rounded-2xl flex items-center justify-center flex-shrink-0" 
-                        style={{ backgroundColor: isRecommended ? 'rgba(255, 255, 255, 0.15)' : 'rgba(99, 102, 241, 0.15)' }}
-                      >
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" stroke={isRecommended ? '#FFFFFF' : 'rgb(99, 102, 241)'} strokeWidth="2" strokeLinejoin="round"/>
-                          <path d="M2 7L12 12L22 7" stroke={isRecommended ? '#FFFFFF' : 'rgb(99, 102, 241)'} strokeWidth="2" strokeLinejoin="round"/>
-                          <path d="M12 12V22" stroke={isRecommended ? '#FFFFFF' : 'rgb(99, 102, 241)'} strokeWidth="2" strokeLinejoin="round"/>
-                        </svg>
-                      </div>
+                      {customization.headerBgImage ? (
+                          <div className="w-14 h-14 rounded-2xl bg-cover bg-center" style={{backgroundImage: `url(${customization.headerBgImage})`, opacity: customization.headerBgImageOpacity || 1}} />
+                      ) : (
+                          <div 
+                            className="h-14 w-14 rounded-2xl flex items-center justify-center flex-shrink-0" 
+                            style={{ backgroundColor: isRecommended ? 'rgba(255, 255, 255, 0.15)' : 'rgba(99, 102, 241, 0.15)' }}
+                          >
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" stroke={isRecommended ? '#FFFFFF' : 'rgb(99, 102, 241)'} strokeWidth="2" strokeLinejoin="round"/>
+                              <path d="M2 7L12 12L22 7" stroke={isRecommended ? '#FFFFFF' : 'rgb(99, 102, 241)'} strokeWidth="2" strokeLinejoin="round"/>
+                              <path d="M12 12V22" stroke={isRecommended ? '#FFFFFF' : 'rgb(99, 102, 241)'} strokeWidth="2" strokeLinejoin="round"/>
+                            </svg>
+                          </div>
+                      )}
                       
                       <div className="flex-1">
                         <h3 className="text-2xl font-bold mb-2">
