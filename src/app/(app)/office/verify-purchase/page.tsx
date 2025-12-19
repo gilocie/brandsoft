@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, Suspense, useCallback, useMemo } from 'react';
@@ -334,6 +335,8 @@ function VerifyPurchaseContent() {
         }
 
         if (order) {
+            const isTopUp = order.planName.startsWith('Credit Purchase') || order.planName === 'Wallet Top-up';
+
              return (
                 <div className="mt-6 space-y-6">
                     <div className="flex flex-col md:flex-row gap-6">
@@ -388,7 +391,7 @@ function VerifyPurchaseContent() {
                                     </span>
                                 </p>
                             </CardContent>
-                             {(order.status === 'pending' || order.status === 'processing') && (
+                             {isAdminMode && (order.status === 'pending' || order.status === 'processing') && (
                                 <CardFooter className="p-0 pt-6 flex gap-2">
                                      <AlertDialog open={declineDialogOpen} onOpenChange={setDeclineDialogOpen}>
                                         <AlertDialogTrigger asChild>
@@ -415,7 +418,7 @@ function VerifyPurchaseContent() {
                                         </AlertDialogContent>
                                     </AlertDialog>
                                     <Button className="w-full" onClick={handleActivation}>
-                                        Activate Plan
+                                        {isTopUp ? 'Activate Top Up' : 'Activate Plan'}
                                     </Button>
                                 </CardFooter>
                             )}
