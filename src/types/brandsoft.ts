@@ -240,6 +240,10 @@ export type PlanCustomization = {
   badgeColor?: string;
   headerBgImage?: string;
   headerBgImageOpacity?: number;
+  icon?: string;
+  backgroundType?: 'solid' | 'gradient';
+  backgroundGradientStart?: string;
+  backgroundGradientEnd?: string;
 };
 
 export type Plan = {

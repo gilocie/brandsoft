@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check, Star, Settings, Users, HardDrive, ShieldCheck, Contact } from 'lucide-react';
+import { Check, Star, Settings, Users, HardDrive, ShieldCheck, Contact, Package } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBrandsoft, type Plan, type PlanCustomization } from '@/hooks/use-brandsoft';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -29,18 +29,26 @@ const planLevels: Record<string, number> = {
   'Enterprise': 3,
 };
 
-const PlanIcon = ({ bgColor, iconColor }: { bgColor?: string; iconColor?: string }) => (
-    <div 
-        className="h-14 w-14 rounded-2xl flex items-center justify-center" 
-        style={{ backgroundColor: bgColor || 'rgba(99, 102, 241, 0.15)' }}
-    >
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" stroke={iconColor || 'rgb(99, 102, 241)'} strokeWidth="2" strokeLinejoin="round"/>
-            <path d="M2 7L12 12L22 7" stroke={iconColor || 'rgb(99, 102, 241)'} strokeWidth="2" strokeLinejoin="round"/>
-            <path d="M12 12V22" stroke={iconColor || 'rgb(99, 102, 241)'} strokeWidth="2" strokeLinejoin="round"/>
-        </svg>
-    </div>
-);
+const iconMap: { [key: string]: React.ElementType } = {
+    ShieldCheck,
+    Users,
+    HardDrive,
+    Contact,
+    Star,
+    Package
+};
+
+const PlanIcon = ({ iconName, bgColor, iconColor }: { iconName?: string; bgColor?: string; iconColor?: string }) => {
+    const Icon = iconName ? iconMap[iconName] : Package;
+    return (
+        <div 
+            className="h-14 w-14 rounded-2xl flex items-center justify-center" 
+            style={{ backgroundColor: bgColor || 'rgba(99, 102, 241, 0.15)' }}
+        >
+            <Icon style={{ color: iconColor || 'rgb(99, 102, 241)' }} className="h-7 w-7" />
+        </div>
+    )
+};
 
 
 const PlanCard = ({ plan, isCurrent = false, cta, className, onBuyClick, onCustomizeClick }: { plan: Plan, isCurrent?: boolean, cta: string, className?: string, onBuyClick: () => void, onCustomizeClick?: () => void }) => {
@@ -54,6 +62,10 @@ const PlanCard = ({ plan, isCurrent = false, cta, className, onBuyClick, onCusto
     const badgeColor = customization?.badgeColor || 'rgb(255, 107, 53)';
     const badgeText = customization?.badgeText || 'Most popular';
 
+    const backgroundStyle = customization?.backgroundType === 'gradient'
+        ? { background: `linear-gradient(to bottom right, ${customization.backgroundGradientStart || '#3a3a3a'}, ${customization.backgroundGradientEnd || '#1a1a1a'})` }
+        : { backgroundColor: cardBgColor };
+
     return (
         <Card 
           className={cn(
@@ -61,7 +73,7 @@ const PlanCard = ({ plan, isCurrent = false, cta, className, onBuyClick, onCusto
               className
           )}
           style={{
-            backgroundColor: cardBgColor,
+            ...backgroundStyle,
             borderColor: borderColor,
             color: cardTextColor
           }}
@@ -74,9 +86,13 @@ const PlanCard = ({ plan, isCurrent = false, cta, className, onBuyClick, onCusto
                     {badgeText}
                 </div>
             )}
-            <CardHeader className="p-8 pb-6">
+            <CardHeader 
+                className="p-8 pb-6 bg-cover bg-center" 
+                style={{ backgroundImage: customization?.headerBgImage ? `url(${customization.headerBgImage})` : 'none', backgroundBlendMode: 'overlay', backgroundColor: 'rgba(0,0,0,0.3)' }}
+            >
                 <div className="flex items-start gap-4 mb-6">
                     <PlanIcon 
+                        iconName={customization?.icon}
                         bgColor={isPopular ? 'rgba(255, 255, 255, 0.15)' : undefined}
                         iconColor={isPopular ? 'rgb(255, 255, 255)' : undefined}
                     />
@@ -335,3 +351,4 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
         </>
     );
 }
+

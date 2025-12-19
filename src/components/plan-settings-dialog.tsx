@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -8,11 +9,21 @@ import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Palette, Type, Sparkles, Check, UploadCloud } from 'lucide-react';
+import { Palette, Type, Sparkles, Check, UploadCloud, ShieldCheck, Users, HardDrive, Contact, Star, Package } from 'lucide-react';
 import type { Plan, PlanCustomization } from '@/hooks/use-brandsoft';
 import { Switch } from './ui/switch';
 import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
 import { Slider } from './ui/slider';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+
+const iconMap: { [key: string]: React.ElementType } = {
+    ShieldCheck,
+    Users,
+    HardDrive,
+    Contact,
+    Star,
+    Package
+};
 
 interface PlanSettingsDialogProps {
   isOpen: boolean;
@@ -76,11 +87,17 @@ export function PlanSettingsDialog({ isOpen, onClose, plan, onSave }: PlanSettin
   if (!plan) return null;
 
   const isRecommended = customization.isRecommended;
-  const cardBgColor = customization?.bgColor || (isRecommended ? 'rgb(88, 80, 236)' : 'rgb(30, 30, 35)');
-  const cardTextColor = customization?.textColor || 'rgb(255, 255, 255)';
-  const borderColor = customization?.borderColor || (isRecommended ? 'rgb(88, 80, 236)' : 'rgb(45, 45, 50)');
   const badgeColor = customization?.badgeColor || 'rgb(255, 107, 53)';
   const badgeText = customization?.badgeText || 'Most popular';
+  
+  const backgroundStyle = customization?.backgroundType === 'gradient'
+    ? { background: `linear-gradient(to bottom right, ${customization.backgroundGradientStart || '#3a3a3a'}, ${customization.backgroundGradientEnd || '#1a1a1a'})` }
+    : { backgroundColor: customization.bgColor || (isRecommended ? 'rgb(88, 80, 236)' : 'rgb(30, 30, 35)') };
+
+  const borderColor = customization?.borderColor || (isRecommended ? 'rgb(88, 80, 236)' : 'rgb(45, 45, 50)');
+  const cardTextColor = customization?.textColor || 'rgb(255, 255, 255)';
+  
+  const Icon = customization.icon ? iconMap[customization.icon] : Package;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -96,7 +113,7 @@ export function PlanSettingsDialog({ isOpen, onClose, plan, onSave }: PlanSettin
           <ScrollArea className="h-full px-6">
             <div className="py-4 space-y-6 pb-6">
               <Tabs defaultValue="promo" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="promo">
                     <Sparkles className="h-4 w-4 mr-2" />
                     Promotion
@@ -108,6 +125,10 @@ export function PlanSettingsDialog({ isOpen, onClose, plan, onSave }: PlanSettin
                   <TabsTrigger value="text">
                     <Type className="h-4 w-4 mr-2" />
                     Text
+                  </TabsTrigger>
+                   <TabsTrigger value="icon">
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Icon
                   </TabsTrigger>
                 </TabsList>
                 
@@ -188,6 +209,47 @@ export function PlanSettingsDialog({ isOpen, onClose, plan, onSave }: PlanSettin
                       <CardDescription>Customize the colors for this plan's card</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                            <Label>Background Type</Label>
+                             <ToggleGroup
+                                type="single"
+                                value={customization.backgroundType || 'solid'}
+                                onValueChange={(value: 'solid' | 'gradient') => handleChange('backgroundType', value)}
+                                className="grid grid-cols-2"
+                            >
+                                <ToggleGroupItem value="solid">Solid</ToggleGroupItem>
+                                <ToggleGroupItem value="gradient">Gradient</ToggleGroupItem>
+                            </ToggleGroup>
+                        </div>
+
+                        {customization.backgroundType === 'gradient' ? (
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label>Start Color</Label>
+                                    <Input type="color" value={customization.backgroundGradientStart || '#3a3a3a'} onChange={(e) => handleChange('backgroundGradientStart', e.target.value)} className="w-full h-10"/>
+                                </div>
+                                 <div className="space-y-2">
+                                    <Label>End Color</Label>
+                                    <Input type="color" value={customization.backgroundGradientEnd || '#1a1a1a'} onChange={(e) => handleChange('backgroundGradientEnd', e.target.value)} className="w-full h-10"/>
+                                </div>
+                            </div>
+                        ) : (
+                             <div className="space-y-2">
+                                <Label htmlFor="bgColor">Background Color</Label>
+                                <Input id="bgColor" type="color" value={customization.bgColor || (isRecommended ? '#5850EC' : '#1E1E23')} onChange={(e) => handleChange('bgColor', e.target.value)} className="w-full h-10"/>
+                            </div>
+                        )}
+
+                      <div className="space-y-2">
+                        <Label htmlFor="textColor">Text Color</Label>
+                        <Input id="textColor" type="color" value={customization.textColor || '#FFFFFF'} onChange={(e) => handleChange('textColor', e.target.value)} className="w-full h-10"/>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="borderColor">Border Color</Label>
+                        <Input id="borderColor" type="color" value={customization.borderColor || (isRecommended ? '#5850EC' : '#2D2D32')} onChange={(e) => handleChange('borderColor', e.target.value)} className="w-full h-10"/>
+                      </div>
+
                        <ImageUploader 
                           label="Header Background Image" 
                           value={customization.headerBgImage}
@@ -206,68 +268,6 @@ export function PlanSettingsDialog({ isOpen, onClose, plan, onSave }: PlanSettin
                           </div>
                        )}
 
-                      <div className="space-y-2">
-                        <Label htmlFor="bgColor">Background Color</Label>
-                        <div className="flex gap-2">
-                          <Input 
-                            id="bgColor" 
-                            type="color" 
-                            value={customization.bgColor || (isRecommended ? '#5850EC' : '#1E1E23')} 
-                            onChange={(e) => handleChange('bgColor', e.target.value)} 
-                            className="w-20 h-10"
-                          />
-                          <Input 
-                            type="text" 
-                            value={customization.bgColor || (isRecommended ? '#5850EC' : '#1E1E23')} 
-                            onChange={(e) => handleChange('bgColor', e.target.value)} 
-                            placeholder={isRecommended ? "#5850EC" : "#1E1E23"} 
-                            className="flex-1"
-                          />
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          {isRecommended ? 'Recommended: vibrant purple (#5850EC)' : 'Default: dark gray (#1E1E23)'}
-                        </p>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="textColor">Text Color</Label>
-                        <div className="flex gap-2">
-                          <Input 
-                            id="textColor" 
-                            type="color" 
-                            value={customization.textColor || '#FFFFFF'} 
-                            onChange={(e) => handleChange('textColor', e.target.value)} 
-                            className="w-20 h-10"
-                          />
-                          <Input 
-                            type="text" 
-                            value={customization.textColor || '#FFFFFF'} 
-                            onChange={(e) => handleChange('textColor', e.target.value)} 
-                            placeholder="#FFFFFF" 
-                            className="flex-1"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="borderColor">Border Color</Label>
-                        <div className="flex gap-2">
-                          <Input 
-                            id="borderColor" 
-                            type="color" 
-                            value={customization.borderColor || (isRecommended ? '#5850EC' : '#2D2D32')} 
-                            onChange={(e) => handleChange('borderColor', e.target.value)} 
-                            className="w-20 h-10"
-                          />
-                          <Input 
-                            type="text" 
-                            value={customization.borderColor || (isRecommended ? '#5850EC' : '#2D2D32')} 
-                            onChange={(e) => handleChange('borderColor', e.target.value)} 
-                            placeholder={isRecommended ? "#5850EC" : "#2D2D32"} 
-                            className="flex-1"
-                          />
-                        </div>
-                      </div>
                     </CardContent>
                   </Card>
                 </TabsContent>
@@ -306,6 +306,33 @@ export function PlanSettingsDialog({ isOpen, onClose, plan, onSave }: PlanSettin
                     </CardContent>
                   </Card>
                 </TabsContent>
+
+                <TabsContent value="icon" className="space-y-4 mt-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Plan Icon</CardTitle>
+                      <CardDescription>Choose an icon to represent this plan.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                       <Select value={customization.icon || 'Package'} onValueChange={(v) => handleChange('icon', v)}>
+                         <SelectTrigger>
+                            <SelectValue placeholder="Select an icon" />
+                          </SelectTrigger>
+                          <SelectContent>
+                              {Object.keys(iconMap).map(iconName => (
+                                <SelectItem key={iconName} value={iconName}>
+                                  <div className="flex items-center gap-2">
+                                    {React.createElement(iconMap[iconName], { className: 'h-4 w-4' })}
+                                    {iconName}
+                                  </div>
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                       </Select>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
               </Tabs>
 
               <Card>
@@ -315,15 +342,15 @@ export function PlanSettingsDialog({ isOpen, onClose, plan, onSave }: PlanSettin
                 </CardHeader>
                 <CardContent>
                   <div
-                    className="border-2 rounded-2xl p-8 space-y-6 text-left relative"
+                    className="border-2 rounded-2xl text-left relative overflow-hidden"
                     style={{
-                      backgroundColor: cardBgColor,
+                      ...backgroundStyle,
                       borderColor: borderColor,
                       color: cardTextColor,
                     }}
                   >
                     {(isRecommended && badgeText) && (
-                      <div className="absolute top-6 right-6">
+                      <div className="absolute top-6 right-6 z-10">
                         <span 
                           className="text-xs font-bold px-3 py-1.5 rounded-full text-white" 
                           style={{ backgroundColor: badgeColor }}
@@ -333,62 +360,64 @@ export function PlanSettingsDialog({ isOpen, onClose, plan, onSave }: PlanSettin
                       </div>
                     )}
                     
-                    <div className="flex items-start gap-4">
-                      {customization.headerBgImage ? (
-                          <div className="w-14 h-14 rounded-2xl bg-cover bg-center" style={{backgroundImage: `url(${customization.headerBgImage})`, opacity: customization.headerBgImageOpacity || 1}} />
-                      ) : (
-                          <div 
-                            className="h-14 w-14 rounded-2xl flex items-center justify-center flex-shrink-0" 
-                            style={{ backgroundColor: isRecommended ? 'rgba(255, 255, 255, 0.15)' : 'rgba(99, 102, 241, 0.15)' }}
-                          >
-                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" stroke={isRecommended ? '#FFFFFF' : 'rgb(99, 102, 241)'} strokeWidth="2" strokeLinejoin="round"/>
-                              <path d="M2 7L12 12L22 7" stroke={isRecommended ? '#FFFFFF' : 'rgb(99, 102, 241)'} strokeWidth="2" strokeLinejoin="round"/>
-                              <path d="M12 12V22" stroke={isRecommended ? '#FFFFFF' : 'rgb(99, 102, 241)'} strokeWidth="2" strokeLinejoin="round"/>
-                            </svg>
-                          </div>
-                      )}
-                      
-                      <div className="flex-1">
-                        <h3 className="text-2xl font-bold mb-2">
-                          {customization.customTitle || plan.name}
-                        </h3>
-                        <p 
-                          className="text-sm opacity-80 leading-relaxed"
-                        >
-                          {customization.customDescription || plan.features[0] || 'Plan description'}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-5xl font-bold tracking-tight">K{plan.price.toLocaleString()}</span>
-                      <span className="text-base opacity-70">/month</span>
-                    </div>
-                    
-                    <Button 
-                      className="w-full h-12 rounded-lg font-semibold" 
-                      style={{
-                        backgroundColor: isRecommended ? badgeColor : 'rgba(255, 255, 255, 0.1)',
-                        color: isRecommended ? 'white' : cardTextColor,
-                        border: isRecommended ? 'none' : '1px solid rgba(255, 255, 255, 0.1)'
-                      }}
+                    <div 
+                        className="p-8 pb-6 bg-cover bg-center relative" 
+                        style={{ backgroundImage: customization?.headerBgImage ? `url(${customization.headerBgImage})` : 'none'}}
                     >
-                      {customization.ctaText || 'Choose this plan'}
-                    </Button>
+                         {customization?.headerBgImage && <div className="absolute inset-0 bg-black/50" style={{opacity: 1 - (customization.headerBgImageOpacity ?? 1)}} />}
+                         <div className="relative">
+                            <div className="flex items-start gap-4 mb-6">
+                                <div 
+                                    className="h-14 w-14 rounded-2xl flex items-center justify-center flex-shrink-0" 
+                                    style={{ backgroundColor: isRecommended ? 'rgba(255, 255, 255, 0.15)' : 'rgba(99, 102, 241, 0.15)' }}
+                                >
+                                    <Icon className="h-7 w-7" style={{ color: isRecommended ? '#FFFFFF' : 'rgb(99, 102, 241)' }} />
+                                </div>
+                                
+                                <div className="flex-1">
+                                    <h3 className="text-2xl font-bold mb-2">
+                                    {customization.customTitle || plan.name}
+                                    </h3>
+                                    <p 
+                                    className="text-sm opacity-80 leading-relaxed"
+                                    >
+                                    {customization.customDescription || plan.features[0] || 'Plan description'}
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-5xl font-bold tracking-tight">K{plan.price.toLocaleString()}</span>
+                                <span className="text-base opacity-70">/month</span>
+                            </div>
+                         </div>
+                    </div>
                     
-                    <div className="space-y-4 pt-2">
-                      {plan.features.slice(1).map((feature, index) => (
-                        <div key={index} className="flex items-start gap-3">
-                          <div 
-                            className="mt-0.5 rounded-full p-0.5"
-                            style={{ backgroundColor: isRecommended ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.1)' }}
-                          >
-                            <Check className="h-3.5 w-3.5" />
-                          </div>
-                          <span className="text-sm opacity-90 leading-relaxed">{feature}</span>
+                    <div className="px-8 pb-8 space-y-6">
+                        <Button 
+                        className="w-full h-12 rounded-lg font-semibold" 
+                        style={{
+                            backgroundColor: isRecommended ? badgeColor : 'rgba(255, 255, 255, 0.1)',
+                            color: isRecommended ? 'white' : cardTextColor,
+                            border: isRecommended ? 'none' : '1px solid rgba(255, 255, 255, 0.1)'
+                        }}
+                        >
+                        {customization.ctaText || 'Choose this plan'}
+                        </Button>
+                        
+                        <div className="space-y-4 pt-2">
+                        {plan.features.slice(1).map((feature, index) => (
+                            <div key={index} className="flex items-start gap-3">
+                            <div 
+                                className="mt-0.5 rounded-full p-0.5"
+                                style={{ backgroundColor: isRecommended ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.1)' }}
+                            >
+                                <Check className="h-3.5 w-3.5" />
+                            </div>
+                            <span className="text-sm opacity-90 leading-relaxed">{feature}</span>
+                            </div>
+                        ))}
                         </div>
-                      ))}
                     </div>
                   </div>
                 </CardContent>
@@ -405,3 +434,4 @@ export function PlanSettingsDialog({ isOpen, onClose, plan, onSave }: PlanSettin
     </Dialog>
   );
 }
+
