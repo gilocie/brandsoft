@@ -340,32 +340,30 @@ function VerifyPurchaseContent() {
                                 </div>
                             </div>
                         )}
-                        <div className="flex-1 space-y-4">
-                            <div>
-                                <CardHeader className="p-0">
-                                    <CardTitle>Order Details</CardTitle>
-                                </CardHeader>
-                                <CardContent className="p-0 pt-4 space-y-2 text-sm">
-                                    <p className="flex justify-between"><strong>Order ID:</strong> <span>{order.orderId}</span></p>
-                                    <p className="flex justify-between"><strong>Plan:</strong> <span>{order.planName} ({order.planPeriod})</span></p>
-                                    <p className="flex justify-between"><strong>Price:</strong> <span>{order.planPrice}</span></p>
-                                    <p className="flex justify-between"><strong>Payment:</strong> <span className="capitalize">{order.paymentMethod}</span></p>
-                                    <p className="flex justify-between"><strong>Date:</strong> <span>{new Date(order.date).toLocaleString()}</span></p>
-                                    <p className="flex justify-between items-center"><strong>Status:</strong> 
-                                        <span className={cn(
-                                            "font-bold capitalize", 
-                                            order.status === 'active' && "text-green-500",
-                                            order.status === 'pending' && "text-amber-500",
-                                            order.status === 'declined' && "text-destructive",
-                                            order.status === 'inactive' && "text-gray-500",
-                                        )}>
-                                            {order.status}
-                                        </span>
-                                    </p>
-                                </CardContent>
-                            </div>
+                        <div className="flex-1 flex flex-col">
+                            <CardHeader className="p-0">
+                                <CardTitle>Order Details</CardTitle>
+                            </CardHeader>
+                            <CardContent className="flex-grow p-0 pt-4 space-y-2 text-sm">
+                                <p className="flex justify-between"><strong>Order ID:</strong> <span>{order.orderId}</span></p>
+                                <p className="flex justify-between"><strong>Plan:</strong> <span>{order.planName} ({order.planPeriod})</span></p>
+                                <p className="flex justify-between"><strong>Price:</strong> <span>{order.planPrice}</span></p>
+                                <p className="flex justify-between"><strong>Payment:</strong> <span className="capitalize">{order.paymentMethod}</span></p>
+                                <p className="flex justify-between"><strong>Date:</strong> <span>{new Date(order.date).toLocaleString()}</span></p>
+                                <p className="flex justify-between items-center"><strong>Status:</strong> 
+                                    <span className={cn(
+                                        "font-bold capitalize", 
+                                        order.status === 'active' && "text-green-500",
+                                        order.status === 'pending' && "text-amber-500",
+                                        order.status === 'declined' && "text-destructive",
+                                        order.status === 'inactive' && "text-gray-500",
+                                    )}>
+                                        {order.status}
+                                    </span>
+                                </p>
+                            </CardContent>
                              {order.status === 'pending' && (
-                                <div className="flex gap-2">
+                                <CardFooter className="p-0 pt-6 flex gap-2">
                                      <AlertDialog open={declineDialogOpen} onOpenChange={setDeclineDialogOpen}>
                                         <AlertDialogTrigger asChild>
                                             <Button variant="destructive" className="w-full">Decline</Button>
@@ -393,7 +391,7 @@ function VerifyPurchaseContent() {
                                     <Button className="w-full" onClick={handleActivation}>
                                         Activate Plan
                                     </Button>
-                                </div>
+                                </CardFooter>
                             )}
                         </div>
                     </div>
@@ -499,5 +497,3 @@ export default function OfficeVerifyPurchasePage() {
         </div>
     )
 }
-
-    
