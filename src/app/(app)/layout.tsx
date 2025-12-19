@@ -65,6 +65,7 @@ const mainNavItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', enabledKey: null, roles: ['client'] },
   { href: '/history', icon: Wallet, label: 'Wallet', enabledKey: null, roles: ['client'] },
   { href: '/office', icon: LayoutDashboard, label: 'Dashboard', enabledKey: null, roles: ['staff'] },
+  { href: '/office/wallet', icon: Wallet, label: 'My Wallet', enabledKey: null, roles: ['staff'] },
   { href: '/office/clients', icon: Users, label: 'Clients', enabledKey: null, roles: ['staff'] },
   { href: '/office/features', icon: Shield, label: 'Features', enabledKey: null, roles: ['staff'] },
   { href: '/office/keys', icon: KeyRound, label: 'Keys', enabledKey: null, roles: ['staff'] },

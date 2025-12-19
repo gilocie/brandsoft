@@ -1,0 +1,314 @@
+
+'use client';
+
+import { useMemo, useState } from 'react';
+import { useBrandsoft, type Transaction, type Affiliate } from '@/hooks/use-brandsoft';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Loader2, DollarSign, CreditCard, Gift, Wallet, TrendingUp, TrendingDown } from 'lucide-react';
+import { StatCard } from '@/components/office/stat-card';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { WithdrawDialog } from '@/components/office/withdraw-dialog';
+import { BuyCreditsDialog } from '@/components/office/buy-credits-dialog';
+import { SellCreditsDialog } from '@/components/office/dialogs/sell-credits-dialog';
+import { PurchaseDialog, type PlanDetails } from '@/components/purchase-dialog';
+import { useToast } from '@/hooks/use-toast';
+import { BonusProgressDialog } from '@/components/office/bonus-progress-dialog';
+
+
+const CREDIT_TO_MWK = 1000;
+
+const ITEMS_PER_PAGE = 10;
+
+
+export default function StaffWalletPage() {
+    const { config, saveConfig } = useBrandsoft();
+    const [payoutsPage, setPayoutsPage] = useState(0);
+    const { toast } = useToast();
+    const [purchaseDetails, setPurchaseDetails] = useState<PlanDetails | null>(null);
+    const [isSellCreditsOpen, setIsSellCreditsOpen] = useState(false);
+
+    const affiliate = config?.affiliate;
+
+    const handlePushToWallet = () => {
+        if (!config || !affiliate) return;
+        const amountToPush = affiliate.unclaimedCommission || 0;
+        if (amountToPush <= 0) return;
+
+        const newAffiliateData: Affiliate = {
+            ...affiliate,
+            myWallet: (affiliate.myWallet || 0) + amountToPush,
+            unclaimedCommission: 0,
+            transactions: [
+                {
+                    id: `TRN-PUSH-${Date.now()}`,
+                    date: new Date().toISOString(),
+                    description: 'Pushed commission to wallet',
+                    amount: amountToPush,
+                    type: 'credit' as const,
+                },
+                ...(affiliate.transactions || [])
+            ],
+        };
+        saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
+        toast({
+            title: "Funds Transferred!",
+            description: `K${amountToPush.toLocaleString()} has been pushed to your wallet.`,
+        });
+    };
+
+    const handleWithdraw = (amount: number, source: 'commission' | 'combined' | 'bonus', method: string) => {
+        if (!config || !affiliate) return;
+        
+        const newTransaction: Transaction = {
+          id: `TRN-WTH-${Date.now()}`,
+          date: new Date().toISOString(),
+          description: `Withdrawal via ${method}`,
+          amount: amount,
+          type: 'debit',
+          status: 'pending',
+        } as any;
+
+        const newAffiliateData = { ...affiliate };
+        
+        const amountToWithdraw = amount;
+
+        if (source === 'combined') {
+            let remainingAmount = amountToWithdraw;
+            const bonusDeduction = Math.min(newAffiliateData.bonus || 0, remainingAmount);
+            newAffiliateData.bonus = (newAffiliateData.bonus || 0) - bonusDeduction;
+            remainingAmount -= bonusDeduction;
+            if (remainingAmount > 0) {
+                newAffiliateData.myWallet = (newAffiliateData.myWallet || 0) - remainingAmount;
+            }
+        } else {
+            newAffiliateData.myWallet = (newAffiliateData.myWallet || 0) - amountToWithdraw;
+        }
+        
+        newAffiliateData.transactions = [newTransaction, ...(affiliate.transactions || [])];
+        
+        saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
+
+        toast({
+            title: 'Withdrawal Request Submitted!',
+            description: `Your request for K${amount.toLocaleString()} is being processed.`,
+        });
+    }
+
+    const commissionTransactions = useMemo(() => {
+        if (!affiliate?.transactions) return [];
+        return affiliate.transactions
+        .filter(t => t.type === 'credit')
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }, [affiliate?.transactions]);
+
+    const payoutTransactions = useMemo(() => {
+        if (!affiliate?.transactions) return [];
+        return affiliate.transactions
+        .filter(t => t.type === 'debit' && (t as any).status !== 'completed')
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }, [affiliate?.transactions]);
+
+    const withdrawalTransactions = useMemo(() => {
+        if (!affiliate?.transactions) return [];
+        return affiliate.transactions
+        .filter(t => t.type === 'debit' && (t as any).status === 'completed')
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }, [affiliate?.transactions]);
+    
+    const paginatedPayouts = useMemo(() => {
+        const startIndex = payoutsPage * ITEMS_PER_PAGE;
+        return payoutTransactions.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    }, [payoutTransactions, payoutsPage]);
+
+    const totalPayoutPages = Math.ceil(payoutTransactions.length / ITEMS_PER_PAGE);
+
+    if (!config || !affiliate) {
+        return (
+            <div className="flex h-[80vh] w-full items-center justify-center">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            </div>
+        );
+    }
+    
+    return (
+        <div className="space-y-6">
+            <h1 className="text-3xl font-bold font-headline">My Wallet</h1>
+            <p className="text-muted-foreground">Manage your earnings, credits, and transactions.</p>
+            
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <StatCard 
+                    icon={DollarSign} 
+                    title="Unclaimed Commission" 
+                    value={affiliate.unclaimedCommission || 0}
+                    isCurrency 
+                    footer="Ready to push to your wallet"
+                >
+                    <Button 
+                        size="sm" 
+                        className="w-full mt-2" 
+                        disabled={(affiliate.unclaimedCommission || 0) <= 0}
+                        onClick={handlePushToWallet}
+                    >
+                       Push to Wallet
+                    </Button>
+                </StatCard>
+                 <StatCard 
+                    icon={CreditCard} 
+                    title="Credit Balance" 
+                    value={affiliate.creditBalance || 0}
+                    valuePrefix={`BS `}
+                    footer={`Value: K${((affiliate.creditBalance || 0) * CREDIT_TO_MWK).toLocaleString()}`}
+                >
+                   <div className="flex gap-2 mt-2">
+                        <BuyCreditsDialog
+                            walletBalance={affiliate.myWallet || 0}
+                            onManualPayment={(details) => setPurchaseDetails(details)}
+                         />
+                        <SellCreditsDialog
+                            creditBalance={affiliate.creditBalance || 0}
+                            isOpen={isSellCreditsOpen}
+                            onOpenChange={setIsSellCreditsOpen}
+                            buyPrice={config?.admin?.buyPrice || 850}
+                        />
+                    </div>
+                </StatCard>
+                <BonusProgressDialog affiliate={affiliate} />
+                 <Card className="bg-gradient-to-br from-primary to-orange-500 text-white">
+                    <CardHeader>
+                        <div className="flex items-center justify-between">
+                            <CardTitle>Wallet Balance</CardTitle>
+                            <Wallet className="h-5 w-5" />
+                        </div>
+                         <CardDescription className="text-white/80">
+                           {affiliate.bonus > 0 ? `Includes K${affiliate.bonus.toLocaleString()} bonus` : 'Available for withdrawal'}
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-3xl font-bold">K{affiliate.myWallet.toLocaleString()}</p>
+                    </CardContent>
+                    <CardContent>
+                        <WithdrawDialog 
+                            commissionBalance={affiliate.myWallet || 0} 
+                            bonusBalance={affiliate.bonus || 0} 
+                            onWithdraw={handleWithdraw} 
+                            isVerified={true}
+                        />
+                    </CardContent>
+                 </Card>
+            </div>
+
+            <Tabs defaultValue="commissions">
+                <TabsList>
+                    <TabsTrigger value="commissions">Commissions</TabsTrigger>
+                    <TabsTrigger value="payouts">Payouts</TabsTrigger>
+                    <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="commissions" className="pt-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Commission History</CardTitle>
+                            <CardDescription>All incoming funds from sales and renewals.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                                {commissionTransactions.map(t => (
+                                    <div key={t.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
+                                                <TrendingUp className="h-4 w-4 text-green-600" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-medium">{t.description}</p>
+                                                <p className="text-xs text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
+                                            </div>
+                                        </div>
+                                        <p className="text-sm font-semibold text-green-600">+ K{t.amount.toLocaleString()}</p>
+                                    </div>
+                                ))}
+                                {commissionTransactions.length === 0 && (
+                                     <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
+                                        <p className="text-muted-foreground">No commission transactions found.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                <TabsContent value="payouts" className="pt-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Payout History (Pending/Processing)</CardTitle>
+                            <CardDescription>Your history of withdrawals that are not yet complete.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                             <div className="space-y-4">
+                                {paginatedPayouts.length > 0 ? paginatedPayouts.map(t => (
+                                    <div key={t.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100">
+                                                <TrendingDown className="h-4 w-4 text-red-600" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-medium">{t.description}</p>
+                                                <p className="text-xs text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
+                                            </div>
+                                        </div>
+                                        <p className="text-sm font-semibold text-red-600">- K{(t.amount).toLocaleString()}</p>
+                                    </div>
+                                )) : (
+                                    <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
+                                        <p className="text-muted-foreground">No pending payouts found.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </CardContent>
+                        {totalPayoutPages > 1 && (
+                            <CardContent className="pt-4 flex items-center justify-between">
+                                <span className="text-sm text-muted-foreground">Page {payoutsPage + 1} of {totalPayoutPages}</span>
+                                <div className="flex gap-2">
+                                    <Button variant="outline" size="sm" onClick={() => setPayoutsPage(p => p - 1)} disabled={payoutsPage === 0}>Previous</Button>
+                                    <Button variant="outline" size="sm" onClick={() => setPayoutsPage(p => p + 1)} disabled={payoutsPage >= totalPayoutPages - 1}>Next</Button>
+                                </div>
+                            </CardContent>
+                        )}
+                    </Card>
+                </TabsContent>
+                <TabsContent value="withdrawals" className="pt-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Completed Withdrawals</CardTitle>
+                            <CardDescription>Your history of completed withdrawals.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                             <div className="space-y-4">
+                                {withdrawalTransactions.map(t => (
+                                    <div key={t.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
+                                                <TrendingDown className="h-4 w-4 text-gray-600" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-medium">{t.description}</p>
+                                                <p className="text-xs text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
+                                            </div>
+                                        </div>
+                                        <p className="text-sm font-semibold text-gray-600">- K{(t.amount).toLocaleString()}</p>
+                                    </div>
+                                ))}
+                                {withdrawalTransactions.length === 0 && (
+                                     <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
+                                        <p className="text-muted-foreground">No completed withdrawals.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
+        </div>
+    );
+}
+
