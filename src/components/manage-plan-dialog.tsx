@@ -230,13 +230,13 @@ const PlanCard = ({
                                         className="text-4xl font-bold tracking-tight" 
                                         style={{ color: cardTextColor }}
                                     >
-                                        {plan.price}
+                                        K{plan.price.toLocaleString()}
                                     </span>
                                     <span 
                                         className="text-base font-medium"
                                         style={{ color: isPopular ? 'rgba(255, 255, 255, 0.7)' : 'rgba(255, 255, 255, 0.5)' }}
                                     >
-                                        /period
+                                        /month
                                     </span>
                                 </>
                             )}
@@ -509,7 +509,7 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
                                     onBuyClick={currentPlanPurchase ? handleDowngrade : () => {}}
                                 />
                             )}
-                            {config?.plans?.map(plan => {
+                            {(config?.plans || []).map(plan => {
                                 const { discounted, original, isDiscounted } = calculatePrice(
                                     plan.price, 
                                     selectedPeriod, 
@@ -528,8 +528,8 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
                                         </span>
                                     </div>
                                 ) : (
-                                    <span className="text-4xl font-bold tracking-tight">
-                                        {discounted}
+                                     <span className="text-4xl font-bold tracking-tight">
+                                        K{plan.price.toLocaleString()}
                                     </span>
                                 );
                                 
