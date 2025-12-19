@@ -34,7 +34,6 @@ import {
   Rocket,
   X,
   Eye,
-  EyeOff,
   Settings2,
   Monitor,
   Tablet,
@@ -76,7 +75,7 @@ interface PlanSettingsDialogProps {
   onSave: (planName: string, customization: PlanCustomization) => void;
 }
 
-// Image Uploader Component with persistence
+// Image Uploader Component
 const ImageUploader = ({
   value,
   onChange,
@@ -207,6 +206,7 @@ const ImageUploader = ({
     </div>
   );
 };
+
 
 // Settings Section Component
 const SettingsSection = ({
@@ -526,7 +526,7 @@ const PlanPreviewCard = ({
             >
               <Check className="h-3 w-3" />
             </div>
-            <span className="text-sm leading-relaxed opacity-90">
+            <span className="text-xs leading-relaxed opacity-90 sm:text-sm">
               {feature}
             </span>
           </div>
@@ -913,7 +913,7 @@ export function PlanSettingsDialog({
                             onChange={(e) =>
                               handleChange('customDescription', e.target.value)
                             }
-                            placeholder="Plan description..."
+                            placeholder="Short description for the plan..."
                           />
                         </FormField>
 
@@ -994,7 +994,7 @@ export function PlanSettingsDialog({
             </ScrollArea>
           </div>
 
-          {/* Preview Panel */}
+          {/* Right Panel - Live Preview */}
           <div
             className={cn(
               'flex flex-1 flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950',
@@ -1038,20 +1038,13 @@ export function PlanSettingsDialog({
         <div className="flex-shrink-0 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-4">
             <p className="hidden text-sm text-muted-foreground lg:block">
-              Changes will be applied when you save.
+              Changes will be applied when you click &ldquo;Save Changes&rdquo;
             </p>
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={onClose}
-                className="flex-1 sm:flex-none"
-              >
+            <div className="flex w-full gap-3 sm:w-auto">
+              <Button variant="outline" onClick={onClose} className="flex-1 sm:flex-none">
                 Cancel
               </Button>
-              <Button
-                onClick={handleSave}
-                className="flex-1 gap-2 sm:flex-none"
-              >
+              <Button onClick={handleSave} className="flex-1 gap-2 sm:flex-none">
                 <Check className="h-4 w-4" />
                 Save Changes
               </Button>
