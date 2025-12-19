@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, Suspense, useCallback } from 'react';
@@ -19,8 +20,8 @@ import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle as ShadcnDialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
-import { Progress } from '@/components/ui/progress';
+import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
 
 
 const formSchema = z.object({
@@ -315,13 +316,13 @@ function VerifyPurchaseContent() {
         if (order) {
              return (
                 <div className="mt-6 space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                    <div className="flex flex-col md:flex-row gap-6">
                         {order.receipt && order.receipt !== 'none' ? (
-                            <div className="md:w-full">
+                            <div className="md:w-1/2 flex-shrink-0">
                                 <h3 className="text-sm font-medium mb-2">Transaction Receipt</h3>
                                 <div className="relative group">
-                                    <div className="border rounded-md p-2 bg-muted/50 h-80 overflow-hidden">
-                                        <Image src={order.receipt} alt="Transaction Receipt" width={400} height={400} className="rounded-md w-full h-full object-contain" />
+                                    <div className="border rounded-md p-2 bg-muted/50 h-64 overflow-hidden">
+                                        <Image src={order.receipt} alt="Transaction Receipt" width={400} height={400} className="rounded-md w-full h-full object-cover" />
                                     </div>
                                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                                         <Dialog>
@@ -340,7 +341,7 @@ function VerifyPurchaseContent() {
                                 </div>
                             </div>
                         ) : (
-                             <div className="md:w-full flex items-center justify-center h-80 border-2 border-dashed rounded-md bg-muted/30">
+                             <div className="md:w-1/2 flex-shrink-0 flex items-center justify-center h-64 border-2 border-dashed rounded-md bg-muted/30">
                                 <p className="text-sm text-muted-foreground">No receipt was uploaded.</p>
                              </div>
                         )}
@@ -412,15 +413,6 @@ function VerifyPurchaseContent() {
                                         </p>
                                     </AlertDescription>
                                 </div>
-                                {!order.isAcknowledged && (
-                                    <Button
-                                        variant="outline"
-                                        className="border-current text-current hover:bg-destructive/10 hover:text-current"
-                                        onClick={handleAcknowledgeAndRedirect}
-                                    >
-                                        Understood
-                                    </Button>
-                                )}
                             </div>
                         </Alert>
                     )}
@@ -502,5 +494,6 @@ export default function OfficeVerifyPurchasePage() {
         </div>
     )
 }
+
 
     
