@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo } from 'react';
@@ -20,7 +21,7 @@ import { Label } from '@/components/ui/label';
 import { PurchaseDialog, type PlanDetails } from './purchase-dialog';
 import { useRouter } from 'next/navigation';
 import { PlanSettingsDialog } from '@/components/plan-settings-dialog';
-
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const planLevels: Record<string, number> = {
   'Free Trial': 0,
@@ -37,7 +38,7 @@ const PlanIcon = ({ iconName, bgColor, iconColor }: { iconName?: string; bgColor
     const Icon = iconName ? iconMap[iconName] : Package;
     return (
         <div 
-            className="h-12 w-12 rounded-xl flex items-center justify-center" 
+            className="h-12 w-12 rounded-xl flex items-center justify-center flex-shrink-0" 
             style={{ backgroundColor: bgColor || 'rgba(99, 102, 241, 0.15)' }}
         >
             <Icon style={{ color: iconColor || 'rgb(99, 102, 241)' }} className="h-6 w-6" />
@@ -45,9 +46,21 @@ const PlanIcon = ({ iconName, bgColor, iconColor }: { iconName?: string; bgColor
     )
 };
 
-
-const PlanCard = ({ plan, isCurrent = false, cta, className, onBuyClick, onCustomizeClick }: { plan: Plan, isCurrent?: boolean, cta: string, className?: string, onBuyClick: () => void, onCustomizeClick?: () => void }) => {
-    
+const PlanCard = ({ 
+    plan, 
+    isCurrent = false, 
+    cta, 
+    className, 
+    onBuyClick, 
+    onCustomizeClick 
+}: { 
+    plan: Plan, 
+    isCurrent?: boolean, 
+    cta: string, 
+    className?: string, 
+    onBuyClick: () => void, 
+    onCustomizeClick?: () => void 
+}) => {
     const { customization } = plan;
     const isPopular = customization?.isRecommended;
     
@@ -65,11 +78,10 @@ const PlanCard = ({ plan, isCurrent = false, cta, className, onBuyClick, onCusto
 
     const displayHeaderImage = headerImage || customization?.headerBgImage;
 
-
     return (
         <Card 
           className={cn(
-              "flex flex-col h-full relative overflow-hidden transition-all duration-300 border-2",
+              "relative overflow-hidden transition-all duration-300 border-2 rounded-2xl",
               className
           )}
           style={{
@@ -78,45 +90,59 @@ const PlanCard = ({ plan, isCurrent = false, cta, className, onBuyClick, onCusto
             color: cardTextColor
           }}
         >
-            {isPopular && (
-                 <div 
-                    className="absolute top-4 right-4 text-xs font-bold px-2.5 py-1 rounded-full text-white z-10"
+            {/* Popular Badge */}
+            {isPopular && badgeText && (
+                <div 
+                    className="absolute top-4 right-4 text-xs font-bold px-3 py-1.5 rounded-full text-white z-10 shadow-lg"
                     style={{ backgroundColor: badgeColor }}
-                 >
+                >
                     {badgeText}
                 </div>
             )}
-            <CardHeader className="p-5 pb-4 relative">
-                 {displayHeaderImage && (
-                    <>
+
+            {/* Header Section */}
+            <CardHeader className="p-6 pb-4 relative">
+                {/* Header Background Image */}
+                {displayHeaderImage && (
+                    <div className="absolute inset-0 overflow-hidden">
                         {isImageLoading ? (
                             <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                                 <Loader2 className="h-6 w-6 animate-spin text-white/50" />
                             </div>
                         ) : (
                             <>
-                                <img src={displayHeaderImage} alt="Header background" className="absolute inset-0 w-full h-full object-cover" />
+                                <img 
+                                    src={displayHeaderImage} 
+                                    alt="Header background" 
+                                    className="absolute inset-0 w-full h-full object-cover" 
+                                />
                                 <div 
                                     className="absolute inset-0 bg-black"
-                                    style={{ opacity: 1 - (customization.headerBgImageOpacity ?? 1) }}
+                                    style={{ opacity: 1 - (customization?.headerBgImageOpacity ?? 1) }}
                                 />
                             </>
                         )}
-                    </>
+                    </div>
                 )}
-                <div className="relative">
-                    <div className="flex items-start gap-3 mb-4">
+
+                {/* Header Content */}
+                <div className="relative z-10">
+                    {/* Icon and Title */}
+                    <div className="flex items-start gap-4 mb-5">
                         <PlanIcon 
                             iconName={customization?.icon}
                             bgColor={isPopular ? 'rgba(255, 255, 255, 0.15)' : undefined}
                             iconColor={isPopular ? 'rgb(255, 255, 255)' : undefined}
                         />
-                        <div className="flex-1">
-                            <CardTitle className="text-lg font-bold mb-1" style={{ color: cardTextColor }}>
+                        <div className="flex-1 min-w-0">
+                            <CardTitle 
+                                className="text-xl font-bold mb-1.5 truncate" 
+                                style={{ color: cardTextColor }}
+                            >
                                 {customization?.customTitle || plan.name}
                             </CardTitle>
                             <CardDescription 
-                                className="text-xs leading-relaxed"
+                                className="text-sm leading-relaxed line-clamp-2"
                                 style={{ color: isPopular ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.6)' }}
                             >
                                 {customization?.customDescription || plan.features[0]}
@@ -124,51 +150,100 @@ const PlanCard = ({ plan, isCurrent = false, cta, className, onBuyClick, onCusto
                         </div>
                     </div>
                     
+                    {/* Price */}
                     {customization?.hidePrice ? (
-                        <div className="h-[50px] flex items-center">
-                            <span className="text-2xl font-bold" style={{ color: cardTextColor }}>Contact us</span>
+                        <div className="h-14 flex items-center">
+                            <span className="text-2xl font-bold" style={{ color: cardTextColor }}>
+                                Contact us
+                            </span>
                         </div>
                     ) : (
-                        <div className="flex items-baseline gap-1.5">
-                            <span className="text-3xl font-bold tracking-tight" style={{ color: cardTextColor }}>
-                            {plan.price}
-                            </span>
+                        <div className="flex items-baseline gap-2">
+                            {typeof plan.price === 'object' ? (
+                                plan.price
+                            ) : (
+                                <>
+                                    <span 
+                                        className="text-4xl font-bold tracking-tight" 
+                                        style={{ color: cardTextColor }}
+                                    >
+                                        {plan.price}
+                                    </span>
+                                    <span 
+                                        className="text-base font-medium"
+                                        style={{ color: isPopular ? 'rgba(255, 255, 255, 0.7)' : 'rgba(255, 255, 255, 0.5)' }}
+                                    >
+                                        /period
+                                    </span>
+                                </>
+                            )}
                         </div>
                     )}
                 </div>
             </CardHeader>
-            <CardContent className="flex-grow space-y-4 px-5 pb-5">
-                 <Button 
-                    className={cn("w-full text-sm font-semibold h-10 rounded-lg transition-all")}
+
+            {/* Content Section */}
+            <CardContent className="p-6 pt-2 space-y-5">
+                {/* CTA Button */}
+                <Button 
+                    className={cn(
+                        "w-full text-sm font-semibold h-11 rounded-xl transition-all",
+                        cta === 'Current Plan' && "opacity-60 cursor-not-allowed"
+                    )}
                     style={{
-                        backgroundColor: isPopular ? 'rgb(255, 107, 53)' : 'rgba(255, 255, 255, 0.1)',
+                        backgroundColor: isPopular ? badgeColor : 'rgba(255, 255, 255, 0.1)',
                         color: isPopular ? 'white' : cardTextColor,
-                        border: isPopular ? 'none' : '1px solid rgba(255, 255, 255, 0.1)'
+                        border: isPopular ? 'none' : '1px solid rgba(255, 255, 255, 0.15)'
                     }}
                     onClick={onBuyClick}
                     disabled={cta === 'Current Plan'}
-                 >
+                >
                     {customization?.hidePrice ? 'Contact Us' : (customization?.ctaText || cta)}
                 </Button>
                 
-                <div className="space-y-2.5 pt-1">
+                {/* Features List */}
+                <div className="space-y-3">
                     {plan.features.slice(1).map((feature, index) => (
-                        <div key={index} className="flex items-start gap-2.5">
+                        <div key={index} className="flex items-start gap-3">
                             <div 
-                                className="mt-0.5 rounded-full p-0.5 flex-shrink-0"
-                                style={{ backgroundColor: isPopular ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.1)' }}
+                                className="mt-0.5 rounded-full p-1 flex-shrink-0"
+                                style={{ 
+                                    backgroundColor: isPopular 
+                                        ? 'rgba(255, 255, 255, 0.2)' 
+                                        : 'rgba(255, 255, 255, 0.1)' 
+                                }}
                             >
-                                <Check className="h-3 w-3" style={{ color: cardTextColor }} />
+                                <Check 
+                                    className="h-3 w-3" 
+                                    style={{ color: cardTextColor }} 
+                                />
                             </div>
                             <span 
-                                className="text-xs leading-relaxed flex-1"
-                                style={{ color: isPopular ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.7)' }}
+                                className="text-sm leading-relaxed"
+                                style={{ 
+                                    color: isPopular 
+                                        ? 'rgba(255, 255, 255, 0.9)' 
+                                        : 'rgba(255, 255, 255, 0.7)' 
+                                }}
                             >
                                 {feature}
                             </span>
                         </div>
                     ))}
                 </div>
+
+                {/* Current Plan Indicator */}
+                {isCurrent && cta === 'Current Plan' && (
+                    <div 
+                        className="text-center text-xs font-medium py-2 rounded-lg"
+                        style={{ 
+                            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                            color: cardTextColor 
+                        }}
+                    >
+                        ✓ Your current plan
+                    </div>
+                )}
             </CardContent>
         </Card>
     );
@@ -263,7 +338,7 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
         setIsManagePlanOpen(false);
     };
     
-     const handleSaveCustomization = (planName: string, customization: PlanCustomization) => {
+    const handleSaveCustomization = (planName: string, customization: PlanCustomization) => {
         if (!config) return;
         
         const cleanCustomization: PlanCustomization = {
@@ -280,6 +355,8 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
 
     const hasCustomFreeTrial = useMemo(() => config?.plans?.some(p => p.name === 'Free Trial'), [config?.plans]);
 
+    const totalPlans = (hasCustomFreeTrial ? 0 : 1) + (config?.plans?.length || 0);
+
     return (
         <>
         <Dialog open={isManagePlanOpen} onOpenChange={setIsManagePlanOpen}>
@@ -289,73 +366,135 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
                 </Button>
             </DialogTrigger>
             
-            <DialogContent className="max-w-6xl w-[90vw] h-[90vh] flex flex-col p-4 sm:p-6 bg-gradient-to-br from-slate-950 to-slate-900 border-slate-800">
-                <DialogHeader className="flex-shrink-0 mb-4 flex flex-row items-center justify-between">
-                    <div>
-                        <DialogTitle className="text-2xl font-headline text-white">Manage Your Plan</DialogTitle>
-                        <DialogDescription className="text-slate-400 text-sm">
-                            Choose the plan that best fits your business needs.
-                        </DialogDescription>
+            <DialogContent className="max-w-7xl w-[95vw] h-[95vh] max-h-[95vh] flex flex-col p-0 gap-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border-slate-800 overflow-hidden">
+                {/* Fixed Header */}
+                <div className="flex-shrink-0 p-4 sm:p-6 pb-4 border-b border-slate-800/50">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                            <DialogTitle className="text-2xl font-bold text-white">
+                                Manage Your Plan
+                            </DialogTitle>
+                            <DialogDescription className="text-slate-400 text-sm mt-1">
+                                Choose the plan that best fits your business needs.
+                            </DialogDescription>
+                        </div>
+                        <div className="w-full sm:w-auto sm:min-w-[180px]">
+                            <Label htmlFor="period-select" className="sr-only">
+                                Select Billing Period
+                            </Label>
+                            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+                                <SelectTrigger 
+                                    id="period-select" 
+                                    className="h-10 bg-slate-800/50 border-slate-700 text-white"
+                                >
+                                    <SelectValue placeholder="Select period" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {periods.map(p => (
+                                        <SelectItem key={p.value} value={p.value}>
+                                            {p.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
-                    <div className="w-full max-w-[180px]">
-                        <Label htmlFor="period-select" className="text-xs font-medium sr-only">Select Billing Period</Label>
-                         <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-                            <SelectTrigger id="period-select" className="h-9">
-                                <SelectValue placeholder="Select period" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {periods.map(p => (
-                                    <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </DialogHeader>
+                </div>
 
-                <div className="flex-1 overflow-y-auto min-h-0 py-2 -mx-4 px-4">
-                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch max-w-5xl mx-auto">
-                        
-                        {!hasCustomFreeTrial && (
-                           <PlanCard 
-                                plan={{ 
-                                    name: "Free Trial", 
-                                    price: 0, 
-                                    features: [
-                                        "30 Invoices",
-                                        "30 Quotations", 
-                                        "50 Products"
-                                    ], 
-                                    customization: {} 
-                                }}
-                                isCurrent={!currentPlanPurchase}
-                                cta={currentPlanPurchase ? "Downgrade to Trial" : "Current Plan"}
-                                onBuyClick={currentPlanPurchase ? handleDowngrade : () => {}}
-                            />
-                        )}
-
-                        {config?.plans?.map(plan => {
-                            const { discounted, original, isDiscounted } = calculatePrice(plan.price, selectedPeriod, plan.customization?.discountValue, plan.customization?.discountType, plan.customization?.discountMonths);
-                            
-                            const displayPrice = isDiscounted ? (
-                                <div className="flex items-baseline gap-1.5">
-                                    <span className="text-base line-through opacity-60 self-start mt-1">{original}</span>
-                                    <span className="text-3xl font-bold">{discounted}</span>
-                                </div>
-                            ) : discounted;
-                            
-                            return (
-                                <PlanCard
-                                    key={plan.name}
-                                    plan={{...plan, price: displayPrice as any}}
-                                    isCurrent={currentPlanPurchase?.planName === plan.name}
-                                    cta={getPlanCTA(plan)}
-                                    onBuyClick={() => handleBuyClick(plan)}
-                                    onCustomizeClick={() => setEditingPlan(plan)}
-                                    className={plan.customization?.isRecommended ? "md:scale-105 shadow-2xl shadow-indigo-500/20" : ""}
+                {/* Scrollable Content Area */}
+                <ScrollArea className="flex-1 min-h-0">
+                    <div className="p-4 sm:p-6 pt-4">
+                        {/* Plans Grid - Auto-fit columns based on content */}
+                        <div 
+                            className={cn(
+                                "grid gap-6 mx-auto",
+                                // Responsive grid based on number of plans
+                                totalPlans === 1 && "max-w-md grid-cols-1",
+                                totalPlans === 2 && "max-w-3xl grid-cols-1 md:grid-cols-2",
+                                totalPlans >= 3 && "max-w-6xl grid-cols-1 md:grid-cols-2 lg:grid-cols-3",
+                                totalPlans >= 4 && "max-w-7xl grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4",
+                            )}
+                        >
+                            {/* Free Trial Card (if no custom one exists) */}
+                            {!hasCustomFreeTrial && (
+                                <PlanCard 
+                                    plan={{ 
+                                        name: "Free Trial", 
+                                        price: 0, 
+                                        features: [
+                                            "Get started for free",
+                                            "30 Invoices per month",
+                                            "30 Quotations per month", 
+                                            "50 Products catalog",
+                                            "Basic reporting",
+                                            "Email support"
+                                        ], 
+                                        customization: {
+                                            icon: 'Gift',
+                                            customDescription: 'Perfect for trying out our platform'
+                                        } 
+                                    }}
+                                    isCurrent={!currentPlanPurchase}
+                                    cta={currentPlanPurchase ? "Downgrade to Trial" : "Current Plan"}
+                                    onBuyClick={currentPlanPurchase ? handleDowngrade : () => {}}
                                 />
-                            )
-                        })}
+                            )}
+
+                            {/* Dynamic Plans */}
+                            {(config?.plans || []).map(plan => {
+                                const { discounted, original, isDiscounted } = calculatePrice(
+                                    plan.price, 
+                                    selectedPeriod, 
+                                    plan.customization?.discountValue, 
+                                    plan.customization?.discountType, 
+                                    plan.customization?.discountMonths
+                                );
+                                
+                                const displayPrice = isDiscounted ? (
+                                    <div className="flex items-baseline gap-2 flex-wrap">
+                                        <span className="text-lg line-through opacity-50">
+                                            {original}
+                                        </span>
+                                        <span className="text-4xl font-bold tracking-tight">
+                                            {discounted}
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <span className="text-4xl font-bold tracking-tight">
+                                        {discounted}
+                                    </span>
+                                );
+                                
+                                return (
+                                    <PlanCard
+                                        key={plan.name}
+                                        plan={{...plan, price: displayPrice as any}}
+                                        isCurrent={currentPlanPurchase?.planName === plan.name}
+                                        cta={getPlanCTA(plan)}
+                                        onBuyClick={() => handleBuyClick(plan)}
+                                        onCustomizeClick={() => setEditingPlan(plan)}
+                                        className={cn(
+                                            plan.customization?.isRecommended && [
+                                                "ring-2 ring-indigo-500/50",
+                                                "shadow-2xl shadow-indigo-500/20",
+                                                "lg:scale-105 lg:z-10"
+                                            ]
+                                        )}
+                                    />
+                                )
+                            })}
+                        </div>
+
+                        {/* Bottom Spacing for scroll */}
+                        <div className="h-4" />
                     </div>
+                </ScrollArea>
+
+                {/* Optional Fixed Footer */}
+                <div className="flex-shrink-0 p-4 sm:p-6 pt-4 border-t border-slate-800/50 bg-slate-900/50">
+                    <p className="text-center text-xs text-slate-500">
+                        All plans include 24/7 support • Cancel anytime • Secure payment
+                    </p>
                 </div>
             </DialogContent>
         </Dialog>
@@ -378,3 +517,5 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
         </>
     );
 }
+
+    
