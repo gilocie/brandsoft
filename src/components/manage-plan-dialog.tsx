@@ -15,13 +15,11 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Button } from '@/components/ui/button';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useBrandsoft, type Purchase } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Plan } from '@/hooks/use-brandsoft';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { PurchaseDialog, type PlanDetails } from './purchase-dialog';
 import { useRouter } from 'next/navigation';
-
-type Plan = 'Free Trial' | 'Standard' | 'Pro' | 'Enterprise' | 'Credit Purchase'; // Allow Credit Purchase
 
 const planLevels: Record<string, number> = {
   'Free Trial': 0,
@@ -70,11 +68,6 @@ const periods = [
     { value: 'once', label: 'Once OFF' },
 ];
 
-const planBasePrices = {
-    standard: 5000,
-    pro: 15000,
-};
-
 export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon?: boolean, isExpired?: boolean }) {
     const { config, downgradeToTrial } = useBrandsoft();
     const router = useRouter();
@@ -83,7 +76,7 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
     const [purchasePlan, setPurchasePlan] = useState<PlanDetails | null>(null);
     const [isManagePlanOpen, setIsManagePlanOpen] = useState(false);
 
-    const currentPlan = useMemo(() => {
+    const currentPlanPurchase = useMemo(() => {
         if (!config?.purchases || config.purchases.length === 0) return null;
         const active = config.purchases.find(p => p.status === 'active');
         if (active) return active;
@@ -91,8 +84,7 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
         return expired[0] || null;
     }, [config?.purchases]);
 
-    const calculatePrice = (plan: 'standard' | 'pro', period: string) => {
-        const basePrice = planBasePrices[plan];
+    const calculatePrice = (basePrice: number, period: string) => {
         const months = Number(period);
         if(!isNaN(months)) {
             const total = basePrice * months;
@@ -105,27 +97,26 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
         return `${currencyCode}${basePrice.toLocaleString()}`;
     };
 
-    const standardPrice = useMemo(() => calculatePrice('standard', selectedPeriod), [selectedPeriod, currencyCode]);
-    const proPrice = useMemo(() => calculatePrice('pro', selectedPeriod), [selectedPeriod, currencyCode]);
     const selectedPeriodLabel = periods.find(p => p.value === selectedPeriod)?.label;
     
     const handleBuyClick = (planName: string, price: string, period: string) => {
         setPurchasePlan({ name: planName, price, period });
     };
 
-    const getPlanCTA = (targetPlan: string) => {
-        if (currentPlan?.planName === targetPlan) {
-            return currentPlan.status === 'active' ? "Current Plan" : "Renew Expired Plan";
+    const getPlanCTA = (targetPlan: Plan) => {
+        const currentPlanName = currentPlanPurchase?.planName || 'Free Trial';
+        if (currentPlanName === targetPlan.name) {
+            return currentPlanPurchase?.status === 'active' ? "Current Plan" : "Renew Expired Plan";
         }
-        if (!currentPlan) return "Get Started"; // On Free Trial
+        if (!currentPlanPurchase) return "Get Started"; // On Free Trial
 
-        const currentLevel = planLevels[currentPlan.planName as Plan] ?? 0;
-        const targetLevel = planLevels[targetPlan as Plan];
+        const currentLevel = planLevels[currentPlanName] ?? 0;
+        const targetLevel = planLevels[targetPlan.name] ?? 0;
 
         if(targetLevel < currentLevel) {
-            return `Downgrade to ${targetPlan}`;
+            return `Downgrade to ${targetPlan.name}`;
         }
-        return `Upgrade to ${targetPlan}`;
+        return `Upgrade to ${targetPlan.name}`;
     };
     
     const handlePurchaseSuccess = () => {
@@ -178,39 +169,26 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
                             title="Free Trial" 
                             price={`${currencyCode}0`}
                             features={["Up to 10 invoices", "Up to 10 customers", "Basic templates"]}
-                            isCurrent={!currentPlan}
-                            cta={currentPlan ? "Downgrade to Trial" : "Current Plan"}
-                            onBuyClick={currentPlan ? handleDowngrade : () => {}}
+                            isCurrent={!currentPlanPurchase}
+                            cta={currentPlanPurchase ? "Downgrade to Trial" : "Current Plan"}
+                            onBuyClick={currentPlanPurchase ? handleDowngrade : () => {}}
                         />
 
-                        <PlanCard 
-                            title="Standard" 
-                            price={standardPrice}
-                            features={["Unlimited invoices", "Unlimited customers", "Premium templates", "Email support"]}
-                            isCurrent={currentPlan?.planName === 'Standard'}
-                            cta={getPlanCTA("Standard")}
-                            periodLabel={selectedPeriodLabel}
-                            onBuyClick={() => handleBuyClick("Standard", standardPrice, selectedPeriodLabel || '1 Month')}
-                        />
-
-                         <PlanCard 
-                            title="Pro" 
-                            price={proPrice}
-                            features={["All Standard features", "API access", "Priority support", "Advanced analytics"]}
-                            isCurrent={currentPlan?.planName === 'Pro'}
-                            cta={getPlanCTA("Pro")}
-                            periodLabel={selectedPeriodLabel}
-                            onBuyClick={() => handleBuyClick("Pro", proPrice, selectedPeriodLabel || '1 Month')}
-                        />
-
-                         <PlanCard 
-                            title="Enterprise" 
-                            price="Custom"
-                            features={["All Pro features", "Dedicated support", "Custom integrations", "On-premise option"]}
-                             isCurrent={currentPlan?.planName === 'Enterprise'}
-                            cta={getPlanCTA("Enterprise")}
-                            onBuyClick={() => { window.open('https://wa.me/265991972336', '_blank') }}
-                        />
+                        {config?.plans?.map(plan => {
+                             const price = calculatePrice(plan.price, selectedPeriod);
+                             return (
+                                <PlanCard
+                                    key={plan.name}
+                                    title={plan.name}
+                                    price={price}
+                                    features={plan.features}
+                                    isCurrent={currentPlanPurchase?.planName === plan.name}
+                                    cta={getPlanCTA(plan)}
+                                    periodLabel={selectedPeriodLabel}
+                                    onBuyClick={() => handleBuyClick(plan.name, price, selectedPeriodLabel || '1 Month')}
+                                />
+                             )
+                        })}
                     </div>
                 </div>
             </DialogContent>
@@ -228,4 +206,3 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
     );
 }
 
-    
