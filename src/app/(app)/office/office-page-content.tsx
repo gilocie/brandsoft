@@ -163,6 +163,46 @@ export function OfficePageContent() {
     });
   };
   
+    const handleWithdraw = (amount: number, source: 'commission' | 'combined' | 'bonus', method: string) => {
+        if (!config || !affiliate) return;
+        
+        const TRANSACTION_FEE = 3000; // Example fee
+
+        const newTransaction: Transaction = {
+          id: `TRN-WTH-${Date.now()}`,
+          date: new Date().toISOString(),
+          description: `Withdrawal via ${method}`,
+          amount: amount,
+          type: 'debit',
+          status: 'pending',
+        } as any;
+
+        const newAffiliateData = { ...affiliate };
+        
+        const amountToWithdraw = amount;
+
+        if (source === 'combined') {
+            let remainingAmount = amountToWithdraw;
+            const bonusDeduction = Math.min(newAffiliateData.bonus || 0, remainingAmount);
+            newAffiliateData.bonus = (newAffiliateData.bonus || 0) - bonusDeduction;
+            remainingAmount -= bonusDeduction;
+            if (remainingAmount > 0) {
+                newAffiliateData.myWallet = (newAffiliateData.myWallet || 0) - remainingAmount;
+            }
+        } else { // 'commission'
+            newAffiliateData.myWallet = (newAffiliateData.myWallet || 0) - amountToWithdraw;
+        }
+        
+        newAffiliateData.transactions = [newTransaction, ...(affiliate.transactions || [])];
+        
+        saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
+
+        toast({
+            title: 'Withdrawal Request Submitted!',
+            description: `Your request for K${amount.toLocaleString()} is being processed.`,
+        });
+    }
+
   const recentTransactions = useMemo(() => {
     if (!affiliate?.transactions) return [];
     return affiliate.transactions
@@ -365,12 +405,6 @@ export function OfficePageContent() {
                                 walletBalance={affiliate.myWallet || 0}
                                 onManualPayment={(details) => setPurchaseDetails(details)}
                              />
-                             <SellCreditsDialog
-                                creditBalance={affiliate.creditBalance || 0}
-                                buyPrice={config.admin?.buyPrice || 850}
-                                isOpen={isSellCreditsOpen}
-                                onOpenChange={setIsSellCreditsOpen}
-                             />
                         </div>
                     </StatCard>
                     <Card>
@@ -402,12 +436,12 @@ export function OfficePageContent() {
                             <p className="text-3xl font-bold">K{mwkBalance.toLocaleString()}</p>
                         </CardContent>
                         <CardContent>
-                            {/* <WithdrawDialog 
+                            <WithdrawDialog 
                                 commissionBalance={affiliate.myWallet || 0} 
                                 bonusBalance={bonusAmount} 
                                 onWithdraw={handleWithdraw} 
                                 isVerified={true}
-                            /> */}
+                            />
                         </CardContent>
                      </Card>
                 </div>
