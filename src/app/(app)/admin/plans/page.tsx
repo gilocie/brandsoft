@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -123,6 +124,7 @@ const AdminPlanCard = ({ plan, onEdit, onCustomize, onDelete }: { plan: Plan, on
                             <Trash2 className="mr-2 h-4 w-4" /> Delete
                         </DropdownMenuItem>
                     </DropdownMenuContent>
+            </DropdownMenu>
             </div>
              <CardHeader 
                 className="p-8 pb-6 relative" 
