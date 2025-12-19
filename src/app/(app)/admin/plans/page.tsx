@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -125,41 +123,50 @@ const AdminPlanCard = ({ plan, onEdit, onCustomize, onDelete }: { plan: Plan, on
                             <Trash2 className="mr-2 h-4 w-4" /> Delete
                         </DropdownMenuItem>
                     </DropdownMenuContent>
-                </DropdownMenu>
             </div>
              <CardHeader 
-                className="p-8 pb-6 bg-cover bg-center" 
-                style={{ backgroundImage: customization?.headerBgImage ? `url(${customization.headerBgImage})` : 'none', backgroundBlendMode: 'overlay', backgroundColor: 'rgba(0,0,0,0.3)' }}
+                className="p-8 pb-6 relative" 
             >
-                <div className="flex items-start gap-4 mb-6">
-                     <PlanIcon 
-                        iconName={customization?.icon}
-                        bgColor={isPopular ? 'rgba(255, 255, 255, 0.15)' : undefined}
-                        iconColor={isPopular ? 'rgb(255, 255, 255)' : undefined}
-                    />
-                    <div className="flex-1">
-                        <CardTitle className="text-2xl font-bold mb-2" style={{ color: cardTextColor }}>
-                            {customization?.customTitle || plan.name}
-                        </CardTitle>
-                        <CardDescription 
-                            className="text-sm leading-relaxed"
-                            style={{ color: isPopular ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.6)' }}
-                        >
-                            {customization?.customDescription || plan.features[0]}
-                        </CardDescription>
+                {customization?.headerBgImage && (
+                    <>
+                        <img src={customization.headerBgImage} alt="Header background" className="absolute inset-0 w-full h-full object-cover" />
+                        <div 
+                            className="absolute inset-0 bg-black"
+                            style={{ opacity: 1 - (customization.headerBgImageOpacity ?? 1) }}
+                        />
+                    </>
+                )}
+                 <div className="relative">
+                    <div className="flex items-start gap-4 mb-6">
+                        <PlanIcon 
+                            iconName={customization?.icon}
+                            bgColor={isPopular ? 'rgba(255, 255, 255, 0.15)' : undefined}
+                            iconColor={isPopular ? 'rgb(255, 255, 255)' : undefined}
+                        />
+                        <div className="flex-1">
+                            <CardTitle className="text-2xl font-bold mb-2" style={{ color: cardTextColor }}>
+                                {customization?.customTitle || plan.name}
+                            </CardTitle>
+                            <CardDescription 
+                                className="text-sm leading-relaxed"
+                                style={{ color: isPopular ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.6)' }}
+                            >
+                                {customization?.customDescription || plan.features[0]}
+                            </CardDescription>
+                        </div>
                     </div>
-                </div>
-                
-                <div className="flex items-baseline gap-2">
-                    <span className="text-5xl font-bold tracking-tight" style={{ color: cardTextColor }}>
-                        K{plan.price.toLocaleString()}
-                    </span>
-                    <span 
-                        className="text-base font-medium"
-                        style={{ color: isPopular ? 'rgba(255, 255, 255, 0.7)' : 'rgba(255, 255, 255, 0.5)' }}
-                    >
-                        /month
-                    </span>
+                    
+                    <div className="flex items-baseline gap-2">
+                        <span className="text-5xl font-bold tracking-tight" style={{ color: cardTextColor }}>
+                            K{plan.price.toLocaleString()}
+                        </span>
+                        <span 
+                            className="text-base font-medium"
+                            style={{ color: isPopular ? 'rgba(255, 255, 255, 0.7)' : 'rgba(255, 255, 255, 0.5)' }}
+                        >
+                            /month
+                        </span>
+                    </div>
                 </div>
             </CardHeader>
             <CardContent className="flex-grow space-y-4 px-8 pb-8">
