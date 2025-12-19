@@ -293,6 +293,13 @@ function VerifyPurchaseContent() {
     };
     
     const affiliateCreditBalance = config?.affiliate?.creditBalance || 0;
+    
+    const contactNumber = useMemo(() => {
+        if (order?.affiliateId && config?.affiliate?.staffId === order.affiliateId && config.affiliate.phone) {
+            return config.affiliate.phone;
+        }
+        return '+265 991 972 336';
+    }, [order, config]);
 
     const renderContent = () => {
         if (isLoading) {
@@ -329,7 +336,7 @@ function VerifyPurchaseContent() {
              return (
                 <div className="mt-6 space-y-6">
                     <div className="flex flex-col md:flex-row gap-6">
-                        {order.receipt && order.receipt !== 'none' && (
+                        {order.receipt && order.receipt !== 'none' ? (
                             <div className="md:w-1/2 flex-shrink-0">
                                 <h3 className="text-sm font-medium mb-2">Transaction Receipt</h3>
                                 <div className="relative group">
@@ -352,12 +359,16 @@ function VerifyPurchaseContent() {
                                     </div>
                                 </div>
                             </div>
+                        ) : (
+                             <div className="md:w-1/2 flex-shrink-0 flex items-center justify-center h-64 border-2 border-dashed rounded-md bg-muted/30">
+                                <p className="text-sm text-muted-foreground">No receipt was uploaded.</p>
+                             </div>
                         )}
-                        <div className="flex-1">
+                        <div className="flex-1 flex flex-col">
                             <CardHeader className="p-0">
                                 <CardTitle>Order Details</CardTitle>
                             </CardHeader>
-                            <CardContent className="p-0 pt-4 space-y-2 text-sm">
+                            <CardContent className="flex-grow p-0 pt-4 space-y-2 text-sm">
                                 <p className="flex justify-between"><strong>Order ID:</strong> <span>{order.orderId}</span></p>
                                 <p className="flex justify-between"><strong>Plan:</strong> <span>{order.planName} ({order.planPeriod})</span></p>
                                 <p className="flex justify-between"><strong>Price:</strong> <span>{order.planPrice}</span></p>
@@ -368,6 +379,7 @@ function VerifyPurchaseContent() {
                                         "font-bold capitalize", 
                                         order.status === 'active' && "text-green-500",
                                         order.status === 'pending' && "text-amber-500",
+                                        order.status === 'processing' && "text-blue-500",
                                         order.status === 'declined' && "text-destructive",
                                         order.status === 'inactive' && "text-gray-500",
                                     )}>
@@ -375,7 +387,7 @@ function VerifyPurchaseContent() {
                                     </span>
                                 </p>
                             </CardContent>
-                             {isAdminMode && order.status === 'pending' && (
+                             {isAdminMode && (order.status === 'pending' || order.status === 'processing') && (
                                 <CardFooter className="p-0 pt-6 flex gap-2">
                                      <AlertDialog open={declineDialogOpen} onOpenChange={setDeclineDialogOpen}>
                                         <AlertDialogTrigger asChild>
@@ -416,15 +428,12 @@ function VerifyPurchaseContent() {
                                     <AlertDescription>
                                         <p>{order.declineReason}</p>
                                         <p className="mt-2 text-xs">
-                                            If you believe this is a mistake, please contact us on +265 991 972 336.
+                                            If you believe this is a mistake, please contact us on {contactNumber}.
                                         </p>
                                     </AlertDescription>
                                 </div>
                                 {!isAdminMode && !order.isAcknowledged && (
-                                    <Button
-                                        variant="destructive"
-                                        onClick={handleAcknowledgeAndRedirect}
-                                    >
+                                    <Button variant="destructive" onClick={handleAcknowledgeAndRedirect} className="bg-red-500 text-white hover:bg-red-600">
                                         Understood
                                     </Button>
                                 )}
