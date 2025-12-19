@@ -48,6 +48,8 @@ import {
   History,
   Wallet,
   Briefcase,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -60,6 +62,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { WalletBalance } from '@/components/wallet-balance';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { useTheme } from 'next-themes';
 
 const mainNavItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', enabledKey: null, roles: ['client'] },
@@ -127,11 +130,27 @@ const HeaderWalletCard = () => {
   )
 }
 
+function ThemeToggle() {
+    const { theme, setTheme } = useTheme();
+
+    return (
+        <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+        >
+            <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+            <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+            <span className="sr-only">Toggle theme</span>
+        </Button>
+    );
+}
+
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { config } = useBrandsoft();
-  const [role, setRole] = useState<'admin' | 'staff' | 'client'>('admin');
+  const [role, setRole] = useState<'admin' | 'staff' | 'client' | null>(null);
   const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
@@ -156,7 +175,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   
   useEffect(() => {
     if (hasMounted) {
-        localStorage.setItem('brandsoft-role', role);
+        localStorage.setItem('brandsoft-role', role || 'admin');
     }
   }, [role, hasMounted]);
 
@@ -175,7 +194,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, [role, pathname, router, hasMounted]);
 
   const getVisibleNavItems = (items: typeof mainNavItems, currentRole: typeof role) => {
-    if (!config) return [];
+    if (!config || !currentRole) return [];
     return items.filter(item => {
         const roleMatch = item.roles.includes(currentRole);
         if (!roleMatch) return false;
@@ -329,7 +348,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </h1>
           <div className="flex items-center gap-2 w-full sm:w-auto">
              <div className="sm:ml-auto flex-1 sm:flex-none">
-                <Select value={role} onValueChange={(value) => setRole(value as any)}>
+                <Select value={role || 'admin'} onValueChange={(value) => setRole(value as any)}>
                     <SelectTrigger className="w-full sm:w-[130px] h-9">
                         <SelectValue placeholder="Select a role" />
                     </SelectTrigger>
@@ -340,26 +359,31 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     </SelectContent>
                 </Select>
             </div>
-            {hasMounted && role === 'client' && (
+             {hasMounted && (
               <div className="flex items-center gap-2">
-                    <HeaderWalletCard />
-                    <Button variant="ghost" size="icon" asChild className="flex-shrink-0 relative">
-                        <Link href="/quotation-requests?subtab=incoming">
-                        <Bell className="h-6 w-6" />
-                        {notificationCount > 0 && (
-                            <span className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs font-bold text-destructive-foreground">
-                            {notificationCount}
-                            </span>
-                        )}
-                        <span className="sr-only">Notifications</span>
-                        </Link>
-                    </Button>
-                    <Button variant="ghost" size="icon" asChild className="flex-shrink-0">
-                        <Link href="/settings">
-                        <Settings className="h-5 w-5" />
-                        <span className="sr-only">Settings</span>
-                        </Link>
-                    </Button>
+                    {role === 'client' && <HeaderWalletCard />}
+                    <ThemeToggle />
+                    {role === 'client' && (
+                        <>
+                            <Button variant="ghost" size="icon" asChild className="flex-shrink-0 relative">
+                                <Link href="/quotation-requests?subtab=incoming">
+                                <Bell className="h-6 w-6" />
+                                {notificationCount > 0 && (
+                                    <span className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs font-bold text-destructive-foreground">
+                                    {notificationCount}
+                                    </span>
+                                )}
+                                <span className="sr-only">Notifications</span>
+                                </Link>
+                            </Button>
+                            <Button variant="ghost" size="icon" asChild className="flex-shrink-0">
+                                <Link href="/settings">
+                                <Settings className="h-5 w-5" />
+                                <span className="sr-only">Settings</span>
+                                </Link>
+                            </Button>
+                        </>
+                    )}
               </div>
             )}
           </div>
@@ -376,3 +400,4 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   );
 }
+
