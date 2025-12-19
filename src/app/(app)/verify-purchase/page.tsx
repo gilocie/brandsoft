@@ -422,8 +422,7 @@ function VerifyPurchaseContent() {
                                 </div>
                                 {!isAdminMode && !order.isAcknowledged && (
                                     <Button
-                                        variant="outline"
-                                        className="border-current text-current hover:bg-destructive/10 hover:text-current"
+                                        variant="destructive"
                                         onClick={handleAcknowledgeAndRedirect}
                                     >
                                         Understood
@@ -482,7 +481,7 @@ function VerifyPurchaseContent() {
                 {order && (
                     <CardFooter>
                         <Button asChild variant="outline">
-                            <Link href={isAdminMode ? '/office?tab=transactions' : '/history'}><Wallet className="mr-2 h-4 w-4" /> Return to {isAdminMode ? 'Office' : 'Wallet'}</Link>
+                            <Link href={isAdminMode ? '/office/orders' : '/history'}><Wallet className="mr-2 h-4 w-4" /> Return to {isAdminMode ? 'Orders' : 'Wallet'}</Link>
                         </Button>
                     </CardFooter>
                 )}
