@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -223,6 +224,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return config?.brand.businessName;
   }, [role, config?.brand.businessName]);
 
+  const isLinkActive = (href: string) => {
+    if (href === '/office') {
+      return pathname === '/office';
+    }
+    return pathname.startsWith(href);
+  };
+
   return (
     <SidebarProvider>
       <Sidebar>
@@ -267,7 +275,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <SidebarMenuItem key={item.href}>
                 <Link href={item.href} className="relative">
                   <SidebarMenuButton
-                    isActive={pathname.startsWith(item.href)}
+                    isActive={isLinkActive(item.href)}
                     tooltip={item.label}
                   >
                     <item.icon />
@@ -400,5 +408,3 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   );
 }
-
-    
