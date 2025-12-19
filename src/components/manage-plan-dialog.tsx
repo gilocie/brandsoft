@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo } from 'react';
@@ -11,9 +12,10 @@ import {
 } from '@/components/ui/dialog';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check, Star, Settings, Users, HardDrive, ShieldCheck, Contact, Package, Gem, Crown, Award, Gift, Rocket } from 'lucide-react';
+import { Check, Star, Settings, Users, HardDrive, ShieldCheck, Contact, Package, Gem, Crown, Award, Gift, Rocket, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBrandsoft, type Plan, type PlanCustomization } from '@/hooks/use-brandsoft';
+import { usePlanImage } from '@/hooks/use-plan-image';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { PurchaseDialog, type PlanDetails } from './purchase-dialog';
@@ -49,6 +51,8 @@ const PlanCard = ({ plan, isCurrent = false, cta, className, onBuyClick, onCusto
     
     const { customization } = plan;
     const isPopular = customization?.isRecommended;
+    
+    const { image: headerImage, isLoading: isImageLoading } = usePlanImage(plan.name, 'header');
 
     const cardBgColor = customization?.bgColor || (isPopular ? 'rgb(88, 80, 236)' : 'rgb(30, 30, 35)');
     const cardTextColor = customization?.textColor || 'rgb(255, 255, 255)';
@@ -59,6 +63,9 @@ const PlanCard = ({ plan, isCurrent = false, cta, className, onBuyClick, onCusto
     const backgroundStyle = customization?.backgroundType === 'gradient'
         ? { background: `linear-gradient(to bottom right, ${customization.backgroundGradientStart || '#3a3a3a'}, ${customization.backgroundGradientEnd || '#1a1a1a'})` }
         : { backgroundColor: cardBgColor };
+
+    const displayHeaderImage = headerImage || customization?.headerBgImage;
+
 
     return (
         <Card 
@@ -81,13 +88,21 @@ const PlanCard = ({ plan, isCurrent = false, cta, className, onBuyClick, onCusto
                 </div>
             )}
             <CardHeader className="p-5 pb-4 relative">
-                 {customization?.headerBgImage && (
+                 {displayHeaderImage && (
                     <>
-                        <img src={customization.headerBgImage} alt="Header background" className="absolute inset-0 w-full h-full object-cover" />
-                        <div 
-                            className="absolute inset-0 bg-black"
-                            style={{ opacity: 1 - (customization.headerBgImageOpacity ?? 1) }}
-                        />
+                        {isImageLoading ? (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                <Loader2 className="h-6 w-6 animate-spin text-white/50" />
+                            </div>
+                        ) : (
+                            <>
+                                <img src={displayHeaderImage} alt="Header background" className="absolute inset-0 w-full h-full object-cover" />
+                                <div 
+                                    className="absolute inset-0 bg-black"
+                                    style={{ opacity: 1 - (customization?.headerBgImageOpacity ?? 1) }}
+                                />
+                            </>
+                        )}
                     </>
                 )}
                 <div className="relative">
@@ -251,8 +266,14 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
     
      const handleSaveCustomization = (planName: string, customization: PlanCustomization) => {
         if (!config) return;
+        
+        const cleanCustomization: PlanCustomization = {
+            ...customization,
+            headerBgImage: customization.headerBgImage ? 'indexed-db' : '',
+        };
+        
         const updatedPlans = config.plans.map(p =>
-            p.name === planName ? { ...p, customization } : p
+            p.name === planName ? { ...p, customization: cleanCustomization } : p
         );
         saveConfig({ ...config, plans: updatedPlans }, {redirect: false});
         setEditingPlan(null);
@@ -316,7 +337,7 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
                         {config?.plans?.map(plan => {
                             const { discounted, original, isDiscounted } = calculatePrice(plan.price, selectedPeriod, plan.customization?.discountValue, plan.customization?.discountType, plan.customization?.discountMonths);
                             
-                             const displayPrice = isDiscounted ? (
+                            const displayPrice = isDiscounted ? (
                                 <div className="flex items-baseline gap-1.5">
                                     <span className="text-base line-through opacity-60 self-start mt-1">{original}</span>
                                     <span className="text-3xl font-bold">{discounted}</span>
