@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -99,8 +100,8 @@ export default function StaffWalletPage() {
     }
 
     const handleSellCredits = (amount: number) => {
-        if (!config || !affiliate) return;
-        const cashValue = amount * (config.admin?.buyPrice || 850);
+        if (!config || !affiliate || !config.admin) return;
+        const cashValue = amount * (config.admin.buyPrice || 850);
 
         const newAffiliateData: Affiliate = {
             ...affiliate,
@@ -117,8 +118,14 @@ export default function StaffWalletPage() {
                 ...(affiliate.transactions || []),
             ],
         };
+        
+        const newAdminSettings = {
+            ...config.admin,
+            creditsBoughtBack: (config.admin.creditsBoughtBack || 0) + amount,
+            revenueFromKeys: (config.admin.revenueFromKeys || 0) + cashValue, // Using this to track cost
+        };
 
-        saveConfig({ ...config, affiliate: newAffiliateData }, { revalidate: true });
+        saveConfig({ ...config, affiliate: newAffiliateData, admin: newAdminSettings }, { revalidate: true });
 
         toast({
             title: 'Credits Sold!',
@@ -340,3 +347,4 @@ export default function StaffWalletPage() {
         </div>
     );
 }
+

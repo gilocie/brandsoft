@@ -66,6 +66,7 @@ export default function AdminPage() {
         exchangeValue: 1000,
         availableCredits: 0,
         soldCredits: 0,
+        creditsBoughtBack: 0,
         isReserveLocked: false,
     }, [config?.admin]);
 
@@ -100,13 +101,9 @@ export default function AdminPage() {
                 affiliateName: config.affiliate?.fullName || 'N/A'
             }));
     }, [config?.affiliate]);
-
-    const pendingBsCreditWithdrawals = useMemo(() => {
-        return withdrawalRequests.filter(req => req.status === 'pending' && (req as any).method === 'bsCredits');
-    }, [withdrawalRequests]);
-
-    const totalPendingBsCreditAmount = pendingBsCreditWithdrawals.reduce((sum, req) => sum + req.amount, 0);
-    const totalPendingBsCredits = totalPendingBsCreditAmount / (adminSettings.exchangeValue || 1000);
+    
+    const creditsBoughtBack = adminSettings.creditsBoughtBack || 0;
+    const valueOfCreditsBought = creditsBoughtBack * (adminSettings.buyPrice || 0);
 
     const availableCreditsPercentage = useMemo(() => {
         if (!watchedMaxCredits || watchedMaxCredits === 0) return 0;
@@ -282,6 +279,7 @@ export default function AdminPage() {
             ...config.admin,
             soldCredits: 0,
             availableCredits: 0,
+            creditsBoughtBack: 0,
             revenueFromKeys: 0,
             revenueFromPlans: 0,
             keysSold: 0,
@@ -348,7 +346,12 @@ export default function AdminPage() {
 
             <div className="grid gap-4 md:grid-cols-3">
                 <StatCard title="Total Affiliates" value={totalAffiliates} icon={Users} />
-                 <StatCard title="BS Withdraw Requests" value={`BS ${(totalPendingBsCreditAmount).toLocaleString()}`} icon={Banknote} />
+                 <StatCard 
+                    title="Credits Bought Back" 
+                    value={`BS ${creditsBoughtBack.toLocaleString()}`}
+                    description={`Value: K${valueOfCreditsBought.toLocaleString()}`}
+                    icon={Banknote} 
+                />
                 <StatCard title="Pending Withdrawals" value={`K${totalPendingAmount.toLocaleString()}`} icon={Clock} />
             </div>
 
