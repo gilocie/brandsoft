@@ -62,6 +62,7 @@ import {
   FileCheck2,
   Clock,
   XCircle,
+  RefreshCw,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -185,25 +186,30 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     incomingRequestsCount,
     responsesCount,
     pendingPurchasesCount,
+    processingPurchasesCount,
     declinedPurchasesCount,
   } = useMemo(() => {
-    if (!config) return { notificationCount: 0, requestNotificationCount: 0, incomingRequestsCount: 0, responsesCount: 0, pendingPurchasesCount: 0, declinedPurchasesCount: 0 };
+    if (!config) return { notificationCount: 0, requestNotificationCount: 0, incomingRequestsCount: 0, responsesCount: 0, pendingPurchasesCount: 0, processingPurchasesCount: 0, declinedPurchasesCount: 0 };
 
     const incomingRequestsCount = config.incomingRequests?.length || 0;
     const responsesCount = config.requestResponses?.length || 0;
 
-    const pendingPurchasesCount = (config.purchases || []).filter(p =>
-      p.status === 'pending' || p.status === 'processing'
-    ).length;
-    
-    const declinedPurchasesCount = (config.purchases || []).filter(p =>
-      p.status === 'declined' && !p.isAcknowledged
-    ).length;
+    const pendingPurchasesCount = (config.purchases || []).filter(p => p.status === 'pending').length;
+    const processingPurchasesCount = (config.purchases || []).filter(p => p.status === 'processing').length;
+    const declinedPurchasesCount = (config.purchases || []).filter(p => p.status === 'declined' && !p.isAcknowledged).length;
 
     const requestTotal = incomingRequestsCount + responsesCount;
-    const total = requestTotal + pendingPurchasesCount + declinedPurchasesCount;
+    const total = requestTotal + pendingPurchasesCount + processingPurchasesCount + declinedPurchasesCount;
     
-    return { notificationCount: total, requestNotificationCount: requestTotal, incomingRequestsCount, responsesCount, pendingPurchasesCount, declinedPurchasesCount };
+    return { 
+        notificationCount: total, 
+        requestNotificationCount: requestTotal, 
+        incomingRequestsCount, 
+        responsesCount, 
+        pendingPurchasesCount, 
+        processingPurchasesCount,
+        declinedPurchasesCount 
+    };
   }, [config]);
   
   const ordersNotificationCount = useMemo(() => {
@@ -469,16 +475,24 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                                             )}
                                              {pendingPurchasesCount > 0 && (
                                                 <DropdownMenuItem asChild>
-                                                    <Link href="/history" className="cursor-pointer">
-                                                        <Clock className="mr-2 h-4 w-4 text-amber-500" />
-                                                        <span className="flex-1">{pendingPurchasesCount} purchase(s) are pending/processing.</span>
+                                                    <Link href="/history" className="cursor-pointer text-amber-600 focus:bg-amber-100 focus:text-amber-700">
+                                                        <Clock className="mr-2 h-4 w-4" />
+                                                        <span className="flex-1">{pendingPurchasesCount} purchase(s) are pending.</span>
+                                                    </Link>
+                                                </DropdownMenuItem>
+                                            )}
+                                            {processingPurchasesCount > 0 && (
+                                                <DropdownMenuItem asChild>
+                                                    <Link href="/history" className="cursor-pointer text-blue-600 focus:bg-blue-100 focus:text-blue-700">
+                                                        <RefreshCw className="mr-2 h-4 w-4" />
+                                                        <span className="flex-1">{processingPurchasesCount} purchase(s) are processing.</span>
                                                     </Link>
                                                 </DropdownMenuItem>
                                             )}
                                             {declinedPurchasesCount > 0 && (
                                                 <DropdownMenuItem asChild>
-                                                    <Link href="/history" className="cursor-pointer">
-                                                        <XCircle className="mr-2 h-4 w-4 text-destructive" />
+                                                    <Link href="/history" className="cursor-pointer text-destructive focus:bg-destructive/10">
+                                                        <XCircle className="mr-2 h-4 w-4" />
                                                         <span className="flex-1">{declinedPurchasesCount} purchase(s) were declined.</span>
                                                     </Link>
                                                 </DropdownMenuItem>
