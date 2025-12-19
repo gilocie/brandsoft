@@ -41,8 +41,8 @@ export function HistoryPageContent() {
     } = useMemo(() => {
         if (!config?.purchases) return { planPurchases: [], topUps: [], approvedPlans: [], pendingPlans: [], declinedPlans: [], approvedTopups: [], pendingTopups: [], processingTopups: [], declinedTopups: [], periodReserve: 0 };
 
-        const allPurchases = config.purchases
-            .filter(p => p.status !== 'declined' || !p.isAcknowledged) // Filter out acknowledged declined orders
+        const allPurchases = (config.purchases || [])
+            .filter(p => p.status !== 'declined' || !p.isAcknowledged) 
             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         
         const planPurchases = allPurchases.filter(p => !p.planName.toLowerCase().includes('top-up') && !p.planName.toLowerCase().includes('credit purchase'));
@@ -103,7 +103,7 @@ export function HistoryPageContent() {
     };
     
     const handleClearHistory = (type: 'plans' | 'topups') => {
-        if (!config) return;
+        if (!config || !config.purchases) return;
 
         const newPurchases = (config.purchases || []).filter(p => {
             const isTopUp = p.planName.toLowerCase().includes('top-up') || p.planName.toLowerCase().includes('credit purchase');
@@ -121,7 +121,7 @@ export function HistoryPageContent() {
     // Calculate total spent on successful purchases
     const totalSpent = useMemo(() => {
         if (!config?.purchases) return 0;
-        return config.purchases
+        return (config.purchases || [])
             .filter(p => p.status === 'active')
             .reduce((sum, p) => {
                 const priceString = p.planPrice || '0';
