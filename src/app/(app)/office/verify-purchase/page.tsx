@@ -274,7 +274,7 @@ function VerifyPurchaseContent() {
       if (order) {
         acknowledgeDeclinedPurchase(order.orderId);
         setTimeout(() => {
-            router.push('/dashboard');
+            router.push('/office/orders');
         }, 100);
       }
     };
@@ -355,6 +355,7 @@ function VerifyPurchaseContent() {
                                         "font-bold capitalize", 
                                         order.status === 'active' && "text-green-500",
                                         order.status === 'pending' && "text-amber-500",
+                                        order.status === 'processing' && "text-blue-500",
                                         order.status === 'declined' && "text-destructive",
                                         order.status === 'inactive' && "text-gray-500",
                                     )}>
@@ -362,7 +363,7 @@ function VerifyPurchaseContent() {
                                     </span>
                                 </p>
                             </CardContent>
-                             {order.status === 'pending' && (
+                             {(order.status === 'pending' || order.status === 'processing') && (
                                 <CardFooter className="p-0 pt-6 flex gap-2">
                                      <AlertDialog open={declineDialogOpen} onOpenChange={setDeclineDialogOpen}>
                                         <AlertDialogTrigger asChild>
