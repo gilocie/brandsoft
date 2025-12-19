@@ -124,66 +124,69 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
     };
     
     const addCreditPurchaseToAffiliate = (credits: number, orderId: string) => {
-        if (!config || !config.affiliate || !config.admin) return;
-
-        const order = (config.purchases || []).find(p => p.orderId === orderId);
-        if (!order || !order.customerId) return;
-
-        const costInMWK = parseFloat(order.planPrice.replace(/[^0-9.-]+/g,""));
-        
-        let newConfig = { ...config };
-        
-        // Ensure newAffiliateData is a complete Affiliate object
-        const newAffiliateData: Affiliate = {
-          ...initialAffiliateData, // Start with a complete default object
-          ...newConfig.affiliate, // Spread existing properties
-        };
-        
-        // 1. Deduct credits from affiliate's balance
-        newAffiliateData.creditBalance = (newAffiliateData.creditBalance || 0) - credits;
-
-        // 2. Add cash value to client's wallet
-        const companyIndex = newConfig.companies.findIndex(c => c.id === order.customerId);
-        if (companyIndex > -1) {
-            const company = newConfig.companies[companyIndex];
-            newConfig.companies[companyIndex] = {
-                ...company,
-                walletBalance: (company.walletBalance || 0) + costInMWK,
-            };
-            
-            // Also update the client record in the affiliate's list
-            if(newAffiliateData.clients) {
-                const affiliateClientIndex = newAffiliateData.clients.findIndex(c => c.id === order.customerId);
-                if (affiliateClientIndex > -1) {
-                    const client = newAffiliateData.clients[affiliateClientIndex];
-                    newAffiliateData.clients[affiliateClientIndex] = {
-                        ...client,
-                        walletBalance: (client.walletBalance || 0) + costInMWK
-                    };
-                }
-            }
-        }
-        
-        // 3. Mark the purchase as 'active' (completed)
-        const updatedPurchases = (newConfig.purchases || []).map(p =>
-            p.orderId === orderId ? { ...p, status: 'active' as const } : p
-        );
-        newConfig.purchases = updatedPurchases;
-        
-        // 4. Update admin's records
-        const newAdminSettings: AdminSettings = {
-            ...(newConfig.admin as AdminSettings), // Assume admin exists, but provide a safe object
-            soldCredits: (newConfig.admin?.soldCredits || 0) + credits,
-        };
-        
-        newConfig.admin = newAdminSettings;
-        newConfig.affiliate = newAffiliateData;
-
-        saveConfig(newConfig, { revalidate: true });
+      if (!config || !config.affiliate || !config.admin) return;
+  
+      const order = (config.purchases || []).find(p => p.orderId === orderId);
+      if (!order || !order.customerId) return;
+  
+      const costInMWK = parseFloat(order.planPrice.replace(/[^0-9.-]+/g,""));
+      
+      let newConfig = { ...config };
+      
+      // Ensure newAffiliateData is a complete Affiliate object
+      const newAffiliateData: Affiliate = {
+        ...initialAffiliateData,
+        ...newConfig.affiliate,
+      };
+      
+      // 1. Deduct credits from affiliate's balance
+      newAffiliateData.creditBalance = (newAffiliateData.creditBalance || 0) - credits;
+  
+      // 2. Add cash value to client's wallet in COMPANIES array (PRIMARY)
+      const companyIndex = newConfig.companies.findIndex(c => c.id === order.customerId);
+      if (companyIndex > -1) {
+          const company = newConfig.companies[companyIndex];
+          newConfig.companies[companyIndex] = {
+              ...company,
+              walletBalance: (company.walletBalance || 0) + costInMWK,
+          };
+      } else {
+          console.error(`Company not found: ${order.customerId}`);
+          return; // Stop if company doesn't exist
+      }
+      
+      // 3. Record the transaction in affiliate's client metadata (for tracking only)
+      if (newAffiliateData.clients) {
+          const affiliateClientIndex = newAffiliateData.clients.findIndex(c => c.id === order.customerId);
+          if (affiliateClientIndex > -1) {
+              const client = newAffiliateData.clients[affiliateClientIndex];
+              newAffiliateData.clients[affiliateClientIndex] = {
+                  ...client,
+                  walletBalance: (client.walletBalance || 0) + costInMWK, // Also update here for affiliate view consistency
+              };
+          }
+      }
+      
+      // 4. Mark the purchase as 'active' (completed)
+      const updatedPurchases = (newConfig.purchases || []).map(p =>
+          p.orderId === orderId ? { ...p, status: 'active' as const } : p
+      );
+      newConfig.purchases = updatedPurchases;
+      
+      // 5. Update admin's records
+      const newAdminSettings: AdminSettings = {
+          ...(newConfig.admin as AdminSettings),
+          soldCredits: (newConfig.admin?.soldCredits || 0) + credits,
+      };
+      
+      newConfig.admin = newAdminSettings;
+      newConfig.affiliate = newAffiliateData;
+  
+      saveConfig(newConfig, { revalidate: true });
     };
     
     const useActivationKey = (key: string, companyId: string): boolean => {
-        if (!config?.affiliate?.generatedKeys) return false;
+        if (!config || !config.affiliate?.generatedKeys) return false;
 
         const keyIndex = (config.affiliate.generatedKeys || []).findIndex(k => k.key === key && k.status === 'unused');
         
@@ -191,7 +194,6 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
             return false;
         }
         
-        // Create a deep copy to avoid direct mutation
         const newConfig = JSON.parse(JSON.stringify(config));
         if (!newConfig.affiliate) return false;
 
@@ -244,7 +246,6 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     }
   }, []);
   
-  // This function recursively removes base64 image data from the config
   const stripImageData = (obj: any): any => {
     if (Array.isArray(obj)) {
       return obj.map(item => stripImageData(item));
@@ -254,9 +255,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       for (const key in obj) {
         if (Object.prototype.hasOwnProperty.call(obj, key)) {
           const value = obj[key];
-          // Critically, we preserve the `profilePic` to ensure it is saved.
           if (typeof value === 'string' && value.startsWith('data:image/') && key !== 'profilePic') {
-            // Keep the property with an empty string or a placeholder
             newObj[key] = ''; 
           } else {
             newObj[key] = stripImageData(value);
@@ -273,14 +272,12 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
 
     setConfig(newConfig);
     
-    // Before saving to localStorage, strip out any large base64 image data
     const strippedConfig = stripImageData(newConfig);
     
     try {
       localStorage.setItem(CONFIG_KEY, JSON.stringify(strippedConfig));
     } catch (error) {
         console.error("Failed to save configuration to localStorage:", error);
-        // Optionally, notify the user that their changes couldn't be saved.
         alert("Error: Could not save your changes. The browser storage might be full.");
     }
     
@@ -308,12 +305,33 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
         
         let needsSave = false;
 
+        // Migration for wallet balance from affiliate.clients to companies
+        if (parsedConfig.affiliate?.clients && parsedConfig.companies) {
+            parsedConfig.affiliate.clients.forEach((client: any) => {
+                if (client.walletBalance && client.walletBalance > 0) {
+                    const companyIndex = parsedConfig.companies.findIndex((c: Company) => c.id === client.id);
+                    
+                    if (companyIndex > -1) {
+                        const currentCompanyBalance = parsedConfig.companies[companyIndex].walletBalance || 0;
+                        
+                        if (currentCompanyBalance === 0) {
+                            parsedConfig.companies[companyIndex] = {
+                                ...parsedConfig.companies[companyIndex],
+                                walletBalance: client.walletBalance,
+                            };
+                            needsSave = true;
+                        }
+                    }
+                }
+            });
+        }
+
+
         // Migration logic for affiliate data
         if (!parsedConfig.affiliate) {
             parsedConfig.affiliate = initialAffiliateData;
             needsSave = true;
         } else {
-             // Ensure all new fields exist
             const fieldsToCheck: (keyof Affiliate)[] = ['totalSales', 'creditBalance', 'bonus', 'staffId', 'phone', 'transactions', 'isPinSet', 'unclaimedCommission', 'myWallet', 'generatedKeys'];
             fieldsToCheck.forEach(field => {
                 if (typeof parsedConfig.affiliate[field] === 'undefined') {
@@ -333,17 +351,20 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
         }
         
         if (parsedConfig.affiliateSettings) {
-            parsedConfig.admin = {
-                ...parsedConfig.affiliateSettings,
-                soldCredits: parsedConfig.affiliateSettings.maxCredits - parsedConfig.affiliateSettings.availableCredits,
-                creditsBoughtBack: 0, // Initialize new field
-                revenueFromKeys: 0, // Initialize new field
+            const adminSettings: AdminSettings = {
+                ...(parsedConfig.affiliateSettings as Omit<AdminSettings, 'soldCredits' | 'creditsBoughtBack' | 'revenueFromKeys' | 'revenueFromPlans' | 'keysSold' | 'trendingPlan'>),
+                soldCredits: (parsedConfig.affiliateSettings.maxCredits || 0) - (parsedConfig.affiliateSettings.availableCredits || 0),
+                creditsBoughtBack: 0,
+                revenueFromKeys: 0,
+                revenueFromPlans: 0,
+                keysSold: 0,
+                trendingPlan: 'None',
             };
+            parsedConfig.admin = adminSettings;
             delete parsedConfig.affiliateSettings;
             needsSave = true;
         }
-
-        // Migration for company wallet balance
+        
         if (parsedConfig.companies) {
           parsedConfig.companies.forEach((c: Company) => {
             if (c.walletBalance === undefined) {
@@ -353,7 +374,6 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
           });
         }
         
-        // Add ID to profile for client lookups
         if (parsedConfig.profile && !(parsedConfig.profile as any).id) {
            const userCompany = (parsedConfig.companies || []).find((c:Company) => c.companyName === parsedConfig.brand.businessName);
            if (userCompany) {

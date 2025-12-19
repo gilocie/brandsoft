@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -117,10 +116,9 @@ export function HistoryPageContent() {
     };
 
 
-    // Calculate total spent on successful purchases
     const totalSpent = useMemo(() => {
-        if (!config?.purchases) return 0;
-        return (config.purchases || [])
+        const purchases = config?.purchases || [];
+        return purchases
             .filter(p => p.status === 'active')
             .reduce((sum, p) => {
                 const priceString = p.planPrice || '0';
