@@ -437,7 +437,7 @@ export default function AdminPlansPage() {
         if (!config || !config.admin) return;
         
         const newPeriods = [...(config.admin.planPeriods || []), data];
-        saveConfig({ ...config, admin: { ...config.admin, planPeriods: newPeriods } }, { revalidate: true });
+        saveConfig({ ...config, admin: { ...config.admin, planPeriods: newPeriods } }, { revalidate: false, redirect: false });
         newPeriodForm.reset({ value: '', label: '' });
         toast({ title: 'Plan Period Added', description: `"${data.label}" has been added.`});
     };
@@ -446,7 +446,7 @@ export default function AdminPlansPage() {
         if (!config || !config.admin || !periodToDelete) return;
         
         const newPeriods = (config.admin.planPeriods || []).filter(p => p.value !== periodToDelete.value);
-        saveConfig({ ...config, admin: { ...config.admin, planPeriods: newPeriods } }, { revalidate: true });
+        saveConfig({ ...config, admin: { ...config.admin, planPeriods: newPeriods } }, { revalidate: false });
         setPeriodToDelete(null);
         toast({ title: 'Plan Period Removed', description: `"${periodToDelete.label}" has been removed.`});
     };
@@ -553,16 +553,15 @@ export default function AdminPlansPage() {
                                                                 <FormMessage />
                                                             </FormItem>
                                                         )}
-                                                    />
-                                                </div>
-                                            </ScrollArea>
-                                            <DialogFooter className="pt-6 flex-shrink-0">
-                                                <Button type="button" variant="outline" onClick={() => setIsAddPlanOpen(false)}>Cancel</Button>
-                                                <Button type="submit">Save Plan</Button>
-                                            </DialogFooter>
-                                        </form>
-                                    </Form>
-                                </DialogContent>
+                                                    </div>
+                                                </ScrollArea>
+                                                <DialogFooter className="pt-6 flex-shrink-0">
+                                                    <Button type="button" variant="outline" onClick={() => setIsAddPlanOpen(false)}>Cancel</Button>
+                                                    <Button type="submit">Save Plan</Button>
+                                                </DialogFooter>
+                                            </form>
+                                        </Form>
+                                    </DialogContent>
                             </Dialog>
                         </CardHeader>
                         <CardContent>
