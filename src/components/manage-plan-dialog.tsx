@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -312,16 +312,18 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
     const [isManagePlanOpen, setIsManagePlanOpen] = useState(false);
     const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
     const [contactInfo, setContactInfo] = useState<{ planName: string, email?: string, whatsapp?: string } | null>(null);
-    const [currentCompany, setCurrentCompany] = useState<Company | null>(null);
-    const [walletBalance, setWalletBalance] = useState(0);
 
-    useEffect(() => {
-        if (config && isManagePlanOpen) {
-            const company = config.companies?.find(c => c.id === config.profile?.id);
-            setCurrentCompany(company || null);
-            setWalletBalance(company?.walletBalance || 0);
+    // FIX: Use useMemo to get wallet balance directly from config
+    const { walletBalance } = useMemo(() => {
+        if (!config?.profile?.id || !config?.companies) {
+            return { walletBalance: 0 };
         }
-    }, [config, isManagePlanOpen]);
+        
+        const company = config.companies.find(c => c.id === (config.profile as any).id);
+        return {
+            walletBalance: company?.walletBalance || 0
+        };
+    }, [config?.profile?.id, config?.companies]);
 
     const currentPlanPurchase = useMemo(() => {
         if (!config?.purchases || config.purchases.length === 0) return null;
