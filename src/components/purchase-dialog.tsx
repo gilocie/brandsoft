@@ -25,7 +25,7 @@ import { saveReceiptToDB } from '@/hooks/use-receipt-upload';
 
 
 export type PlanDetails = {
-    name: string; // Changed from Plan type to string to be more flexible
+    name: string;
     price: string;
     period: string;
     affiliateId?: string;
@@ -155,7 +155,13 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
         }
     };
     
-    const balance = config?.profile.walletBalance || 0;
+    // FIX: Get wallet balance from companies array (single source of truth)
+    const balance = useMemo(() => {
+        if (!config?.profile?.id || !config?.companies) return 0;
+        const company = config.companies.find(c => c.id === (config.profile as any).id);
+        return company?.walletBalance || 0;
+    }, [config?.profile?.id, config?.companies]);
+    
     const priceAmount = parseFloat(plan.price.replace(/[^0-9.-]+/g,""));
     const canAffordWithWallet = balance >= priceAmount;
 
@@ -188,7 +194,7 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
             await saveReceiptToDB(newOrderId, receiptDataUrl);
         }
 
-        setTimeout(() => { // Simulate processing
+        setTimeout(() => {
             setOrderId(newOrderId);
             
             const myCompany = config?.companies.find(c => c.companyName === config?.brand.businessName);
@@ -208,12 +214,20 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                 remainingTime: { value: 0, unit: 'days' as const },
             };
             
-            if (selectedPayment === 'wallet' && config) {
-                const newBalance = balance - priceAmount;
-                saveConfig({ ...config, profile: { ...config.profile, walletBalance: newBalance }, purchases: [...(config.purchases || []), newOrder]}, {redirect: false});
+            // FIX: Update wallet balance in companies array, not profile
+            if (selectedPayment === 'wallet' && config && myCompany) {
+                const newBalance = (myCompany.walletBalance || 0) - priceAmount;
+                const updatedCompanies = config.companies.map(c => 
+                    c.id === myCompany.id ? { ...c, walletBalance: newBalance } : c
+                );
+                saveConfig({ 
+                    ...config, 
+                    companies: updatedCompanies,
+                    purchases: [...(config.purchases || []), newOrder]
+                }, {redirect: false, revalidate: true});
             } else {
                 addPurchaseOrder(newOrder);
-                 const message = `*Please Activate My New Order!*
+                const message = `*Please Activate My New Order!*
 %0A%0AOrder ID: ${newOrderId}
 %0APlan: ${plan.name} (${plan.period})
 %0APrice: ${plan.price}
@@ -241,14 +255,12 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
     const handleDialogClose = () => {
         const successful = purchaseState === 'success';
 
-        // Reset state
         setPurchaseState('idle');
         setReceiptFile(null);
         setSelectedPayment(null);
         setWhatsappNumber('');
         setSaveWhatsapp(false);
 
-        // Call appropriate callback
         if (successful) {
             onSuccess();
         } else {
