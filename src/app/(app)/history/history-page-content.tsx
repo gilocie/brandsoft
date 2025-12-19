@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { StatCard } from '@/components/office/stat-card';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { HistoryTable } from './history-table';
 
 export function HistoryPageContent() {
     const { config, saveConfig } = useBrandsoft();
