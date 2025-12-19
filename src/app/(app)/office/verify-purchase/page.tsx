@@ -33,7 +33,8 @@ type FormData = z.infer<typeof formSchema>;
 const ADMIN_PIN_SUFFIX = '@8090';
 
 const topUpActivationSchema = z.object({
-    creditsToSell: z.coerce.number().min(1, 'Must sell at least 1 credit.')
+    creditsToSell: z.coerce.number().min(1, 'Must sell at least 1 credit.'),
+    pin: z.string().optional(),
 });
 type TopUpActivationFormData = z.infer<typeof topUpActivationSchema>;
 
@@ -44,66 +45,140 @@ const TopUpActivationDialog = ({
     onClose,
     onConfirm,
     affiliateCreditBalance,
+    affiliatePin,
+    isPinSet,
 }: {
     order: Purchase,
     isOpen: boolean,
     onClose: () => void,
-    onConfirm: (credits: number) => void,
+    onConfirm: (credits: number, pin: string) => void,
     affiliateCreditBalance: number,
+    affiliatePin?: string;
+    isPinSet?: boolean;
 }) => {
     const { config } = useBrandsoft();
+    const { toast } = useToast();
     const exchangeValue = config?.admin?.exchangeValue || 1000;
     const suggestedCredits = parseFloat(order.planPrice.replace(/[^0-9.-]+/g,"")) / exchangeValue;
+    const [step, setStep] = useState(1);
 
     const form = useForm<TopUpActivationFormData>({
         resolver: zodResolver(topUpActivationSchema),
-        defaultValues: { creditsToSell: suggestedCredits }
+        defaultValues: { creditsToSell: suggestedCredits, pin: '' }
     });
 
     const creditsToSell = form.watch('creditsToSell');
     const hasEnoughCredits = affiliateCreditBalance >= creditsToSell;
     const remainingBalance = affiliateCreditBalance - creditsToSell;
 
+    const handleNextStep = async () => {
+        const isValid = await form.trigger(['creditsToSell']);
+        if (isValid) {
+            if (!isPinSet) {
+                 toast({
+                    variant: 'destructive',
+                    title: "PIN Not Set",
+                    description: "Please set your withdrawal PIN in 'My Features' before selling credits.",
+                });
+                return;
+            }
+            setStep(2);
+        }
+    }
+    
+    const handleConfirmSubmit = (data: TopUpActivationFormData) => {
+        if (!data.pin || data.pin !== affiliatePin) {
+            form.setError('pin', { message: 'The entered PIN is incorrect.' });
+            return;
+        }
+        onConfirm(data.creditsToSell, data.pin);
+    };
+    
+    useEffect(() => {
+        if (!isOpen) {
+            setTimeout(() => {
+                form.reset({ creditsToSell: suggestedCredits, pin: ''});
+                setStep(1);
+            }, 200);
+        }
+    }, [isOpen, form, suggestedCredits]);
+
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent>
                 <DialogHeader>
-                    <ShadcnDialogTitle>Confirm Credit Sale</ShadcnDialogTitle>
-                    <p className="text-sm text-muted-foreground">Confirm the amount of BS Credits being sold for this top-up.</p>
+                    <ShadcnDialogTitle>
+                         {step === 1 ? 'Confirm Credit Sale' : 'Enter PIN to Confirm'}
+                    </ShadcnDialogTitle>
+                    <p className="text-sm text-muted-foreground">
+                        {step === 1
+                            ? 'Confirm the amount of BS Credits being sold for this top-up.'
+                            : 'Enter your 4-digit PIN to authorize this transaction.'}
+                    </p>
                 </DialogHeader>
                 <div className="py-4 space-y-4">
-                    <div className="p-4 bg-muted rounded-lg text-center space-y-1">
-                        <p className="text-sm text-muted-foreground">Client Paid</p>
-                        <p className="text-2xl font-bold">{order.planPrice}</p>
-                    </div>
                      <Form {...form}>
-                        <form id="topup-activation-form" onSubmit={form.handleSubmit(data => onConfirm(data.creditsToSell))}>
-                             <FormField
-                                control={form.control}
-                                name="creditsToSell"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>BS Credits to Sell</FormLabel>
-                                        <FormControl>
-                                            <Input type="number" step="0.01" {...field} />
-                                        </FormControl>
-                                         <FormDescription>
-                                            {!hasEnoughCredits
-                                                ? <span className="text-destructive">Your current credit balance is BS {affiliateCreditBalance.toLocaleString()}. Please add more before continuing.</span>
-                                                : `Your balance will be BS ${remainingBalance.toLocaleString()} after this sale.`
-                                            }
-                                        </FormDescription>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                        <form id="topup-activation-form" onSubmit={form.handleSubmit(handleConfirmSubmit)}>
+                           {step === 1 && (
+                                <div className="space-y-4">
+                                     <div className="p-4 bg-muted rounded-lg text-center space-y-1">
+                                        <p className="text-sm text-muted-foreground">Client Paid</p>
+                                        <p className="text-2xl font-bold">{order.planPrice}</p>
+                                    </div>
+                                    <FormField
+                                        control={form.control}
+                                        name="creditsToSell"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>BS Credits to Sell</FormLabel>
+                                                <FormControl>
+                                                    <Input type="number" step="0.01" {...field} />
+                                                </FormControl>
+                                                <FormDescription>
+                                                    {!hasEnoughCredits
+                                                        ? <span className="text-destructive">Your current credit balance is BS {affiliateCreditBalance.toLocaleString()}. Please add more before continuing.</span>
+                                                        : `Your balance will be BS ${remainingBalance.toLocaleString()} after this sale.`
+                                                    }
+                                                </FormDescription>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <DialogFooter>
+                                        <Button variant="outline" onClick={onClose}>Cancel</Button>
+                                        <Button type="button" disabled={!hasEnoughCredits} onClick={handleNextStep}>Proceed to PIN</Button>
+                                    </DialogFooter>
+                                </div>
+                            )}
+
+                            {step === 2 && (
+                                <div className="space-y-4">
+                                     <div className="p-4 bg-muted rounded-lg text-center space-y-1">
+                                        <p className="text-sm text-muted-foreground">Selling <strong className="text-primary">{creditsToSell.toLocaleString()} BS Credits</strong> for</p>
+                                        <p className="text-2xl font-bold">{order.planPrice}</p>
+                                    </div>
+                                     <FormField
+                                        control={form.control}
+                                        name="pin"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>4-Digit PIN</FormLabel>
+                                                <FormControl>
+                                                    <Input type="password" maxLength={4} className="text-center font-bold tracking-[1rem]" {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                     <DialogFooter>
+                                        <Button type="button" variant="outline" onClick={() => setStep(1)}>Back</Button>
+                                        <Button type="submit">Confirm &amp; Activate</Button>
+                                    </DialogFooter>
+                                </div>
+                            )}
                         </form>
                     </Form>
                 </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={onClose}>Cancel</Button>
-                    <Button type="submit" form="topup-activation-form" disabled={!hasEnoughCredits}>Confirm &amp; Activate</Button>
-                </DialogFooter>
             </DialogContent>
         </Dialog>
     );
@@ -244,9 +319,10 @@ function VerifyPurchaseContent() {
         }
     };
 
-    const handleConfirmTopUpActivation = (creditsToSell: number) => {
+    const handleConfirmTopUpActivation = (creditsToSell: number, pin: string) => {
         if (!order || !config?.affiliate) return;
 
+        // The PIN is already verified in the dialog's logic.
         activatePurchaseOrder(order.orderId);
         addCreditPurchaseToAffiliate(creditsToSell, order.planPrice);
         
@@ -284,6 +360,8 @@ function VerifyPurchaseContent() {
     };
     
     const affiliateCreditBalance = config?.affiliate?.creditBalance || 0;
+    const affiliatePin = config?.affiliate?.pin;
+    const isPinSet = config?.affiliate?.isPinSet;
 
     const renderContent = () => {
         if (isLoading) {
@@ -484,6 +562,8 @@ function VerifyPurchaseContent() {
                     onClose={() => setIsTopUpActivationOpen(false)}
                     onConfirm={handleConfirmTopUpActivation}
                     affiliateCreditBalance={affiliateCreditBalance}
+                    affiliatePin={affiliatePin}
+                    isPinSet={isPinSet}
                 />
             )}
         </>
