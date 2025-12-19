@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useBrandsoft, type Transaction, type Affiliate, type Purchase } from '@/hooks/use-brandsoft';
@@ -35,8 +36,6 @@ import { Badge } from '@/components/ui/badge';
 import { GenerateKeyDialog } from '@/components/office/dialogs/generate-key-dialog';
 import { PurchaseDialog, type PlanDetails } from '@/components/purchase-dialog';
 import { SellCreditsDialog } from '@/components/office/dialogs/sell-credits-dialog';
-import { TopUpNotificationCard } from '@/components/office/top-up-notification-card';
-import { TopUpTable } from '@/components/office/top-up-table';
 import { BonusProgressDialog } from './bonus-progress-dialog';
 import { useRouter } from 'next/navigation';
 
@@ -76,13 +75,6 @@ export function OfficePageContent() {
           profilePic: affiliate?.profilePic || '',
       }
   });
-
-  const pendingTopUps = useMemo(() => {
-    if (!config?.purchases) return [];
-    return config.purchases.filter(p => p.planName.startsWith('Credit Purchase') || p.planName === 'Wallet Top-up');
-  }, [config?.purchases]);
-
-  const pendingTopUpOrders = useMemo(() => pendingTopUps.filter(p => p.status === 'pending'), [pendingTopUps]);
 
 
   // NEW: Create a synchronized list of clients
@@ -231,8 +223,7 @@ export function OfficePageContent() {
 
     return (
     <div className="space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div className="flex items-center gap-4 col-span-1 md:col-span-2">
+      <div className="flex items-center gap-4">
           <Avatar className="h-20 w-20">
             <AvatarImage src={affiliate.profilePic} />
             <AvatarFallback>{affiliate.fullName.charAt(0)}</AvatarFallback>
@@ -322,11 +313,6 @@ export function OfficePageContent() {
                 </DialogContent>
             </Dialog>
           </div>
-        </div>
-        <TopUpNotificationCard
-          pendingOrders={pendingTopUpOrders}
-          onViewAll={() => router.push('/office/orders')}
-        />
       </div>
 
        <Tabs value={activeTab} onValueChange={setActiveTab}>
