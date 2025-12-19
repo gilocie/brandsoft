@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useMemo } from 'react';
@@ -99,7 +98,7 @@ const PlanCard = ({ plan, isCurrent = false, cta, className, onBuyClick, onCusto
                                 <img src={displayHeaderImage} alt="Header background" className="absolute inset-0 w-full h-full object-cover" />
                                 <div 
                                     className="absolute inset-0 bg-black"
-                                    style={{ opacity: 1 - (customization?.headerBgImageOpacity ?? 1) }}
+                                    style={{ opacity: 1 - (customization.headerBgImageOpacity ?? 1) }}
                                 />
                             </>
                         )}
@@ -272,7 +271,7 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
             headerBgImage: customization.headerBgImage ? 'indexed-db' : '',
         };
         
-        const updatedPlans = config.plans.map(p =>
+        const updatedPlans = (config.plans || []).map(p =>
             p.name === planName ? { ...p, customization: cleanCustomization } : p
         );
         saveConfig({ ...config, plans: updatedPlans }, {redirect: false});
@@ -290,7 +289,7 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
                 </Button>
             </DialogTrigger>
             
-            <DialogContent className="max-w-6xl w-[90vw] max-h-[90vh] flex flex-col p-4 sm:p-6 bg-gradient-to-br from-slate-950 to-slate-900 border-slate-800">
+            <DialogContent className="max-w-6xl w-[90vw] h-[90vh] flex flex-col p-4 sm:p-6 bg-gradient-to-br from-slate-950 to-slate-900 border-slate-800">
                 <DialogHeader className="flex-shrink-0 mb-4 flex flex-row items-center justify-between">
                     <div>
                         <DialogTitle className="text-2xl font-headline text-white">Manage Your Plan</DialogTitle>

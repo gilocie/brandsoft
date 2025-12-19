@@ -411,7 +411,7 @@ export default function AdminPlansPage() {
             headerBgImage: customization.headerBgImage ? 'indexed-db' : '',
         };
         
-        const updatedPlans = config.plans.map(p =>
+        const updatedPlans = (config.plans || []).map(p =>
             p.name === planName ? { ...p, customization: cleanCustomization } : p
         );
         
