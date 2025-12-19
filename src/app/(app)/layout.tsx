@@ -163,7 +163,7 @@ function ThemeToggle() {
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { config } = useBrandsoft();
+  const { config, acknowledgeDeclinedPurchase } = useBrandsoft();
   const [role, setRole] = useState<'admin' | 'staff' | 'client' | null>(null);
   const [hasMounted, setHasMounted] = useState(false);
 
@@ -188,29 +188,43 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     pendingPurchasesCount,
     processingPurchasesCount,
     declinedPurchasesCount,
+    declinedPurchaseOrders,
   } = useMemo(() => {
-    if (!config) return { notificationCount: 0, requestNotificationCount: 0, incomingRequestsCount: 0, responsesCount: 0, pendingPurchasesCount: 0, processingPurchasesCount: 0, declinedPurchasesCount: 0 };
+    if (!config) return { notificationCount: 0, requestNotificationCount: 0, incomingRequestsCount: 0, responsesCount: 0, pendingPurchasesCount: 0, processingPurchasesCount: 0, declinedPurchasesCount: 0, declinedPurchaseOrders: [] };
 
     const incomingRequestsCount = config.incomingRequests?.length || 0;
     const responsesCount = config.requestResponses?.length || 0;
 
-    const pendingPurchasesCount = (config.purchases || []).filter(p => p.status === 'pending').length;
-    const processingPurchasesCount = (config.purchases || []).filter(p => p.status === 'processing').length;
-    const declinedPurchasesCount = (config.purchases || []).filter(p => p.status === 'declined' && !p.isAcknowledged).length;
+    const pendingPurchases = (config.purchases || []).filter(p => p.status === 'pending');
+    const processingPurchases = (config.purchases || []).filter(p => p.status === 'processing');
+    const declinedPurchases = (config.purchases || []).filter(p => p.status === 'declined' && !p.isAcknowledged);
 
     const requestTotal = incomingRequestsCount + responsesCount;
-    const total = requestTotal + pendingPurchasesCount + processingPurchasesCount + declinedPurchasesCount;
+    const total = requestTotal + pendingPurchases.length + processingPurchases.length + declinedPurchases.length;
     
     return { 
         notificationCount: total, 
         requestNotificationCount: requestTotal, 
         incomingRequestsCount, 
         responsesCount, 
-        pendingPurchasesCount, 
-        processingPurchasesCount,
-        declinedPurchasesCount 
+        pendingPurchasesCount: pendingPurchases.length, 
+        processingPurchasesCount: processingPurchases.length,
+        declinedPurchasesCount: declinedPurchases.length,
+        declinedPurchaseOrders: declinedPurchases,
     };
   }, [config]);
+
+  const handleAcknowledgeAndNavigate = (orderId: string) => {
+    acknowledgeDeclinedPurchase(orderId);
+    router.push('/history');
+  };
+
+  const handleAcknowledgeAll = () => {
+    declinedPurchaseOrders.forEach(order => {
+        acknowledgeDeclinedPurchase(order.orderId);
+    });
+    router.push('/history');
+};
   
   const ordersNotificationCount = useMemo(() => {
     if (!config?.purchases) return 0;
@@ -490,11 +504,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                                                 </DropdownMenuItem>
                                             )}
                                             {declinedPurchasesCount > 0 && (
-                                                <DropdownMenuItem asChild>
-                                                    <Link href="/history" className="cursor-pointer text-destructive focus:bg-destructive/10">
-                                                        <XCircle className="mr-2 h-4 w-4" />
-                                                        <span className="flex-1">{declinedPurchasesCount} purchase(s) were declined.</span>
-                                                    </Link>
+                                                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleAcknowledgeAll(); }} className="cursor-pointer text-destructive focus:bg-destructive/10">
+                                                    <XCircle className="mr-2 h-4 w-4" />
+                                                    <span className="flex-1">{declinedPurchasesCount} purchase(s) were declined.</span>
                                                 </DropdownMenuItem>
                                             )}
                                         </>

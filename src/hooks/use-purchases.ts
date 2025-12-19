@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import type { BrandsoftConfig, Purchase } from '@/types/brandsoft';
