@@ -121,7 +121,6 @@ function VerifyPurchaseContent() {
     const [order, setOrder] = useState<Purchase | null>(null);
     const [receiptImage, setReceiptImage] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(!!orderIdFromUrl);
-    const [isAdminMode, setIsAdminMode] = useState(false);
     const [declineReason, setDeclineReason] = useState('');
     const [progress, setProgress] = useState(0);
     const [declineDialogOpen, setDeclineDialogOpen] = useState(false);
@@ -132,8 +131,8 @@ function VerifyPurchaseContent() {
         defaultValues: { orderId: orderIdFromUrl || '' },
     });
     
-     const handleSearch = useCallback(async (orderIdWithPin: string, silent = false) => {
-        if (!orderIdWithPin) {
+     const handleSearch = useCallback(async (orderIdToSearch: string, silent = false) => {
+        if (!orderIdToSearch) {
             setIsLoading(false);
             setOrder(null);
             return;
@@ -149,17 +148,7 @@ function VerifyPurchaseContent() {
             clearInterval(progressInterval);
         }
 
-        let cleanOrderId = orderIdWithPin;
-        let admin = false;
-
-        if (orderIdWithPin.endsWith(ADMIN_PIN_SUFFIX)) {
-            admin = true;
-            cleanOrderId = orderIdWithPin.replace(ADMIN_PIN_SUFFIX, '');
-        }
-        
-        setIsAdminMode(admin);
-        
-        const foundOrder = getPurchaseOrder(cleanOrderId);
+        const foundOrder = getPurchaseOrder(orderIdToSearch);
         setOrder(foundOrder);
 
         if (foundOrder?.receipt === 'indexed-db') {
@@ -187,16 +176,12 @@ function VerifyPurchaseContent() {
     }, [orderIdFromUrl, form, handleSearch]);
 
      useEffect(() => {
-        if (
-          (!isAdminMode && order?.status === 'declined' && !order.isAcknowledged) ||
-          (!isAdminMode && order?.status === 'active')
-        ) {
-          return; // Stop polling for stable non-admin states
-        }
+        if (order?.status === 'declined' && !order.isAcknowledged) return;
+        if (order?.status === 'active') return;
 
         const forceRefresh = () => {
              if (orderIdFromUrl) {
-                handleSearch(orderIdFromUrl, true); // Perform a silent refresh
+                handleSearch(orderIdFromUrl, true);
              }
         };
 
@@ -220,7 +205,7 @@ function VerifyPurchaseContent() {
           forceRefresh();
         };
 
-        const pollInterval = setInterval(forceRefresh, 2000); // Poll every 2 seconds
+        const pollInterval = setInterval(forceRefresh, 2000);
 
         window.addEventListener('storage', handleStorageChange);
         window.addEventListener('brandsoft-update', handleCustomUpdate);
@@ -234,7 +219,7 @@ function VerifyPurchaseContent() {
           document.removeEventListener('visibilitychange', handleVisibilityChange);
           window.removeEventListener('focus', handleFocus);
         };
-      }, [orderIdFromUrl, handleSearch, order, isAdminMode]);
+      }, [orderIdFromUrl, handleSearch, order]);
 
 
     const handleDownloadReceipt = () => {
@@ -249,7 +234,7 @@ function VerifyPurchaseContent() {
 
     const handleActivation = () => {
         if (order) {
-            if (isAdminMode && (order.planName.startsWith('Credit Purchase') || order.planName === 'Wallet Top-up')) {
+            if (order.planName.startsWith('Credit Purchase') || order.planName === 'Wallet Top-up') {
                 setIsTopUpActivationOpen(true);
             } else {
                 activatePurchaseOrder(order.orderId);
@@ -262,10 +247,7 @@ function VerifyPurchaseContent() {
     const handleConfirmTopUpActivation = (creditsToSell: number) => {
         if (!order || !config?.affiliate) return;
 
-        // Activate the client's plan (which just marks the purchase as 'active' for top-ups)
         activatePurchaseOrder(order.orderId);
-
-        // Deduct credits from affiliate and record sale
         addCreditPurchaseToAffiliate(creditsToSell, order.planPrice);
         
         toast({
@@ -336,6 +318,7 @@ function VerifyPurchaseContent() {
 
         if (order) {
             const isTopUp = order.planName.startsWith('Credit Purchase') || order.planName === 'Wallet Top-up';
+            const isActionable = order.status === 'pending' || order.status === 'processing';
 
              return (
                 <div className="mt-6 space-y-6">
@@ -391,7 +374,7 @@ function VerifyPurchaseContent() {
                                     </span>
                                 </p>
                             </CardContent>
-                             {isAdminMode && (order.status === 'pending' || order.status === 'processing') && (
+                             {isActionable && (
                                 <CardFooter className="p-0 pt-6 flex gap-2">
                                      <AlertDialog open={declineDialogOpen} onOpenChange={setDeclineDialogOpen}>
                                         <AlertDialogTrigger asChild>
@@ -432,7 +415,7 @@ function VerifyPurchaseContent() {
                                     <AlertDescription>
                                         <p>{order.declineReason}</p>
                                         <p className="mt-2 text-xs">
-                                            If you believe this is a mistake, please contact us on +265 991 972 336.
+                                            If you believe this is a mistake, please contact us.
                                         </p>
                                     </AlertDescription>
                                 </div>
@@ -489,7 +472,7 @@ function VerifyPurchaseContent() {
                 {order && (
                     <CardFooter>
                         <Button asChild variant="outline">
-                            <Link href={isAdminMode ? '/office/orders' : '/history'}><Wallet className="mr-2 h-4 w-4" /> Return to {isAdminMode ? 'Orders' : 'History'}</Link>
+                            <Link href={'/office/orders'}><Wallet className="mr-2 h-4 w-4" /> Return to Orders</Link>
                         </Button>
                     </CardFooter>
                 )}
@@ -517,5 +500,3 @@ export default function OfficeVerifyPurchasePage() {
         </div>
     )
 }
-
-    
