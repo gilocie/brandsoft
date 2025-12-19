@@ -316,30 +316,32 @@ export default function AdminPlansPage() {
                                                                     <FormLabel className="text-base">Premium Features</FormLabel>
                                                                     <FormDescription>Select the features for this plan.</FormDescription>
                                                                 </div>
-                                                                <div className="space-y-2">
-                                                                    {premiumFeatures.map((item) => (
-                                                                        <FormField
-                                                                            key={item.id}
-                                                                            control={newPlanForm.control}
-                                                                            name="features"
-                                                                            render={({ field }) => (
-                                                                                <FormItem key={item.id} className="flex flex-row items-start space-x-3 space-y-0">
-                                                                                    <FormControl>
-                                                                                        <Checkbox
-                                                                                            checked={field.value?.includes(item.id)}
-                                                                                            onCheckedChange={(checked) => (
-                                                                                                checked
-                                                                                                    ? field.onChange([...(field.value || []), item.id])
-                                                                                                    : field.onChange(field.value?.filter((value) => value !== item.id))
-                                                                                            )}
-                                                                                        />
-                                                                                    </FormControl>
-                                                                                    <FormLabel className="text-sm font-normal">{item.label}</FormLabel>
-                                                                                </FormItem>
-                                                                            )}
-                                                                        />
-                                                                    ))}
-                                                                </div>
+                                                                <ScrollArea className="h-72 rounded-md border p-2">
+                                                                    <div className="space-y-2 p-2">
+                                                                        {premiumFeatures.map((item) => (
+                                                                            <FormField
+                                                                                key={item.id}
+                                                                                control={newPlanForm.control}
+                                                                                name="features"
+                                                                                render={({ field }) => (
+                                                                                    <FormItem key={item.id} className="flex flex-row items-start space-x-3 space-y-0">
+                                                                                        <FormControl>
+                                                                                            <Checkbox
+                                                                                                checked={field.value?.includes(item.id)}
+                                                                                                onCheckedChange={(checked) => (
+                                                                                                    checked
+                                                                                                        ? field.onChange([...(field.value || []), item.id])
+                                                                                                        : field.onChange(field.value?.filter((value) => value !== item.id))
+                                                                                                )}
+                                                                                            />
+                                                                                        </FormControl>
+                                                                                        <FormLabel className="text-sm font-normal">{item.label}</FormLabel>
+                                                                                    </FormItem>
+                                                                                )}
+                                                                            />
+                                                                        ))}
+                                                                    </div>
+                                                                </ScrollArea>
                                                                 <FormMessage />
                                                             </FormItem>
                                                         )}
