@@ -57,6 +57,7 @@ import { cn } from '@/lib/utils';
 import { Badge } from './ui/badge';
 import { Alert, AlertDescription } from './ui/alert';
 import { toast } from 'sonner';
+import { usePlanImage, getImageFromDB, saveImageToDB, deleteImageFromDB, getImageStorageKey } from '@/hooks/use-plan-image';
 
 const iconMap: { [key: string]: React.ElementType } = {
   Package,
@@ -80,83 +81,13 @@ interface PlanSettingsDialogProps {
 }
 
 // ============================================
-// Image Storage Utilities
+// Image Storage Utilities (from your provided code)
 // ============================================
 
-const IMAGE_DB_NAME = 'PlanImagesDB';
-const IMAGE_STORE_NAME = 'images';
-const MAX_IMAGE_SIZE_KB = 500; // Maximum size after compression
-const MAX_IMAGE_DIMENSION = 800; // Maximum width/height
-
-// Open IndexedDB
-const openImageDB = (): Promise<IDBDatabase> => {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(IMAGE_DB_NAME, 1);
-    
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result);
-    
-    request.onupgradeneeded = (event) => {
-      const db = (event.target as IDBOpenDBRequest).result;
-      if (!db.objectStoreNames.contains(IMAGE_STORE_NAME)) {
-        db.createObjectStore(IMAGE_STORE_NAME);
-      }
-    };
-  });
-};
-
-// Save image to IndexedDB
-const saveImageToDB = async (key: string, imageData: string): Promise<void> => {
-  const db = await openImageDB();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction([IMAGE_STORE_NAME], 'readwrite');
-    const store = transaction.objectStore(IMAGE_STORE_NAME);
-    const request = store.put(imageData, key);
-    
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve();
-  });
-};
-
-// Get image from IndexedDB
-const getImageFromDB = async (key: string): Promise<string | null> => {
-  try {
-    const db = await openImageDB();
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction([IMAGE_STORE_NAME], 'readonly');
-      const store = transaction.objectStore(IMAGE_STORE_NAME);
-      const request = store.get(key);
-      
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => resolve(request.result || null);
-    });
-  } catch {
-    return null;
-  }
-};
-
-// Delete image from IndexedDB
-const deleteImageFromDB = async (key: string): Promise<void> => {
-  try {
-    const db = await openImageDB();
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction([IMAGE_STORE_NAME], 'readwrite');
-      const store = transaction.objectStore(IMAGE_STORE_NAME);
-      const request = store.delete(key);
-      
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => resolve();
-    });
-  } catch {
-    // Ignore errors on delete
-  }
-};
-
-// Compress image
 const compressImage = (
   file: File,
-  maxSizeKB: number = MAX_IMAGE_SIZE_KB,
-  maxDimension: number = MAX_IMAGE_DIMENSION
+  maxSizeKB: number = 500,
+  maxDimension: number = 800
 ): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -168,7 +99,6 @@ const compressImage = (
         const canvas = document.createElement('canvas');
         let { width, height } = img;
         
-        // Scale down if needed
         if (width > maxDimension || height > maxDimension) {
           if (width > height) {
             height = (height / width) * maxDimension;
@@ -190,7 +120,6 @@ const compressImage = (
         
         ctx.drawImage(img, 0, 0, width, height);
         
-        // Try different quality levels to meet size target
         let quality = 0.9;
         let result = canvas.toDataURL('image/jpeg', quality);
         
@@ -211,10 +140,6 @@ const compressImage = (
   });
 };
 
-// Generate storage key for plan image
-const getImageStorageKey = (planName: string, imageType: string) => {
-  return `plan-image-${planName}-${imageType}`;
-};
 
 // ============================================
 // Image Uploader Component
@@ -243,7 +168,6 @@ const ImageUploader = ({
 
   const storageKey = getImageStorageKey(planName, imageType);
 
-  // Load image from IndexedDB on mount
   useEffect(() => {
     const loadStoredImage = async () => {
       if (!value && planName) {
@@ -257,9 +181,8 @@ const ImageUploader = ({
       }
     };
     loadStoredImage();
-  }, [planName, storageKey]);
+  }, [planName, storageKey, value, onChange]);
 
-  // Update preview when value changes
   useEffect(() => {
     if (value) {
       setLocalPreview(value);
@@ -273,7 +196,6 @@ const ImageUploader = ({
         return;
       }
 
-      // Check file size (max 10MB before compression)
       if (file.size > 10 * 1024 * 1024) {
         setError('Image is too large. Maximum size is 10MB');
         return;
@@ -283,16 +205,10 @@ const ImageUploader = ({
       setError(null);
 
       try {
-        // Compress the image
         const compressedImage = await compressImage(file);
-        
-        // Save to IndexedDB
         await saveImageToDB(storageKey, compressedImage);
-        
-        // Update state
         setLocalPreview(compressedImage);
         onChange(compressedImage);
-        
         toast.success('Image uploaded successfully');
       } catch (err) {
         console.error('Image upload error:', err);
@@ -310,7 +226,6 @@ const ImageUploader = ({
     if (file) {
       handleFileChange(file);
     }
-    // Reset input so the same file can be selected again
     e.target.value = '';
   };
 
@@ -459,7 +374,7 @@ const SettingsSection = ({
   </div>
 );
 
-const FormField = ({
+const FormFieldComponent = ({
   label,
   children,
   description,
@@ -705,10 +620,7 @@ const PlanPreviewCard = ({
           {customization.hidePrice ? (
             <div className="flex h-12 items-center sm:h-14">
               <span
-                className={cn(
-                  'font-bold',
-                  deviceType === 'mobile' ? 'text-xl' : 'text-2xl'
-                )}
+                className={cn('font-bold', deviceType === 'mobile' ? 'text-xl' : 'text-2xl')}
               >
                 Contact us
               </span>
@@ -745,25 +657,23 @@ const PlanPreviewCard = ({
       </Button>
 
       <div className="space-y-2.5 pt-2 sm:space-y-3">
-        {plan.features
-          .slice(1, deviceType === 'mobile' ? 4 : 6)
-          .map((feature, index) => (
-            <div key={index} className="flex items-start gap-2.5 sm:gap-3">
-              <div
-                className="mt-0.5 flex-shrink-0 rounded-full p-1"
-                style={{
-                  backgroundColor: isRecommended
-                    ? 'rgba(255, 255, 255, 0.2)'
-                    : 'rgba(255, 255, 255, 0.1)',
-                }}
-              >
-                <Check className="h-3 w-3" />
-              </div>
-              <span className="text-xs leading-relaxed opacity-90 sm:text-sm">
-                {feature}
-              </span>
+        {plan.features.slice(1, deviceType === 'mobile' ? 4 : 6).map((feature, index) => (
+          <div key={index} className="flex items-start gap-2.5 sm:gap-3">
+            <div
+              className="mt-0.5 flex-shrink-0 rounded-full p-1"
+              style={{
+                backgroundColor: isRecommended
+                  ? 'rgba(255, 255, 255, 0.2)'
+                  : 'rgba(255, 255, 255, 0.1)',
+              }}
+            >
+              <Check className="h-3 w-3" />
             </div>
-          ))}
+            <span className="text-sm leading-relaxed opacity-90 sm:text-sm">
+              {feature}
+            </span>
+          </div>
+        ))}
         {plan.features.length > (deviceType === 'mobile' ? 4 : 6) && (
           <p className="pt-1 text-center text-xs opacity-60">
             +{plan.features.length - (deviceType === 'mobile' ? 4 : 6)} more
@@ -786,25 +696,31 @@ export function PlanSettingsDialog({
   onSave,
 }: PlanSettingsDialogProps) {
   const [customization, setCustomization] = useState<PlanCustomization>({});
-  const [activeView, setActiveView] = useState<'settings' | 'preview'>('settings');
+  const [activeView, setActiveView] = useState<'settings' | 'preview'>(
+    'settings'
+  );
   const [previewDevice, setPreviewDevice] = useState<DeviceType>('desktop');
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     const loadPlanData = async () => {
       if (plan) {
-        const baseCustomization = { ...(plan.customization || {}) };
+        const baseCustomization = plan.customization || {};
         
         const storageKey = getImageStorageKey(plan.name, 'header');
         const storedImage = await getImageFromDB(storageKey);
         
         if (storedImage) {
-          baseCustomization.headerBgImage = storedImage;
+           setCustomization({
+            ...baseCustomization,
+            headerBgImage: storedImage,
+          });
+        } else {
+            setCustomization(baseCustomization);
         }
-
-        setCustomization(baseCustomization);
       }
     };
+    
     loadPlanData();
   }, [plan]);
 
@@ -813,7 +729,12 @@ export function PlanSettingsDialog({
     
     setIsSaving(true);
     try {
-      onSave(plan.name, customization);
+      const customizationToSave: PlanCustomization = {
+        ...customization,
+        headerBgImage: customization.headerBgImage ? 'indexed-db' : '',
+      };
+      
+      onSave(plan.name, customizationToSave);
       toast.success('Customization saved successfully');
       onClose();
     } catch (error) {
@@ -930,7 +851,7 @@ export function PlanSettingsDialog({
 
                   <TabsContent value="promo" className="mt-0 space-y-4">
                     <SettingsSection title="Highlight Settings">
-                      <FormField
+                      <FormFieldComponent
                         label="Mark as Recommended"
                         description="Highlight this plan to attract attention"
                         horizontal
@@ -941,7 +862,7 @@ export function PlanSettingsDialog({
                             handleChange('isRecommended', checked)
                           }
                         />
-                      </FormField>
+                      </FormFieldComponent>
                     </SettingsSection>
 
                     <SettingsSection title="Badge">
@@ -966,7 +887,7 @@ export function PlanSettingsDialog({
 
                     <SettingsSection title="Discount Settings">
                       <div className="space-y-4">
-                        <FormField
+                        <FormFieldComponent
                           label="Discount Type"
                           description="Choose percentage or flat amount"
                         >
@@ -1004,9 +925,9 @@ export function PlanSettingsDialog({
                               className="flex-1"
                             />
                           </div>
-                        </FormField>
+                        </FormFieldComponent>
 
-                        <FormField
+                        <FormFieldComponent
                           label="Minimum Subscription"
                           description="Months required for discount"
                         >
@@ -1023,14 +944,14 @@ export function PlanSettingsDialog({
                             }
                             placeholder="e.g., 3"
                           />
-                        </FormField>
+                        </FormFieldComponent>
                       </div>
                     </SettingsSection>
                   </TabsContent>
 
                   <TabsContent value="colors" className="mt-0 space-y-4">
                     <SettingsSection title="Background">
-                      <FormField label="Background Type">
+                      <FormFieldComponent label="Background Type">
                         <ToggleGroup
                           type="single"
                           value={customization.backgroundType || 'solid'}
@@ -1048,7 +969,7 @@ export function PlanSettingsDialog({
                             Gradient
                           </ToggleGroupItem>
                         </ToggleGroup>
-                      </FormField>
+                      </FormFieldComponent>
 
                       {customization.backgroundType === 'gradient' ? (
                         <div className="grid gap-4 sm:grid-cols-2">
@@ -1139,7 +1060,7 @@ export function PlanSettingsDialog({
 
                   <TabsContent value="text" className="mt-0 space-y-4">
                     <SettingsSection title="Price Display">
-                      <FormField
+                      <FormFieldComponent
                         label="Hide Price"
                         description='Show "Contact us" instead of the price'
                         horizontal
@@ -1150,12 +1071,32 @@ export function PlanSettingsDialog({
                             handleChange('hidePrice', checked)
                           }
                         />
-                      </FormField>
+                      </FormFieldComponent>
+                      {customization.hidePrice && (
+                          <div className="space-y-4 pt-4 border-t">
+                              <FormFieldComponent label="Contact Email">
+                                  <Input 
+                                      type="email"
+                                      value={customization.contactEmail || ''}
+                                      onChange={(e) => handleChange('contactEmail', e.target.value)}
+                                      placeholder="your@email.com"
+                                  />
+                              </FormFieldComponent>
+                              <FormFieldComponent label="Contact WhatsApp">
+                                  <Input 
+                                      type="tel"
+                                      value={customization.contactWhatsapp || ''}
+                                      onChange={(e) => handleChange('contactWhatsapp', e.target.value)}
+                                      placeholder="265999123456"
+                                  />
+                              </FormFieldComponent>
+                          </div>
+                      )}
                     </SettingsSection>
 
                     <SettingsSection title="Custom Text">
                       <div className="space-y-4">
-                        <FormField label="Title">
+                        <FormFieldComponent label="Title">
                           <Input
                             value={customization.customTitle || ''}
                             onChange={(e) =>
@@ -1163,8 +1104,9 @@ export function PlanSettingsDialog({
                             }
                             placeholder={plan.name}
                           />
-                        </FormField>
-                        <FormField label="Description">
+                        </FormFieldComponent>
+
+                        <FormFieldComponent label="Description">
                           <Input
                             value={customization.customDescription || ''}
                             onChange={(e) =>
@@ -1172,8 +1114,9 @@ export function PlanSettingsDialog({
                             }
                             placeholder="Short description for the plan..."
                           />
-                        </FormField>
-                        <FormField label="Button Text">
+                        </FormFieldComponent>
+
+                        <FormFieldComponent label="Button Text">
                           <Input
                             value={customization.ctaText || ''}
                             onChange={(e) =>
@@ -1181,14 +1124,14 @@ export function PlanSettingsDialog({
                             }
                             placeholder="Choose this plan"
                           />
-                        </FormField>
+                        </FormFieldComponent>
                       </div>
                     </SettingsSection>
                   </TabsContent>
 
                   <TabsContent value="icon" className="mt-0 space-y-4">
                     <SettingsSection title="Plan Icon">
-                      <FormField
+                      <FormFieldComponent
                         label="Select Icon"
                         description="Choose an icon to represent this plan"
                       >
@@ -1218,7 +1161,7 @@ export function PlanSettingsDialog({
                             })}
                           </SelectContent>
                         </Select>
-                      </FormField>
+                      </FormFieldComponent>
 
                       <div className="mt-4">
                         <Label className="mb-3 block text-sm">
@@ -1296,7 +1239,7 @@ export function PlanSettingsDialog({
         <div className="flex-shrink-0 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-4">
             <p className="hidden text-sm text-muted-foreground lg:block">
-              Images are compressed and stored locally in your browser.
+              Images are compressed and stored locally
             </p>
             <div className="flex w-full gap-3 sm:w-auto">
               <Button
