@@ -208,7 +208,6 @@ const ImageUploader = ({
   );
 };
 
-
 // Settings Section Component
 const SettingsSection = ({
   title,
@@ -672,125 +671,102 @@ export function PlanSettingsDialog({
 
                   {/* Promo Tab */}
                   <TabsContent value="promo" className="mt-0 space-y-4">
-                    <SettingsSection>
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
-                          <Label className="text-sm font-medium">
-                            Mark as Recommended
-                          </Label>
-                          <p className="text-xs text-muted-foreground">
-                            Highlight this plan to attract attention
-                          </p>
-                        </div>
+                    <SettingsSection title="Highlight Settings">
+                      <FormField
+                        label="Mark as Recommended"
+                        description="Highlight this plan to attract attention"
+                        horizontal
+                      >
                         <Switch
                           checked={customization.isRecommended || false}
                           onCheckedChange={(checked) =>
                             handleChange('isRecommended', checked)
                           }
                         />
+                      </FormField>
+                    </SettingsSection>
+
+                    <SettingsSection title="Badge">
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label className="text-sm">Badge Text</Label>
+                          <Input
+                            value={customization.badgeText || ''}
+                            onChange={(e) =>
+                              handleChange('badgeText', e.target.value)
+                            }
+                            placeholder="e.g., Popular, Best Value"
+                          />
+                        </div>
+                        <ColorPicker
+                          label="Badge Color"
+                          value={customization.badgeColor || '#FF6B35'}
+                          onChange={(v) => handleChange('badgeColor', v)}
+                        />
                       </div>
                     </SettingsSection>
 
-                    <SettingsSection>
-                      <FormField
-                        label="Badge Settings"
-                        description="Customize the promotional badge"
-                      >
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1.5">
-                            <Label className="text-xs text-muted-foreground">
-                              Text
-                            </Label>
-                            <Input
-                              value={customization.badgeText || ''}
-                              onChange={(e) =>
-                                handleChange('badgeText', e.target.value)
+                    <SettingsSection title="Discount Settings">
+                      <div className="space-y-4">
+                        <FormField
+                          label="Discount Type"
+                          description="Choose percentage or flat amount"
+                        >
+                          <div className="flex gap-3">
+                            <ToggleGroup
+                              type="single"
+                              value={customization.discountType || ''}
+                              onValueChange={(value: 'flat' | 'percentage') =>
+                                handleChange('discountType', value)
                               }
-                              placeholder="e.g., Popular, Best Value"
+                              className="flex-shrink-0"
+                            >
+                              <ToggleGroupItem
+                                value="percentage"
+                                className="w-12"
+                              >
+                                %
+                              </ToggleGroupItem>
+                              <ToggleGroupItem value="flat" className="w-12">
+                                K
+                              </ToggleGroupItem>
+                            </ToggleGroup>
+                            <Input
+                              type="number"
+                              value={customization.discountValue || ''}
+                              onChange={(e) =>
+                                handleChange(
+                                  'discountValue',
+                                  e.target.value
+                                    ? Number(e.target.value)
+                                    : undefined
+                                )
+                              }
+                              placeholder="Discount amount"
+                              className="flex-1"
                             />
                           </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-xs text-muted-foreground">
-                              Color
-                            </Label>
-                            <div className="flex gap-2">
-                              <Input
-                                type="color"
-                                value={customization.badgeColor || '#FF6B35'}
-                                onChange={(e) =>
-                                  handleChange('badgeColor', e.target.value)
-                                }
-                                className="h-10 w-14 cursor-pointer p-1"
-                              />
-                              <Input
-                                value={customization.badgeColor || '#FF6B35'}
-                                onChange={(e) =>
-                                  handleChange('badgeColor', e.target.value)
-                                }
-                                placeholder="#FF6B35"
-                                className="flex-1 font-mono text-xs"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </FormField>
-                    </SettingsSection>
+                        </FormField>
 
-                    <SettingsSection>
-                      <FormField
-                        label="Discount"
-                        description="Apply a discount to this plan"
-                      >
-                        <div className="flex gap-3">
-                          <ToggleGroup
-                            type="single"
-                            value={customization.discountType || ''}
-                            onValueChange={(value: 'flat' | 'percentage') =>
-                              handleChange('discountType', value)
-                            }
-                            className="flex-shrink-0"
-                          >
-                            <ToggleGroupItem
-                              value="percentage"
-                              className="w-10"
-                            >
-                              %
-                            </ToggleGroupItem>
-                            <ToggleGroupItem value="flat" className="w-10">
-                              K
-                            </ToggleGroupItem>
-                          </ToggleGroup>
+                        <FormField
+                          label="Minimum Subscription"
+                          description="Months required for discount"
+                        >
                           <Input
                             type="number"
-                            value={customization.discountValue || ''}
+                            value={customization.discountMonths || ''}
                             onChange={(e) =>
                               handleChange(
-                                'discountValue',
-                                e.target.value ? Number(e.target.value) : undefined
+                                'discountMonths',
+                                e.target.value
+                                  ? Number(e.target.value)
+                                  : undefined
                               )
                             }
-                            placeholder="Discount amount"
-                            className="flex-1"
+                            placeholder="e.g., 3"
                           />
-                        </div>
-                      </FormField>
-
-                      <FormField
-                        label="Minimum Months"
-                        description="Apply discount for orders with this many months or more"
-                      >
-                        <Input
-                          type="number"
-                          value={customization.discountMonths || ''}
-                          onChange={(e) =>
-                            handleChange(
-                              'discountMonths',
-                              e.target.value ? Number(e.target.value) : undefined
-                            )
-                          }
-                          placeholder="e.g., 3"
-                        />
-                      </FormField>
+                        </FormField>
+                      </div>
                     </SettingsSection>
                   </TabsContent>
 
@@ -937,7 +913,7 @@ export function PlanSettingsDialog({
                             onChange={(e) =>
                               handleChange('customDescription', e.target.value)
                             }
-                            placeholder="Short description for the plan..."
+                            placeholder="Plan description..."
                           />
                         </FormField>
 
@@ -978,9 +954,9 @@ export function PlanSettingsDialog({
                               const IconComponent = iconMap[iconName];
                               return (
                                 <SelectItem key={iconName} value={iconName}>
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-3">
                                     <IconComponent className="h-4 w-4" />
-                                    {iconName}
+                                    <span>{iconName}</span>
                                   </div>
                                 </SelectItem>
                               );
@@ -1062,7 +1038,7 @@ export function PlanSettingsDialog({
         <div className="flex-shrink-0 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-4">
             <p className="hidden text-sm text-muted-foreground lg:block">
-              Changes will be applied immediately after saving
+              Changes will be applied when you save.
             </p>
             <div className="flex gap-3">
               <Button
