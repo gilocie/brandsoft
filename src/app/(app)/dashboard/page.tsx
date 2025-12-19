@@ -329,7 +329,10 @@ export default function DashboardPage() {
   const purchaseToShow = useMemo((): Purchase | null => {
     if (!config?.purchases || config.purchases.length === 0) return null;
 
-    const purchases = [...config.purchases].sort(
+    // IMPORTANT: Filter out top-up orders from this view
+    const planPurchases = config.purchases.filter(p => !p.planName.toLowerCase().includes('top-up') && !p.planName.toLowerCase().includes('credit purchase'));
+
+    const purchases = [...planPurchases].sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
 

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, Suspense, useCallback, useMemo } from 'react';
@@ -489,7 +490,7 @@ function VerifyPurchaseContent() {
                 {order && (
                     <CardFooter>
                         <Button asChild variant="outline">
-                            <Link href={isAdminMode ? '/office/orders' : '/history'}><Wallet className="mr-2 h-4 w-4" /> Return to {isAdminMode ? 'Orders' : 'Wallet'}</Link>
+                            <Link href={isAdminMode ? '/office/orders' : '/history'}><Wallet className="mr-2 h-4 w-4" /> Return to {isAdminMode ? 'Orders' : 'History'}</Link>
                         </Button>
                     </CardFooter>
                 )}
@@ -517,6 +518,3 @@ export default function VerifyPurchasePage() {
         </div>
     )
 }
-
-
-    

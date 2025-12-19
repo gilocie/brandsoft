@@ -42,12 +42,14 @@ export function HistoryPageContent() {
     } = useMemo(() => {
         if (!config?.purchases) return { planPurchases: [], topUps: [], approvedPlans: [], pendingPlans: [], declinedPlans: [], approvedTopups: [], pendingTopups: [], processingTopups: [], declinedTopups: [], periodReserve: 0 };
 
-        const allPurchases = config.purchases.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        const allPurchases = config.purchases
+            .filter(p => !p.isAcknowledged) // Filter out acknowledged declined orders
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         
         const planPurchases = allPurchases.filter(p => !p.planName.toLowerCase().includes('top-up') && !p.planName.toLowerCase().includes('credit purchase'));
         const topUps = allPurchases.filter(p => p.planName.toLowerCase().includes('top-up') || p.planName.toLowerCase().includes('credit purchase'));
         
-        const totalReserve = planPurchases.reduce((sum, p) => sum + (p.periodReserve || 0), 0);
+        const totalReserve = config.purchases.filter(p => p.status === 'active').reduce((sum, p) => sum + (p.periodReserve || 0), 0);
 
         return { 
             planPurchases, 
@@ -265,10 +267,12 @@ export function HistoryPageContent() {
                         </p>
                     </CardContent>
                 </Card>
-
                 <TopUpNotificationCard orders={declinedTopups} title="Declined Top-ups" icon={AlertTriangle} variant="destructive" buttonText="See Why" />
-                <TopUpNotificationCard orders={processingTopups} title="Processing Top-ups" icon={RefreshCw} variant="accent" buttonText="View Status" />
+            </div>
+
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <TopUpNotificationCard orders={pendingTopups} title="Pending Top-ups" icon={Bell} variant="primary" buttonText="View Orders" />
+                <TopUpNotificationCard orders={processingTopups} title="Processing Top-ups" icon={RefreshCw} variant="accent" buttonText="View Status" />
             </div>
 
             {/* Transactions Tabs */}
