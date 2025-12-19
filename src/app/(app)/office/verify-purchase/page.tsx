@@ -324,7 +324,7 @@ function VerifyPurchaseContent() {
 
         // The PIN is already verified in the dialog's logic.
         activatePurchaseOrder(order.orderId);
-        addCreditPurchaseToAffiliate(creditsToSell, order.planPrice);
+        addCreditPurchaseToAffiliate(creditsToSell, order.orderId);
         
         toast({
             title: "Top-Up Activated!",

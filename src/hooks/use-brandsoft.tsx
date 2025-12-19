@@ -84,7 +84,7 @@ interface BrandsoftContextType {
   acknowledgeDeclinedPurchase: (orderId: string) => void;
   updatePurchaseStatus: () => void;
   downgradeToTrial: () => void;
-  addCreditPurchaseToAffiliate: (credits: number, price: string) => void;
+  addCreditPurchaseToAffiliate: (credits: number, orderId: string) => void;
   // Currency methods
   addCurrency: (currency: string) => void;
   // Review methods
@@ -124,21 +124,42 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
       saveConfig(newConfig, { redirect: false, revalidate: true });
     };
     
-     const addCreditPurchaseToAffiliate = (credits: number, price: string) => {
+    const addCreditPurchaseToAffiliate = (credits: number, orderId: string) => {
         if (!config || !config.affiliate || !config.admin) return;
 
-        const cost = parseFloat(price.replace(/[^0-9.-]+/g,""));
-        const commissionRate = 0.1; // 10%
-        const commission = cost * commissionRate;
+        const order = config.purchases.find(p => p.orderId === orderId);
+        if (!order) return;
 
-        const newAffiliateData = {
-            ...config.affiliate,
-            creditBalance: (config.affiliate.creditBalance || 0) - credits,
-            unclaimedCommission: (config.affiliate.unclaimedCommission || 0) + commission,
-            totalSales: (config.affiliate.totalSales || 0) + cost,
+        const costInMWK = parseFloat(order.planPrice.replace(/[^0-9.-]+/g,""));
+        const commissionRate = 0.1; // 10%
+        const commission = costInMWK * commissionRate;
+        
+        let newAffiliateData = { ...config.affiliate };
+
+        // 1. Deduct credits from affiliate
+        newAffiliateData.creditBalance = (newAffiliateData.creditBalance || 0) - credits;
+
+        // 2. Add cash value to client's wallet
+        const clientIndex = newAffiliateData.clients.findIndex(c => c.id === order.customerId);
+        if (clientIndex > -1) {
+            const client = newAffiliateData.clients[clientIndex];
+            newAffiliateData.clients[clientIndex] = {
+                ...client,
+                walletBalance: (client.walletBalance || 0) + costInMWK,
+            };
+        }
+        
+        // 3. DO NOT add commission for top-ups, affiliate profits from spread.
+
+        // 4. Update admin stats
+        const newAdminSettings = {
+            ...config.admin,
+            // These credits were sold by the affiliate, not added to admin reserve.
+            // But total sold in ecosystem increases.
+            soldCredits: (config.admin.soldCredits || 0) + credits,
         };
 
-        saveConfig({ ...config, affiliate: newAffiliateData }, { revalidate: true });
+        saveConfig({ ...config, affiliate: newAffiliateData, admin: newAdminSettings }, { revalidate: true });
     };
     
     const useActivationKey = (key: string, companyId: string): boolean => {
