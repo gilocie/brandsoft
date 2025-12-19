@@ -36,7 +36,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Badge } from '@/components/ui/badge';
 import { GenerateKeyDialog } from '@/components/office/dialogs/generate-key-dialog';
 import { PurchaseDialog, type PlanDetails } from '@/components/purchase-dialog';
-import { SellCreditsDialog } from '@/components/office/dialogs/sell-credits-dialog';
 import { TopUpNotificationCard } from '@/components/office/top-up-notification-card';
 import { TopUpTable } from '@/components/office/top-up-table';
 import { BonusProgressDialog } from './bonus-progress-dialog';
@@ -62,7 +61,6 @@ export function OfficePageContent() {
   const [payoutsPage, setPayoutsPage] = useState(0);
   const { toast } = useToast();
   const [purchaseDetails, setPurchaseDetails] = useState<PlanDetails | null>(null);
-  const [isSellCreditsOpen, setIsSellCreditsOpen] = useState(false);
 
   const affiliate = config?.affiliate;
 
@@ -380,6 +378,7 @@ export function OfficePageContent() {
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="clients">Clients ({syncedClients.length})</TabsTrigger>
             <TabsTrigger value="transactions">Transactions</TabsTrigger>
+            <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
             <TabsTrigger value="invitations">Invitations</TabsTrigger>
         </TabsList>
         <TabsContent value="dashboard" className="pt-6">
@@ -408,17 +407,11 @@ export function OfficePageContent() {
                         valuePrefix={`BS `}
                         footer={`Value: K${((affiliate.creditBalance || 0) * CREDIT_TO_MWK).toLocaleString()}`}
                     >
-                        <div className="flex gap-2 mt-2">
+                       <div className="flex gap-2 mt-2">
                             <BuyCreditsDialog
                                 walletBalance={affiliate.myWallet || 0}
                                 onManualPayment={(details) => setPurchaseDetails(details)}
-                            />
-                            <SellCreditsDialog
-                                creditBalance={affiliate.creditBalance || 0}
-                                isOpen={isSellCreditsOpen}
-                                onOpenChange={setIsSellCreditsOpen}
-                                buyPrice={config?.admin?.buyPrice || 850}
-                            />
+                             />
                         </div>
                     </StatCard>
                     <BonusProgressDialog affiliate={affiliate} />
@@ -510,8 +503,6 @@ export function OfficePageContent() {
                 <TabsList>
                     <TabsTrigger value="top-ups">Top-ups</TabsTrigger>
                     <TabsTrigger value="commissions">Commissions</TabsTrigger>
-                    <TabsTrigger value="payouts">Payouts</TabsTrigger>
-                    <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
                 </TabsList>
                 <TabsContent value="top-ups" className="pt-4">
                     <Card>
@@ -570,76 +561,46 @@ export function OfficePageContent() {
                         </CardContent>
                     </Card>
                 </TabsContent>
-                <TabsContent value="payouts" className="pt-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Payout History</CardTitle>
-                            <CardDescription>Your history of withdrawal requests (pending or processing).</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                             <div className="space-y-4">
-                                {paginatedPayouts.length > 0 ? paginatedPayouts.map(t => (
-                                    <div key={t.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100">
-                                                <TrendingDown className="h-4 w-4 text-red-600" />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-medium">{t.description}</p>
-                                                <p className="text-xs text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
-                                            </div>
-                                        </div>
-                                        <p className="text-sm font-semibold text-red-600">- K{(t.amount).toLocaleString()}</p>
+            </Tabs>
+        </TabsContent>
+         <TabsContent value="withdrawals" className="pt-6">
+             <Card>
+                <CardHeader>
+                    <CardTitle>Payout History</CardTitle>
+                    <CardDescription>Your history of withdrawals.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                     <div className="space-y-4">
+                        {paginatedPayouts.length > 0 ? paginatedPayouts.map(t => (
+                            <div key={t.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100">
+                                        <TrendingDown className="h-4 w-4 text-red-600" />
                                     </div>
-                                )) : (
-                                    <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
-                                        <p className="text-muted-foreground">No pending or processing payouts.</p>
+                                    <div>
+                                        <p className="text-sm font-medium">{t.description}</p>
+                                        <p className="text-xs text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
                                     </div>
-                                )}
-                            </div>
-                        </CardContent>
-                        {totalPayoutPages > 1 && (
-                            <CardContent className="pt-4 flex items-center justify-between">
-                                <span className="text-sm text-muted-foreground">Page {payoutsPage + 1} of {totalPayoutPages}</span>
-                                <div className="flex gap-2">
-                                    <Button variant="outline" size="sm" onClick={() => setPayoutsPage(p => p - 1)} disabled={payoutsPage === 0}>Previous</Button>
-                                    <Button variant="outline" size="sm" onClick={() => setPayoutsPage(p => p + 1)} disabled={payoutsPage >= totalPayoutPages - 1}>Next</Button>
                                 </div>
-                            </CardContent>
-                        )}
-                    </Card>
-                </TabsContent>
-                 <TabsContent value="withdrawals" className="pt-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Completed Withdrawals</CardTitle>
-                            <CardDescription>Your history of completed withdrawals.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                             <div className="space-y-4">
-                                {withdrawalTransactions.length > 0 ? withdrawalTransactions.map(t => (
-                                    <div key={t.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100">
-                                                <CheckCircle className="h-4 w-4 text-slate-600" />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-medium">{t.description}</p>
-                                                <p className="text-xs text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
-                                            </div>
-                                        </div>
-                                        <p className="text-sm font-semibold text-slate-600">- K{(t.amount).toLocaleString()}</p>
-                                    </div>
-                                )) : (
-                                    <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
-                                        <p className="text-muted-foreground">No completed withdrawals.</p>
-                                    </div>
-                                )}
+                                <p className="text-sm font-semibold text-red-600">- K{(t.amount).toLocaleString()}</p>
                             </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-        </Tabs>
+                        )) : (
+                            <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
+                                <p className="text-muted-foreground">No payout transactions found.</p>
+                            </div>
+                        )}
+                    </div>
+                </CardContent>
+                {totalPayoutPages > 1 && (
+                    <CardContent className="pt-4 flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Page {payoutsPage + 1} of {totalPayoutPages}</span>
+                        <div className="flex gap-2">
+                            <Button variant="outline" size="sm" onClick={() => setPayoutsPage(p => p - 1)} disabled={payoutsPage === 0}>Previous</Button>
+                            <Button variant="outline" size="sm" onClick={() => setPayoutsPage(p => p + 1)} disabled={payoutsPage >= totalPayoutPages - 1}>Next</Button>
+                        </div>
+                    </CardContent>
+                )}
+            </Card>
         </TabsContent>
         <TabsContent value="invitations" className="pt-6">
             <Card>
