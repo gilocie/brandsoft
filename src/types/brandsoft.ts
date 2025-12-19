@@ -244,6 +244,7 @@ export type PlanCustomization = {
   backgroundType?: 'solid' | 'gradient';
   backgroundGradientStart?: string;
   backgroundGradientEnd?: string;
+  hidePrice?: boolean;
 };
 
 export type Plan = {

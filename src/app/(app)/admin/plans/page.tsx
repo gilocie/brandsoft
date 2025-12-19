@@ -159,17 +159,23 @@ const AdminPlanCard = ({ plan, onEdit, onCustomize, onDelete }: { plan: Plan, on
                         </div>
                     </div>
                     
-                    <div className="flex items-baseline gap-2">
-                        <span className="text-5xl font-bold tracking-tight" style={{ color: cardTextColor }}>
-                            K{plan.price.toLocaleString()}
-                        </span>
-                        <span 
-                            className="text-base font-medium"
-                            style={{ color: isPopular ? 'rgba(255, 255, 255, 0.7)' : 'rgba(255, 255, 255, 0.5)' }}
-                        >
-                            /month
-                        </span>
-                    </div>
+                    {customization?.hidePrice ? (
+                        <div className="h-[60px] flex items-center">
+                            <Button className="bg-white/90 text-black hover:bg-white w-full font-semibold">Contact Us</Button>
+                        </div>
+                    ) : (
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-5xl font-bold tracking-tight" style={{ color: cardTextColor }}>
+                                K{plan.price.toLocaleString()}
+                            </span>
+                            <span 
+                                className="text-base font-medium"
+                                style={{ color: isPopular ? 'rgba(255, 255, 255, 0.7)' : 'rgba(255, 255, 255, 0.5)' }}
+                            >
+                                /month
+                            </span>
+                        </div>
+                    )}
                 </div>
             </CardHeader>
             <CardContent className="flex-grow space-y-4 px-8 pb-8">

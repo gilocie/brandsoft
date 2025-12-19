@@ -96,7 +96,7 @@ export function PlanSettingsDialog({ isOpen, onClose, plan, onSave }: PlanSettin
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl h-[90vh] p-0 flex flex-col">
+      <DialogContent className="max-w-4xl h-[90vh] p-0 flex flex-col">
         <DialogHeader className="px-6 pt-6 pb-4 border-b flex-shrink-0">
           <DialogTitle>Customize "{plan.name}" Plan</DialogTitle>
           <DialogDescription>
@@ -105,318 +105,88 @@ export function PlanSettingsDialog({ isOpen, onClose, plan, onSave }: PlanSettin
         </DialogHeader>
 
         <div className="flex-1 min-h-0 overflow-hidden">
-          <ScrollArea className="h-full px-6">
-            <div className="py-4 space-y-6 pb-6">
-              <Tabs defaultValue="promo" className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
-                  <TabsTrigger value="promo">
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Promotion
-                  </TabsTrigger>
-                  <TabsTrigger value="colors">
-                    <Palette className="h-4 w-4 mr-2" />
-                    Appearance
-                  </TabsTrigger>
-                  <TabsTrigger value="text">
-                    <Type className="h-4 w-4 mr-2" />
-                    Text
-                  </TabsTrigger>
-                   <TabsTrigger value="icon">
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Icon
-                  </TabsTrigger>
-                </TabsList>
-                
-                 <TabsContent value="promo" className="space-y-4 mt-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Promotional Settings</CardTitle>
-                      <CardDescription>Make this plan stand out.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                       <div className="flex items-center justify-between rounded-lg border p-3">
-                          <div>
-                            <Label htmlFor="isRecommended" className="font-medium">Mark as "Recommended"</Label>
-                            <p className="text-sm text-muted-foreground">Highlight this plan with special styling</p>
-                          </div>
-                          <Switch
-                            id="isRecommended"
-                            checked={customization.isRecommended || false}
-                            onCheckedChange={(checked) => handleChange('isRecommended', checked)}
-                          />
-                        </div>
-
-                      <div className="space-y-2">
-                        <Label>Promotional Discount</Label>
-                        <div className="flex gap-2">
-                            <ToggleGroup
-                                type="single"
-                                value={customization.discountType}
-                                onValueChange={(value: 'flat' | 'percentage') => handleChange('discountType', value)}
-                                className="border rounded-md"
-                            >
-                                <ToggleGroupItem value="percentage" className="h-10 px-3">%</ToggleGroupItem>
-                                <ToggleGroupItem value="flat" className="h-10 px-3">K</ToggleGroupItem>
-                            </ToggleGroup>
-                          <Input
-                            type="number"
-                            value={customization.discountValue || ''}
-                            onChange={(e) => handleChange('discountValue', e.target.value ? Number(e.target.value) : undefined)}
-                            placeholder="e.g., 10 or 500"
-                            className="flex-1"
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="discountMonths">Discount Months</Label>
-                        <Input
-                          id="discountMonths"
-                          type="number"
-                          value={customization.discountMonths || ''}
-                          onChange={(e) => handleChange('discountMonths', e.target.value ? Number(e.target.value) : undefined)}
-                          placeholder="e.g., 3"
-                        />
-                      </div>
-                       <div className="space-y-2">
-                        <Label htmlFor="badgeText">Badge Text</Label>
-                        <Input
-                          id="badgeText"
-                          value={customization.badgeText || ''}
-                          onChange={(e) => handleChange('badgeText', e.target.value)}
-                          placeholder="e.g., Most popular, Best Value"
-                        />
-                      </div>
-                       <div className="space-y-2">
-                        <Label htmlFor="badgeColor">Badge Color</Label>
-                        <div className="flex gap-2">
-                          <Input id="badgeColor" type="color" value={customization.badgeColor || '#FF6B35'} onChange={(e) => handleChange('badgeColor', e.target.value)} className="w-20 h-10"/>
-                          <Input type="text" value={customization.badgeColor || '#FF6B35'} onChange={(e) => handleChange('badgeColor', e.target.value)} placeholder="#FF6B35" className="flex-1"/>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-
-                <TabsContent value="colors" className="space-y-4 mt-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Color Scheme</CardTitle>
-                      <CardDescription>Customize the colors for this plan's card</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                            <Label>Background Type</Label>
-                             <ToggleGroup
-                                type="single"
-                                value={customization.backgroundType || 'solid'}
-                                onValueChange={(value: 'solid' | 'gradient') => handleChange('backgroundType', value)}
-                                className="grid grid-cols-2"
-                            >
-                                <ToggleGroupItem value="solid">Solid</ToggleGroupItem>
-                                <ToggleGroupItem value="gradient">Gradient</ToggleGroupItem>
-                            </ToggleGroup>
-                        </div>
-
-                        {customization.backgroundType === 'gradient' ? (
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label>Start Color</Label>
-                                    <Input type="color" value={customization.backgroundGradientStart || '#3a3a3a'} onChange={(e) => handleChange('backgroundGradientStart', e.target.value)} className="w-full h-10"/>
-                                </div>
-                                 <div className="space-y-2">
-                                    <Label>End Color</Label>
-                                    <Input type="color" value={customization.backgroundGradientEnd || '#1a1a1a'} onChange={(e) => handleChange('backgroundGradientEnd', e.target.value)} className="w-full h-10"/>
-                                </div>
-                            </div>
-                        ) : (
-                             <div className="space-y-2">
-                                <Label htmlFor="bgColor">Background Color</Label>
-                                <Input id="bgColor" type="color" value={customization.bgColor || (isRecommended ? '#5850EC' : '#1E1E23')} onChange={(e) => handleChange('bgColor', e.target.value)} className="w-full h-10"/>
-                            </div>
-                        )}
-
-                      <div className="space-y-2">
-                        <Label htmlFor="textColor">Text Color</Label>
-                        <Input id="textColor" type="color" value={customization.textColor || '#FFFFFF'} onChange={(e) => handleChange('textColor', e.target.value)} className="w-full h-10"/>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="borderColor">Border Color</Label>
-                        <Input id="borderColor" type="color" value={customization.borderColor || (isRecommended ? '#5850EC' : '#2D2D32')} onChange={(e) => handleChange('borderColor', e.target.value)} className="w-full h-10"/>
-                      </div>
-
-                       <ImageUploader 
-                          label="Header Background Image" 
-                          value={customization.headerBgImage}
-                          onChange={(v) => handleChange('headerBgImage', v)}
-                          aspect="wide"
-                       />
-                       {customization.headerBgImage && (
-                          <div className="space-y-2">
-                              <Label>Header Image Opacity</Label>
-                              <Slider
-                                  value={[(customization.headerBgImageOpacity ?? 1) * 100]}
-                                  onValueChange={([v]) => handleChange('headerBgImageOpacity', v / 100)}
-                                  max={100}
-                                  step={1}
-                              />
-                          </div>
-                       )}
-
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-
-                <TabsContent value="text" className="space-y-4 mt-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Custom Text</CardTitle>
-                      <CardDescription>Override default text for this plan</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="customTitle">Custom Title</Label>
-                        <Input id="customTitle" value={customization.customTitle || ''} onChange={(e) => handleChange('customTitle', e.target.value)} placeholder={plan.name}/>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="customDescription">Custom Description</Label>
-                        <Input 
-                          id="customDescription" 
-                          value={customization.customDescription || ''} 
-                          onChange={(e) => handleChange('customDescription', e.target.value)} 
-                          placeholder="Add a custom description..."
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="ctaText">Call-to-Action Button Text</Label>
-                        <Input 
-                          id="ctaText" 
-                          value={customization.ctaText || ''} 
-                          onChange={(e) => handleChange('ctaText', e.target.value)} 
-                          placeholder="Choose this plan"
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-
-                <TabsContent value="icon" className="space-y-4 mt-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Plan Icon</CardTitle>
-                      <CardDescription>Choose an icon to represent this plan.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                       <Select value={customization.icon || 'Package'} onValueChange={(v) => handleChange('icon', v)}>
-                         <SelectTrigger>
-                            <SelectValue placeholder="Select an icon" />
-                          </SelectTrigger>
-                          <SelectContent>
-                              {Object.keys(iconMap).map(iconName => (
-                                <SelectItem key={iconName} value={iconName}>
-                                  <div className="flex items-center gap-2">
-                                    {React.createElement(iconMap[iconName], { className: 'h-4 w-4' })}
-                                    {iconName}
-                                  </div>
-                                </SelectItem>
-                              ))}
-                          </SelectContent>
-                       </Select>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-
-              </Tabs>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Preview</CardTitle>
-                  <CardDescription>See how your customizations will look</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div
-                    className="border-2 rounded-2xl p-8 space-y-6 text-left relative"
-                    style={{
-                      ...backgroundStyle,
-                      borderColor: borderColor,
-                      color: cardTextColor,
-                    }}
-                  >
-                    {(isRecommended && badgeText) && (
-                      <div className="absolute top-6 right-6">
-                        <span 
-                          className="text-xs font-bold px-3 py-1.5 rounded-full text-white" 
-                          style={{ backgroundColor: badgeColor }}
-                        >
-                          {badgeText}
-                        </span>
-                      </div>
-                    )}
-                    
-                    <div 
-                        className="relative" 
-                        style={{ backgroundImage: customization?.headerBgImage ? `url(${customization.headerBgImage})` : 'none', backgroundSize: 'cover', backgroundPosition: 'center' }}
-                    >
-                         {customization?.headerBgImage && <div className="absolute inset-0 bg-black" style={{opacity: 1 - (customization.headerBgImageOpacity ?? 1)}} />}
-                         <div className="relative">
-                            <div className="flex items-start gap-4 mb-6">
-                                <div 
-                                    className="h-14 w-14 rounded-2xl flex items-center justify-center flex-shrink-0" 
-                                    style={{ backgroundColor: isRecommended ? 'rgba(255, 255, 255, 0.15)' : 'rgba(99, 102, 241, 0.15)' }}
-                                >
-                                    <Icon className="h-7 w-7" style={{ color: isRecommended ? '#FFFFFF' : 'rgb(99, 102, 241)' }} />
-                                </div>
-                                
-                                <div className="flex-1">
-                                    <h3 className="text-2xl font-bold mb-2">
-                                    {customization.customTitle || plan.name}
-                                    </h3>
-                                    <p 
-                                    className="text-sm opacity-80 leading-relaxed"
-                                    >
-                                    {customization.customDescription || plan.features[0] || 'Plan description'}
-                                    </p>
-                                </div>
-                            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 h-full">
+                {/* Left side - Settings */}
+                <ScrollArea className="h-full">
+                    <div className="p-6">
+                        <Tabs defaultValue="promo" className="w-full">
+                            <TabsList className="grid w-full grid-cols-4">
+                                <TabsTrigger value="promo"><Sparkles className="h-4 w-4 mr-2" />Promo</TabsTrigger>
+                                <TabsTrigger value="colors"><Palette className="h-4 w-4 mr-2" />Appearance</TabsTrigger>
+                                <TabsTrigger value="text"><Type className="h-4 w-4 mr-2" />Text</TabsTrigger>
+                                <TabsTrigger value="icon"><Sparkles className="h-4 w-4 mr-2" />Icon</TabsTrigger>
+                            </TabsList>
                             
-                            <div className="flex items-baseline gap-2">
-                                <span className="text-5xl font-bold tracking-tight">K{plan.price.toLocaleString()}</span>
-                                <span className="text-base opacity-70">/month</span>
+                            <TabsContent value="promo" className="space-y-4 mt-4">
+                                <Card>
+                                    <CardContent className="pt-6 space-y-4">
+                                    <div className="flex items-center justify-between rounded-lg border p-3">
+                                        <div><Label htmlFor="isRecommended" className="font-medium">Mark as "Recommended"</Label><p className="text-sm text-muted-foreground">Highlight this plan</p></div>
+                                        <Switch id="isRecommended" checked={customization.isRecommended || false} onCheckedChange={(checked) => handleChange('isRecommended', checked)} />
+                                    </div>
+                                    <div className="space-y-2"><Label>Promotional Badge</Label><div className="grid grid-cols-2 gap-2"><Input value={customization.badgeText || ''} onChange={(e) => handleChange('badgeText', e.target.value)} placeholder="e.g., Best Value" /><Input type="color" value={customization.badgeColor || '#FF6B35'} onChange={(e) => handleChange('badgeColor', e.target.value)} className="w-full h-10"/></div></div>
+                                    <div className="space-y-2"><Label>Promotional Discount</Label><div className="flex gap-2"><ToggleGroup type="single" value={customization.discountType} onValueChange={(value: 'flat' | 'percentage') => handleChange('discountType', value)} className="border rounded-md"><ToggleGroupItem value="percentage" className="h-10 px-3">%</ToggleGroupItem><ToggleGroupItem value="flat" className="h-10 px-3">K</ToggleGroupItem></ToggleGroup><Input type="number" value={customization.discountValue || ''} onChange={(e) => handleChange('discountValue', e.target.value ? Number(e.target.value) : undefined)} placeholder="e.g., 10 or 500" className="flex-1"/></div></div>
+                                    <div className="space-y-2"><Label htmlFor="discountMonths">Apply Discount on orders of (Months)</Label><Input id="discountMonths" type="number" value={customization.discountMonths || ''} onChange={(e) => handleChange('discountMonths', e.target.value ? Number(e.target.value) : undefined)} placeholder="e.g., 3"/></div>
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
+
+                            <TabsContent value="colors" className="space-y-4 mt-4">
+                                <Card>
+                                    <CardContent className="pt-6 space-y-4">
+                                        <div className="space-y-2"><Label>Background Type</Label><ToggleGroup type="single" value={customization.backgroundType || 'solid'} onValueChange={(value: 'solid' | 'gradient') => handleChange('backgroundType', value)} className="grid grid-cols-2"><ToggleGroupItem value="solid">Solid</ToggleGroupItem><ToggleGroupItem value="gradient">Gradient</ToggleGroupItem></ToggleGroup></div>
+                                        {customization.backgroundType === 'gradient' ? (<div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label>Start Color</Label><Input type="color" value={customization.backgroundGradientStart || '#3a3a3a'} onChange={(e) => handleChange('backgroundGradientStart', e.target.value)} className="w-full h-10"/></div><div className="space-y-2"><Label>End Color</Label><Input type="color" value={customization.backgroundGradientEnd || '#1a1a1a'} onChange={(e) => handleChange('backgroundGradientEnd', e.target.value)} className="w-full h-10"/></div></div>) : (<div className="space-y-2"><Label htmlFor="bgColor">Background Color</Label><Input id="bgColor" type="color" value={customization.bgColor || (isRecommended ? '#5850EC' : '#1E1E23')} onChange={(e) => handleChange('bgColor', e.target.value)} className="w-full h-10"/></div>)}
+                                        <div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label htmlFor="textColor">Text Color</Label><Input id="textColor" type="color" value={customization.textColor || '#FFFFFF'} onChange={(e) => handleChange('textColor', e.target.value)} className="w-full h-10"/></div><div className="space-y-2"><Label htmlFor="borderColor">Border Color</Label><Input id="borderColor" type="color" value={customization.borderColor || (isRecommended ? '#5850EC' : '#2D2D32')} onChange={(e) => handleChange('borderColor', e.target.value)} className="w-full h-10"/></div></div>
+                                        <ImageUploader label="Header Background Image" value={customization.headerBgImage} onChange={(v) => handleChange('headerBgImage', v)} aspect="wide" />
+                                        {customization.headerBgImage && (<div className="space-y-2"><Label>Header Image Opacity</Label><Slider value={[(customization.headerBgImageOpacity ?? 1) * 100]} onValueChange={([v]) => handleChange('headerBgImageOpacity', v / 100)} max={100} step={1}/></div>)}
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
+
+                            <TabsContent value="text" className="space-y-4 mt-4">
+                                <Card>
+                                    <CardContent className="pt-6 space-y-4">
+                                        <div className="flex items-center justify-between rounded-lg border p-3"><Label htmlFor="hidePrice" className="font-medium">Hide Price (e.g., 'Contact Us')</Label><Switch id="hidePrice" checked={customization.hidePrice || false} onCheckedChange={(checked) => handleChange('hidePrice', checked)} /></div>
+                                        <div className="space-y-2"><Label htmlFor="customTitle">Custom Title</Label><Input id="customTitle" value={customization.customTitle || ''} onChange={(e) => handleChange('customTitle', e.target.value)} placeholder={plan.name}/></div>
+                                        <div className="space-y-2"><Label htmlFor="customDescription">Custom Description</Label><Input id="customDescription" value={customization.customDescription || ''} onChange={(e) => handleChange('customDescription', e.target.value)} placeholder="Add a custom description..."/></div>
+                                        <div className="space-y-2"><Label htmlFor="ctaText">Call-to-Action Button Text</Label><Input id="ctaText" value={customization.ctaText || ''} onChange={(e) => handleChange('ctaText', e.target.value)} placeholder="Choose this plan"/></div>
+                                    </CardContent>
+                                </Card>
+                            </TabsContent>
+
+                            <TabsContent value="icon" className="space-y-4 mt-4">
+                                <Card>
+                                    <CardContent className="pt-6"><Select value={customization.icon || 'Package'} onValueChange={(v) => handleChange('icon', v)}><SelectTrigger><div className="flex items-center gap-2"><Icon className="h-4 w-4" /> <SelectValue placeholder="Select an icon" /></div></SelectTrigger><SelectContent>{Object.keys(iconMap).map(iconName => (<SelectItem key={iconName} value={iconName}><div className="flex items-center gap-2">{React.createElement(iconMap[iconName], { className: 'h-4 w-4' })} {iconName}</div></SelectItem>))}</SelectContent></Select></CardContent>
+                                </Card>
+                            </TabsContent>
+                        </Tabs>
+                    </div>
+                </ScrollArea>
+
+                {/* Right side - Preview */}
+                <div className="lg:col-span-1 bg-muted/20 flex items-center justify-center p-6 border-l">
+                  <div className="scale-90 w-full max-w-sm">
+                        <Card
+                            className="border-2 rounded-2xl p-8 space-y-6 text-left relative transition-all duration-300"
+                            style={{ ...backgroundStyle, borderColor, color: cardTextColor }}
+                        >
+                            {(isRecommended && badgeText) && (<div className="absolute top-6 right-6"><span className="text-xs font-bold px-3 py-1.5 rounded-full text-white" style={{ backgroundColor: badgeColor }}>{badgeText}</span></div>)}
+                            <div className="relative" style={{ backgroundImage: customization?.headerBgImage ? `url(${customization.headerBgImage})` : 'none', backgroundSize: 'cover', backgroundPosition: 'center' }}>
+                                {customization?.headerBgImage && <div className="absolute inset-0 bg-black" style={{opacity: 1 - (customization.headerBgImageOpacity ?? 1)}} />}
+                                <div className="relative">
+                                    <div className="flex items-start gap-4 mb-6">
+                                        <div className="h-14 w-14 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: isRecommended ? 'rgba(255, 255, 255, 0.15)' : 'rgba(99, 102, 241, 0.15)' }}><Icon className="h-7 w-7" style={{ color: isRecommended ? '#FFFFFF' : 'rgb(99, 102, 241)' }} /></div>
+                                        <div className="flex-1"><h3 className="text-2xl font-bold mb-2">{customization.customTitle || plan.name}</h3><p className="text-sm opacity-80 leading-relaxed">{customization.customDescription || plan.features[0] || 'Plan description'}</p></div>
+                                    </div>
+                                    {customization.hidePrice ? (<div className="h-[60px]" />) : (<div className="flex items-baseline gap-2"><span className="text-5xl font-bold tracking-tight">K{plan.price.toLocaleString()}</span><span className="text-base opacity-70">/month</span></div>)}
+                                </div>
                             </div>
-                         </div>
+                            <Button className="w-full h-12 rounded-lg font-semibold" style={{ backgroundColor: isRecommended ? badgeColor : 'rgba(255, 255, 255, 0.1)', color: isRecommended ? 'white' : cardTextColor, border: isRecommended ? 'none' : '1px solid rgba(255, 255, 255, 0.1)' }}>{customization.hidePrice ? 'Contact Us' : (customization.ctaText || 'Choose this plan')}</Button>
+                            <div className="space-y-4 pt-2">{plan.features.slice(1).map((feature, index) => (<div key={index} className="flex items-start gap-3"><div className="mt-0.5 rounded-full p-0.5" style={{ backgroundColor: isRecommended ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.1)' }}><Check className="h-3.5 w-3.5" /></div><span className="text-sm opacity-90 leading-relaxed">{feature}</span></div>))}</div>
+                        </Card>
                     </div>
-                    
-                    <Button 
-                      className="w-full h-12 rounded-lg font-semibold" 
-                      style={{
-                        backgroundColor: isRecommended ? badgeColor : 'rgba(255, 255, 255, 0.1)',
-                        color: isRecommended ? 'white' : cardTextColor,
-                        border: isRecommended ? 'none' : '1px solid rgba(255, 255, 255, 0.1)'
-                      }}
-                    >
-                      {customization.ctaText || 'Choose this plan'}
-                    </Button>
-                    
-                    <div className="space-y-4 pt-2">
-                      {plan.features.slice(1).map((feature, index) => (
-                        <div key={index} className="flex items-start gap-3">
-                          <div 
-                            className="mt-0.5 rounded-full p-0.5"
-                            style={{ backgroundColor: isRecommended ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.1)' }}
-                          >
-                            <Check className="h-3.5 w-3.5" />
-                          </div>
-                          <span className="text-sm opacity-90 leading-relaxed">{feature}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                </div>
             </div>
-          </ScrollArea>
         </div>
 
         <DialogFooter className="px-6 py-4 border-t flex-shrink-0">
