@@ -106,7 +106,7 @@ export function HistoryPageContent() {
     const handleClearHistory = (type: 'plans' | 'topups') => {
         if (!config) return;
 
-        const newPurchases = config.purchases.filter(p => {
+        const newPurchases = (config.purchases || []).filter(p => {
             const isTopUp = p.planName.toLowerCase().includes('top-up') || p.planName.toLowerCase().includes('credit purchase');
             return type === 'plans' ? isTopUp : !isTopUp;
         });
