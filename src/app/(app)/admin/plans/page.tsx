@@ -37,6 +37,8 @@ const premiumFeatures = [
 const newPlanSchema = z.object({
   name: z.string().min(2, "Plan name is required."),
   price: z.coerce.number().min(0, "Price must be a non-negative number."),
+  invoiceLimit: z.coerce.number().int().min(0, "Invoice limit must be a non-negative number."),
+  quotationLimit: z.coerce.number().int().min(0, "Quotation limit must be a non-negative number."),
   features: z.array(z.string()).optional(),
 });
 type NewPlanFormData = z.infer<typeof newPlanSchema>;
@@ -53,6 +55,7 @@ export default function AdminPlansPage() {
     const { config, saveConfig } = useBrandsoft();
     const { toast } = useToast();
     const [isAddPlanOpen, setIsAddPlanOpen] = useState(false);
+    const [planToEdit, setPlanToEdit] = useState<Plan | null>(null);
     const [planToDelete, setPlanToDelete] = useState<Plan | null>(null);
     const [isResetRevenueOpen, setIsResetRevenueOpen] = useState(false);
 
@@ -61,7 +64,7 @@ export default function AdminPlansPage() {
 
     const newPlanForm = useForm<NewPlanFormData>({
         resolver: zodResolver(newPlanSchema),
-        defaultValues: { name: '', price: 0, features: [] },
+        defaultValues: { name: '', price: 0, invoiceLimit: 10, quotationLimit: 10, features: [] },
     });
     
     const activationKeyForm = useForm<ActivationKeyFormData>({
@@ -88,31 +91,63 @@ export default function AdminPlansPage() {
 
     const onNewPlanSubmit = (data: NewPlanFormData) => {
         if (!config) return;
+        
+        const baseFeatures = [
+            `${data.invoiceLimit} Invoices`,
+            `${data.quotationLimit} Quotations`,
+        ];
+        
+        const selectedPremiumFeatures = data.features?.map(featureId => {
+            return premiumFeatures.find(f => f.id === featureId)?.label || featureId;
+        }) || [];
 
         const newPlan: Plan = {
             name: data.name,
             price: data.price,
-            features: data.features || [],
+            features: [...baseFeatures, ...selectedPremiumFeatures],
         };
 
-        const updatedPlans = [...(config.plans || []), newPlan];
+        const existingPlanIndex = plans.findIndex(p => p.name === planToEdit?.name);
+        let updatedPlans: Plan[];
+
+        if (existingPlanIndex > -1) {
+            updatedPlans = [...plans];
+            updatedPlans[existingPlanIndex] = newPlan;
+        } else {
+            updatedPlans = [...(config.plans || []), newPlan];
+        }
         
         saveConfig({ ...config, plans: updatedPlans }, { redirect: false });
 
         toast({
-            title: "Plan Created!",
-            description: `The "${data.name}" plan has been successfully added.`,
+            title: `Plan ${existingPlanIndex > -1 ? 'Updated' : 'Created'}!`,
+            description: `The "${data.name}" plan has been successfully saved.`,
         });
         
         setIsAddPlanOpen(false);
-        newPlanForm.reset();
+        newPlanForm.reset({ name: '', price: 0, invoiceLimit: 10, quotationLimit: 10, features: [] });
+        setPlanToEdit(null);
     };
 
     const handleEditPlan = (plan: Plan) => {
+        setPlanToEdit(plan);
+        const invoiceFeature = plan.features.find(f => f.toLowerCase().includes('invoice'));
+        const quotationFeature = plan.features.find(f => f.toLowerCase().includes('quotation'));
+
+        const invoiceLimit = invoiceFeature ? parseInt(invoiceFeature.split(' ')[0]) || 10 : 10;
+        const quotationLimit = quotationFeature ? parseInt(quotationFeature.split(' ')[0]) || 10 : 10;
+
+        const premiumFeatureIds = plan.features.map(f => {
+            const prem = premiumFeatures.find(pf => pf.label === f);
+            return prem ? prem.id : null;
+        }).filter((id): id is string => id !== null);
+
         newPlanForm.reset({
             name: plan.name,
             price: plan.price,
-            features: plan.features,
+            invoiceLimit: invoiceLimit,
+            quotationLimit: quotationLimit,
+            features: premiumFeatureIds,
         });
         setIsAddPlanOpen(true);
     };
@@ -187,15 +222,15 @@ export default function AdminPlansPage() {
                                 <CardTitle>Subscription Plans</CardTitle>
                                 <CardDescription>Plans available for clients to purchase.</CardDescription>
                             </div>
-                            <Dialog open={isAddPlanOpen} onOpenChange={setIsAddPlanOpen}>
+                            <Dialog open={isAddPlanOpen} onOpenChange={(open) => { setIsAddPlanOpen(open); if(!open) setPlanToEdit(null)}}>
                                 <DialogTrigger asChild>
                                     <Button><PackagePlus className="mr-2 h-4 w-4" /> Add New Plan</Button>
                                 </DialogTrigger>
                                 <DialogContent className="sm:max-w-2xl">
                                     <DialogHeader>
-                                        <DialogTitle>Add New Plan</DialogTitle>
+                                        <DialogTitle>{planToEdit ? 'Edit' : 'Add New'} Plan</DialogTitle>
                                         <DialogDescription>
-                                            Define a new subscription plan for your customers.
+                                            Define a subscription plan for your customers.
                                         </DialogDescription>
                                     </DialogHeader>
                                     <Form {...newPlanForm}>
@@ -208,6 +243,12 @@ export default function AdminPlansPage() {
                                                     <FormField control={newPlanForm.control} name="price" render={({ field }) => (
                                                         <FormItem><FormLabel>Price (per month)</FormLabel><FormControl><Input type="number" placeholder="25000" {...field} /></FormControl><FormMessage /></FormItem>
                                                     )} />
+                                                    <FormField control={newPlanForm.control} name="invoiceLimit" render={({ field }) => (
+                                                        <FormItem><FormLabel>Invoice Limit</FormLabel><FormControl><Input type="number" placeholder="10" {...field} /></FormControl><FormMessage /></FormItem>
+                                                    )} />
+                                                    <FormField control={newPlanForm.control} name="quotationLimit" render={({ field }) => (
+                                                        <FormItem><FormLabel>Quotation Limit</FormLabel><FormControl><Input type="number" placeholder="10" {...field} /></FormControl><FormMessage /></FormItem>
+                                                    )} />
                                                 </div>
                                                 <FormField
                                                     control={newPlanForm.control}
@@ -215,7 +256,7 @@ export default function AdminPlansPage() {
                                                     render={() => (
                                                         <FormItem>
                                                             <div className="mb-4">
-                                                                <FormLabel className="text-base">Features</FormLabel>
+                                                                <FormLabel className="text-base">Premium Features</FormLabel>
                                                                 <FormDescription>Select the features for this plan.</FormDescription>
                                                             </div>
                                                             <div className="space-y-2">
@@ -289,7 +330,7 @@ export default function AdminPlansPage() {
                                                 {plan.features.map(feature => (
                                                     <li key={feature} className="flex items-center gap-2">
                                                         <CheckCircle className="h-4 w-4 text-green-500" />
-                                                        <span>{premiumFeatures.find(f => f.id === feature)?.label || feature}</span>
+                                                        <span>{feature}</span>
                                                     </li>
                                                 ))}
                                             </ul>
