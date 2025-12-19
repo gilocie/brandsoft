@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo } from 'react';
@@ -312,6 +313,9 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
     const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
     const [contactInfo, setContactInfo] = useState<{ planName: string, email?: string, whatsapp?: string } | null>(null);
 
+    const currentCompany = config?.companies?.find(c => c.id === config?.profile?.id);
+    const walletBalance = currentCompany?.walletBalance || 0;
+
     const currentPlanPurchase = useMemo(() => {
         if (!config?.purchases || config.purchases.length === 0) return null;
         const active = config.purchases.find(p => p.status === 'active');
@@ -536,8 +540,8 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
                     </div>
                 </ScrollArea>
                 <div className="flex-shrink-0 p-4 sm:p-6 pt-4 border-t border-slate-800/50 bg-slate-900/50">
-                    <p className="text-center text-xs text-slate-500">
-                        All plans include 24/7 support • Cancel anytime • Secure payment
+                    <p className="text-center text-sm text-slate-500">
+                        Available Balance: <strong className='text-slate-300'>{currencyCode}{walletBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
                     </p>
                 </div>
             </DialogContent>
