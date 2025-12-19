@@ -194,12 +194,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
     const incomingRequestsCount = config.incomingRequests?.length || 0;
     const responsesCount = config.requestResponses?.length || 0;
+    const requestTotal = incomingRequestsCount + responsesCount;
 
     const pendingPurchases = (config.purchases || []).filter(p => p.status === 'pending');
     const processingPurchases = (config.purchases || []).filter(p => p.status === 'processing');
     const declinedPurchases = (config.purchases || []).filter(p => p.status === 'declined' && !p.isAcknowledged);
 
-    const requestTotal = incomingRequestsCount + responsesCount;
     const total = requestTotal + pendingPurchases.length + processingPurchases.length + declinedPurchases.length;
     
     return { 
@@ -213,11 +213,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         declinedPurchaseOrders: declinedPurchases,
     };
   }, [config]);
-
-  const handleAcknowledgeAndNavigate = (orderId: string) => {
-    acknowledgeDeclinedPurchase(orderId);
-    router.push('/history');
-  };
 
   const handleAcknowledgeAll = () => {
     declinedPurchaseOrders.forEach(order => {
@@ -296,8 +291,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, [role, config?.brand.businessName]);
 
   const isLinkActive = (href: string) => {
-    if (href === '/office') {
-      return pathname === '/office';
+    if (href === '/office' || href === '/admin') {
+      return pathname === href;
     }
     return pathname.startsWith(href);
   };
