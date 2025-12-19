@@ -359,7 +359,7 @@ export function PlanSettingsDialog({ isOpen, onClose, plan, onSave }: PlanSettin
                         className="relative" 
                         style={{ backgroundImage: customization?.headerBgImage ? `url(${customization.headerBgImage})` : 'none', backgroundSize: 'cover', backgroundPosition: 'center' }}
                     >
-                         {customization?.headerBgImage && <div className="absolute inset-0 bg-black/50" style={{opacity: 1 - (customization.headerBgImageOpacity ?? 1)}} />}
+                         {customization?.headerBgImage && <div className="absolute inset-0 bg-black" style={{opacity: 1 - (customization.headerBgImageOpacity ?? 1)}} />}
                          <div className="relative">
                             <div className="flex items-start gap-4 mb-6">
                                 <div 

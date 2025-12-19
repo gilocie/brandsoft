@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check, Star, Settings, Users, HardDrive, ShieldCheck, Contact, Package } from 'lucide-react';
+import { Check, Star, Settings, Users, HardDrive, ShieldCheck, Contact, Package, Gem, Crown, Award, Gift, Rocket } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBrandsoft, type Plan, type PlanCustomization } from '@/hooks/use-brandsoft';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -30,12 +30,7 @@ const planLevels: Record<string, number> = {
 };
 
 const iconMap: { [key: string]: React.ElementType } = {
-    ShieldCheck,
-    Users,
-    HardDrive,
-    Contact,
-    Star,
-    Package
+    Package, Users, HardDrive, Contact, Star, Gem, Crown, Award, Gift, Rocket, ShieldCheck,
 };
 
 const PlanIcon = ({ iconName, bgColor, iconColor }: { iconName?: string; bgColor?: string; iconColor?: string }) => {
@@ -61,7 +56,7 @@ const PlanCard = ({ plan, isCurrent = false, cta, className, onBuyClick, onCusto
     const borderColor = customization?.borderColor || (isPopular ? 'rgb(88, 80, 236)' : 'rgb(45, 45, 50)');
     const badgeColor = customization?.badgeColor || 'rgb(255, 107, 53)';
     const badgeText = customization?.badgeText || 'Most popular';
-
+    
     const backgroundStyle = customization?.backgroundType === 'gradient'
         ? { background: `linear-gradient(to bottom right, ${customization.backgroundGradientStart || '#3a3a3a'}, ${customization.backgroundGradientEnd || '#1a1a1a'})` }
         : { backgroundColor: cardBgColor };
@@ -351,4 +346,3 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
         </>
     );
 }
-
