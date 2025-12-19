@@ -58,7 +58,7 @@ const PlanCard = ({ plan, isCurrent = false, cta, className, onBuyClick, onCusto
     const badgeText = customization?.badgeText || 'Most popular';
     
     const backgroundStyle = customization?.backgroundType === 'gradient'
-        ? { background: `linear-gradient(to bottom right, ${customization.backgroundGradientStart || '#3a3a3a'}, ${customization.backgroundGradientEnd || '#1a1a1a'})` }
+        ? { background: `linear-gradient(to bottom right, ${'#3a3a3a'}, ${'#1a1a1a'})` }
         : { backgroundColor: cardBgColor };
 
     return (
@@ -281,7 +281,7 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
                 </DialogHeader>
 
                 <div className="flex-1 overflow-y-auto min-h-0 py-2 -mx-4 px-4">
-                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
                         
                         {!hasCustomFreeTrial && (
                            <PlanCard 
