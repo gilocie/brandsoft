@@ -196,7 +196,7 @@ export function HistoryPageContent() {
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {/* Wallet Balance Card */}
                 <Card className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
                     <CardHeader>
@@ -267,11 +267,11 @@ export function HistoryPageContent() {
                         </p>
                     </CardContent>
                 </Card>
-                <TopUpNotificationCard orders={declinedTopups} title="Declined Top-ups" icon={AlertTriangle} variant="destructive" buttonText="See Why" />
-            </div>
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <TopUpNotificationCard orders={pendingTopups} title="Pending Top-ups" icon={Bell} variant="primary" buttonText="View Orders" />
                 <TopUpNotificationCard orders={processingTopups} title="Processing Top-ups" icon={RefreshCw} variant="accent" buttonText="View Status" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <TopUpNotificationCard orders={pendingTopups} title="Pending Top-ups" icon={Bell} variant="primary" buttonText="View Orders" />
+                <TopUpNotificationCard orders={declinedTopups} title="Declined Top-ups" icon={AlertTriangle} variant="destructive" buttonText="See Why" />
             </div>
 
             {/* Transactions Tabs */}
