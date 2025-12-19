@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Page } from '@/stores/canvas-store';
@@ -102,8 +103,6 @@ export type Company = {
   website?: string;
   referredBy?: string;
   walletBalance?: number;
-  remainingDays?: number; // Add this
-  periodReserve?: number; // Add this
 };
 
 export type Customer = {

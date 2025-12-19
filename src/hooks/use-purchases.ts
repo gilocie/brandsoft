@@ -109,19 +109,20 @@ export function usePurchases(
     }
 
     let activationDuration = durationInfo.days;
-
-    if (!isTestPlan && !purchaseToActivate.planName.toLowerCase().includes('key') && activationDuration > 30) {
+    let totalDurationMs = activationDuration * (durationInfo.unit === 'minutes' ? 60 * 1000 : 24 * 60 * 60 * 1000);
+    
+    // Manual payments use reserve. Wallet payments add directly.
+    if (purchaseToActivate.paymentMethod !== 'wallet' && !isTestPlan && !purchaseToActivate.planName.toLowerCase().includes('key') && activationDuration > 30) {
         periodReserve += (activationDuration - 30);
         activationDuration = 30;
+        totalDurationMs = activationDuration * 24 * 60 * 60 * 1000;
     }
     
-    const multiplier = durationInfo.unit === 'minutes' ? 60 * 1000 : 24 * 60 * 60 * 1000;
-    const activationMs = activationDuration * multiplier;
-    const expiresAt = new Date(now + activationMs + remainingMsFromOldPlan).toISOString();
+    const expiresAt = new Date(now + totalDurationMs + remainingMsFromOldPlan).toISOString();
 
     const remainingValue = isTestPlan
-        ? Math.ceil((activationMs + remainingMsFromOldPlan) / (1000 * 60))
-        : Math.ceil((activationMs + remainingMsFromOldPlan) / (1000 * 60 * 60 * 24));
+        ? Math.ceil((totalDurationMs + remainingMsFromOldPlan) / (1000 * 60))
+        : Math.ceil((totalDurationMs + remainingMsFromOldPlan) / (1000 * 60 * 60 * 24));
 
     let updatedPurchases = newConfig.purchases.map(p => {
         if (p.orderId === orderId) {
