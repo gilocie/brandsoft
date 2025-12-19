@@ -16,6 +16,7 @@ import { PurchaseDialog, type PlanDetails } from '@/components/purchase-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { BonusProgressDialog } from '@/components/office/bonus-progress-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 
 
 const CREDIT_TO_MWK = 1000;
@@ -114,7 +115,7 @@ export default function StaffWalletPage() {
     const withdrawalTransactions = useMemo(() => {
         if (!affiliate?.transactions) return [];
         return affiliate.transactions
-        .filter(t => t.type === 'debit')
+        .filter(t => t.type === 'debit' && (t as any).status === 'completed')
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }, [affiliate?.transactions]);
     
@@ -268,30 +269,39 @@ export default function StaffWalletPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle>Withdrawal History</CardTitle>
-                            <CardDescription>Your history of withdrawals.</CardDescription>
+                            <CardDescription>Your history of completed withdrawals.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                             <div className="space-y-4">
-                                {withdrawalTransactions.map(t => (
-                                    <div key={t.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100">
-                                                <TrendingDown className="h-4 w-4 text-red-600" />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-medium">{t.description}</p>
-                                                <p className="text-xs text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
-                                            </div>
-                                        </div>
-                                        <p className="text-sm font-semibold text-red-600">- K{(t.amount).toLocaleString()}</p>
-                                    </div>
-                                ))}
-                                {withdrawalTransactions.length === 0 && (
-                                     <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
-                                        <p className="text-muted-foreground">No withdrawals found.</p>
-                                    </div>
-                                )}
-                            </div>
+                             <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Date</TableHead>
+                                        <TableHead>Transaction ID</TableHead>
+                                        <TableHead>Channel</TableHead>
+                                        <TableHead>Amount</TableHead>
+                                        <TableHead>Status</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {withdrawalTransactions.length > 0 ? withdrawalTransactions.map(t => (
+                                        <TableRow key={t.id}>
+                                            <TableCell>{new Date(t.date).toLocaleString()}</TableCell>
+                                            <TableCell className="font-mono text-xs">{t.id}</TableCell>
+                                            <TableCell>{(t as any).description || 'Unknown'}</TableCell>
+                                            <TableCell>K{t.amount.toLocaleString()}</TableCell>
+                                            <TableCell>
+                                                <Badge variant="success">Completed</Badge>
+                                            </TableCell>
+                                        </TableRow>
+                                    )) : (
+                                        <TableRow>
+                                            <TableCell colSpan={5} className="h-24 text-center">
+                                                No completed withdrawals yet.
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -299,4 +309,3 @@ export default function StaffWalletPage() {
         </div>
     );
 }
-
