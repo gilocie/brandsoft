@@ -314,13 +314,14 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
     const [contactInfo, setContactInfo] = useState<{ planName: string, email?: string, whatsapp?: string } | null>(null);
 
     // FIX: Use useMemo to get wallet balance directly from config
-    const { walletBalance } = useMemo(() => {
+    const { currentCompany, walletBalance } = useMemo(() => {
         if (!config?.profile?.id || !config?.companies) {
-            return { walletBalance: 0 };
+            return { currentCompany: null, walletBalance: 0 };
         }
         
         const company = config.companies.find(c => c.id === (config.profile as any).id);
         return {
+            currentCompany: company || null,
             walletBalance: company?.walletBalance || 0
         };
     }, [config?.profile?.id, config?.companies]);

@@ -12,7 +12,7 @@ import {
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Loader2, UploadCloud, FileCheck, Building2, Smartphone, Banknote, Wallet } from 'lucide-react';
-import { useBrandsoft } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Purchase } from '@/hooks/use-brandsoft';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -75,7 +75,7 @@ const iconMap: Record<string, React.ElementType> = {
 };
 
 export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = false }: PurchaseDialogProps) {
-    const { config, addPurchaseOrder, saveConfig } = useBrandsoft();
+    const { config, addPurchaseOrder, saveConfig, activatePurchaseOrder } = useBrandsoft();
     const { toast } = useToast();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -199,7 +199,7 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
             
             const myCompany = config?.companies.find(c => c.companyName === config?.brand.businessName);
             
-            const newOrder = {
+            const newOrder: Omit<Purchase, 'remainingTime'> = {
                 orderId: newOrderId,
                 planName: plan.name,
                 planPrice: plan.price,
@@ -211,20 +211,21 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                 whatsappNumber: whatsappNumber,
                 customerId: myCompany?.id,
                 affiliateId: plan.affiliateId,
-                remainingTime: { value: 0, unit: 'days' as const },
             };
             
-            // FIX: Update wallet balance in companies array, not profile
             if (selectedPayment === 'wallet' && config && myCompany) {
                 const newBalance = (myCompany.walletBalance || 0) - priceAmount;
                 const updatedCompanies = config.companies.map(c => 
                     c.id === myCompany.id ? { ...c, walletBalance: newBalance } : c
                 );
+                 const allPurchases = [...(config.purchases || []), newOrder as Purchase];
                 saveConfig({ 
                     ...config, 
                     companies: updatedCompanies,
-                    purchases: [...(config.purchases || []), newOrder]
+                    purchases: allPurchases
                 }, {redirect: false, revalidate: true});
+                // Activate immediately
+                activatePurchaseOrder(newOrderId);
             } else {
                 addPurchaseOrder(newOrder);
                 const message = `*Please Activate My New Order!*
