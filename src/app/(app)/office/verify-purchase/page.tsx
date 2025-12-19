@@ -315,13 +315,13 @@ function VerifyPurchaseContent() {
         if (order) {
              return (
                 <div className="mt-6 space-y-6">
-                    <div className="flex flex-col md:flex-row gap-6">
-                        {order.receipt && order.receipt !== 'none' && (
-                            <div className="md:w-1/2 flex-shrink-0">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                        {order.receipt && order.receipt !== 'none' ? (
+                            <div className="md:w-full">
                                 <h3 className="text-sm font-medium mb-2">Transaction Receipt</h3>
                                 <div className="relative group">
-                                    <div className="border rounded-md p-2 bg-muted/50 h-64 overflow-hidden">
-                                        <Image src={order.receipt} alt="Transaction Receipt" width={400} height={400} className="rounded-md w-full h-full object-cover" />
+                                    <div className="border rounded-md p-2 bg-muted/50 h-80 overflow-hidden">
+                                        <Image src={order.receipt} alt="Transaction Receipt" width={400} height={400} className="rounded-md w-full h-full object-contain" />
                                     </div>
                                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                                         <Dialog>
@@ -339,6 +339,10 @@ function VerifyPurchaseContent() {
                                     </div>
                                 </div>
                             </div>
+                        ) : (
+                             <div className="md:w-full flex items-center justify-center h-80 border-2 border-dashed rounded-md bg-muted/30">
+                                <p className="text-sm text-muted-foreground">No receipt was uploaded.</p>
+                             </div>
                         )}
                         <div className="flex-1 flex flex-col">
                             <CardHeader className="p-0">
@@ -498,3 +502,5 @@ export default function OfficeVerifyPurchasePage() {
         </div>
     )
 }
+
+    
