@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -39,16 +40,14 @@ export function HistoryPageContent() {
         declinedTopups,
         periodReserve,
     } = useMemo(() => {
-        if (!config?.purchases) return { planPurchases: [], topUps: [], approvedPlans: [], pendingPlans: [], declinedPlans: [], approvedTopups: [], pendingTopups: [], processingTopups: [], declinedTopups: [], periodReserve: 0 };
-
-        const allPurchases = (config.purchases || [])
+        const allPurchases = (config?.purchases || [])
             .filter(p => p.status !== 'declined' || !p.isAcknowledged) 
             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         
         const planPurchases = allPurchases.filter(p => !p.planName.toLowerCase().includes('top-up') && !p.planName.toLowerCase().includes('credit purchase'));
         const topUps = allPurchases.filter(p => p.planName.toLowerCase().includes('top-up') || p.planName.toLowerCase().includes('credit purchase'));
         
-        const totalReserve = config.purchases.filter(p => p.status === 'active').reduce((sum, p) => sum + (p.periodReserve || 0), 0);
+        const totalReserve = (config?.purchases || []).filter(p => p.status === 'active').reduce((sum, p) => sum + (p.periodReserve || 0), 0);
 
         return { 
             planPurchases, 
