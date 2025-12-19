@@ -6,7 +6,6 @@ import { useMemo, useState } from 'react';
 import { useBrandsoft, type Purchase } from '@/hooks/use-brandsoft';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { HistoryTable } from './history-table';
 import { History as HistoryIcon, Wallet, Zap, TrendingUp, CreditCard, Trash2, Bell, AlertTriangle, RefreshCw, Clock } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -43,7 +42,7 @@ export function HistoryPageContent() {
         if (!config?.purchases) return { planPurchases: [], topUps: [], approvedPlans: [], pendingPlans: [], declinedPlans: [], approvedTopups: [], pendingTopups: [], processingTopups: [], declinedTopups: [], periodReserve: 0 };
 
         const allPurchases = config.purchases
-            .filter(p => !p.isAcknowledged) // Filter out acknowledged declined orders
+            .filter(p => p.status !== 'declined' || !p.isAcknowledged) // Filter out acknowledged declined orders
             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         
         const planPurchases = allPurchases.filter(p => !p.planName.toLowerCase().includes('top-up') && !p.planName.toLowerCase().includes('credit purchase'));
