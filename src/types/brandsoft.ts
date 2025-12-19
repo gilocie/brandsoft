@@ -245,6 +245,8 @@ export type PlanCustomization = {
   backgroundGradientStart?: string;
   backgroundGradientEnd?: string;
   hidePrice?: boolean;
+  contactEmail?: string;
+  contactWhatsapp?: string;
 };
 
 export type Plan = {
@@ -406,5 +408,3 @@ export type Quotation = {
     design?: DesignSettings;
     isRequest?: boolean;
 };
-
-    

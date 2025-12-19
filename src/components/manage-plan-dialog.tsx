@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check, Star, Settings, Users, HardDrive, ShieldCheck, Contact, Package, Gem, Crown, Award, Gift, Rocket, Loader2 } from 'lucide-react';
+import { Check, Star, Settings, Users, HardDrive, ShieldCheck, Contact, Package, Gem, Crown, Award, Gift, Rocket, Loader2, Mail, Phone } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBrandsoft, type Plan, type PlanCustomization } from '@/hooks/use-brandsoft';
 import { usePlanImage } from '@/hooks/use-plan-image';
@@ -22,6 +22,69 @@ import { PurchaseDialog, type PlanDetails } from './purchase-dialog';
 import { useRouter } from 'next/navigation';
 import { PlanSettingsDialog } from '@/components/plan-settings-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+
+const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" {...props}>
+    <path fill="currentColor" d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.58 15.35 3.4 16.85L2.05 22L7.3 20.62C8.75 21.39 10.37 21.82 12.04 21.82C17.5 21.82 21.95 17.37 21.95 11.91C21.95 6.45 17.5 2 12.04 2M12.04 3.67C16.56 3.67 20.28 7.39 20.28 11.91C20.28 16.43 16.56 20.15 12.04 20.15C10.53 20.15 9.09 19.74 7.85 19L7.55 18.83L4.43 19.65L5.26 16.61L5.07 16.3C3.93 14.96 3.4 13.38 3.4 11.91C3.4 7.39 7.12 3.67 12.04 3.67M9.13 7.5C8.93 7.5 8.76 7.55 8.61 7.82C8.47 8.1 8.03 8.77 8.03 9.92C8.03 11.06 8.63 12.14 8.76 12.31C8.88 12.49 10.3 14.86 12.58 15.79C14.44 16.56 14.84 16.43 15.18 16.39C15.77 16.33 16.56 15.72 16.78 15.1C17 14.48 17 13.97 16.89 13.86C16.78 13.75 16.61 13.69 16.34 13.55C16.07 13.42 14.92 12.83 14.68 12.73C14.44 12.64 14.27 12.58 14.1 12.85C13.93 13.12 13.43 13.7 13.29 13.86C13.15 14.03 13.01 14.06 12.74 13.92C12.47 13.78 11.75 13.54 10.87 12.76C10.15 12.13 9.68 11.35 9.54 11.12C9.4 10.89 9.52 10.75 9.63 10.64C9.73 10.53 9.87 10.35 10.01 10.2C10.15 10.05 10.2 9.96 10.32 9.79C10.43 9.61 10.37 9.45 10.32 9.33C10.27 9.21 9.83 8.06 9.66 7.61C9.49 7.16 9.32 7.5 9.13 7.5Z" />
+  </svg>
+);
+
+const ContactDialog = ({
+  isOpen,
+  onClose,
+  planName,
+  contact,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  planName: string;
+  contact: { email?: string; whatsapp?: string };
+}) => {
+  if (!isOpen) return null;
+  const hasWhatsapp = !!contact.whatsapp;
+  const hasEmail = !!contact.email;
+
+  const handleWhatsappClick = () => {
+    window.open(`https://wa.me/${contact.whatsapp?.replace('+', '')}?text=I'm interested in the ${planName} plan.`, '_blank');
+  };
+
+  const handleEmailClick = () => {
+    window.location.href = `mailto:${contact.email}?subject=Inquiry about ${planName} plan`;
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Contact Us</DialogTitle>
+          <DialogDescription>
+            Choose your preferred method to get in touch about the {planName} plan.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="py-4 space-y-3">
+          {hasWhatsapp && (
+            <Button className="w-full h-14 justify-start gap-3 text-lg" onClick={handleWhatsappClick}>
+              <WhatsAppIcon className="h-7 w-7" />
+              Contact via WhatsApp
+            </Button>
+          )}
+          {hasEmail && (
+            <Button variant="secondary" className="w-full h-14 justify-start gap-3 text-lg" onClick={handleEmailClick}>
+              <Mail className="h-6 w-6" />
+              Send an Email
+            </Button>
+          )}
+          {!hasWhatsapp && !hasEmail && (
+            <p className="text-center text-sm text-muted-foreground">
+              No contact methods have been configured for this plan.
+            </p>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 
 const planLevels: Record<string, number> = {
   'Free Trial': 0,
@@ -265,6 +328,7 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
     const [purchasePlan, setPurchasePlan] = useState<PlanDetails | null>(null);
     const [isManagePlanOpen, setIsManagePlanOpen] = useState(false);
     const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
+    const [contactInfo, setContactInfo] = useState<{ planName: string, email?: string, whatsapp?: string } | null>(null);
 
     const currentPlanPurchase = useMemo(() => {
         if (!config?.purchases || config.purchases.length === 0) return null;
@@ -307,6 +371,15 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
     const selectedPeriodLabel = periods.find(p => p.value === selectedPeriod)?.label;
     
     const handleBuyClick = (plan: Plan) => {
+        if (plan.customization?.hidePrice) {
+            setContactInfo({
+                planName: plan.name,
+                email: plan.customization.contactEmail,
+                whatsapp: plan.customization.contactWhatsapp,
+            });
+            return;
+        }
+
         const { discounted } = calculatePrice(plan.price, selectedPeriod, plan.customization?.discountValue, plan.customization?.discountType, plan.customization?.discountMonths);
         setPurchasePlan({ name: plan.name, price: discounted, period: selectedPeriodLabel || '1 Month' });
     };
@@ -404,18 +477,15 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
                 {/* Scrollable Content Area */}
                 <ScrollArea className="flex-1 min-h-0">
                     <div className="p-4 sm:p-6 pt-4">
-                        {/* Plans Grid - Auto-fit columns based on content */}
                         <div 
                             className={cn(
                                 "grid gap-6 mx-auto",
-                                // Responsive grid based on number of plans
                                 totalPlans === 1 && "max-w-md grid-cols-1",
                                 totalPlans === 2 && "max-w-3xl grid-cols-1 md:grid-cols-2",
                                 totalPlans >= 3 && "max-w-6xl grid-cols-1 md:grid-cols-2 lg:grid-cols-3",
                                 totalPlans >= 4 && "max-w-7xl grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4",
                             )}
                         >
-                            {/* Free Trial Card (if no custom one exists) */}
                             {!hasCustomFreeTrial && (
                                 <PlanCard 
                                     plan={{ 
@@ -439,9 +509,7 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
                                     onBuyClick={currentPlanPurchase ? handleDowngrade : () => {}}
                                 />
                             )}
-
-                            {/* Dynamic Plans */}
-                            {(config?.plans || []).map(plan => {
+                            {config?.plans?.map(plan => {
                                 const { discounted, original, isDiscounted } = calculatePrice(
                                     plan.price, 
                                     selectedPeriod, 
@@ -484,13 +552,9 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
                                 )
                             })}
                         </div>
-
-                        {/* Bottom Spacing for scroll */}
                         <div className="h-4" />
                     </div>
                 </ScrollArea>
-
-                {/* Optional Fixed Footer */}
                 <div className="flex-shrink-0 p-4 sm:p-6 pt-4 border-t border-slate-800/50 bg-slate-900/50">
                     <p className="text-center text-xs text-slate-500">
                         All plans include 24/7 support • Cancel anytime • Secure payment
@@ -514,8 +578,15 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
                 onSuccess={handlePurchaseSuccess}
             />
         )}
+
+        {contactInfo && (
+            <ContactDialog
+                isOpen={!!contactInfo}
+                onClose={() => setContactInfo(null)}
+                planName={contactInfo.planName}
+                contact={{ email: contactInfo.email, whatsapp: contactInfo.whatsapp }}
+            />
+        )}
         </>
     );
 }
-
-    
