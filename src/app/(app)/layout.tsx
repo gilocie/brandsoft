@@ -181,12 +181,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const {
     notificationCount,
+    requestNotificationCount,
     incomingRequestsCount,
     responsesCount,
     pendingPurchasesCount,
     declinedPurchasesCount,
   } = useMemo(() => {
-    if (!config) return { notificationCount: 0, incomingRequestsCount: 0, responsesCount: 0, pendingPurchasesCount: 0, declinedPurchasesCount: 0 };
+    if (!config) return { notificationCount: 0, requestNotificationCount: 0, incomingRequestsCount: 0, responsesCount: 0, pendingPurchasesCount: 0, declinedPurchasesCount: 0 };
 
     const incomingRequestsCount = config.incomingRequests?.length || 0;
     const responsesCount = config.requestResponses?.length || 0;
@@ -199,9 +200,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       p.status === 'declined' && !p.isAcknowledged
     ).length;
 
-    const total = incomingRequestsCount + responsesCount + pendingPurchasesCount + declinedPurchasesCount;
+    const requestTotal = incomingRequestsCount + responsesCount;
+    const total = requestTotal + pendingPurchasesCount + declinedPurchasesCount;
     
-    return { notificationCount: total, incomingRequestsCount, responsesCount, pendingPurchasesCount, declinedPurchasesCount };
+    return { notificationCount: total, requestNotificationCount: requestTotal, incomingRequestsCount, responsesCount, pendingPurchasesCount, declinedPurchasesCount };
   }, [config]);
   
   const ordersNotificationCount = useMemo(() => {
@@ -214,10 +216,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   
   const walletNotificationCount = useMemo(() => {
     if (!config?.purchases) return 0;
-    return config.purchases.filter(
-      p => (p.planName.toLowerCase().includes('top-up') || p.planName.toLowerCase().includes('credit purchase')) &&
-           (p.status === 'pending' || p.status === 'processing')
-    ).length;
+    // Only client-facing top-ups count for the wallet icon
+    const myTopUps = config.purchases.filter(p =>
+      !p.affiliateId && 
+      (p.planName.toLowerCase().includes('top-up') || p.planName.toLowerCase().includes('credit purchase')) &&
+      (p.status === 'pending' || p.status === 'processing')
+    );
+    return myTopUps.length;
   }, [config?.purchases]);
   
   useEffect(() => {
@@ -326,9 +331,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   >
                     <item.icon />
                     <span>{item.label}</span>
-                     {item.href === '/quotation-requests' && notificationCount > 0 && (
+                     {item.href === '/quotation-requests' && requestNotificationCount > 0 && (
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs font-bold text-destructive-foreground">
-                            {notificationCount}
+                            {requestNotificationCount}
                         </span>
                     )}
                     {item.href === '/office/orders' && ordersNotificationCount > 0 && (
