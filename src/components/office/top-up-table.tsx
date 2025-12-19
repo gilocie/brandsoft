@@ -6,7 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, RefreshCw, CheckCircle } from 'lucide-react';
+import { MoreHorizontal, RefreshCw, CheckCircle, Eye } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 const statusVariantMap: { [key: string]: 'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'accent' | 'primary' } = {
   pending: 'accent',
@@ -22,6 +23,12 @@ interface TopUpTableProps {
 }
 
 export const TopUpTable = ({ orders, onStatusChange, emptyMessage }: TopUpTableProps) => {
+    const router = useRouter();
+
+    const handleViewOrder = (orderId: string) => {
+        router.push(`/verify-purchase?orderId=${orderId}@8090`);
+    };
+
     return (
         <Table>
             <TableHeader>
@@ -47,11 +54,14 @@ export const TopUpTable = ({ orders, onStatusChange, emptyMessage }: TopUpTableP
                         <TableCell className="text-right">
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" disabled={req.status !== 'pending'}>
+                                    <Button variant="ghost" size="icon">
                                         <MoreHorizontal className="h-4 w-4"/>
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent>
+                                    <DropdownMenuItem onClick={() => handleViewOrder(req.orderId)}>
+                                        <Eye className="mr-2 h-4 w-4" /> View Details
+                                    </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => onStatusChange(req.orderId, 'processing')} disabled={req.status === 'processing' || req.status === 'active'}>
                                         <RefreshCw className="mr-2 h-4 w-4" /> Mark as Processing
                                     </DropdownMenuItem>
