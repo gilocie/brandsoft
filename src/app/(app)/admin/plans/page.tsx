@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -128,21 +129,23 @@ export default function AdminPlansPage() {
         const selectedPremiumFeatures = data.features?.map(featureId => {
             return premiumFeatures.find(f => f.id === featureId)?.label || featureId;
         }) || [];
-
-        const newPlan: Plan = {
+        
+        const planToSave: Omit<Plan, 'customization'> = {
             name: data.name,
             price: data.price,
             features: [...baseFeatures, ...selectedPremiumFeatures],
         };
 
-        const existingPlanIndex = plans.findIndex(p => p.name === planToEdit?.name);
         let updatedPlans: Plan[];
+        const existingPlanIndex = plans.findIndex(p => p.name === planToEdit?.name);
 
         if (existingPlanIndex > -1) {
+            // Preserve existing customization when editing
+            const existingCustomization = plans[existingPlanIndex].customization;
             updatedPlans = [...plans];
-            updatedPlans[existingPlanIndex] = newPlan;
+            updatedPlans[existingPlanIndex] = { ...planToSave, customization: existingCustomization };
         } else {
-            updatedPlans = [...(config.plans || []), newPlan];
+            updatedPlans = [...(config.plans || []), { ...planToSave, customization: {} }];
         }
         
         saveConfig({ ...config, plans: updatedPlans }, { redirect: false });

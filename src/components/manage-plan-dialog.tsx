@@ -11,15 +11,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check } from 'lucide-react';
+import { Check, Star, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useBrandsoft, type Plan } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Plan, type PlanCustomization } from '@/hooks/use-brandsoft';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { PurchaseDialog, type PlanDetails } from './purchase-dialog';
 import { useRouter } from 'next/navigation';
+import { PlanSettingsDialog } from '@/components/plan-settings-dialog';
+
 
 const planLevels: Record<string, number> = {
   'Free Trial': 0,
@@ -28,37 +30,66 @@ const planLevels: Record<string, number> = {
   'Enterprise': 3,
 };
 
-const PlanCard = ({ title, price, features, isCurrent = false, cta, className, periodLabel, onBuyClick }: { title: string, price: string, features: string[], isCurrent?: boolean, cta: string, className?: string, periodLabel?: string, onBuyClick: () => void }) => (
-    <Card className={cn("flex flex-col h-full", isCurrent && "ring-2 ring-primary shadow-md", className)}>
-        <CardHeader className="p-4 pb-2">
-            <CardTitle className="flex items-center justify-between">
-                <span>{title}</span>
-                {periodLabel && <span className="text-xs font-normal text-muted-foreground">{periodLabel}</span>}
-            </CardTitle>
-            <CardDescription className="text-4xl sm:text-3xl font-bold pt-2">
-                {price}
-            </CardDescription>
-        </CardHeader>
-        <CardContent className="flex-grow space-y-2 p-4 pt-0">
-            {features.map((feature, index) => (
-                <div key={index} className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
-                    <span className="text-sm text-muted-foreground">{feature}</span>
+const PlanCard = ({ plan, isCurrent = false, cta, className, onBuyClick, onCustomizeClick }: { plan: Plan, isCurrent?: boolean, cta: string, className?: string, onBuyClick: () => void, onCustomizeClick: () => void }) => {
+    
+    const customization = plan.customization || {};
+
+    const cardStyle: React.CSSProperties = {
+        backgroundColor: customization.cardBgColor,
+        backgroundImage: customization.cardBgImage ? `url(${customization.cardBgImage})` : undefined,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+    };
+    
+    const titleStyle: React.CSSProperties = { color: customization.titleColor };
+    const priceStyle: React.CSSProperties = { color: customization.priceColor };
+    const headerStyle: React.CSSProperties = { backgroundColor: customization.headerBgColor };
+    const footerStyle: React.CSSProperties = { backgroundColor: customization.footerBgColor };
+    const featureIconStyle: React.CSSProperties = { color: customization.featureIconColor };
+
+    return (
+        <Card 
+          className={cn("flex flex-col h-full relative overflow-hidden", isCurrent && "ring-2 ring-primary shadow-md", className)}
+          style={cardStyle}
+        >
+            {customization.isRecommended && (
+                 <div className="absolute top-0 right-0 bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-bl-lg flex items-center gap-1">
+                    <Star className="h-3 w-3" /> Recommended
                 </div>
-            ))}
-        </CardContent>
-        <div className="p-4 pt-0">
-             <Button 
-                className="w-full" 
-                variant={isCurrent ? "secondary" : "default"}
-                onClick={onBuyClick}
-                disabled={cta === 'Current Plan'}
-             >
-                {cta}
-            </Button>
-        </div>
-    </Card>
-);
+            )}
+             {customization.cardBgImage && <div className="absolute inset-0 bg-black/50" style={{ opacity: 1 - (customization.cardBgImageOpacity || 1) }} />}
+            <div className="relative z-10 flex flex-col flex-grow">
+                 <CardHeader className="p-4 pb-2" style={headerStyle}>
+                    <div className="flex justify-between items-center">
+                        <CardTitle style={titleStyle}>{plan.name}</CardTitle>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onCustomizeClick}><Settings className="h-4 w-4" /></Button>
+                    </div>
+                    <CardDescription className="text-4xl sm:text-3xl font-bold pt-2" style={priceStyle}>
+                        {plan.price}
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="flex-grow space-y-2 p-4 pt-4">
+                    {plan.features.map((feature, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                            <Check className="h-4 w-4 text-green-500 flex-shrink-0" style={featureIconStyle} />
+                            <span className="text-sm text-muted-foreground">{feature}</span>
+                        </div>
+                    ))}
+                </CardContent>
+                <CardFooter className="p-4 pt-0" style={footerStyle}>
+                     <Button 
+                        className="w-full" 
+                        variant={isCurrent ? "secondary" : "default"}
+                        onClick={onBuyClick}
+                        disabled={cta === 'Current Plan'}
+                     >
+                        {cta}
+                    </Button>
+                </CardFooter>
+            </div>
+        </Card>
+    );
+}
 
 const periods = [
     { value: '1', label: '1 Month' },
@@ -69,12 +100,13 @@ const periods = [
 ];
 
 export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon?: boolean, isExpired?: boolean }) {
-    const { config, downgradeToTrial } = useBrandsoft();
+    const { config, downgradeToTrial, saveConfig } = useBrandsoft();
     const router = useRouter();
     const currencyCode = config?.profile.defaultCurrency || 'K';
     const [selectedPeriod, setSelectedPeriod] = useState('1');
     const [purchasePlan, setPurchasePlan] = useState<PlanDetails | null>(null);
     const [isManagePlanOpen, setIsManagePlanOpen] = useState(false);
+    const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
 
     const currentPlanPurchase = useMemo(() => {
         if (!config?.purchases || config.purchases.length === 0) return null;
@@ -84,23 +116,36 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
         return expired[0] || null;
     }, [config?.purchases]);
 
-    const calculatePrice = (basePrice: number, period: string) => {
+    const calculatePrice = (basePrice: number, period: string, discount?: PlanCustomization['discountValue'], discountType?: PlanCustomization['discountType']) => {
         const months = Number(period);
+        let total = basePrice;
+
         if(!isNaN(months)) {
-            const total = basePrice * months;
-            return `${currencyCode}${total.toLocaleString()}`;
+            total = basePrice * months;
+        } else if (period === 'once') {
+             total = basePrice * 36; // 3 years for 'Once OFF'
         }
-        if (period === 'once') {
-             const total = basePrice * 36; // 3 years for 'Once OFF'
-             return `${currencyCode}${total.toLocaleString()}`;
+        
+        let discountedTotal = total;
+        if(discount && discountType) {
+            if(discountType === 'percentage') {
+                discountedTotal = total - (total * (discount / 100));
+            } else {
+                discountedTotal = total - discount;
+            }
         }
-        return `${currencyCode}${basePrice.toLocaleString()}`;
+        
+        return {
+            original: `${currencyCode}${total.toLocaleString()}`,
+            discounted: `${currencyCode}${discountedTotal.toLocaleString()}`
+        };
     };
 
     const selectedPeriodLabel = periods.find(p => p.value === selectedPeriod)?.label;
     
-    const handleBuyClick = (planName: string, price: string, period: string) => {
-        setPurchasePlan({ name: planName, price, period });
+    const handleBuyClick = (plan: Plan) => {
+        const { discounted } = calculatePrice(plan.price, selectedPeriod, plan.customization?.discountValue, plan.customization?.discountType);
+        setPurchasePlan({ name: plan.name, price: discounted, period: selectedPeriodLabel || '1 Month' });
     };
 
     const getPlanCTA = (targetPlan: Plan) => {
@@ -128,6 +173,15 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
     const handleDowngrade = () => {
         downgradeToTrial();
         setIsManagePlanOpen(false);
+    };
+    
+     const handleSaveCustomization = (planName: string, customization: PlanCustomization) => {
+        if (!config) return;
+        const updatedPlans = config.plans.map(p =>
+            p.name === planName ? { ...p, customization } : p
+        );
+        saveConfig({ ...config, plans: updatedPlans }, {redirect: false});
+        setEditingPlan(null);
     };
 
     return (
@@ -166,26 +220,30 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         
                         <PlanCard 
-                            title="Free Trial" 
-                            price={`${currencyCode}0`}
-                            features={["Up to 10 invoices", "Up to 10 customers", "Basic templates"]}
+                            plan={{ name: "Free Trial", price: 0, features: ["Up to 10 invoices", "Up to 10 customers", "Basic templates"] }}
                             isCurrent={!currentPlanPurchase}
                             cta={currentPlanPurchase ? "Downgrade to Trial" : "Current Plan"}
                             onBuyClick={currentPlanPurchase ? handleDowngrade : () => {}}
+                            onCustomizeClick={() => alert("Free trial cannot be customized.")}
                         />
 
                         {config?.plans?.map(plan => {
-                             const price = calculatePrice(plan.price, selectedPeriod);
+                             const { original, discounted } = calculatePrice(plan.price, selectedPeriod, plan.customization?.discountValue, plan.customization?.discountType);
+                             const displayPrice = plan.customization?.discountValue ? (
+                                <>
+                                    <span className="line-through text-muted-foreground/80 text-xl mr-2">{original}</span>
+                                    <span>{discounted}</span>
+                                </>
+                             ) : discounted;
+                             
                              return (
                                 <PlanCard
                                     key={plan.name}
-                                    title={plan.name}
-                                    price={price}
-                                    features={plan.features}
+                                    plan={{...plan, price: displayPrice as any}}
                                     isCurrent={currentPlanPurchase?.planName === plan.name}
                                     cta={getPlanCTA(plan)}
-                                    periodLabel={selectedPeriodLabel}
-                                    onBuyClick={() => handleBuyClick(plan.name, price, selectedPeriodLabel || '1 Month')}
+                                    onBuyClick={() => handleBuyClick(plan)}
+                                    onCustomizeClick={() => setEditingPlan(plan)}
                                 />
                              )
                         })}
@@ -193,6 +251,13 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
                 </div>
             </DialogContent>
         </Dialog>
+        
+        <PlanSettingsDialog
+            isOpen={!!editingPlan}
+            onClose={() => setEditingPlan(null)}
+            plan={editingPlan}
+            onSave={handleSaveCustomization}
+        />
         
         {purchasePlan && (
             <PurchaseDialog 
@@ -205,4 +270,3 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
         </>
     );
 }
-

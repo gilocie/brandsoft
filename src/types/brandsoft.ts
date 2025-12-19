@@ -1,4 +1,7 @@
 
+
+'use client';
+
 import { Page } from '@/stores/canvas-store';
 
 export type AffiliateClient = {
@@ -222,10 +225,26 @@ export type Review = {
   date: string;
 };
 
+export type PlanCustomization = {
+  planType?: 'Premium' | 'VIP' | 'Once Off' | 'Free Trial' | 'Standard';
+  isRecommended?: boolean;
+  discountType?: 'flat' | 'percentage';
+  discountValue?: number;
+  titleColor?: string;
+  headerBgColor?: string;
+  footerBgColor?: string;
+  featureIconColor?: string;
+  priceColor?: string;
+  cardBgColor?: string;
+  cardBgImage?: string;
+  cardBgImageOpacity?: number;
+};
+
 export type Plan = {
   name: string;
   price: number;
   features: string[];
+  customization?: PlanCustomization;
 };
 
 export type AdminSettings = {
