@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -7,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useBrandsoft, type Plan, type AdminSettings, type PlanCustomization } from '@/hooks/use-brandsoft';
+import { usePlanImage } from '@/hooks/use-plan-image'; // Add this import
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -15,7 +14,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { MoreHorizontal, PackagePlus, Briefcase, Check, Pencil, Trash2, KeyRound, TrendingUp, BarChart, AlertTriangle, Settings, Package, Users, HardDrive, Contact, Star, Gem, Crown, Award, Gift, Rocket, ShieldCheck } from 'lucide-react';
+import { MoreHorizontal, PackagePlus, Briefcase, Check, Pencil, Trash2, KeyRound, TrendingUp, BarChart, AlertTriangle, Settings, Package, Users, HardDrive, Contact, Star, Gem, Crown, Award, Gift, Rocket, ShieldCheck, Loader2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
@@ -78,10 +77,23 @@ const PlanIcon = ({ iconName, bgColor, iconColor }: { iconName?: string; bgColor
     )
 };
 
-
-const AdminPlanCard = ({ plan, onEdit, onCustomize, onDelete }: { plan: Plan, onEdit: () => void, onCustomize: () => void, onDelete: () => void }) => {
+// Updated AdminPlanCard with image loading from IndexedDB
+const AdminPlanCard = ({ 
+    plan, 
+    onEdit, 
+    onCustomize, 
+    onDelete 
+}: { 
+    plan: Plan, 
+    onEdit: () => void, 
+    onCustomize: () => void, 
+    onDelete: () => void 
+}) => {
     const { customization } = plan;
     const isPopular = customization?.isRecommended;
+    
+    // Load header image from IndexedDB
+    const { image: headerImage, isLoading: isImageLoading } = usePlanImage(plan.name, 'header');
 
     const cardBgColor = customization?.bgColor || (isPopular ? 'rgb(88, 80, 236)' : 'rgb(30, 30, 35)');
     const cardTextColor = customization?.textColor || 'rgb(255, 255, 255)';
@@ -92,6 +104,9 @@ const AdminPlanCard = ({ plan, onEdit, onCustomize, onDelete }: { plan: Plan, on
     const backgroundStyle = customization?.backgroundType === 'gradient'
         ? { background: `linear-gradient(to bottom right, ${customization.backgroundGradientStart || '#3a3a3a'}, ${customization.backgroundGradientEnd || '#1a1a1a'})` }
         : { backgroundColor: cardBgColor };
+
+    // Use the image from IndexedDB or fall back to customization value
+    const displayHeaderImage = headerImage || customization?.headerBgImage;
 
     return (
         <Card
@@ -130,13 +145,26 @@ const AdminPlanCard = ({ plan, onEdit, onCustomize, onDelete }: { plan: Plan, on
              <CardHeader 
                 className="p-8 pb-6 relative" 
             >
-                {customization?.headerBgImage && (
+                {/* Header Background Image from IndexedDB */}
+                {displayHeaderImage && (
                     <>
-                        <img src={customization.headerBgImage} alt="Header background" className="absolute inset-0 w-full h-full object-cover" />
-                        <div 
-                            className="absolute inset-0 bg-black"
-                            style={{ opacity: 1 - (customization.headerBgImageOpacity ?? 1) }}
-                        />
+                        {isImageLoading ? (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                <Loader2 className="h-6 w-6 animate-spin text-white/50" />
+                            </div>
+                        ) : (
+                            <>
+                                <img 
+                                    src={displayHeaderImage} 
+                                    alt="Header background" 
+                                    className="absolute inset-0 w-full h-full object-cover" 
+                                />
+                                <div 
+                                    className="absolute inset-0 bg-black"
+                                    style={{ opacity: 1 - (customization?.headerBgImageOpacity ?? 1) }}
+                                />
+                            </>
+                        )}
                     </>
                 )}
                  <div className="relative">
@@ -377,10 +405,17 @@ export default function AdminPlansPage() {
     
     const handleSaveCustomization = (planName: string, customization: PlanCustomization) => {
         if (!config) return;
+        
+        const cleanCustomization: PlanCustomization = {
+            ...customization,
+            headerBgImage: customization.headerBgImage ? 'indexed-db' : '',
+        };
+        
         const updatedPlans = config.plans.map(p =>
-            p.name === planName ? { ...p, customization } : p
+            p.name === planName ? { ...p, customization: cleanCustomization } : p
         );
-        saveConfig({ ...config, plans: updatedPlans }, {redirect: false});
+        
+        saveConfig({ ...config, plans: updatedPlans }, { redirect: false });
         setPlanToCustomize(null);
     };
 
