@@ -12,7 +12,7 @@ import {
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Loader2, UploadCloud, FileCheck, Building2, Smartphone, Banknote, Wallet } from 'lucide-react';
-import { useBrandsoft, type Purchase } from '@/hooks/use-brandsoft';
+import { useBrandsoft } from '@/hooks/use-brandsoft';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -199,7 +199,7 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
             
             const myCompany = config?.companies.find(c => c.companyName === config?.brand.businessName);
             
-            const newOrder: Omit<Purchase, 'remainingTime'> = {
+            const newOrder = {
                 orderId: newOrderId,
                 planName: plan.name,
                 planPrice: plan.price,
@@ -211,6 +211,7 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                 whatsappNumber: whatsappNumber,
                 customerId: myCompany?.id,
                 affiliateId: plan.affiliateId,
+                remainingTime: { value: 0, unit: 'days' as const },
             };
             
             if (selectedPayment === 'wallet' && config && myCompany) {
@@ -218,13 +219,13 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                 const updatedCompanies = config.companies.map(c => 
                     c.id === myCompany.id ? { ...c, walletBalance: newBalance } : c
                 );
-                 const allPurchases = [...(config.purchases || []), newOrder as Purchase];
+                const updatedPurchases = [...(config.purchases || []), newOrder];
                 saveConfig({ 
                     ...config, 
                     companies: updatedCompanies,
-                    purchases: allPurchases
+                    purchases: updatedPurchases
                 }, {redirect: false, revalidate: true});
-                // Activate immediately
+                
                 activatePurchaseOrder(newOrderId);
             } else {
                 addPurchaseOrder(newOrder);
@@ -254,19 +255,20 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
     const isConfirmDisabled = purchaseState !== 'idle' || !selectedPayment || !whatsappNumber || (selectedPayment !== 'wallet' && !receiptFile) || (selectedPayment === 'wallet' && !canAffordWithWallet);
 
     const handleDialogClose = () => {
-        const successful = purchaseState === 'success';
-
-        setPurchaseState('idle');
-        setReceiptFile(null);
-        setSelectedPayment(null);
-        setWhatsappNumber('');
-        setSaveWhatsapp(false);
-
-        if (successful) {
-            onSuccess();
-        } else {
-            onClose();
-        }
+      const successful = purchaseState === 'success';
+      const shouldClose = !successful || (successful && onClose);
+      
+      setPurchaseState('idle');
+      setReceiptFile(null);
+      setSelectedPayment(null);
+      setWhatsappNumber('');
+      setSaveWhatsapp(false);
+  
+      if (successful) {
+        onSuccess();
+      } else {
+        onClose();
+      }
     };
     
     const StepIndicator = ({ step, label, isComplete }: { step: number, label: string, isComplete: boolean }) => (
@@ -303,7 +305,10 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                      <div className="py-10 text-center space-y-4">
                         <CheckCircle className="h-16 w-16 text-green-500 mx-auto" />
                         <h2 className="text-2xl font-bold">Purchase Successful!</h2>
-                        <p className="text-muted-foreground">Your order <code className="bg-muted px-2 py-1 rounded-md">{orderId}</code> is {selectedPayment === 'wallet' ? 'complete' : 'pending approval'}. You will be notified once your plan is activated.</p>
+                        <p className="text-muted-foreground">
+                            Your order <code className="bg-muted px-2 py-1 rounded-md">{orderId}</code> is {selectedPayment === 'wallet' ? 'now active' : 'pending approval'}.
+                            {selectedPayment !== 'wallet' && " You will be notified once your plan is activated."}
+                        </p>
                         <Button onClick={handleDialogClose}>Close</Button>
                     </div>
                 ) : (
