@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, Suspense, useCallback, useMemo } from 'react';
@@ -22,6 +21,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogHeader, DialogTitle as ShadcnDialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
+import { getReceiptFromDB } from '@/hooks/use-receipt-upload';
 
 
 const formSchema = z.object({
@@ -101,7 +101,7 @@ const TopUpActivationDialog = ({
                 </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={onClose}>Cancel</Button>
-                    <Button type="submit" form="topup-activation-form" disabled={!hasEnoughCredits}>Confirm & Activate</Button>
+                    <Button type="submit" form="topup-activation-form" disabled={!hasEnoughCredits}>Confirm &amp; Activate</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -118,6 +118,7 @@ function VerifyPurchaseContent() {
     const orderIdFromUrl = searchParams.get('orderId');
 
     const [order, setOrder] = useState<Purchase | null>(null);
+    const [receiptImage, setReceiptImage] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(!!orderIdFromUrl);
     const [isAdminMode, setIsAdminMode] = useState(false);
     const [declineReason, setDeclineReason] = useState('');
@@ -159,6 +160,13 @@ function VerifyPurchaseContent() {
         
         const foundOrder = getPurchaseOrder(cleanOrderId);
         setOrder(foundOrder);
+
+        if (foundOrder?.receipt === 'indexed-db') {
+            const image = await getReceiptFromDB(foundOrder.orderId);
+            setReceiptImage(image);
+        } else {
+            setReceiptImage(null);
+        }
         
         if (!silent) {
             setProgress(100);
@@ -229,10 +237,10 @@ function VerifyPurchaseContent() {
 
 
     const handleDownloadReceipt = () => {
-        if (!order?.receipt || order.receipt === 'none') return;
+        if (!receiptImage) return;
         const link = document.createElement('a');
-        link.href = order.receipt;
-        link.download = `receipt-${order.orderId}.jpg`;
+        link.href = receiptImage;
+        link.download = `receipt-${order?.orderId}.jpg`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -336,12 +344,12 @@ function VerifyPurchaseContent() {
              return (
                 <div className="mt-6 space-y-6">
                     <div className="flex flex-col md:flex-row gap-6">
-                        {order.receipt && order.receipt !== 'none' ? (
+                        {receiptImage ? (
                             <div className="md:w-1/2 flex-shrink-0">
                                 <h3 className="text-sm font-medium mb-2">Transaction Receipt</h3>
                                 <div className="relative group">
                                     <div className="border rounded-md p-2 bg-muted/50 h-64 overflow-hidden">
-                                        <Image src={order.receipt} alt="Transaction Receipt" width={400} height={400} className="rounded-md w-full h-full object-cover" />
+                                        <Image src={receiptImage} alt="Transaction Receipt" width={400} height={400} className="rounded-md w-full h-full object-cover" />
                                     </div>
                                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                                         <Dialog>
@@ -352,7 +360,7 @@ function VerifyPurchaseContent() {
                                                 <DialogHeader>
                                                     <ShadcnDialogTitle>Transaction Receipt</ShadcnDialogTitle>
                                                 </DialogHeader>
-                                                 <img src={order.receipt} alt="Transaction Receipt" className="rounded-md w-full h-auto" />
+                                                 <img src={receiptImage} alt="Transaction Receipt" className="rounded-md w-full h-auto" />
                                             </DialogContent>
                                         </Dialog>
                                         <Button variant="secondary" size="icon" onClick={handleDownloadReceipt}><Download className="h-5 w-5" /></Button>
@@ -433,7 +441,7 @@ function VerifyPurchaseContent() {
                                     </AlertDescription>
                                 </div>
                                 {!isAdminMode && !order.isAcknowledged && (
-                                    <Button variant="destructive" onClick={handleAcknowledgeAndRedirect} className="bg-red-500 text-white hover:bg-red-600">
+                                    <Button variant="destructive" onClick={handleAcknowledgeAndRedirect}>
                                         Understood
                                     </Button>
                                 )}

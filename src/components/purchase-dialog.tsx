@@ -21,6 +21,7 @@ import { Label } from './ui/label';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Checkbox } from './ui/checkbox';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { saveReceiptToDB } from '@/hooks/use-receipt-upload';
 
 
 export type PlanDetails = {
@@ -159,7 +160,7 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
     const priceAmount = parseFloat(plan.price.replace(/[^0-9.-]+/g,""));
     const canAffordWithWallet = balance >= priceAmount;
 
-    const handleConfirmPurchase = () => {
+    const handleConfirmPurchase = async () => {
         if (!selectedPayment) {
             toast({ variant: 'destructive', title: 'Payment Method Required', description: 'Please select a payment method.' });
             return;
@@ -182,8 +183,13 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
 
         setPurchaseState('processing');
 
+        const newOrderId = `BSO-${Date.now()}`;
+        
+        if (selectedPayment !== 'wallet' && receiptDataUrl) {
+            await saveReceiptToDB(newOrderId, receiptDataUrl);
+        }
+
         setTimeout(() => { // Simulate processing
-            const newOrderId = `BSO-${Date.now()}`;
             setOrderId(newOrderId);
             
             const myCompany = config?.companies.find(c => c.companyName === config?.brand.businessName);
@@ -196,7 +202,7 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                 paymentMethod: selectedPayment,
                 status: selectedPayment === 'wallet' ? 'active' as const : 'pending' as const,
                 date: new Date().toISOString(),
-                receipt: receiptDataUrl || 'none',
+                receipt: receiptDataUrl ? 'indexed-db' : 'none',
                 whatsappNumber: whatsappNumber,
                 customerId: myCompany?.id,
                 affiliateId: plan.affiliateId,
