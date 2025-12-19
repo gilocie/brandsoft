@@ -39,6 +39,7 @@ import { PurchaseDialog, type PlanDetails } from '@/components/purchase-dialog';
 import { SellCreditsDialog } from '@/components/office/dialogs/sell-credits-dialog';
 import { TopUpNotificationCard } from '@/components/office/top-up-notification-card';
 import { TopUpTable } from '@/components/office/top-up-table';
+import { BonusProgressDialog } from './bonus-progress-dialog';
 
 
 const affiliateSchema = z.object({
@@ -214,7 +215,7 @@ export function OfficePageContent() {
   const payoutTransactions = useMemo(() => {
     if (!affiliate?.transactions) return [];
     return affiliate.transactions
-      .filter(t => t.type === 'debit')
+      .filter(t => t.type === 'debit' && (t as any).status !== 'completed')
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [affiliate?.transactions]);
 
@@ -222,6 +223,13 @@ export function OfficePageContent() {
     if (!affiliate?.transactions) return [];
     return affiliate.transactions
       .filter(t => t.type === 'credit')
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [affiliate?.transactions]);
+
+  const withdrawalTransactions = useMemo(() => {
+    if (!affiliate?.transactions) return [];
+    return affiliate.transactions
+      .filter(t => t.type === 'debit' && (t as any).status === 'completed')
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [affiliate?.transactions]);
   
@@ -400,28 +408,20 @@ export function OfficePageContent() {
                         valuePrefix={`BS `}
                         footer={`Value: K${((affiliate.creditBalance || 0) * CREDIT_TO_MWK).toLocaleString()}`}
                     >
-                       <div className="flex gap-2 mt-2">
+                        <div className="flex gap-2 mt-2">
                             <BuyCreditsDialog
                                 walletBalance={affiliate.myWallet || 0}
                                 onManualPayment={(details) => setPurchaseDetails(details)}
-                             />
+                            />
+                            <SellCreditsDialog
+                                creditBalance={affiliate.creditBalance || 0}
+                                isOpen={isSellCreditsOpen}
+                                onOpenChange={setIsSellCreditsOpen}
+                                buyPrice={config?.admin?.buyPrice || 850}
+                            />
                         </div>
                     </StatCard>
-                    <Card>
-                        <CardHeader>
-                            <div className="flex items-center justify-between">
-                                <CardTitle>Bonus Tier</CardTitle>
-                                 <Gift className="h-5 w-5 text-muted-foreground" />
-                            </div>
-                            <CardDescription>Bonus for referring 10+ clients.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                             <p className="text-3xl font-bold">K{bonusAmount.toLocaleString()}</p>
-                        </CardContent>
-                        <CardContent>
-                           <Button variant="outline" disabled>View Progress</Button>
-                        </CardContent>
-                     </Card>
+                    <BonusProgressDialog affiliate={affiliate} />
                      <Card className="bg-gradient-to-br from-primary to-orange-500 text-white">
                         <CardHeader>
                             <div className="flex items-center justify-between">
@@ -511,6 +511,7 @@ export function OfficePageContent() {
                     <TabsTrigger value="top-ups">Top-ups</TabsTrigger>
                     <TabsTrigger value="commissions">Commissions</TabsTrigger>
                     <TabsTrigger value="payouts">Payouts</TabsTrigger>
+                    <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
                 </TabsList>
                 <TabsContent value="top-ups" className="pt-4">
                     <Card>
@@ -573,7 +574,7 @@ export function OfficePageContent() {
                     <Card>
                         <CardHeader>
                             <CardTitle>Payout History</CardTitle>
-                            <CardDescription>Your history of withdrawals.</CardDescription>
+                            <CardDescription>Your history of withdrawal requests (pending or processing).</CardDescription>
                         </CardHeader>
                         <CardContent>
                              <div className="space-y-4">
@@ -592,7 +593,7 @@ export function OfficePageContent() {
                                     </div>
                                 )) : (
                                     <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
-                                        <p className="text-muted-foreground">No payout transactions found.</p>
+                                        <p className="text-muted-foreground">No pending or processing payouts.</p>
                                     </div>
                                 )}
                             </div>
@@ -606,6 +607,36 @@ export function OfficePageContent() {
                                 </div>
                             </CardContent>
                         )}
+                    </Card>
+                </TabsContent>
+                 <TabsContent value="withdrawals" className="pt-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Completed Withdrawals</CardTitle>
+                            <CardDescription>Your history of completed withdrawals.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                             <div className="space-y-4">
+                                {withdrawalTransactions.length > 0 ? withdrawalTransactions.map(t => (
+                                    <div key={t.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100">
+                                                <CheckCircle className="h-4 w-4 text-slate-600" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-medium">{t.description}</p>
+                                                <p className="text-xs text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
+                                            </div>
+                                        </div>
+                                        <p className="text-sm font-semibold text-slate-600">- K{(t.amount).toLocaleString()}</p>
+                                    </div>
+                                )) : (
+                                    <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
+                                        <p className="text-muted-foreground">No completed withdrawals.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </CardContent>
                     </Card>
                 </TabsContent>
         </Tabs>
