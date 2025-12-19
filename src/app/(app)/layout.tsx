@@ -131,12 +131,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { config } = useBrandsoft();
-  const [role, setRole] = useState<'admin' | 'staff' | 'client'>(() => {
-    if (typeof window !== 'undefined') {
-      return (localStorage.getItem('brandsoft-role') as any) || 'admin';
-    }
-    return 'admin';
-  });
+  const [role, setRole] = useState<'admin' | 'staff' | 'client'>('admin');
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+    const storedRole = (localStorage.getItem('brandsoft-role') as any) || 'admin';
+    setRole(storedRole);
+  }, []);
+
 
   const currentUserId = useMemo(() => {
     if (!config || !config.brand) return null;
@@ -152,11 +155,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, [config]);
   
   useEffect(() => {
-    localStorage.setItem('brandsoft-role', role);
-  }, [role]);
+    if (hasMounted) {
+        localStorage.setItem('brandsoft-role', role);
+    }
+  }, [role, hasMounted]);
 
 
   useEffect(() => {
+    if (!hasMounted) return;
+    
     const nonClientPages = ['/admin', '/office'];
     if (role === 'admin' && !pathname.startsWith('/admin')) {
       router.push('/admin');
@@ -165,7 +172,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     } else if (role === 'client' && (nonClientPages.some(p => pathname.startsWith(p)) || pathname === '/')) {
       router.push('/dashboard');
     }
-  }, [role, pathname, router]);
+  }, [role, pathname, router, hasMounted]);
 
   const getVisibleNavItems = (items: typeof mainNavItems, currentRole: typeof role) => {
     if (!config) return [];
@@ -333,7 +340,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     </SelectContent>
                 </Select>
             </div>
-            {role === 'client' && (
+            {hasMounted && role === 'client' && (
               <div className="flex items-center gap-2">
                     <HeaderWalletCard />
                     <Button variant="ghost" size="icon" asChild className="flex-shrink-0 relative">
