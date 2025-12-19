@@ -28,7 +28,7 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --radius: 0.8rem;
+    --radius: 0.3rem;
     --sidebar-background: 240 10% 3.9%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 210 40% 98%;
@@ -45,25 +45,25 @@
     --btn-primary-text-hover: hsl(var(--primary-foreground));
   }
   .dark {
-    --background: 240 10% 3.9%;
+    --background: 240, 9%, 10%; /* rgb(23, 23, 27) */
     --foreground: 210 40% 98%;
-    --card: 240 3.7% 15.9%;
+    --card: 240, 5%, 15%; /* rgb(36, 36, 41) */
     --card-foreground: 210 40% 98%;
     --popover: 240 10% 3.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 262 82% 65%;
+    --primary: 259, 92%, 67%; /* rgb(123, 97, 255) */
     --primary-foreground: 210 40% 98%;
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 210 40% 98%;
     --muted: 240 3.7% 15.9%;
     --muted-foreground: 240 5% 64.9%;
-    --accent: 335 88% 65%;
+    --accent: 341, 91%, 65%; /* rgb(255, 107, 129) */
     --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
     --border: 240 3.7% 25.9%;
     --input: 240 3.7% 15.9%;
-    --ring: 262 82% 65%;
+    --ring: 259, 92%, 77%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
