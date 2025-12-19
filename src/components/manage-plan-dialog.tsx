@@ -10,7 +10,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Check, Star, Settings, Users, HardDrive, ShieldCheck, Contact, Package, Gem, Crown, Award, Gift, Rocket } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -58,7 +58,7 @@ const PlanCard = ({ plan, isCurrent = false, cta, className, onBuyClick, onCusto
     const badgeText = customization?.badgeText || 'Most popular';
     
     const backgroundStyle = customization?.backgroundType === 'gradient'
-        ? { background: `linear-gradient(to bottom right, ${'#3a3a3a'}, ${'#1a1a1a'})` }
+        ? { background: `linear-gradient(to bottom right, ${customization.backgroundGradientStart || '#3a3a3a'}, ${customization.backgroundGradientEnd || '#1a1a1a'})` }
         : { backgroundColor: cardBgColor };
 
     return (
@@ -81,39 +81,41 @@ const PlanCard = ({ plan, isCurrent = false, cta, className, onBuyClick, onCusto
                     {badgeText}
                 </div>
             )}
-            <CardHeader 
-                className="p-8 pb-6 bg-cover bg-center" 
-                style={{ backgroundImage: customization?.headerBgImage ? `url(${customization.headerBgImage})` : 'none', backgroundBlendMode: 'overlay', backgroundColor: 'rgba(0,0,0,0.3)' }}
-            >
-                <div className="flex items-start gap-4 mb-6">
-                    <PlanIcon 
-                        iconName={customization?.icon}
-                        bgColor={isPopular ? 'rgba(255, 255, 255, 0.15)' : undefined}
-                        iconColor={isPopular ? 'rgb(255, 255, 255)' : undefined}
-                    />
-                    <div className="flex-1">
-                        <CardTitle className="text-2xl font-bold mb-2" style={{ color: cardTextColor }}>
-                            {customization?.customTitle || plan.name}
-                        </CardTitle>
-                        <CardDescription 
-                            className="text-sm leading-relaxed"
-                            style={{ color: isPopular ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.6)' }}
-                        >
-                            {customization?.customDescription || plan.features[0]}
-                        </CardDescription>
+            <CardHeader className="p-8 pb-6 relative">
+                 {customization?.headerBgImage && (
+                    <>
+                        <img src={customization.headerBgImage} alt="Header background" className="absolute inset-0 w-full h-full object-cover" />
+                        <div 
+                            className="absolute inset-0 bg-black"
+                            style={{ opacity: 1 - (customization.headerBgImageOpacity ?? 1) }}
+                        />
+                    </>
+                )}
+                <div className="relative">
+                    <div className="flex items-start gap-4 mb-6">
+                        <PlanIcon 
+                            iconName={customization?.icon}
+                            bgColor={isPopular ? 'rgba(255, 255, 255, 0.15)' : undefined}
+                            iconColor={isPopular ? 'rgb(255, 255, 255)' : undefined}
+                        />
+                        <div className="flex-1">
+                            <CardTitle className="text-2xl font-bold mb-2" style={{ color: cardTextColor }}>
+                                {customization?.customTitle || plan.name}
+                            </CardTitle>
+                            <CardDescription 
+                                className="text-sm leading-relaxed"
+                                style={{ color: isPopular ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.6)' }}
+                            >
+                                {customization?.customDescription || plan.features[0]}
+                            </CardDescription>
+                        </div>
                     </div>
-                </div>
-                
-                <div className="flex items-baseline gap-2">
-                    <span className="text-5xl font-bold tracking-tight" style={{ color: cardTextColor }}>
-                        {typeof plan.price === 'number' ? `K${plan.price.toLocaleString()}` : plan.price}
-                    </span>
-                    <span 
-                        className="text-base font-medium"
-                        style={{ color: isPopular ? 'rgba(255, 255, 255, 0.7)' : 'rgba(255, 255, 255, 0.5)' }}
-                    >
-                        /month
-                    </span>
+                    
+                    <div className="flex items-baseline gap-2">
+                        <span className="text-5xl font-bold tracking-tight" style={{ color: cardTextColor }}>
+                           {plan.price}
+                        </span>
+                    </div>
                 </div>
             </CardHeader>
             <CardContent className="flex-grow space-y-6 px-8 pb-8">
@@ -178,18 +180,23 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
         return expired[0] || null;
     }, [config?.purchases]);
 
-    const calculatePrice = (basePrice: number, period: string, discount?: PlanCustomization['discountValue'], discountType?: PlanCustomization['discountType']) => {
+    const calculatePrice = (basePrice: number, period: string, discount?: PlanCustomization['discountValue'], discountType?: PlanCustomization['discountType'], discountMonths?: number) => {
         const months = Number(period);
         let total = basePrice;
+        let isDiscounted = false;
 
         if(!isNaN(months)) {
             total = basePrice * months;
+            if (discount && discountMonths && months >= discountMonths) {
+                isDiscounted = true;
+            }
         } else if (period === 'once') {
              total = basePrice * 36;
+             // You could decide if 'once' gets a discount
         }
         
         let discountedTotal = total;
-        if(discount && discountType) {
+        if(isDiscounted && discount && discountType) {
             if(discountType === 'percentage') {
                 discountedTotal = total - (total * (discount / 100));
             } else {
@@ -199,14 +206,15 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
         
         return {
             original: `${currencyCode}${total.toLocaleString()}`,
-            discounted: `${currencyCode}${discountedTotal.toLocaleString()}`
+            discounted: `${currencyCode}${discountedTotal.toLocaleString()}`,
+            isDiscounted,
         };
     };
 
     const selectedPeriodLabel = periods.find(p => p.value === selectedPeriod)?.label;
     
     const handleBuyClick = (plan: Plan) => {
-        const { discounted } = calculatePrice(plan.price, selectedPeriod, plan.customization?.discountValue, plan.customization?.discountType);
+        const { discounted } = calculatePrice(plan.price, selectedPeriod, plan.customization?.discountValue, plan.customization?.discountType, plan.customization?.discountMonths);
         setPurchasePlan({ name: plan.name, price: discounted, period: selectedPeriodLabel || '1 Month' });
     };
 
@@ -281,7 +289,7 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
                 </DialogHeader>
 
                 <div className="flex-1 overflow-y-auto min-h-0 py-2 -mx-4 px-4">
-                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
                         
                         {!hasCustomFreeTrial && (
                            <PlanCard 
@@ -303,12 +311,13 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
                         )}
 
                         {config?.plans?.map(plan => {
-                            const { discounted } = calculatePrice(plan.price, selectedPeriod, plan.customization?.discountValue, plan.customization?.discountType);
-                            const displayPrice = plan.customization?.discountValue ? (
-                                <>
-                                    <span className="line-through opacity-60 text-2xl mr-2">{calculatePrice(plan.price, selectedPeriod).original}</span>
-                                    <span>{discounted}</span>
-                                </>
+                            const { discounted, original, isDiscounted } = calculatePrice(plan.price, selectedPeriod, plan.customization?.discountValue, plan.customization?.discountType, plan.customization?.discountMonths);
+                            
+                            const displayPrice = isDiscounted ? (
+                                <div className="flex items-baseline gap-2">
+                                    <span className="text-xl line-through opacity-60 self-start mt-2">{original}</span>
+                                    <span className="text-5xl font-bold">{discounted}</span>
+                                </div>
                             ) : discounted;
                             
                             return (
@@ -346,3 +355,4 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
         </>
     );
 }
+
