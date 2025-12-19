@@ -249,9 +249,9 @@ export default function AdminPlansPage() {
     
     const [contactInfo, setContactInfo] = useState<{ planName: string, email?: string, whatsapp?: string } | null>(null);
 
-    const plans = config?.plans || [];
-    const adminSettings = config?.admin;
-    const planPeriods = adminSettings?.planPeriods || [];
+    const plans = useMemo(() => config?.plans || [], [config]);
+    const adminSettings = useMemo(() => config?.admin, [config]);
+    const planPeriods = useMemo(() => adminSettings?.planPeriods || [], [adminSettings]);
 
     const newPlanForm = useForm<NewPlanFormData>({
         resolver: zodResolver(newPlanSchema),
@@ -456,7 +456,6 @@ export default function AdminPlansPage() {
     const totalFromKeys = adminSettings?.revenueFromKeys || 0;
     const totalFromPlans = adminSettings?.revenueFromPlans || 0;
 
-
     return (
         <div className="container mx-auto space-y-8">
              <div>
@@ -553,15 +552,16 @@ export default function AdminPlansPage() {
                                                                 <FormMessage />
                                                             </FormItem>
                                                         )}
-                                                    </div>
-                                                </ScrollArea>
-                                                <DialogFooter className="pt-6 flex-shrink-0">
-                                                    <Button type="button" variant="outline" onClick={() => setIsAddPlanOpen(false)}>Cancel</Button>
-                                                    <Button type="submit">Save Plan</Button>
-                                                </DialogFooter>
-                                            </form>
-                                        </Form>
-                                    </DialogContent>
+                                                    />
+                                                </div>
+                                            </ScrollArea>
+                                            <DialogFooter className="pt-6 flex-shrink-0">
+                                                <Button type="button" variant="outline" onClick={() => setIsAddPlanOpen(false)}>Cancel</Button>
+                                                <Button type="submit">Save Plan</Button>
+                                            </DialogFooter>
+                                        </form>
+                                    </Form>
+                                </DialogContent>
                             </Dialog>
                         </CardHeader>
                         <CardContent>
