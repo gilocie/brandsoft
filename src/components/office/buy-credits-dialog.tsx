@@ -93,7 +93,7 @@ export const BuyCreditsDialog = ({
     const newTransaction = {
       id: `TRN-CREDIT-${Date.now()}`,
       date: new Date().toISOString(),
-      description: `Purchased ${data.credits} credits`,
+      description: `Purchased ${data.credits} credits from wallet`,
       amount: costInMWK,
       type: 'debit' as 'debit',
     };
@@ -132,7 +132,7 @@ export const BuyCreditsDialog = ({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="w-full mt-2">Buy Credits</Button>
+        <Button size="sm" className="w-full">Buy Credits</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

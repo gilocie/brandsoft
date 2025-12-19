@@ -15,6 +15,7 @@ import { SellCreditsDialog } from '@/components/office/dialogs/sell-credits-dial
 import { PurchaseDialog, type PlanDetails } from '@/components/purchase-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { BonusProgressDialog } from '@/components/office/bonus-progress-dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 
 const CREDIT_TO_MWK = 1000;
@@ -102,27 +103,21 @@ export default function StaffWalletPage() {
         .filter(t => t.type === 'credit')
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }, [affiliate?.transactions]);
-
-    const payoutTransactions = useMemo(() => {
+    
+    const purchaseTransactions = useMemo(() => {
         if (!affiliate?.transactions) return [];
         return affiliate.transactions
-        .filter(t => t.type === 'debit' && (t as any).status !== 'completed')
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            .filter(t => t.description.toLowerCase().startsWith('purchased'))
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }, [affiliate?.transactions]);
 
     const withdrawalTransactions = useMemo(() => {
         if (!affiliate?.transactions) return [];
         return affiliate.transactions
-        .filter(t => t.type === 'debit' && (t as any).status === 'completed')
+        .filter(t => t.type === 'debit')
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }, [affiliate?.transactions]);
     
-    const paginatedPayouts = useMemo(() => {
-        const startIndex = payoutsPage * ITEMS_PER_PAGE;
-        return payoutTransactions.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-    }, [payoutTransactions, payoutsPage]);
-
-    const totalPayoutPages = Math.ceil(payoutTransactions.length / ITEMS_PER_PAGE);
 
     if (!config || !affiliate) {
         return (
@@ -202,7 +197,7 @@ export default function StaffWalletPage() {
             <Tabs defaultValue="commissions">
                 <TabsList>
                     <TabsTrigger value="commissions">Commissions</TabsTrigger>
-                    <TabsTrigger value="payouts">Payouts</TabsTrigger>
+                    <TabsTrigger value="my-purchases">My Purchases</TabsTrigger>
                     <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
                 </TabsList>
 
@@ -237,15 +232,47 @@ export default function StaffWalletPage() {
                         </CardContent>
                     </Card>
                 </TabsContent>
-                <TabsContent value="payouts" className="pt-4">
+                <TabsContent value="my-purchases" className="pt-4">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Payout History (Pending/Processing)</CardTitle>
-                            <CardDescription>Your history of withdrawals that are not yet complete.</CardDescription>
+                            <CardTitle>My Purchase History</CardTitle>
+                            <CardDescription>Your history of credit and key purchases.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                             <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Date</TableHead>
+                                        <TableHead>Description</TableHead>
+                                        <TableHead className="text-right">Amount</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {purchaseTransactions.length > 0 ? purchaseTransactions.map(t => (
+                                        <TableRow key={t.id}>
+                                            <TableCell>{new Date(t.date).toLocaleDateString()}</TableCell>
+                                            <TableCell>{t.description}</TableCell>
+                                            <TableCell className="text-right font-medium text-red-600">
+                                                - K{t.amount.toLocaleString()}
+                                            </TableCell>
+                                        </TableRow>
+                                    )) : (
+                                        <TableRow><TableCell colSpan={3} className="text-center h-24">No purchases found.</TableCell></TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                <TabsContent value="withdrawals" className="pt-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Withdrawal History</CardTitle>
+                            <CardDescription>Your history of withdrawals.</CardDescription>
                         </CardHeader>
                         <CardContent>
                              <div className="space-y-4">
-                                {paginatedPayouts.length > 0 ? paginatedPayouts.map(t => (
+                                {withdrawalTransactions.map(t => (
                                     <div key={t.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
                                         <div className="flex items-center gap-3">
                                             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100">
@@ -258,49 +285,10 @@ export default function StaffWalletPage() {
                                         </div>
                                         <p className="text-sm font-semibold text-red-600">- K{(t.amount).toLocaleString()}</p>
                                     </div>
-                                )) : (
-                                    <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
-                                        <p className="text-muted-foreground">No pending payouts found.</p>
-                                    </div>
-                                )}
-                            </div>
-                        </CardContent>
-                        {totalPayoutPages > 1 && (
-                            <CardContent className="pt-4 flex items-center justify-between">
-                                <span className="text-sm text-muted-foreground">Page {payoutsPage + 1} of {totalPayoutPages}</span>
-                                <div className="flex gap-2">
-                                    <Button variant="outline" size="sm" onClick={() => setPayoutsPage(p => p - 1)} disabled={payoutsPage === 0}>Previous</Button>
-                                    <Button variant="outline" size="sm" onClick={() => setPayoutsPage(p => p + 1)} disabled={payoutsPage >= totalPayoutPages - 1}>Next</Button>
-                                </div>
-                            </CardContent>
-                        )}
-                    </Card>
-                </TabsContent>
-                <TabsContent value="withdrawals" className="pt-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Completed Withdrawals</CardTitle>
-                            <CardDescription>Your history of completed withdrawals.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                             <div className="space-y-4">
-                                {withdrawalTransactions.map(t => (
-                                    <div key={t.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
-                                                <TrendingDown className="h-4 w-4 text-gray-600" />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-medium">{t.description}</p>
-                                                <p className="text-xs text-muted-foreground">{new Date(t.date).toLocaleDateString()}</p>
-                                            </div>
-                                        </div>
-                                        <p className="text-sm font-semibold text-gray-600">- K{(t.amount).toLocaleString()}</p>
-                                    </div>
                                 ))}
                                 {withdrawalTransactions.length === 0 && (
                                      <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
-                                        <p className="text-muted-foreground">No completed withdrawals.</p>
+                                        <p className="text-muted-foreground">No withdrawals found.</p>
                                     </div>
                                 )}
                             </div>
