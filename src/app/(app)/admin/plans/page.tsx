@@ -15,13 +15,14 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { MoreHorizontal, PackagePlus, Briefcase, CheckCircle, Pencil, Trash2, KeyRound, TrendingUp, BarChart, AlertTriangle, Settings } from 'lucide-react';
+import { MoreHorizontal, PackagePlus, Briefcase, CheckCircle, Pencil, Trash2, KeyRound, TrendingUp, BarChart, AlertTriangle, Settings, Check } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { StatCard } from '@/components/office/stat-card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { PlanSettingsDialog } from '@/components/plan-settings-dialog';
+import { cn } from '@/lib/utils';
 
 
 const premiumFeatures = [
@@ -60,6 +61,119 @@ const activationKeySchema = z.object({
   keyUsageLimit: z.coerce.number().int().min(1, "Usage limit must be at least 1."),
 });
 type ActivationKeyFormData = z.infer<typeof activationKeySchema>;
+
+const PlanIcon = ({ bgColor, iconColor }: { bgColor?: string; iconColor?: string }) => (
+    <div 
+        className="h-14 w-14 rounded-2xl flex items-center justify-center" 
+        style={{ backgroundColor: bgColor || 'rgba(99, 102, 241, 0.15)' }}
+    >
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" stroke={iconColor || 'rgb(99, 102, 241)'} strokeWidth="2" strokeLinejoin="round"/>
+            <path d="M2 7L12 12L22 7" stroke={iconColor || 'rgb(99, 102, 241)'} strokeWidth="2" strokeLinejoin="round"/>
+            <path d="M12 12V22" stroke={iconColor || 'rgb(99, 102, 241)'} strokeWidth="2" strokeLinejoin="round"/>
+        </svg>
+    </div>
+);
+
+const AdminPlanCard = ({ plan, onEdit, onCustomize, onDelete }: { plan: Plan, onEdit: () => void, onCustomize: () => void, onDelete: () => void }) => {
+    const { customization } = plan;
+    const isPopular = customization?.isRecommended;
+
+    const cardBgColor = customization?.bgColor || (isPopular ? 'rgb(88, 80, 236)' : 'rgb(30, 30, 35)');
+    const cardTextColor = customization?.textColor || 'rgb(255, 255, 255)';
+    const borderColor = customization?.borderColor || (isPopular ? 'rgb(88, 80, 236)' : 'rgb(45, 45, 50)');
+    const badgeColor = customization?.badgeColor || 'rgb(255, 107, 53)';
+    const badgeText = customization?.badgeText || 'Most popular';
+
+    return (
+        <Card
+          className="flex flex-col h-full relative overflow-hidden transition-all duration-300 border-2"
+          style={{
+            backgroundColor: cardBgColor,
+            borderColor: borderColor,
+            color: cardTextColor
+          }}
+        >
+            {isPopular && (
+                 <div 
+                    className="absolute top-6 right-6 text-xs font-bold px-3 py-1.5 rounded-full text-white z-10"
+                    style={{ backgroundColor: badgeColor }}
+                 >
+                    {badgeText}
+                </div>
+            )}
+             <div className="absolute top-2 right-2">
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="secondary" size="icon" className="h-8 w-8" style={{ background: 'rgba(255,255,255,0.1)', color: 'white' }}>
+                            <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                        <DropdownMenuItem onSelect={onEdit}><Pencil className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={onCustomize}><Settings className="mr-2 h-4 w-4" /> Customize</DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onSelect={onDelete} className="text-destructive focus:text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+            <CardHeader className="p-8 pb-6">
+                <div className="flex items-start gap-4 mb-6">
+                     <PlanIcon 
+                        bgColor={isPopular ? 'rgba(255, 255, 255, 0.15)' : undefined}
+                        iconColor={isPopular ? 'rgb(255, 255, 255)' : undefined}
+                    />
+                    <div className="flex-1">
+                        <CardTitle className="text-2xl font-bold mb-2" style={{ color: cardTextColor }}>
+                            {customization?.customTitle || plan.name}
+                        </CardTitle>
+                        <CardDescription 
+                            className="text-sm leading-relaxed"
+                            style={{ color: isPopular ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.6)' }}
+                        >
+                            {customization?.customDescription || plan.features[0]}
+                        </CardDescription>
+                    </div>
+                </div>
+                
+                <div className="flex items-baseline gap-2">
+                    <span className="text-5xl font-bold tracking-tight" style={{ color: cardTextColor }}>
+                        K{plan.price.toLocaleString()}
+                    </span>
+                    <span 
+                        className="text-base font-medium"
+                        style={{ color: isPopular ? 'rgba(255, 255, 255, 0.7)' : 'rgba(255, 255, 255, 0.5)' }}
+                    >
+                        /month
+                    </span>
+                </div>
+            </CardHeader>
+            <CardContent className="flex-grow space-y-4 px-8 pb-8">
+                 <div className="space-y-4 pt-2">
+                    {plan.features.map((feature, index) => (
+                        <div key={index} className="flex items-start gap-3">
+                            <div 
+                                className="mt-0.5 rounded-full p-0.5"
+                                style={{ backgroundColor: isPopular ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.1)' }}
+                            >
+                                <Check className="h-3.5 w-3.5" style={{ color: cardTextColor }} />
+                            </div>
+                            <span 
+                                className="text-sm leading-relaxed flex-1"
+                                style={{ color: isPopular ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.7)' }}
+                            >
+                                {feature}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+            </CardContent>
+        </Card>
+    );
+};
+
 
 export default function AdminPlansPage() {
     const { config, saveConfig } = useBrandsoft();
@@ -358,54 +472,15 @@ export default function AdminPlansPage() {
                             </Dialog>
                         </CardHeader>
                         <CardContent>
-                            <div className="grid gap-4 md:grid-cols-2">
+                           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                                 {plans.map(plan => (
-                                    <Card key={plan.name} className="overflow-hidden">
-                                        <CardHeader className="relative p-0 h-20">
-                                            {plan.customization?.headerBgImage && (
-                                                <img src={plan.customization.headerBgImage} alt={plan.name} className="w-full h-full object-cover" style={{ opacity: plan.customization.headerBgImageOpacity || 1 }} />
-                                            )}
-                                            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" />
-                                            <div className="absolute bottom-4 left-4">
-                                                <CardTitle className="flex items-center gap-2 text-xl">
-                                                    <Briefcase className="h-5 w-5" />
-                                                    {plan.name}
-                                                </CardTitle>
-                                            </div>
-                                            <div className="absolute top-2 right-2">
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button variant="secondary" size="icon" className="h-8 w-8">
-                                                            <MoreHorizontal className="h-4 w-4" />
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent>
-                                                        <DropdownMenuItem onSelect={() => handleEditPlan(plan)}>
-                                                            <Pencil className="mr-2 h-4 w-4" /> Edit
-                                                        </DropdownMenuItem>
-                                                         <DropdownMenuItem onSelect={() => setPlanToCustomize(plan)}>
-                                                            <Settings className="mr-2 h-4 w-4" /> Customize
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuSeparator />
-                                                        <DropdownMenuItem onSelect={() => setPlanToDelete(plan)} className="text-destructive focus:text-destructive">
-                                                            <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                                        </DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                            </div>
-                                        </CardHeader>
-                                        <CardContent className="p-4">
-                                             <CardDescription className="text-2xl font-bold pt-1">K{plan.price.toLocaleString()}/mo</CardDescription>
-                                            <ul className="space-y-2 text-sm text-muted-foreground mt-4">
-                                                {plan.features.map(feature => (
-                                                    <li key={feature} className="flex items-center gap-2">
-                                                        <CheckCircle className="h-4 w-4 text-green-500" />
-                                                        <span>{feature}</span>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </CardContent>
-                                    </Card>
+                                    <AdminPlanCard 
+                                        key={plan.name} 
+                                        plan={plan}
+                                        onEdit={() => handleEditPlan(plan)}
+                                        onCustomize={() => setPlanToCustomize(plan)}
+                                        onDelete={() => setPlanToDelete(plan)}
+                                    />
                                 ))}
                             </div>
                         </CardContent>
