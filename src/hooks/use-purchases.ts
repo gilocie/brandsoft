@@ -1,7 +1,7 @@
 
 'use client';
 
-import type { BrandsoftConfig, Purchase } from '@/types/brandsoft';
+import type { BrandsoftConfig, Purchase, AdminSettings } from '@/types/brandsoft';
 
 const TEST_PERIOD_MINUTES: Record<string, number> = {
   '1 Month': 10,
@@ -37,7 +37,7 @@ export function usePurchases(
     if (!purchaseToActivate) return;
     
     let newConfig = { ...config };
-    let newAdminSettings = { ...newConfig.admin };
+    let newAdminSettings: AdminSettings = { ...(newConfig.admin as AdminSettings) };
 
     // Top-ups are simple activations without time logic.
     if (purchaseToActivate.planName === 'Wallet Top-up' || purchaseToActivate.planName.startsWith('Credit Purchase')) {
@@ -211,18 +211,22 @@ export function usePurchases(
                     if (newConfig.affiliate && p.customerId) {
                         const client = newConfig.companies.find(c => c.id === p.customerId);
                         if(client && client.referredBy === newConfig.affiliate.staffId) {
-                            const commissionAmount = 10000;
-                            newConfig.affiliate.unclaimedCommission = (newConfig.affiliate.unclaimedCommission || 0) + commissionAmount;
-                            newConfig.affiliate.transactions = [
-                                {
-                                    id: `TRN-RENEW-${Date.now()}`,
-                                    date: new Date().toISOString(),
-                                    description: `Monthly renewal commission for ${client.companyName}`,
-                                    amount: commissionAmount,
-                                    type: 'credit'
-                                },
-                                ...(newConfig.affiliate.transactions || [])
-                            ];
+                            const commissionRate = newConfig.admin?.commissionRate || 0.10;
+                            const price = parseFloat(p.planPrice.replace(/[^0-9.-]+/g, ""));
+                            if (!isNaN(price)) {
+                                const commissionAmount = price * commissionRate;
+                                newConfig.affiliate.unclaimedCommission = (newConfig.affiliate.unclaimedCommission || 0) + commissionAmount;
+                                newConfig.affiliate.transactions = [
+                                    {
+                                        id: `TRN-RENEW-${Date.now()}`,
+                                        date: new Date().toISOString(),
+                                        description: `Monthly renewal commission for ${client.companyName}`,
+                                        amount: commissionAmount,
+                                        type: 'credit'
+                                    },
+                                    ...(newConfig.affiliate.transactions || [])
+                                ];
+                            }
                         }
                     }
 

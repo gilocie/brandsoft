@@ -162,7 +162,7 @@ const PlanStatusCard = ({ purchase }: { purchase: Purchase | null }) => {
     const rounded = Math.ceil(remaining);
     const displayValue = isExpired ? '0' : rounded;
     
-    const displayUnit = rounded === 1 ? 'Day' : 'Days';
+    const displayUnit = rounded === 1 ? (purchase.remainingTime?.unit === 'minutes' ? 'Min' : 'Day') : (purchase.remainingTime?.unit === 'minutes' ? 'Mins' : 'Days');
 
     const displayText = isExpired ? `0 ${displayUnit}` : `${displayValue} ${displayUnit}`;
 

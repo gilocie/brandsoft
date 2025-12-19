@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Page } from '@/stores/canvas-store';
@@ -12,6 +11,8 @@ export type AffiliateClient = {
   joinDate?: string;
   remainingDays?: number;
   walletBalance?: number;
+  lastTopUpAmount?: number;
+  lastTopUpDate?: string;
 };
 
 export type Transaction = {
@@ -51,7 +52,7 @@ export type GeneratedKey = {
 export type Affiliate = {
   fullName: string;
   username: string;
-  phone?: string;
+  phone: string;
   profilePic: string;
   affiliateLink: string;
   securityQuestion: boolean; // true if set, false if not
@@ -60,7 +61,7 @@ export type Affiliate = {
     answer: string; // This would be hashed in a real app
   };
   idUploaded: boolean; // true if both front and back are uploaded
-  isPinSet?: boolean;
+  isPinSet: boolean;
   pin?: string;
   myWallet: number; // This is the main withdrawable wallet balance
   unclaimedCommission: number; // Commissions from sales, not yet moved to balance
@@ -70,16 +71,16 @@ export type Affiliate = {
   bonusChallengeStartDate?: string;
   bonusChallengeClients?: number;
   isBonusTierActive?: boolean;
-  staffId?: string;
+  staffId: string;
   clients: AffiliateClient[];
-  transactions?: Transaction[];
-  withdrawalMethods?: {
+  transactions: Transaction[];
+  withdrawalMethods: {
     airtel?: WithdrawalMethodDetails;
     tnm?: WithdrawalMethodDetails;
     bank?: BankDetails;
     bsCredits?: BsCreditsDetails;
   };
-  generatedKeys?: GeneratedKey[];
+  generatedKeys: GeneratedKey[];
 };
 
 export type Company = {
@@ -101,6 +102,8 @@ export type Company = {
   website?: string;
   referredBy?: string;
   walletBalance?: number;
+  remainingDays?: number; // Add this
+  periodReserve?: number; // Add this
 };
 
 export type Customer = {
@@ -268,17 +271,18 @@ export type AdminSettings = {
   exchangeValue: number;
   availableCredits: number;
   soldCredits: number;
-  creditsBoughtBack?: number;
-  isReserveLocked?: boolean;
-  keyPrice?: number;
-  keyFreeDays?: number;
-  keyPeriodReserveDays?: number;
-  keyUsageLimit?: number;
-  keysSold?: number;
-  trendingPlan?: string;
-  revenueFromKeys?: number;
-  revenueFromPlans?: number;
-  planPeriods?: PlanPeriod[];
+  creditsBoughtBack: number;
+  isReserveLocked: boolean;
+  keyPrice: number;
+  keyFreeDays: number;
+  keyPeriodReserveDays: number;
+  keyUsageLimit: number;
+  keysSold: number;
+  trendingPlan: string;
+  revenueFromKeys: number;
+  revenueFromPlans: number;
+  planPeriods: PlanPeriod[];
+  commissionRate?: number;
 };
 
 export type BrandsoftConfig = {
@@ -342,8 +346,8 @@ export type BrandsoftConfig = {
     quotation: boolean;
     marketing: boolean;
   };
-  affiliate?: Affiliate;
-  admin?: AdminSettings;
+  affiliate: Affiliate;
+  admin: AdminSettings;
   companies: Company[];
   customers: Customer[];
   products: Product[];
@@ -356,7 +360,7 @@ export type BrandsoftConfig = {
   templates: BrandsoftTemplate[];
   plans?: Plan[];
   currencies: string[];
-  purchases?: Purchase[];
+  purchases: Purchase[];
   reviews?: Review[];
 };
 
