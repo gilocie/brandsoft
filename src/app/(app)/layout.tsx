@@ -135,7 +135,7 @@ function ThemeToggle() {
 
     return (
         <Button
-            variant="secondary"
+            variant="primary"
             size="icon"
             onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
         >
