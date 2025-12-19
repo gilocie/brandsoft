@@ -26,7 +26,7 @@ export const TopUpTable = ({ orders, onStatusChange, emptyMessage }: TopUpTableP
     const router = useRouter();
 
     const handleViewOrder = (orderId: string) => {
-        router.push(`/verify-purchase?orderId=${orderId}@8090`);
+        router.push(`/office/verify-purchase?orderId=${orderId}`);
     };
 
     return (
