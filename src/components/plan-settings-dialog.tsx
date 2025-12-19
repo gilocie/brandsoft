@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -150,6 +150,16 @@ export function PlanSettingsDialog({ isOpen, onClose, plan, onSave }: PlanSettin
                             className="flex-1"
                           />
                         </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="discountMonths">Discount Months</Label>
+                        <Input
+                          id="discountMonths"
+                          type="number"
+                          value={customization.discountMonths || ''}
+                          onChange={(e) => handleChange('discountMonths', e.target.value ? Number(e.target.value) : undefined)}
+                          placeholder="e.g., 3"
+                        />
                       </div>
                        <div className="space-y-2">
                         <Label htmlFor="badgeText">Badge Text</Label>
