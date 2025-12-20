@@ -155,6 +155,7 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
         }
     };
     
+    // FIX: Get wallet balance from companies array (single source of truth)
     const balance = useMemo(() => {
         if (!config?.profile?.id || !config?.companies) return 0;
         const company = config.companies.find(c => c.id === (config.profile as any).id);
@@ -225,7 +226,7 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                     purchases: updatedPurchases
                 }, {redirect: false, revalidate: true});
                 
-                activatePurchaseOrder(newOrderId);
+                activatePurchaseOrder(newOrderId); // This marks it active and sets expiry
             } else {
                 addPurchaseOrder(newOrder);
                 const message = `*Please Activate My New Order!*
@@ -253,24 +254,24 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
     
     const isConfirmDisabled = purchaseState !== 'idle' || !selectedPayment || !whatsappNumber || (selectedPayment !== 'wallet' && !receiptFile) || (selectedPayment === 'wallet' && !canAffordWithWallet);
 
-    const handleDialogClose = () => {
-        // This function is called by the Dialog's onOpenChange.
-        // It should reset state and decide whether to call onClose or onSuccess.
-        const wasSuccessful = purchaseState === 'success';
+    const handleDialogClose = (open: boolean) => {
+        if (!open) {
+            const wasSuccessful = purchaseState === 'success';
 
-        // Always reset state regardless of outcome
-        setPurchaseState('idle');
-        setReceiptFile(null);
-        setSelectedPayment(null);
-        setWhatsappNumber('');
-        setSaveWhatsapp(false);
-        setOrderId('');
+            // Always reset state
+            setPurchaseState('idle');
+            setReceiptFile(null);
+            setSelectedPayment(null);
+            setWhatsappNumber('');
+            setSaveWhatsapp(false);
+            setOrderId('');
 
-        // Call the correct callback
-        if (wasSuccessful) {
-            onSuccess();
-        } else {
-            onClose();
+            // Call the correct parent handler
+            if (wasSuccessful) {
+                onSuccess();
+            } else {
+                onClose();
+            }
         }
     };
     
@@ -312,7 +313,7 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                             Your order <code className="bg-muted px-2 py-1 rounded-md">{orderId}</code> is {selectedPayment === 'wallet' ? 'now active' : 'pending approval'}.
                             {selectedPayment !== 'wallet' && " You will be notified once your plan is activated."}
                         </p>
-                        <Button onClick={handleDialogClose}>Close</Button>
+                        <Button onClick={() => handleDialogClose(false)}>Close</Button>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-4">
