@@ -205,7 +205,7 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                 planPrice: plan.price,
                 planPeriod: plan.period,
                 paymentMethod: selectedPayment,
-                status: 'pending' as const, // Will be updated to active by activatePurchaseOrder if wallet payment
+                status: 'pending' as const, // Always start as pending, activate below if wallet
                 date: new Date().toISOString(),
                 receipt: receiptDataUrl ? 'indexed-db' : 'none',
                 whatsappNumber: whatsappNumber,
@@ -226,7 +226,8 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                     purchases: updatedPurchases
                 }, {redirect: false, revalidate: true});
                 
-                activatePurchaseOrder(newOrderId); // This marks it active and sets expiry
+                // Immediately activate the plan
+                activatePurchaseOrder(newOrderId);
             } else {
                 addPurchaseOrder(newOrder);
                 const message = `*Please Activate My New Order!*
@@ -415,3 +416,5 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
         </Dialog>
     );
 }
+
+    
