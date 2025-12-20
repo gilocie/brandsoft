@@ -319,6 +319,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               (role === 'admin' || role === 'staff') ? (
                   <Link href={role === 'admin' ? '/admin' : '/office'} className="flex items-center gap-2 text-sidebar-foreground">
                       <Avatar className="h-8 w-8">
+                           <AvatarImage src={config.brand.logo} />
                            <AvatarFallback>
                                {role === 'admin' ? <Image src={brandsoftLogo} alt="Brandsoft" width={20} height={20} /> : <User className="h-5 w-5" />}
                            </AvatarFallback>
@@ -439,7 +440,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset className="flex flex-col h-screen overflow-hidden">
-        <header className="flex h-14 items-center gap-4 border-b bg-background/95 backdrop-blur-sm sticky top-0 px-4 md:px-6 z-10 min-w-0 flex-shrink-0">
+        <header className="flex h-14 items-center gap-4 bg-background/95 backdrop-blur-sm sticky top-0 px-4 md:px-6 z-10 min-w-0 flex-shrink-0">
           <SidebarTrigger className="md:hidden flex-shrink-0" />
           <h1 className="text-lg font-semibold font-headline flex-1 truncate hidden sm:block">
             {pageTitle}
@@ -543,7 +544,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             {children}
           </div>
         </main>
-        <footer className="p-4 text-center text-sm text-muted-foreground border-t bg-background flex-shrink-0">
+        <footer className="p-4 text-center text-sm text-muted-foreground bg-background flex-shrink-0">
           © 2025 BrandSoft. All rights reserved.
         </footer>
       </SidebarInset>
