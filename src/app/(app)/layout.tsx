@@ -76,6 +76,8 @@ import { WalletBalance } from '@/components/wallet-balance';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { useTheme } from 'next-themes';
+import Image from 'next/image';
+import brandsoftLogo from '@/app/brandsoftlogo.png';
 
 const mainNavItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', enabledKey: null, roles: ['client'] },
@@ -318,7 +320,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   <Link href={role === 'admin' ? '/admin' : '/office'} className="flex items-center gap-2 text-sidebar-foreground">
                       <Avatar className="h-8 w-8">
                            <AvatarFallback>
-                               {role === 'admin' ? <BriefcaseBusiness className="h-5 w-5" /> : <User className="h-5 w-5" />}
+                               {role === 'admin' ? <Image src={brandsoftLogo} alt="Brandsoft" width={20} height={20} /> : <User className="h-5 w-5" />}
                            </AvatarFallback>
                       </Avatar>
                       <h1 className="text-base font-bold">
@@ -330,7 +332,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     <Avatar className="h-8 w-8">
                         <AvatarImage src={config.brand.logo} alt={config.brand.businessName} />
                         <AvatarFallback>
-                            <BriefcaseBusiness className="h-5 w-5" />
+                            <Image src={brandsoftLogo} alt="Brandsoft" width={20} height={20} />
                         </AvatarFallback>
                     </Avatar>
                     <h1 className={cn('text-base font-bold', getFontClass(config.brand.font))}>
@@ -419,9 +421,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <SidebarMenuItem>
               {config ? (
                 <div className="flex flex-col items-center justify-center p-2 text-center space-y-2">
-                  <Avatar className="h-12 w-12">
-                    <AvatarFallback>
-                        <BriefcaseBusiness className="h-8 w-8 text-primary" />
+                  <Avatar className="h-12 w-12 bg-transparent">
+                    <AvatarFallback className="bg-transparent">
+                        <Image src={brandsoftLogo} alt="Brandsoft Logo" width={48} height={48} />
                     </AvatarFallback>
                   </Avatar>
                   <p className="text-xs font-semibold text-sidebar-foreground/80">BrandSoft</p>
