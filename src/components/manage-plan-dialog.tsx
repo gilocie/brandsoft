@@ -242,7 +242,7 @@ const PlanCard = ({
             <CardContent className="p-6 pt-2 space-y-5">
                 <Button 
                     className={cn(
-                        "w-full text-sm font-semibold h-11 rounded-xl transition-all",
+                        "w-full text-sm font-semibold h-11 rounded-xl transition-all hover:scale-[1.02]",
                         cta === 'Current Plan' && "opacity-60 cursor-not-allowed"
                     )}
                     style={{
@@ -313,7 +313,6 @@ export function ManagePlanDialog({ isExpiringSoon, isExpired }: { isExpiringSoon
     const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
     const [contactInfo, setContactInfo] = useState<{ planName: string, email?: string, whatsapp?: string } | null>(null);
 
-    // FIX: Use useMemo to get wallet balance directly from config
     const { walletBalance } = useMemo(() => {
         if (!config?.profile?.id || !config?.companies) {
             return { walletBalance: 0 };

@@ -155,7 +155,6 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
         }
     };
     
-    // FIX: Get wallet balance from companies array (single source of truth)
     const balance = useMemo(() => {
         if (!config?.profile?.id || !config?.companies) return 0;
         const company = config.companies.find(c => c.id === (config.profile as any).id);
@@ -226,7 +225,6 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                     purchases: updatedPurchases
                 }, {redirect: false, revalidate: true});
                 
-                // Immediately activate the plan
                 activatePurchaseOrder(newOrderId);
             } else {
                 addPurchaseOrder(newOrder);
@@ -259,9 +257,10 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
         if (!open) {
             const wasSuccessful = purchaseState === 'success';
 
-            // Always reset state
+            // Reset all state
             setPurchaseState('idle');
             setReceiptFile(null);
+            setReceiptDataUrl(null);
             setSelectedPayment(null);
             setWhatsappNumber('');
             setSaveWhatsapp(false);
@@ -309,7 +308,7 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                 {purchaseState === 'success' ? (
                      <div className="py-10 text-center space-y-4">
                         <CheckCircle className="h-16 w-16 text-green-500 mx-auto" />
-                        <h2 className="text-2xl font-bold">Purchase Successful!</h2>
+                        <h2 className="text-2xl font-bold">Purchase Submitted!</h2>
                         <p className="text-muted-foreground">
                             Your order <code className="bg-muted px-2 py-1 rounded-md">{orderId}</code> is {selectedPayment === 'wallet' ? 'now active' : 'pending approval'}.
                             {selectedPayment !== 'wallet' && " You will be notified once your plan is activated."}
@@ -416,5 +415,3 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
         </Dialog>
     );
 }
-
-    

@@ -153,9 +153,7 @@ export default function SetupPage() {
 
   return (
     <div 
-        className="min-h-screen bg-cover bg-center"
-        style={{ backgroundImage: "url('https://picsum.photos/seed/setupbg/1920/1080')" }}
-        data-ai-hint="business building"
+        className="min-h-screen bg-background"
     >
       <div className="flex min-h-screen items-center justify-center bg-background/80 backdrop-blur-sm p-4">
         <Form {...form}>

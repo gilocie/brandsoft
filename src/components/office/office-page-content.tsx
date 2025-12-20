@@ -219,7 +219,7 @@ export function OfficePageContent() {
     ?.filter(t => t.description.toLowerCase().startsWith('credit sale to'))
     .reduce((sum, t) => sum + t.amount, 0) || 0;
 
-  const creditSalesProfit = totalCreditsSold * (CREDIT_TO_MWK - (config.admin?.buyPrice || 900));
+  const creditSalesProfit = totalCreditsSold * ((config.admin?.sellPrice || 900) - (config.admin?.buyPrice || 850));
 
     return (
     <div className="space-y-8">
@@ -345,7 +345,7 @@ export function OfficePageContent() {
                         title="Credit Balance" 
                         value={affiliate.creditBalance || 0}
                         valuePrefix={`BS `}
-                        footer={`Value: K${((affiliate.creditBalance || 0) * CREDIT_TO_MWK).toLocaleString()}`}
+                        footer={`Value: K${((affiliate.creditBalance || 0) * (config.admin?.buyPrice || 850)).toLocaleString()}`}
                     >
                        <div className="flex gap-2 mt-2">
                             <BuyCreditsDialog
@@ -476,3 +476,4 @@ export function OfficePageContent() {
     </div>
   );
 }
+

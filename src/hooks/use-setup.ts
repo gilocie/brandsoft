@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { BrandsoftConfig, Company, Customer, Invoice, Quotation, QuotationRequest, Affiliate, Transaction, AdminSettings, Plan } from '@/types/brandsoft';
@@ -203,7 +204,6 @@ export function useSetup(
   ];
 
   const initialPlans: Plan[] = [
-    { name: 'Free Trial', price: 0, features: ['Up to 10 invoices', 'Up to 10 customers', 'Basic templates'] },
     { name: 'Standard', price: 5000, features: ['Unlimited invoices', 'Unlimited customers', 'Premium templates', 'Email support'] },
     { name: 'Pro', price: 15000, features: ['All Standard features', 'API access', 'Priority support', 'Advanced analytics'] },
     { name: 'Enterprise', price: 0, features: ['All Pro features', 'Dedicated support', 'Custom integrations', 'On-premise option'] },
@@ -262,6 +262,7 @@ export function useSetup(
     trendingPlan: 'None',
     revenueFromKeys: 0,
     revenueFromPlans: 0,
+    creditsBoughtBack: 0,
     planPeriods: [
         { value: '1', label: '1 Month' },
         { value: '3', label: '3 Months' },
@@ -348,6 +349,7 @@ export function useSetup(
         quotationStartNumber: 101,
         walletBalance: 0,
         autoRenew: false,
+        id: userCompanyId,
       },
       modules: {
         invoice: data.invoice,
