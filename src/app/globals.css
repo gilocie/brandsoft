@@ -28,7 +28,9 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --radius: 0.3rem;
+    --radius: 0.8rem;
+    
+    /* Ensure dark sidebar variables are always present */
     --sidebar-background: 240 10% 3.9%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 210 40% 98%;
@@ -83,32 +85,10 @@
   }
 }
 
-
 @layer base {
-  * {
-    @apply border-border;
-  }
-  html, body {
+  body {
     overflow-x: hidden;
     max-width: 100vw;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  ::-webkit-scrollbar-thumb {
-    background-color: hsl(var(--primary));
-    border-radius: 10px;
-  }
-  ::-webkit-scrollbar:horizontal {
-    display: none;
   }
 }
 
