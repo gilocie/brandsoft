@@ -15,10 +15,10 @@ export function Logo() {
 
   return (
     <div className="flex items-center gap-2">
-      <Avatar className="h-8 w-8 bg-transparent">
-        <Image src={BrandsoftLogo} alt={businessName} width={32} height={32} />
+      <Avatar className="h-10 w-10 bg-transparent">
+        <Image src={BrandsoftLogo} alt={businessName} width={40} height={40} />
       </Avatar>
-      <h1 className="text-3xl font-body font-bold text-primary">{businessName}</h1>
+      <h1 className="text-4xl font-body font-bold text-primary">{businessName}</h1>
     </div>
   );
 }
