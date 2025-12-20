@@ -155,7 +155,6 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
         }
     };
     
-    // FIX: Get wallet balance from companies array (single source of truth)
     const balance = useMemo(() => {
         if (!config?.profile?.id || !config?.companies) return 0;
         const company = config.companies.find(c => c.id === (config.profile as any).id);
@@ -205,7 +204,7 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                 planPrice: plan.price,
                 planPeriod: plan.period,
                 paymentMethod: selectedPayment,
-                status: selectedPayment === 'wallet' ? 'active' as const : 'pending' as const,
+                status: 'pending' as const, // Will be updated to active by activatePurchaseOrder if wallet payment
                 date: new Date().toISOString(),
                 receipt: receiptDataUrl ? 'indexed-db' : 'none',
                 whatsappNumber: whatsappNumber,
@@ -255,20 +254,24 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
     const isConfirmDisabled = purchaseState !== 'idle' || !selectedPayment || !whatsappNumber || (selectedPayment !== 'wallet' && !receiptFile) || (selectedPayment === 'wallet' && !canAffordWithWallet);
 
     const handleDialogClose = () => {
-      const successful = purchaseState === 'success';
-      const shouldClose = !successful || (successful && onClose);
-      
-      setPurchaseState('idle');
-      setReceiptFile(null);
-      setSelectedPayment(null);
-      setWhatsappNumber('');
-      setSaveWhatsapp(false);
-  
-      if (successful) {
-        onSuccess();
-      } else {
-        onClose();
-      }
+        // This function is called by the Dialog's onOpenChange.
+        // It should reset state and decide whether to call onClose or onSuccess.
+        const wasSuccessful = purchaseState === 'success';
+
+        // Always reset state regardless of outcome
+        setPurchaseState('idle');
+        setReceiptFile(null);
+        setSelectedPayment(null);
+        setWhatsappNumber('');
+        setSaveWhatsapp(false);
+        setOrderId('');
+
+        // Call the correct callback
+        if (wasSuccessful) {
+            onSuccess();
+        } else {
+            onClose();
+        }
     };
     
     const StepIndicator = ({ step, label, isComplete }: { step: number, label: string, isComplete: boolean }) => (
