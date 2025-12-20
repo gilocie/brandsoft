@@ -10,19 +10,19 @@
     --card-foreground: 240 10% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
-    --primary: 262 82% 55%; /* A slightly less intense purple */
-    --primary-foreground: 210 40% 98%;
+    --primary: 37 95% 57%; /* New Primary: #f9aa2b */
+    --primary-foreground: 240 10% 3.9%;
     --secondary: 240 4.8% 95.9%;
     --secondary-foreground: 240 5.9% 10%;
     --muted: 240 4.8% 95.9%;
     --muted-foreground: 240 3.8% 46.1%;
-    --accent: 335 88% 55%; /* A vibrant pink/red */
+    --accent: 0 0% 18%; /* New Accent: #2d2d2d */
     --accent-foreground: 210 40% 98%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
-    --ring: 262 82% 55%;
+    --ring: 37 95% 57%;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
@@ -53,19 +53,19 @@
     --card-foreground: 210 40% 98%;
     --popover: 240 10% 3.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 259, 92%, 67%; /* rgb(123, 97, 255) */
-    --primary-foreground: 210 40% 98%;
+    --primary: 37 95% 57%; /* New Primary: #f9aa2b */
+    --primary-foreground: 240 10% 3.9%;
     --secondary: 240 3.7% 15.9%;
     --secondary-foreground: 210 40% 98%;
     --muted: 240 3.7% 15.9%;
     --muted-foreground: 240 5% 64.9%;
-    --accent: 341, 91%, 65%; /* rgb(255, 107, 129) */
+    --accent: 0 0% 18%; /* New Accent: #2d2d2d */
     --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
     --border: 240 3.7% 25.9%;
     --input: 240 3.7% 15.9%;
-    --ring: 259, 92%, 77%;
+    --ring: 37 95% 57%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
@@ -85,10 +85,33 @@
   }
 }
 
+
 @layer base {
-  body {
+  * {
+    border-color: hsl(var(--border));
+  }
+  html, body {
     overflow-x: hidden;
     max-width: 100vw;
+  }
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--primary));
+    border-radius: 10px;
+  }
+  ::-webkit-scrollbar:horizontal {
+    display: none;
   }
 }
 
