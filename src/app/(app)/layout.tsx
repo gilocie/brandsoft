@@ -404,7 +404,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           )}
 
         </SidebarContent>
-        <SidebarFooter className="mt-auto mb-4 relative overflow-hidden">
+        <SidebarFooter className="mt-auto relative overflow-hidden">
           <div 
             className="absolute inset-0 bg-cover bg-center opacity-20" 
             style={{ backgroundImage: `url(${bgOverlay.src})` }}
@@ -416,7 +416,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                    <Avatar className="h-12 w-12 bg-transparent">
                       <AvatarImage src={brandsoftLogo.src} />
                   </Avatar>
-                  <p className="text-xs font-semibold text-sidebar-foreground/80">BrandSoft</p>
+                  <p className="text-sm font-semibold text-sidebar-foreground/80">BrandSoft</p>
                 </div>
               ) : (
                 <div className="flex items-center justify-center p-2">
@@ -532,7 +532,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             {children}
           </div>
         </main>
-        <footer className="p-4 text-center text-sm text-muted-foreground bg-background flex-shrink-0">
+        <footer className="p-4 text-center text-sm text-muted-foreground bg-background border-t">
           © 2025 BrandSoft. All rights reserved.
         </footer>
       </SidebarInset>
