@@ -300,14 +300,37 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   
   const pageTitle = [...mainNavItems, ...upcomingNavItems].find(item => pathname.startsWith(item.href))?.label || 'Dashboard';
   
-  const headerTitle = useMemo(() => {
-    if (role === 'admin') return 'Admin Room';
-    if (role === 'staff') return 'Office Room';
-    return config?.brand.businessName;
-  }, [role, config?.brand.businessName]);
+  const { avatarSrc, headerTitle, avatarFallback } = useMemo(() => {
+    if (!config || !role) {
+      return { avatarSrc: undefined, headerTitle: 'BrandSoft', avatarFallback: 'B' };
+    }
+
+    switch (role) {
+      case 'admin':
+        return {
+          avatarSrc: 'https://picsum.photos/seed/admin/200',
+          headerTitle: 'Admin Room',
+          avatarFallback: 'A',
+        };
+      case 'staff':
+        return {
+          avatarSrc: config.affiliate?.profilePic,
+          headerTitle: config.affiliate?.fullName || 'Office Room',
+          avatarFallback: config.affiliate?.fullName?.charAt(0) || 'S',
+        };
+      case 'client':
+      default:
+        return {
+          avatarSrc: logoImage || undefined,
+          headerTitle: config.brand.businessName,
+          avatarFallback: config.brand.businessName?.charAt(0) || 'B',
+        };
+    }
+  }, [role, config, logoImage]);
+
 
   const isLinkActive = (href: string) => {
-    if (href === '/office' || href === '/admin') {
+    if (href === '/office' || href === '/admin' || href === '/dashboard') {
       return pathname === href;
     }
     return pathname.startsWith(href);
@@ -321,10 +344,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             {config ? (
                 <Link href={role === 'client' ? '/settings' : (role === 'admin' ? '/admin' : '/office')} className="flex items-center gap-2 text-sidebar-foreground">
                     <Avatar className="h-8 w-8">
-                       <AvatarImage src={logoImage || undefined} />
-                       <AvatarFallback>
-                           <Image src={brandsoftLogo} alt="Brandsoft" width={20} height={20} />
-                       </AvatarFallback>
+                       <AvatarImage src={avatarSrc} />
+                       <AvatarFallback>{avatarFallback}</AvatarFallback>
                     </Avatar>
                     <h1 className={cn('text-base font-bold', getFontClass(config.brand.font))}>
                         {headerTitle}
