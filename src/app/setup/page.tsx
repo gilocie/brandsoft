@@ -158,7 +158,7 @@ export default function SetupPage() {
         style={{ backgroundImage: `url(${brandsoftBackground.src})` }}
         data-ai-hint="business building"
     >
-      <div className="flex min-h-screen items-center justify-center bg-background/80 backdrop-blur-sm p-4">
+      <div className="flex min-h-screen items-center justify-center bg-black/50 p-4">
         <Form {...form}>
             <Card className="w-full max-w-4xl shadow-2xl flex flex-col max-h-[90vh]">
               <CardHeader>
