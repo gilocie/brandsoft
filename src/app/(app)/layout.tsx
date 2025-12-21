@@ -78,6 +78,7 @@ import { Label } from '@/components/ui/label';
 import { useTheme } from 'next-themes';
 import Image from 'next/image';
 import brandsoftLogo from '@/app/brandsoftlogo.png';
+import bgOverlay from '@/app/backgrounds/bgoverlay.jpg';
 
 const mainNavItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', enabledKey: null, roles: ['client'] },
@@ -406,7 +407,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <SidebarFooter className="mt-auto mb-4 relative overflow-hidden">
           <div 
             className="absolute inset-0 bg-cover bg-center opacity-20" 
-            style={{ backgroundImage: "url('/bgoverlay.jpg')" }}
+            style={{ backgroundImage: `url(${bgOverlay.src})` }}
           />
           <SidebarMenu>
             <SidebarMenuItem>
@@ -531,7 +532,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             {children}
           </div>
         </main>
-        <footer className="p-4 text-center text-sm text-muted-foreground bg-background flex-shrink-0 border-t">
+        <footer className="p-4 text-center text-sm text-muted-foreground bg-background flex-shrink-0">
           © 2025 BrandSoft. All rights reserved.
         </footer>
       </SidebarInset>
