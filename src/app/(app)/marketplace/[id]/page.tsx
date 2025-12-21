@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useBrandsoft, type Company, type Product, type Review } from '@/hooks/use-brandsoft';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -9,15 +8,25 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Building, MapPin, Globe, Phone, Mail, FileBarChart2, ArrowLeft, Info, Package, Star } from 'lucide-react';
+import { Building, MapPin, Globe, Phone, Mail, FileBarChart2, ArrowLeft, Info, Package, Star, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Image from 'next/image';
 import { RatingDialog } from '@/components/rating-dialog';
 import { Separator } from '@/components/ui/separator';
+import { getImageFromDB } from '@/hooks/use-receipt-upload';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const fallBackCover = 'https://picsum.photos/seed/shopcover/1200/400';
 const REVIEWS_PER_PAGE = 10;
+
+// Helper to check if a value is a valid image URL
+const isValidImageUrl = (value: string | undefined): boolean => {
+  if (!value) return false;
+  if (value === 'indexed-db') return false;
+  if (value === '') return false;
+  return true;
+};
 
 
 export default function VirtualShopPage() {
@@ -27,29 +36,65 @@ export default function VirtualShopPage() {
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [isRatingOpen, setIsRatingOpen] = useState(false);
   const [reviewsPage, setReviewsPage] = useState(0);
+  
+  // FIX: State for loaded images
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const [isImagesLoading, setIsImagesLoading] = useState(true);
 
   const business = useMemo(() => {
     return config?.companies.find(c => c.id === params.id) || null;
   }, [config?.companies, params.id]);
 
+  // FIX: Load images from IndexedDB when business changes
+  useEffect(() => {
+    let isMounted = true;
+    
+    const fetchImages = async () => {
+      if (!business) {
+        setIsImagesLoading(false);
+        return;
+      }
+      
+      setIsImagesLoading(true);
+      
+      const logoKey = `company-logo-${business.id}`;
+      const coverKey = `company-cover-${business.id}`;
+
+      const [logo, cover] = await Promise.all([
+        getImageFromDB(logoKey),
+        getImageFromDB(coverKey)
+      ]);
+      
+      if (isMounted) {
+        // Only use business.logo/coverImage if they are valid URLs (not 'indexed-db' marker)
+        const fallbackLogo = isValidImageUrl(business.logo) ? business.logo : null;
+        const fallbackCover = isValidImageUrl(business.coverImage) ? business.coverImage : null;
+        
+        setLogoUrl(logo || fallbackLogo || null);
+        setCoverUrl(cover || fallbackCover || null);
+        setIsImagesLoading(false);
+      }
+    };
+
+    fetchImages();
+    
+    return () => { isMounted = false; };
+  }, [business]);
+
   const products = useMemo(() => {
-    // In a real app, this would filter products by the business ID.
-    // For now, we show all products as a demonstration.
     return config?.products || [];
   }, [config?.products]);
 
   const currentUserId = useMemo(() => {
     if (!config) return null;
     
-    // 1. Try to find if I am listed as a Company
     const asCompany = config.companies.find(c => c.companyName === config.brand.businessName);
     if (asCompany) return asCompany.id;
   
-    // 2. Try to find if I am listed as a Customer (Standard User Profile)
     const asCustomer = config.customers.find(c => c.name === config.brand.businessName);
     if (asCustomer) return asCustomer.id;
   
-    // 3. Fallback for testing/demo purposes
     return 'CUST-DEMO-ME'; 
   }, [config]);
   
@@ -126,18 +171,30 @@ export default function VirtualShopPage() {
       <Card className="overflow-hidden">
         <CardHeader className="p-0">
            <div className="relative h-48 w-full">
-                <Image
-                    src={business.coverImage || fallBackCover}
-                    alt={`${business.companyName} cover`}
-                    fill
-                    className="object-cover"
-                    data-ai-hint="office workspace"
-                />
+                {/* FIX: Use loaded coverUrl instead of business.coverImage */}
+                {isImagesLoading ? (
+                  <Skeleton className="h-full w-full" />
+                ) : (
+                  <Image
+                      src={coverUrl || fallBackCover}
+                      alt={`${business.companyName} cover`}
+                      fill
+                      className="object-cover"
+                      data-ai-hint="office workspace"
+                  />
+                )}
                 <div className="absolute inset-0 bg-black/50" />
                  <div className="absolute inset-0 p-6 flex flex-col md:flex-row items-start gap-6">
+                    {/* FIX: Use loaded logoUrl instead of business.logo */}
                     <Avatar className="h-24 w-24 border-4 border-background flex-shrink-0">
-                        <AvatarImage src={business.logo} />
-                        <AvatarFallback><Building className="h-10 w-10" /></AvatarFallback>
+                        {isImagesLoading ? (
+                          <Skeleton className="h-full w-full rounded-full" />
+                        ) : (
+                          <>
+                            <AvatarImage src={logoUrl || undefined} />
+                            <AvatarFallback><Building className="h-10 w-10" /></AvatarFallback>
+                          </>
+                        )}
                     </Avatar>
                     <div className="flex-1 text-white pt-2">
                         <CardTitle className="text-3xl font-headline">{business.companyName}</CardTitle>
@@ -235,13 +292,14 @@ export default function VirtualShopPage() {
               <div className="divide-y">
                 {paginatedReviews.map((review) => {
                   let reviewerLogo: string | undefined = undefined;
-                  // Check if the reviewer is the current user
                   if (review.reviewerId === currentUserId) {
-                      reviewerLogo = config?.brand.logo;
+                      // For current user, we'd need to load from IndexedDB too
+                      // For simplicity, we can show config.brand.logo but it might be 'indexed-db'
+                      // A more complete solution would load reviewer images too
+                      reviewerLogo = isValidImageUrl(config?.brand.logo) ? config?.brand.logo : undefined;
                   } else {
-                      // Find reviewer in companies list
                       const reviewer = config?.companies.find(c => c.id === review.reviewerId);
-                      reviewerLogo = reviewer?.logo;
+                      reviewerLogo = isValidImageUrl(reviewer?.logo) ? reviewer?.logo : undefined;
                   }
                   
                   return (

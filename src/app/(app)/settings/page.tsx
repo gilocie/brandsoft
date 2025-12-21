@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useForm, useWatch, Controller } from 'react-hook-form';
@@ -36,7 +34,6 @@ const fallBackCover = 'https://picsum.photos/seed/settingscover/1200/300';
 
 const settingsSchema = z.object({
   businessName: z.string().min(2, "Business name is required"),
-  // logo and coverImage are handled outside the form now
   primaryColor: z.string().optional(),
   secondaryColor: z.string().optional(),
   font: z.string().optional(),
@@ -163,9 +160,13 @@ export default function SettingsPage() {
     return uniqueIndustries.map(industry => ({ value: industry.toLowerCase(), label: industry }));
   }, [config?.companies]);
 
+  // FIX: Calculate myCompanyId more robustly - create if doesn't exist
   const myCompanyId = useMemo(() => {
     if (!config) return null;
-    return config.companies?.find(c => c.companyName === config.brand.businessName)?.id || null;
+    const existingCompany = config.companies?.find(c => c.companyName === config.brand.businessName);
+    if (existingCompany) return existingCompany.id;
+    // Return a consistent ID for new companies
+    return `COMP-ME-${config.brand.businessName?.replace(/\s+/g, '-').toLowerCase() || 'default'}`;
   }, [config]);
 
   useEffect(() => {
@@ -191,10 +192,30 @@ export default function SettingsPage() {
     }
   }, [config, form]);
 
+  // FIX: Handler to update logo - saves to both generic and company-specific keys
+  const handleLogoChange = async (value: string) => {
+    setLogoImage(value); // Saves to generic 'logo' key via useBrandImage
+    
+    // Also save to company-specific key immediately
+    if (myCompanyId) {
+      await saveImageToDB(`company-logo-${myCompanyId}`, value);
+    }
+  };
+
+  // FIX: Handler to update cover - saves to both generic and company-specific keys  
+  const handleCoverChange = async (value: string) => {
+    setCoverImage(value); // Saves to generic 'cover' key via useBrandImage
+    
+    // Also save to company-specific key immediately
+    if (myCompanyId) {
+      await saveImageToDB(`company-cover-${myCompanyId}`, value);
+    }
+  };
+
   const onSubmit = async (data: SettingsFormData) => {
     if (!config || !myCompanyId) return;
 
-    // Save logo and cover images to IndexedDB for the specific company
+    // FIX: Ensure images are saved to company-specific keys on submit
     if (logoImage) {
         await saveImageToDB(`company-logo-${myCompanyId}`, logoImage);
     }
@@ -206,11 +227,12 @@ export default function SettingsPage() {
     const myCompanyIndex = companies.findIndex(c => c.id === myCompanyId);
 
     const updatedMyCompany: Partial<Company> = {
+        id: myCompanyId, // Ensure ID is set
         name: data.businessName,
         companyName: data.businessName,
         description: data.description,
-        logo: 'indexed-db', // Mark that logo is in DB
-        coverImage: 'indexed-db', // Mark that cover image is in DB
+        logo: 'indexed-db',
+        coverImage: 'indexed-db',
         website: data.website,
         phone: data.phone,
         email: data.email,
@@ -223,39 +245,51 @@ export default function SettingsPage() {
     if (myCompanyIndex > -1) {
         newCompanies[myCompanyIndex] = { ...newCompanies[myCompanyIndex], ...updatedMyCompany };
     } else {
-          newCompanies.push({
-            id: `COMP-ME-${Date.now()}`,
-            ...updatedMyCompany
-          } as Company);
+        // FIX: Create new company entry with all required fields
+        newCompanies.push({
+            id: myCompanyId,
+            name: data.businessName,
+            companyName: data.businessName,
+            description: data.description,
+            logo: 'indexed-db',
+            coverImage: 'indexed-db',
+            website: data.website,
+            phone: data.phone,
+            email: data.email,
+            address: data.address,
+            town: data.town,
+            industry: data.industry,
+        } as Company);
     }
 
     const newConfig: BrandsoftConfig = {
         ...config,
         brand: {
-        ...config.brand,
-        businessName: data.businessName,
-        description: data.description || '',
-        logo: 'indexed-db',
-        primaryColor: data.primaryColor || '#d58d30',
-        secondaryColor: data.secondaryColor || '#111825',
-        font: data.font || 'Poppins',
-        buttonPrimaryBg: data.buttonPrimaryBg,
-        buttonPrimaryBgHover: data.buttonPrimaryBgHover,
-        buttonPrimaryText: data.buttonPrimaryText,
-        buttonPrimaryTextHover: data.buttonPrimaryTextHover,
+            ...config.brand,
+            businessName: data.businessName,
+            description: data.description || '',
+            logo: 'indexed-db',
+            primaryColor: data.primaryColor || '#d58d30',
+            secondaryColor: data.secondaryColor || '#111825',
+            font: data.font || 'Poppins',
+            buttonPrimaryBg: data.buttonPrimaryBg,
+            buttonPrimaryBgHover: data.buttonPrimaryBgHover,
+            buttonPrimaryText: data.buttonPrimaryText,
+            buttonPrimaryTextHover: data.buttonPrimaryTextHover,
         },
         profile: {
-        ...config.profile,
-        address: data.address,
-        town: data.town || '',
-        industry: data.industry || '',
-        phone: data.phone,
-        email: data.email,
-        website: data.website || '',
-        taxNumber: data.taxNumber || '',
+            ...config.profile,
+            address: data.address,
+            town: data.town || '',
+            industry: data.industry || '',
+            phone: data.phone,
+            email: data.email,
+            website: data.website || '',
+            taxNumber: data.taxNumber || '',
         },
         companies: newCompanies,
     };
+    
     saveConfig(newConfig, { redirect: false, revalidate: true });
     toast({
         title: "Settings Saved",
@@ -284,7 +318,7 @@ export default function SettingsPage() {
               <div className="absolute inset-0 bg-black/60" />
                <div className="absolute top-4 right-4 z-10">
                   <SimpleImageUploadButton
-                    onChange={(value) => setCoverImage(value)}
+                    onChange={handleCoverChange} // FIX: Use new handler
                     buttonText="Change Cover"
                   />
               </div>
@@ -297,7 +331,7 @@ export default function SettingsPage() {
                       </Avatar>
                        <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover/avatar:opacity-100 flex items-center justify-center transition-opacity">
                             <SimpleImageUploadButton
-                              onChange={(value) => setLogoImage(value)}
+                              onChange={handleLogoChange} // FIX: Use new handler
                               buttonText="Change Logo"
                               iconOnly={true}
                             />

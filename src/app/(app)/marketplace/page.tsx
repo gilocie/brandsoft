@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -13,9 +12,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PublicQuotationRequestList } from '@/components/quotations/public-quotation-request-list';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { getImageFromDB } from '@/hooks/use-receipt-upload'; // Reusing this as it's a generic IndexedDB getter
+import { getImageFromDB } from '@/hooks/use-receipt-upload';
 import { Skeleton } from '@/components/ui/skeleton';
 
+// Helper to check if a value is a valid image URL
+const isValidImageUrl = (value: string | undefined): boolean => {
+  if (!value) return false;
+  if (value === 'indexed-db') return false; // This is just a marker, not actual data
+  if (value === '') return false;
+  return true;
+};
 
 // NEW Component to handle image loading for each card
 const CompanyCardWithImages = ({
@@ -41,6 +47,7 @@ const CompanyCardWithImages = ({
       let isMounted = true;
       const fetchImages = async () => {
         setIsLoading(true);
+        
         // Company logos and covers are stored with keys like 'company-logo-[id]'
         const logoKey = `company-logo-${company.id}`;
         const coverKey = `company-cover-${company.id}`;
@@ -51,8 +58,12 @@ const CompanyCardWithImages = ({
         ]);
         
         if (isMounted) {
-            setLogoUrl(logo || company.logo || null); // Fallback to original logo path
-            setCoverUrl(cover || company.coverImage || null); // Fallback to original cover path
+            // FIX: Only use company.logo/coverImage if they are valid URLs (not 'indexed-db' marker)
+            const fallbackLogo = isValidImageUrl(company.logo) ? company.logo : null;
+            const fallbackCover = isValidImageUrl(company.coverImage) ? company.coverImage : null;
+            
+            setLogoUrl(logo || fallbackLogo || null);
+            setCoverUrl(cover || fallbackCover || null);
             setIsLoading(false);
         }
       };
@@ -81,6 +92,7 @@ const CompanyCardWithImages = ({
       );
     }
   
+    // FIX: Create company object with actual image URLs (or undefined for fallback handling)
     const companyWithImages: Company = {
       ...company,
       logo: logoUrl || undefined,
@@ -179,7 +191,7 @@ export default function MarketplacePage() {
     let requests = (config.incomingRequests || []).filter((req: QuotationRequest) => 
         req.status === 'open' && 
         new Date(req.dueDate) >= new Date() &&
-        req.requesterId !== currentUserId && // Exclude user's own requests
+        req.requesterId !== currentUserId &&
         (req.isPublic || (req.companyIds && req.companyIds.includes(currentUserId)))
     );
 
