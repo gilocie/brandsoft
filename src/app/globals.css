@@ -74,18 +74,6 @@
   }
 }
 
-@layer components {
-  .btn-primary-custom {
-    background-color: var(--btn-primary-bg);
-    color: var(--btn-primary-text);
-  }
-  .btn-primary-custom:hover {
-    background-color: var(--btn-primary-bg-hover);
-    color: var(--btn-primary-text-hover);
-  }
-}
-
-
 @layer base {
   * {
     border-color: hsl(var(--border));
