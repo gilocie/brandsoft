@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useBrandsoft, type BrandsoftConfig, type DesignSettings, type Company } from '@/hooks/use-brandsoft';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Form,
   FormControl,
@@ -16,9 +16,9 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import React, { useEffect, useState, useRef, ChangeEvent, useMemo } from 'react';
+import React, { useEffect, useState, useRef, ChangeEvent, useMemo, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
-import { UploadCloud, Paintbrush, SlidersHorizontal, User, Building, MapPin, Globe, Phone, Mail, Eye } from 'lucide-react';
+import { UploadCloud, Paintbrush, SlidersHorizontal, User, Building, MapPin, Globe, Phone, Mail, Eye, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -27,19 +27,17 @@ import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Combobox } from '@/components/ui/combobox';
 import Link from 'next/link';
+import { useBrandImage } from '@/hooks/use-brand-image';
 
 
 const fallBackCover = 'https://picsum.photos/seed/settingscover/1200/300';
 
 const settingsSchema = z.object({
-  // Branding
   businessName: z.string().min(2, "Business name is required"),
-  logo: z.string().optional(),
-  coverImage: z.string().optional(),
+  // logo and coverImage are handled outside the form now
   primaryColor: z.string().optional(),
   secondaryColor: z.string().optional(),
   font: z.string().optional(),
-  // Profile
   description: z.string().max(180, "Description must be 180 characters or less.").optional(),
   address: z.string().min(5, "Address is required"),
   town: z.string().optional(),
@@ -48,7 +46,6 @@ const settingsSchema = z.object({
   email: z.string().email("Invalid email address"),
   website: z.string().url("Invalid URL").optional().or(z.literal('')),
   taxNumber: z.string().optional(),
-  // Button
   buttonPrimaryBg: z.string().optional(),
   buttonPrimaryBgHover: z.string().optional(),
   buttonPrimaryText: z.string().optional(),
@@ -57,13 +54,12 @@ const settingsSchema = z.object({
 
 type SettingsFormData = z.infer<typeof settingsSchema>;
 
+
 const SimpleImageUploadButton = ({
-  value,
   onChange,
   buttonText = "Upload Image",
   iconOnly = false,
 }: {
-  value?: string;
   onChange: (value: string) => void;
   buttonText?: string;
   iconOnly?: boolean;
@@ -132,17 +128,19 @@ export default function SettingsPage() {
   const { config, saveConfig } = useBrandsoft();
   const { toast } = useToast();
   
+  // Use the new brand image hooks
+  const { image: logoImage, isLoading: isLogoLoading, setImage: setLogoImage } = useBrandImage('logo');
+  const { image: coverImage, isLoading: isCoverLoading, setImage: setCoverImage } = useBrandImage('cover');
+  
   const form = useForm<SettingsFormData>({
     resolver: zodResolver(settingsSchema),
     defaultValues: {
       businessName: '',
-      logo: '',
-      coverImage: '',
-      primaryColor: '#9400D3',
-      secondaryColor: '#D87093',
+      primaryColor: '#d58d30',
+      secondaryColor: '#111825',
       font: 'Poppins',
-      buttonPrimaryBg: '#9400D3',
-      buttonPrimaryBgHover: '#8A2BE2',
+      buttonPrimaryBg: '#d58d30',
+      buttonPrimaryBgHover: '#e4a04a',
       buttonPrimaryText: '#FFFFFF',
       buttonPrimaryTextHover: '#FFFFFF',
       description: '',
@@ -173,8 +171,6 @@ export default function SettingsPage() {
     if (config) {
         form.reset({
             businessName: config.brand.businessName,
-            logo: config.brand.logo,
-            coverImage: config.brand.coverImage,
             primaryColor: config.brand.primaryColor,
             secondaryColor: config.brand.secondaryColor,
             font: config.brand.font,
@@ -204,8 +200,8 @@ export default function SettingsPage() {
         name: data.businessName,
         companyName: data.businessName,
         description: data.description,
-        logo: data.logo,
-        coverImage: data.coverImage,
+        logo: 'indexed-db', // Mark that logo is in DB
+        coverImage: 'indexed-db', // Mark that cover image is in DB
         website: data.website,
         phone: data.phone,
         email: data.email,
@@ -230,10 +226,10 @@ export default function SettingsPage() {
         ...config.brand,
         businessName: data.businessName,
         description: data.description || '',
-        logo: data.logo || '',
-        coverImage: data.coverImage || '',
-        primaryColor: data.primaryColor || '#9400D3',
-        secondaryColor: data.secondaryColor || '#D87093',
+        logo: 'indexed-db',
+        coverImage: 'indexed-db',
+        primaryColor: data.primaryColor || '#d58d30',
+        secondaryColor: data.secondaryColor || '#111825',
         font: data.font || 'Poppins',
         buttonPrimaryBg: data.buttonPrimaryBg,
         buttonPrimaryBgHover: data.buttonPrimaryBgHover,
@@ -268,18 +264,19 @@ export default function SettingsPage() {
       <Form {...form}>
         <Card className="overflow-hidden">
           <div className="relative h-48 w-full">
-              <Image
-                  src={watchedValues.coverImage || fallBackCover}
-                  alt={`${watchedValues.businessName} cover`}
-                  fill
-                  className="object-cover"
-                  data-ai-hint="office workspace"
-              />
+              {isCoverLoading ? <Skeleton className="h-full w-full" /> : 
+                <Image
+                    src={coverImage || fallBackCover}
+                    alt={`${watchedValues.businessName} cover`}
+                    fill
+                    className="object-cover"
+                    data-ai-hint="office workspace"
+                />
+              }
               <div className="absolute inset-0 bg-black/60" />
                <div className="absolute top-4 right-4 z-10">
                   <SimpleImageUploadButton
-                    value={watchedValues.coverImage}
-                    onChange={(value) => form.setValue('coverImage', value, { shouldDirty: true })}
+                    onChange={(value) => setCoverImage(value)}
                     buttonText="Change Cover"
                   />
               </div>
@@ -287,13 +284,12 @@ export default function SettingsPage() {
                <div className="absolute inset-0 p-6 flex flex-col md:flex-row items-end gap-6">
                   <div className="relative group/avatar">
                       <Avatar className="h-28 w-28 border-4 border-background flex-shrink-0">
-                          <AvatarImage src={watchedValues.logo} />
+                          {isLogoLoading ? <Skeleton className="h-full w-full rounded-full" /> : <AvatarImage src={logoImage || undefined} />}
                           <AvatarFallback><Building className="h-10 w-10" /></AvatarFallback>
                       </Avatar>
                        <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover/avatar:opacity-100 flex items-center justify-center transition-opacity">
                             <SimpleImageUploadButton
-                              value={watchedValues.logo}
-                              onChange={(value) => form.setValue('logo', value, { shouldDirty: true })}
+                              onChange={(value) => setLogoImage(value)}
                               buttonText="Change Logo"
                               iconOnly={true}
                             />

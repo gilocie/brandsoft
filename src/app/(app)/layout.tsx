@@ -79,6 +79,7 @@ import { useTheme } from 'next-themes';
 import Image from 'next/image';
 import brandsoftLogo from '@/app/brandsoftlogo.png';
 import bgOverlay from '@/app/backgrounds/bgoverlay.jpg';
+import { useBrandImage } from '@/hooks/use-brand-image';
 
 const mainNavItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', enabledKey: null, roles: ['client'] },
@@ -178,6 +179,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { config, acknowledgeDeclinedPurchase } = useBrandsoft();
+  const { image: logoImage } = useBrandImage('logo');
   const [role, setRole] = useState<'admin' | 'staff' | 'client' | null>(null);
   const [hasMounted, setHasMounted] = useState(false);
 
@@ -319,7 +321,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             {config ? (
                 <Link href={role === 'client' ? '/settings' : (role === 'admin' ? '/admin' : '/office')} className="flex items-center gap-2 text-sidebar-foreground">
                     <Avatar className="h-8 w-8">
-                       <AvatarImage src={config.brand.logo} />
+                       <AvatarImage src={logoImage || undefined} />
                        <AvatarFallback>
                            <Image src={brandsoftLogo} alt="Brandsoft" width={20} height={20} />
                        </AvatarFallback>
@@ -416,7 +418,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                    <Avatar className="h-12 w-12 bg-transparent">
                       <AvatarImage src={brandsoftLogo.src} />
                   </Avatar>
-                  <p className="text-sm font-semibold text-sidebar-foreground/80">BrandSoft</p>
+                  <p className="text-xs font-semibold text-sidebar-foreground/80">BrandSoft</p>
                 </div>
               ) : (
                 <div className="flex items-center justify-center p-2">
@@ -532,7 +534,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             {children}
           </div>
         </main>
-        <footer className="p-4 text-center text-sm text-muted-foreground bg-background border-t">
+        <footer className="p-4 text-center text-sm text-muted-foreground bg-background flex-shrink-0 border-t">
           © 2025 BrandSoft. All rights reserved.
         </footer>
       </SidebarInset>
