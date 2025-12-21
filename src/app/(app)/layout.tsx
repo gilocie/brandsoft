@@ -63,6 +63,7 @@ import {
   Clock,
   XCircle,
   RefreshCw,
+  Loader2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -184,12 +185,41 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const [role, setRole] = useState<'admin' | 'staff' | 'client' | null>(null);
   const [hasMounted, setHasMounted] = useState(false);
+  const [isChangingRole, setIsChangingRole] = useState(false);
 
   useEffect(() => {
     setHasMounted(true);
-    const storedRole = (localStorage.getItem('brandsoft-role') as any) || 'admin';
+    const storedRole = (localStorage.getItem('brandsoft-role') as any) || 'client';
     setRole(storedRole);
   }, []);
+
+  const handleRoleChange = (newRole: 'admin' | 'staff' | 'client') => {
+    if (role !== newRole) {
+        setIsChangingRole(true);
+        setRole(newRole);
+        localStorage.setItem('brandsoft-role', newRole);
+
+        // Determine destination and redirect
+        if (newRole === 'admin') router.push('/admin');
+        else if (newRole === 'staff') router.push('/office');
+        else router.push('/dashboard');
+    }
+  };
+
+  // Effect to turn off loading state once navigation is complete
+  useEffect(() => {
+    if(isChangingRole) {
+      const isCorrectPage = 
+        (role === 'admin' && pathname.startsWith('/admin')) ||
+        (role === 'staff' && pathname.startsWith('/office')) ||
+        (role === 'client' && !pathname.startsWith('/admin') && !pathname.startsWith('/office'));
+
+      if (isCorrectPage) {
+        // A small delay can help ensure the new page content has started rendering
+        setTimeout(() => setIsChangingRole(false), 100);
+      }
+    }
+  }, [pathname, role, isChangingRole]);
 
 
   const currentUserId = useMemo(() => {
@@ -258,26 +288,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return myTopUps.length;
   }, [config?.purchases]);
   
-  useEffect(() => {
-    if (hasMounted) {
-        localStorage.setItem('brandsoft-role', role || 'admin');
-    }
-  }, [role, hasMounted]);
-
-
-  useEffect(() => {
-    if (!hasMounted) return;
-    
-    const nonClientPages = ['/admin', '/office'];
-    if (role === 'admin' && !pathname.startsWith('/admin')) {
-      router.push('/admin');
-    } else if (role === 'staff' && !pathname.startsWith('/office')) {
-      router.push('/office');
-    } else if (role === 'client' && (nonClientPages.some(p => pathname.startsWith(p)) || pathname === '/')) {
-      router.push('/dashboard');
-    }
-  }, [role, pathname, router, hasMounted]);
-
   const getVisibleNavItems = (items: typeof mainNavItems, currentRole: typeof role) => {
     if (!config || !currentRole) return [];
     return items.filter(item => {
@@ -460,7 +470,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </h1>
           <div className="flex items-center gap-2 w-full sm:w-auto">
              <div className="sm:ml-auto flex-1 sm:flex-none">
-                <Select value={role || 'admin'} onValueChange={(value) => setRole(value as any)}>
+                <Select value={role || 'client'} onValueChange={(value) => handleRoleChange(value as any)}>
                     <SelectTrigger className="w-full sm:w-[130px] h-9">
                         <SelectValue placeholder="Select a role" />
                     </SelectTrigger>
@@ -554,7 +564,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </header>
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
           <div className="w-full max-w-full">
-            {children}
+            {isChangingRole ? (
+                 <div className="flex h-full w-full items-center justify-center">
+                    <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                </div>
+            ) : children}
           </div>
         </main>
         <footer className="p-4 text-center text-sm text-muted-foreground bg-background flex-shrink-0 border-t">
