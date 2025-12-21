@@ -7,16 +7,23 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import BrandsoftLogo from '@/app/brandsoftlogo.png';
 import Image from 'next/image';
 
-export function Logo() {
+export function Logo({ logoUrl }: { logoUrl?: string }) {
   const { config } = useBrandsoft();
 
   const businessName = config?.brand?.businessName || 'BrandSoft';
-  const logoUrl = config?.brand?.logo;
+  const displayLogo = logoUrl || config?.brand?.logo;
 
   return (
     <div className="flex items-center gap-2">
       <Avatar className="h-10 w-10 bg-transparent">
-        <Image src={BrandsoftLogo} alt={businessName} width={40} height={40} />
+        {displayLogo ? (
+            <AvatarImage src={displayLogo} alt={businessName} />
+        ) : (
+            <Image src={BrandsoftLogo} alt={businessName} width={40} height={40} />
+        )}
+        <AvatarFallback>
+            <BriefcaseBusiness />
+        </AvatarFallback>
       </Avatar>
       <h1 className="text-4xl font-body font-bold text-primary">{businessName}</h1>
     </div>

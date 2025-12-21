@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Logo } from '@/components/logo';
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from 'lucide-react';
+import brandsoftBackground from '@/app/backgrounds/background.jpg';
 
 const formSchema = z.object({
   serialKey: z.string().min(1, { message: "Serial key is required." }),
@@ -49,9 +50,11 @@ export default function ActivationPage() {
 
   return (
     <div 
-      className="flex min-h-screen items-center justify-center bg-background p-4 font-body"
+      className="flex min-h-screen items-center justify-center bg-background p-4 font-body bg-cover bg-center"
+      style={{ backgroundImage: `url(${brandsoftBackground.src})` }}
+      data-ai-hint="business building"
     >
-      <div className="absolute inset-0 bg-background/50 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
       <Card className="w-full max-w-md shadow-2xl z-10">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4">

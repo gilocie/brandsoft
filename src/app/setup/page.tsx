@@ -21,6 +21,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useSetup } from '@/hooks/use-setup';
+import brandsoftBackground from '@/app/backgrounds/background.jpg';
 
 
 const TOTAL_STEPS = 4;
@@ -154,7 +155,7 @@ export default function SetupPage() {
   return (
     <div 
         className="min-h-screen bg-cover bg-center"
-        style={{ backgroundImage: "url('/background.jpg')" }}
+        style={{ backgroundImage: `url(${brandsoftBackground.src})` }}
         data-ai-hint="business building"
     >
       <div className="flex min-h-screen items-center justify-center bg-background/80 backdrop-blur-sm p-4">
