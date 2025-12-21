@@ -316,31 +316,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <SidebarHeader>
           <div className="flex items-center gap-2">
             {config ? (
-              (role === 'admin' || role === 'staff') ? (
-                  <Link href={role === 'admin' ? '/admin' : '/office'} className="flex items-center gap-2 text-sidebar-foreground">
-                      <Avatar className="h-8 w-8">
-                           <AvatarImage src={config.brand.logo} />
-                           <AvatarFallback>
-                               {role === 'admin' ? <Image src={brandsoftLogo} alt="Brandsoft" width={20} height={20} /> : <User className="h-5 w-5" />}
-                           </AvatarFallback>
-                      </Avatar>
-                      <h1 className="text-base font-bold">
-                          {headerTitle}
-                      </h1>
-                  </Link>
-              ) : (
-                <Link href="/settings" className="flex items-center gap-2 text-sidebar-foreground">
+                <Link href={role === 'client' ? '/settings' : (role === 'admin' ? '/admin' : '/office')} className="flex items-center gap-2 text-sidebar-foreground">
                     <Avatar className="h-8 w-8">
-                        <AvatarImage src={config.brand.logo} alt={config.brand.businessName} />
-                        <AvatarFallback>
-                            <Image src={brandsoftLogo} alt="Brandsoft" width={20} height={20} />
-                        </AvatarFallback>
+                       <AvatarImage src={config.brand.logo} />
+                       <AvatarFallback>
+                           <Image src={brandsoftLogo} alt="Brandsoft" width={20} height={20} />
+                       </AvatarFallback>
                     </Avatar>
                     <h1 className={cn('text-base font-bold', getFontClass(config.brand.font))}>
                         {headerTitle}
                     </h1>
                 </Link>
-              )
             ) : (
                 <>
                     <Skeleton className="h-8 w-8 rounded-full" />
@@ -417,16 +403,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           )}
 
         </SidebarContent>
-        <SidebarFooter className="mt-auto mb-4">
+        <SidebarFooter className="mt-auto mb-4 relative overflow-hidden">
+          <div 
+            className="absolute inset-0 bg-cover bg-center opacity-10" 
+            style={{ backgroundImage: `url(${brandsoftLogo.src})` }}
+          />
           <SidebarMenu>
             <SidebarMenuItem>
               {config ? (
-                <div className="flex flex-col items-center justify-center p-2 text-center space-y-2">
-                  <Avatar className="h-12 w-12 bg-transparent">
-                      <AvatarImage src={config.brand.logo} />
-                      <AvatarFallback className="bg-transparent">
-                        <Image src={brandsoftLogo} alt="Brandsoft Logo" width={48} height={48} />
-                      </AvatarFallback>
+                <div className="relative flex flex-col items-center justify-center p-2 text-center space-y-2">
+                   <Avatar className="h-12 w-12 bg-transparent">
+                      <AvatarImage src={brandsoftLogo.src} />
                   </Avatar>
                   <p className="text-xs font-semibold text-sidebar-foreground/80">BrandSoft</p>
                 </div>
