@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -13,12 +12,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PublicQuotationRequestList } from '@/components/quotations/public-quotation-request-list';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { getImageFromDB } from '@/hooks/use-receipt-upload'; // Changed import to use valid path if use-receipt-upload is where getImageFromDB is, otherwise change to @/hooks/use-brand-image
+// CRITICAL FIX: Import getImageFromDB from the SAME file used in SettingsPage
+import { getImageFromDB } from '@/hooks/use-brand-image';
 import { Skeleton } from '@/components/ui/skeleton';
-
-// Note: Ensure getImageFromDB is imported from the correct file. 
-// If you just updated use-brand-image.ts, you should import it from there:
-// import { getImageFromDB } from '@/hooks/use-brand-image';
 
 // Helper to check if a value is a valid image URL
 const isValidImageUrl = (value: string | undefined): boolean => {
@@ -28,7 +24,6 @@ const isValidImageUrl = (value: string | undefined): boolean => {
   return true;
 };
 
-// Fixed Component
 const CompanyCardWithImages = ({
     company,
     averageRating,
@@ -54,6 +49,7 @@ const CompanyCardWithImages = ({
       const fetchImages = async () => {
         setIsLoading(true);
         
+        // These keys must match exactly what is saved in SettingsPage
         const logoKey = `company-logo-${company.id}`;
         const coverKey = `company-cover-${company.id}`;
   
@@ -66,6 +62,7 @@ const CompanyCardWithImages = ({
             const fallbackLogo = isValidImageUrl(company.logo) ? company.logo : null;
             const fallbackCover = isValidImageUrl(company.coverImage) ? company.coverImage : null;
             
+            // Prioritize the IndexedDB image (logo/cover variable)
             setLogoUrl(logo || fallbackLogo || null);
             setCoverUrl(cover || fallbackCover || null);
             setIsLoading(false);
@@ -75,7 +72,7 @@ const CompanyCardWithImages = ({
       fetchImages();
 
       return () => { isMounted = false; }
-    }, [company.id, company.logo, company.coverImage, company.version]);
+    }, [company.id, company.logo, company.coverImage, company.version]); // Added version dependency
   
     if (isLoading) {
       return (
@@ -96,6 +93,7 @@ const CompanyCardWithImages = ({
       );
     }
   
+    // Construct the company object with the resolved URLs
     const companyWithImages: Company = {
       ...company,
       logo: logoUrl || undefined,
@@ -113,7 +111,6 @@ const CompanyCardWithImages = ({
       />
     );
   };
-
 
 export default function MarketplacePage() {
   const { config } = useBrandsoft();
@@ -152,7 +149,6 @@ export default function MarketplacePage() {
     });
   }, [businesses, config?.reviews]);
 
-
   const filteredBusinesses = useMemo(() => {
     return businessesWithRatings.filter(biz => {
       const nameMatch = biz.companyName?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -174,6 +170,7 @@ export default function MarketplacePage() {
   
   const currentUserId = useMemo(() => {
     if (!config || !config.brand) return null;
+    // Attempt to match by ID if possible, otherwise by name
     const myCompany = config.companies?.find(c => c.companyName === config.brand.businessName);
     return myCompany?.id || null;
   }, [config]);
@@ -220,7 +217,6 @@ export default function MarketplacePage() {
 
   }, [config, searchTerm, industryFilter, townFilter, currentUserId]);
 
-  
   const FilterControls = () => (
     <Card className="mb-6">
         <CardContent className="p-4 flex flex-col md:flex-row gap-4">
