@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo, useRef, ChangeEvent, useEffect } from 'react';
@@ -45,6 +44,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { saveImageToDB } from '@/hooks/use-brand-image';
+import { getImageFromDB } from '@/hooks/use-receipt-upload';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent } from '@/components/ui/card';
 
 const formSchema = z.object({
   id: z.string().optional(),
@@ -66,6 +69,14 @@ type CompanyFormData = z.infer<typeof formSchema>;
 
 const ITEMS_PER_PAGE = 20;
 const fallBackCover = 'https://picsum.photos/seed/shopcover/1200/400';
+
+// Helper to check if a value is a valid image URL
+const isValidImageUrl = (value: string | undefined): boolean => {
+  if (!value) return false;
+  if (value === 'indexed-db') return false;
+  if (value === '') return false;
+  return true;
+};
 
 const ImageUploadField = ({
   form,
@@ -94,9 +105,13 @@ const ImageUploadField = ({
     }
   };
   
-  // Update preview if currentValue changes from form reset
   useEffect(() => {
-    setPreview(currentValue);
+    // Only update if it's a valid image URL (not 'indexed-db' marker)
+    if (isValidImageUrl(currentValue)) {
+      setPreview(currentValue);
+    } else {
+      setPreview(undefined);
+    }
   }, [currentValue]);
 
   return (
@@ -125,8 +140,89 @@ const ImageUploadField = ({
   );
 };
 
+// NEW: Component to handle image loading for company cards
+const CompanyCardWithImages = ({
+    company,
+    averageRating,
+    reviewCount,
+    onSelectAction,
+    showActionsMenu,
+  }: {
+    company: Company & { averageRating: number; reviewCount: number };
+    averageRating: number;
+    reviewCount: number;
+    onSelectAction: (action: 'view' | 'edit' | 'delete', company: Company) => void;
+    showActionsMenu?: boolean;
+  }) => {
+    const [logoUrl, setLogoUrl] = useState<string | null>(null);
+    const [coverUrl, setCoverUrl] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+  
+    useEffect(() => {
+      let isMounted = true;
+      const fetchImages = async () => {
+        setIsLoading(true);
+        
+        const logoKey = `company-logo-${company.id}`;
+        const coverKey = `company-cover-${company.id}`;
+  
+        const [logo, cover] = await Promise.all([
+          getImageFromDB(logoKey),
+          getImageFromDB(coverKey)
+        ]);
+        
+        if (isMounted) {
+            const fallbackLogo = isValidImageUrl(company.logo) ? company.logo : null;
+            const fallbackCover = isValidImageUrl(company.coverImage) ? company.coverImage : null;
+            
+            setLogoUrl(logo || fallbackLogo || null);
+            setCoverUrl(cover || fallbackCover || null);
+            setIsLoading(false);
+        }
+      };
+  
+      fetchImages();
+      return () => { isMounted = false; }
+    }, [company.id, company.logo, company.coverImage]);
+  
+    if (isLoading) {
+      return (
+        <Card className="w-full max-w-sm mx-auto rounded-xl overflow-hidden shadow-lg">
+            <div className="relative">
+                <Skeleton className="h-28 w-full" />
+                <div className="absolute -bottom-10 left-1/2 -translate-x-1/2">
+                    <Skeleton className="h-20 w-20 rounded-full border-4 border-background" />
+                </div>
+            </div>
+            <CardContent className="pt-12 text-center">
+                 <Skeleton className="h-6 w-3/4 mx-auto" />
+                 <Skeleton className="h-4 w-1/2 mx-auto mt-2" />
+                 <Skeleton className="h-5 w-24 mx-auto mt-4" />
+                 <Skeleton className="h-9 w-full mt-4" />
+            </CardContent>
+        </Card>
+      );
+    }
+  
+    const companyWithImages: Company = {
+      ...company,
+      logo: logoUrl || undefined,
+      coverImage: coverUrl || undefined,
+    };
+  
+    return (
+      <CompanyCard
+        company={companyWithImages}
+        averageRating={averageRating}
+        reviewCount={reviewCount}
+        onSelectAction={onSelectAction}
+        showActionsMenu={showActionsMenu}
+      />
+    );
+};
+
 export default function CompaniesPage() {
-  const { config, deleteCompany, saveConfig } = useBrandsoft(); // Removed addCompany/updateCompany needed here, we use saveConfig directly
+  const { config, deleteCompany, saveConfig } = useBrandsoft();
   const { toast } = useToast();
   const router = useRouter();
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -135,6 +231,15 @@ export default function CompaniesPage() {
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
+  
+  // NEW: State for view dialog images
+  const [viewLogoUrl, setViewLogoUrl] = useState<string | null>(null);
+  const [viewCoverUrl, setViewCoverUrl] = useState<string | null>(null);
+  const [isViewImagesLoading, setIsViewImagesLoading] = useState(true);
+  
+  // NEW: State for form image previews (loaded from IndexedDB when editing)
+  const [formLogoPreview, setFormLogoPreview] = useState<string | null>(null);
+  const [formCoverPreview, setFormCoverPreview] = useState<string | null>(null);
 
   const activePlan = useMemo(() => {
     const activePurchase = config?.purchases?.find(p => p.status === 'active');
@@ -154,7 +259,7 @@ export default function CompaniesPage() {
     },
   });
 
-   const companiesWithRatings = useMemo(() => {
+  const companiesWithRatings = useMemo(() => {
     if (!config || !config.companies) return [];
 
     return config.companies.map(biz => {
@@ -167,7 +272,6 @@ export default function CompaniesPage() {
       return { ...biz, averageRating, reviewCount };
     });
   }, [config]);
-
 
   const filteredCompanies = useMemo(() => {
     let companies = companiesWithRatings;
@@ -189,10 +293,69 @@ export default function CompaniesPage() {
 
   const totalPages = Math.ceil(filteredCompanies.length / ITEMS_PER_PAGE);
 
-  const handleOpenForm = (company: Company | null = null) => {
+  // NEW: Load images when view dialog opens
+  useEffect(() => {
+    if (!isViewOpen || !selectedCompany) {
+      setIsViewImagesLoading(true);
+      return;
+    }
+    
+    let isMounted = true;
+    const fetchImages = async () => {
+      setIsViewImagesLoading(true);
+      
+      const logoKey = `company-logo-${selectedCompany.id}`;
+      const coverKey = `company-cover-${selectedCompany.id}`;
+
+      const [logo, cover] = await Promise.all([
+        getImageFromDB(logoKey),
+        getImageFromDB(coverKey)
+      ]);
+      
+      if (isMounted) {
+        const fallbackLogo = isValidImageUrl(selectedCompany.logo) ? selectedCompany.logo : null;
+        const fallbackCover = isValidImageUrl(selectedCompany.coverImage) ? selectedCompany.coverImage : null;
+        
+        setViewLogoUrl(logo || fallbackLogo || null);
+        setViewCoverUrl(cover || fallbackCover || null);
+        setIsViewImagesLoading(false);
+      }
+    };
+
+    fetchImages();
+    return () => { isMounted = false; };
+  }, [isViewOpen, selectedCompany]);
+
+  // NEW: Load images when form opens for editing
+  const handleOpenForm = async (company: Company | null = null) => {
     setSelectedCompany(company);
+    setFormLogoPreview(null);
+    setFormCoverPreview(null);
+    
     if (company) {
-      form.reset(company);
+      // Load existing images from IndexedDB
+      const logoKey = `company-logo-${company.id}`;
+      const coverKey = `company-cover-${company.id}`;
+
+      const [logo, cover] = await Promise.all([
+        getImageFromDB(logoKey),
+        getImageFromDB(coverKey)
+      ]);
+      
+      const fallbackLogo = isValidImageUrl(company.logo) ? company.logo : null;
+      const fallbackCover = isValidImageUrl(company.coverImage) ? company.coverImage : null;
+      
+      const loadedLogo = logo || fallbackLogo || '';
+      const loadedCover = cover || fallbackCover || '';
+      
+      setFormLogoPreview(loadedLogo || null);
+      setFormCoverPreview(loadedCover || null);
+      
+      form.reset({
+        ...company,
+        logo: loadedLogo,
+        coverImage: loadedCover,
+      });
     } else {
       form.reset({
         id: undefined, name: '', companyName: '', email: '', phone: '',
@@ -209,46 +372,53 @@ export default function CompaniesPage() {
       if (action === 'view') setIsViewOpen(true);
   };
 
-    // --- THIS IS THE CRITICAL FIX ---
-  const onSubmit = (data: CompanyFormData) => {
+  // FIX: Save images to IndexedDB on submit
+  const onSubmit = async (data: CompanyFormData) => {
     if (!config) return;
 
     // 1. Generate ID if new, or use existing
     const companyId = data.id || `COMP-${Date.now()}`;
     
-    // 2. Prepare the Company Object (For Companies Page & Marketplace)
+    // 2. FIX: Save images to IndexedDB with company-specific keys
+    if (data.logo && isValidImageUrl(data.logo)) {
+      await saveImageToDB(`company-logo-${companyId}`, data.logo);
+    }
+    if (data.coverImage && isValidImageUrl(data.coverImage)) {
+      await saveImageToDB(`company-cover-${companyId}`, data.coverImage);
+    }
+    
+    // 3. Prepare the Company Object - mark images as 'indexed-db' if they were uploaded
     const companyToSave: Company = {
         ...data,
         id: companyId,
         customerType: 'company',
-        referredBy: data.activationKey || undefined, // Store forever link
+        referredBy: data.activationKey || undefined,
+        // Mark as indexed-db if we saved an image, otherwise keep original value
+        logo: (data.logo && isValidImageUrl(data.logo)) ? 'indexed-db' : data.logo,
+        coverImage: (data.coverImage && isValidImageUrl(data.coverImage)) ? 'indexed-db' : data.coverImage,
     } as Company;
 
-    // 3. Prepare the updated List of Companies
+    // 4. Prepare the updated List of Companies
     let updatedCompanies = [...(config.companies || [])];
     if (data.id) {
-        // Update existing
         updatedCompanies = updatedCompanies.map(c => c.id === data.id ? { ...c, ...companyToSave } : c);
     } else {
-        // Add new
         updatedCompanies = [companyToSave, ...updatedCompanies];
     }
 
-    // 4. Prepare Affiliate Data (For Affiliate Client Page)
+    // 5. Prepare Affiliate Data
     let updatedAffiliate = { ...(config.affiliate || {}) };
     let wasAddedToAffiliate = false;
 
-    // Logic: If activation key matches MY staff ID
     if (data.activationKey && config.affiliate && data.activationKey === config.affiliate.staffId) {
-        
         const existingClients = updatedAffiliate.clients || [];
         const isAlreadyClient = existingClients.some(c => c.id === companyId);
 
         if (!isAlreadyClient) {
             const newClient: AffiliateClient = {
-                id: companyId, // Link IDs
+                id: companyId,
                 name: companyToSave.companyName,
-                avatar: companyToSave.logo || `https://picsum.photos/seed/${companyId}/100`,
+                avatar: 'indexed-db', // We'll load from IndexedDB when displaying
                 plan: 'Free Trial',
                 status: 'active',
                 joinDate: new Date().toISOString(),
@@ -256,20 +426,19 @@ export default function CompaniesPage() {
                 walletBalance: 0,
             };
             
-            // Add to affiliate clients list
             updatedAffiliate.clients = [newClient, ...existingClients];
             wasAddedToAffiliate = true;
         }
     }
 
-    // 5. ONE-SHOT SAVE: Update config with BOTH the new company list AND the new affiliate data
+    // 6. Save config
     saveConfig({
         ...config,
         companies: updatedCompanies,
-        affiliate: updatedAffiliate as any // Cast to any if strict typing complains about partials
+        affiliate: updatedAffiliate as any
     }, { redirect: false });
 
-    // 6. Notifications
+    // 7. Notifications
     if (wasAddedToAffiliate) {
          toast({ title: "Success!", description: "Company created and linked to your Affiliate account." });
     } else if (data.activationKey) {
@@ -294,7 +463,6 @@ export default function CompaniesPage() {
   };
   
   const currentViewedCompany = companiesWithRatings.find(c => c.id === selectedCompany?.id);
-
 
   return (
     <div className="container mx-auto space-y-6 max-w-[100vw] overflow-hidden">
@@ -349,7 +517,7 @@ export default function CompaniesPage() {
         {paginatedCompanies.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {paginatedCompanies.map((company) => (
-                    <CompanyCard 
+                    <CompanyCardWithImages 
                         key={company.id} 
                         company={company} 
                         averageRating={company.averageRating}
@@ -402,8 +570,19 @@ export default function CompaniesPage() {
                     <div className="space-y-4">
                       <h3 className="text-sm font-medium text-muted-foreground">Visuals</h3>
                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                         <ImageUploadField form={form} name="logo" label="Company Logo" currentValue={form.getValues('logo')} />
-                         <ImageUploadField form={form} name="coverImage" label="Cover Image" currentValue={form.getValues('coverImage')} />
+                         {/* FIX: Pass the loaded preview as currentValue */}
+                         <ImageUploadField 
+                           form={form} 
+                           name="logo" 
+                           label="Company Logo" 
+                           currentValue={formLogoPreview || form.getValues('logo')} 
+                         />
+                         <ImageUploadField 
+                           form={form} 
+                           name="coverImage" 
+                           label="Cover Image" 
+                           currentValue={formCoverPreview || form.getValues('coverImage')} 
+                         />
                       </div>
                     </div>
 
@@ -430,7 +609,7 @@ export default function CompaniesPage() {
                           <FormItem>
                             <FormLabel>Activation Key (Affiliate Staff ID)</FormLabel>
                             <FormControl>
-                              <Input icon={KeyRound} placeholder="Enter affiliate Staff ID to link client" {...field} />
+                              <Input placeholder="Enter affiliate Staff ID to link client" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -454,13 +633,31 @@ export default function CompaniesPage() {
             <>
               <div className="flex-grow overflow-y-auto">
                 <div className="relative h-40">
-                  <Image src={currentViewedCompany.coverImage || fallBackCover} alt={`${currentViewedCompany.companyName} cover`} layout="fill" objectFit="cover" className="rounded-t-lg" data-ai-hint="office workspace" />
-                   <div className="absolute inset-0 bg-black/50" />
+                  {/* FIX: Use loaded images from IndexedDB */}
+                  {isViewImagesLoading ? (
+                    <Skeleton className="h-full w-full rounded-t-lg" />
+                  ) : (
+                    <Image 
+                      src={viewCoverUrl || fallBackCover} 
+                      alt={`${currentViewedCompany.companyName} cover`} 
+                      layout="fill" 
+                      objectFit="cover" 
+                      className="rounded-t-lg" 
+                      data-ai-hint="office workspace" 
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-black/50" />
                 </div>
                 <div className="relative p-6 flex flex-col items-center -mt-16">
                    <Avatar className="h-28 w-28 border-4 border-background bg-background">
-                    <AvatarImage src={currentViewedCompany.logo} />
-                    <AvatarFallback><Building className="h-12 w-12" /></AvatarFallback>
+                    {isViewImagesLoading ? (
+                      <Skeleton className="h-full w-full rounded-full" />
+                    ) : (
+                      <>
+                        <AvatarImage src={viewLogoUrl || undefined} />
+                        <AvatarFallback><Building className="h-12 w-12" /></AvatarFallback>
+                      </>
+                    )}
                   </Avatar>
                   <DialogHeader className="text-center mt-4">
                     <DialogTitle className="text-2xl font-headline">{currentViewedCompany.companyName}</DialogTitle>
@@ -508,5 +705,3 @@ export default function CompaniesPage() {
     </div>
   );
 }
-
-    
