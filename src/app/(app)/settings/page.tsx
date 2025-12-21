@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useForm, useWatch, Controller } from 'react-hook-form';
@@ -27,9 +28,8 @@ import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Combobox } from '@/components/ui/combobox';
 import Link from 'next/link';
-import { useBrandImage } from '@/hooks/use-brand-image';
+import { useBrandImage, saveImageToDB } from '@/hooks/use-brand-image.tsx';
 import { Skeleton } from '@/components/ui/skeleton';
-import { saveReceiptToDB } from '@/hooks/use-receipt-upload';
 
 
 const fallBackCover = 'https://picsum.photos/seed/settingscover/1200/300';
@@ -196,10 +196,10 @@ export default function SettingsPage() {
 
     // Save logo and cover images to IndexedDB for the specific company
     if (logoImage) {
-        await saveReceiptToDB(`company-logo-${myCompanyId}`, logoImage);
+        await saveImageToDB(`company-logo-${myCompanyId}`, logoImage);
     }
     if (coverImage) {
-        await saveReceiptToDB(`company-cover-${myCompanyId}`, coverImage);
+        await saveImageToDB(`company-cover-${myCompanyId}`, coverImage);
     }
 
     const companies = config.companies || [];
@@ -256,7 +256,7 @@ export default function SettingsPage() {
         },
         companies: newCompanies,
     };
-    saveConfig(newConfig, { redirect: false });
+    saveConfig(newConfig, { redirect: false, revalidate: true });
     toast({
         title: "Settings Saved",
         description: "Your new settings have been applied.",
