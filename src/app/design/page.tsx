@@ -30,6 +30,7 @@ import NextImage, { StaticImageData } from 'next/image';
 import backgroundImages from '@/lib/background-images';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
+import { useBrandImage } from '@/hooks/use-brand-image';
 
 const designSettingsSchema = z.object({
   logo: z.string().optional(),
@@ -531,6 +532,7 @@ function DocumentDesignPage() {
     const hasFullTemplateEditor = useMemo(() => activePlan.features.includes('fullTemplateEditor'), [activePlan]);
     const hasRemoveBranding = useMemo(() => activePlan.features.includes('removeBranding'), [activePlan]);
 
+    const { image: defaultLogo } = useBrandImage('logo');
 
     const form = useForm<DesignSettingsFormData>({
         resolver: zodResolver(designSettingsSchema),
@@ -694,7 +696,7 @@ function DocumentDesignPage() {
         if (doc) setDocument(doc);
         
         const initialValues: DesignSettingsFormData = {
-            logo: existingDesign.logo ?? defaultTemplate.logo ?? brand.logo ?? '', 
+            logo: existingDesign.logo ?? defaultTemplate.logo ?? defaultLogo ?? '', 
             backgroundColor: existingDesign.backgroundColor ?? defaultTemplate.backgroundColor ?? brand.backgroundColor ?? '#FFFFFF',
             textColor: existingDesign.textColor ?? defaultTemplate.textColor ?? brand.textColor ?? '#000000',
             headerImage: existingDesign.headerImage ?? defaultTemplate.headerImage ?? brand.headerImage ?? '',
@@ -732,7 +734,7 @@ function DocumentDesignPage() {
         form.reset(initialValues);
         setIsLoading(false);
         isInitialLoad.current = false;
-    }, [config, documentType, documentId, isNew, stableGetFormData, getDefaultTemplate, form, getFormData]);
+    }, [config, documentType, documentId, isNew, stableGetFormData, getDefaultTemplate, form, getFormData, defaultLogo]);
     
     
      const onSubmit = (data: DesignSettingsFormData) => {
