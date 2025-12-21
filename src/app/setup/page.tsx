@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -8,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useBrandsoft, type BrandsoftConfig, type Invoice, type Company, type Quotation, type QuotationRequest } from '@/hooks/use-brandsoft';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from '@/components/ui/textarea';
@@ -151,19 +149,19 @@ export default function SetupPage() {
       case 'Poppins': return 'font-body';
       case 'Belleza': return 'font-headline';
       case 'Source Code Pro': return 'font-code';
-      default: return 'font-body'; // Default to body font
+      default: return 'font-body';
     }
   };
 
   return (
     <div 
-        className="min-h-screen bg-cover bg-center"
+        className="h-screen overflow-hidden bg-cover bg-center"
         style={{ backgroundImage: `url(${brandsoftBackground.src})` }}
         data-ai-hint="business building"
     >
-      <div className="flex min-h-screen items-center justify-center bg-black/80 p-4">
+      <div className="flex h-screen items-center justify-center bg-black/80 p-4 overflow-hidden">
         <Form {...form}>
-            <Card className="w-full max-w-4xl shadow-2xl flex flex-col max-h-[90vh]">
+            <Card className="w-full max-w-4xl shadow-2xl flex flex-col h-[90vh] relative">
               <CardHeader className="flex-shrink-0">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2">
@@ -187,7 +185,35 @@ export default function SetupPage() {
                 <CardTitle className={cn("text-3xl", step === 1 ? 'font-headline' : 'font-body')}>{stepInfo[step-1].title}</CardTitle>
                 <CardDescription>{stepInfo[step-1].description}</CardDescription>
               </CardHeader>
-              <CardContent className="flex-grow overflow-auto pr-6 mr-[-8px]">
+              
+              {/* Left Navigation Button - Outside Card */}
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={prevStep} 
+                disabled={step === 1 || isFinishing}
+                className="fixed left-4 top-1/2 -translate-y-1/2 z-50 rounded-full h-12 w-12 shadow-lg"
+                size="icon"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+
+              {/* Right Navigation Button - Outside Card */}
+              <Button 
+                type="button" 
+                onClick={nextStep} 
+                disabled={isFinishing && step === TOTAL_STEPS}
+                className="fixed right-4 top-1/2 -translate-y-1/2 z-50 rounded-full h-12 w-12 shadow-lg"
+                size="icon"
+              >
+                {isFinishing && step === TOTAL_STEPS ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <ArrowRight className="h-5 w-5" />
+                )}
+              </Button>
+
+              <CardContent className="flex-1 overflow-y-auto min-h-0">
                 <form className="space-y-6">
                     <div style={{ display: step === 1 ? 'block' : 'none' }}><Step1BrandIdentity control={form.control} form={form} /></div>
                     <div style={{ display: step === 2 ? 'block' : 'none' }}><Step2BusinessProfile control={form.control} /></div>
@@ -209,16 +235,6 @@ export default function SetupPage() {
                     </div>
                 </form>
               </CardContent>
-              <CardFooter className="flex justify-between pt-6 flex-shrink-0">
-                <Button type="button" variant="outline" onClick={prevStep} disabled={step === 1 || isFinishing}>
-                  <ArrowLeft className="mr-2 h-4 w-4" /> Previous
-                </Button>
-                <Button type="button" onClick={nextStep} disabled={isFinishing && step === TOTAL_STEPS}>
-                  {isFinishing && step === TOTAL_STEPS && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {step === TOTAL_STEPS ? 'Finish Setup' : 'Next'}
-                  {step < TOTAL_STEPS && <ArrowRight className="ml-2 h-4 w-4" />}
-                </Button>
-              </CardFooter>
             </Card>
         </Form>
       </div>

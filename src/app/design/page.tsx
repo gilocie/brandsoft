@@ -280,7 +280,7 @@ function SettingsPanel({ form, documentType, onSubmit, returnUrl, documentData, 
         <Form {...form}>
             <div className="flex flex-col h-full">
                 <div className="border-0 shadow-none rounded-none flex-1 flex flex-col">
-                    <div className="p-4 border-b">
+                    <div className="p-4 border-b bg-background">
                         <h2 className="text-lg font-semibold capitalize">Customize {documentType || 'Design'}</h2>
                         <p className="text-sm text-muted-foreground">
                             Changes are saved automatically.
@@ -829,7 +829,7 @@ function DocumentDesignPage() {
         <div className="flex h-screen overflow-hidden bg-gray-50 relative">
             
             <aside className={cn(
-                "fixed lg:relative top-0 left-0 z-40 w-80 h-screen transition-transform duration-300 bg-white border-r",
+                "fixed lg:relative top-0 left-0 z-40 w-80 h-screen transition-transform duration-300 bg-background border-r",
                 isSidebarOpen ? "translate-x-0" : "-translate-x-full",
                 "lg:translate-x-0" 
             )}>
@@ -860,7 +860,7 @@ function DocumentDesignPage() {
             )}
             
             <div className="flex-1 flex flex-col h-screen overflow-hidden">
-                <main className="flex-1 w-full bg-slate-100 overflow-y-auto flex justify-center items-start p-4 md:p-8">
+                <main className="flex-1 w-full bg-slate-900/50 overflow-y-auto flex justify-center items-start p-4 md:p-8">
                     <div className="flex-shrink-0 shadow-2xl transform origin-top scale-[0.8] md:scale-[0.9] lg:scale-100">
                         {hasContentForPreview ? (
                            <>
