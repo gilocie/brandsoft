@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -431,7 +430,7 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div>
         <h1 className={cn('text-3xl font-bold', getFontClass(config.brand.font))}>
-          Welcome back, {config.brand.businessName}!
+          Hi, {config.brand.businessName}!
         </h1>
         <p className="text-muted-foreground">
           Here's a snapshot of your business activity.
