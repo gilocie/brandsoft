@@ -38,13 +38,13 @@ import { PurchaseDialog, type PlanDetails } from '@/components/purchase-dialog';
 import { SellCreditsDialog } from '@/components/office/dialogs/sell-credits-dialog';
 import { BonusProgressDialog } from './bonus-progress-dialog';
 import { useRouter } from 'next/navigation';
+import { useBrandImage } from '@/hooks/use-brand-image';
 
 
 const affiliateSchema = z.object({
     fullName: z.string().min(2, "Full name is required"),
     username: z.string().min(3, "Username must be at least 3 characters"),
     phone: z.string().optional(),
-    profilePic: z.string().optional(),
 });
 
 type AffiliateFormData = z.infer<typeof affiliateSchema>;
@@ -62,6 +62,7 @@ export function OfficePageContent() {
   const [purchaseDetails, setPurchaseDetails] = useState<PlanDetails | null>(null);
   const [isSellCreditsOpen, setIsSellCreditsOpen] = useState(false);
   const router = useRouter();
+  const { image: affiliateImage, setImage: setAffiliateImage } = useBrandImage('affiliateProfilePic');
 
 
   const affiliate = config?.affiliate;
@@ -72,7 +73,6 @@ export function OfficePageContent() {
           fullName: affiliate?.fullName || '',
           username: affiliate?.username || '',
           phone: affiliate?.phone || '',
-          profilePic: affiliate?.profilePic || '',
       }
   });
 
@@ -105,7 +105,6 @@ export function OfficePageContent() {
             fullName: affiliate.fullName,
             username: affiliate.username,
             phone: affiliate.phone,
-            profilePic: affiliate.profilePic,
         });
     }
   }, [affiliate, form]);
@@ -225,7 +224,7 @@ export function OfficePageContent() {
     <div className="space-y-8">
       <div className="flex items-center gap-4">
           <Avatar className="h-20 w-20">
-            <AvatarImage src={affiliate.profilePic} />
+            <AvatarImage src={affiliateImage || affiliate.profilePic} />
             <AvatarFallback>{affiliate.fullName.charAt(0)}</AvatarFallback>
           </Avatar>
           <div className="flex items-center gap-2">
@@ -244,29 +243,20 @@ export function OfficePageContent() {
                     </DialogHeader>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
-                            <FormField
-                                control={form.control}
-                                name="profilePic"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Profile Picture</FormLabel>
-                                        <div className="flex items-center gap-4">
-                                            <Avatar className="h-16 w-16">
-                                                <AvatarImage src={field.value} />
-                                                <AvatarFallback>{form.getValues('fullName')?.charAt(0)}</AvatarFallback>
-                                            </Avatar>
-                                            <div className="flex-grow">
-                                                <SimpleImageUploadButton
-                                                    value={field.value}
-                                                    onChange={field.onChange}
-                                                    buttonText="Upload New Picture"
-                                                />
-                                            </div>
-                                        </div>
-                                    </FormItem>
-                                )}
-                            />
-
+                            <div className="flex items-center gap-4">
+                                <Avatar className="h-16 w-16">
+                                    <AvatarImage src={affiliateImage || affiliate.profilePic} />
+                                    <AvatarFallback>{form.getValues('fullName')?.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <div className="flex-grow">
+                                    <SimpleImageUploadButton
+                                        value={affiliateImage || ''}
+                                        onChange={setAffiliateImage}
+                                        buttonText="Upload New Picture"
+                                    />
+                                </div>
+                            </div>
+                            
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <FormField
                                     control={form.control}

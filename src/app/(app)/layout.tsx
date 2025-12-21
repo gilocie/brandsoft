@@ -180,6 +180,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { config, acknowledgeDeclinedPurchase } = useBrandsoft();
   const { image: logoImage } = useBrandImage('logo');
+  const { image: affiliateImage } = useBrandImage('affiliateProfilePic');
+
   const [role, setRole] = useState<'admin' | 'staff' | 'client' | null>(null);
   const [hasMounted, setHasMounted] = useState(false);
 
@@ -314,7 +316,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         };
       case 'staff':
         return {
-          avatarSrc: config.affiliate?.profilePic,
+          avatarSrc: affiliateImage || config.affiliate?.profilePic,
           headerTitle: config.affiliate?.fullName || 'Office Room',
           avatarFallback: config.affiliate?.fullName?.charAt(0) || 'S',
         };
@@ -326,7 +328,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           avatarFallback: config.brand.businessName?.charAt(0) || 'B',
         };
     }
-  }, [role, config, logoImage]);
+  }, [role, config, logoImage, affiliateImage]);
 
 
   const isLinkActive = (href: string) => {
