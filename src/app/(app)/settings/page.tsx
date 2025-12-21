@@ -127,6 +127,7 @@ export default function SettingsPage() {
   const { config, saveConfig } = useBrandsoft();
   const { toast } = useToast();
   
+  // These modify the GLOBAL settings (Sidebar, etc)
   const { image: logoImage, isLoading: isLogoLoading, setImage: setLogoImage } = useBrandImage('logo');
   const { image: coverImage, isLoading: isCoverLoading, setImage: setCoverImage } = useBrandImage('cover');
   
@@ -160,13 +161,16 @@ export default function SettingsPage() {
     return uniqueIndustries.map(industry => ({ value: industry.toLowerCase(), label: industry }));
   }, [config?.companies]);
 
-  // FIX: Calculate myCompanyId more robustly - create if doesn't exist
+  // FIX: Identify the company ID more robustly
   const myCompanyId = useMemo(() => {
     if (!config) return null;
+    // Try to find by ID if we ever stored it in profile (optional future proofing) or by name
     const existingCompany = config.companies?.find(c => c.companyName === config.brand.businessName);
     if (existingCompany) return existingCompany.id;
-    // Return a consistent ID for new companies
-    return `COMP-ME-${config.brand.businessName?.replace(/\s+/g, '-').toLowerCase() || 'default'}`;
+    
+    // Fallback: Generate a ID based on the current saved business name
+    // Important: We must ensure we don't keep changing this ID if the name changes slightly
+    return `COMP-ME-${config.brand.businessName?.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'default'}`;
   }, [config]);
 
   useEffect(() => {
@@ -192,83 +196,77 @@ export default function SettingsPage() {
     }
   }, [config, form]);
 
-  // FIX: Handler to update logo - saves to both generic and company-specific keys
   const handleLogoChange = async (value: string) => {
-    setLogoImage(value); // Saves to generic 'logo' key via useBrandImage
-    
-    // Also save to company-specific key immediately
-    if (myCompanyId) {
-      await saveImageToDB(`company-logo-${myCompanyId}`, value);
-    }
+    setLogoImage(value); // Updates UI immediately
   };
 
-  // FIX: Handler to update cover - saves to both generic and company-specific keys  
   const handleCoverChange = async (value: string) => {
-    setCoverImage(value); // Saves to generic 'cover' key via useBrandImage
-    
-    // Also save to company-specific key immediately
-    if (myCompanyId) {
-      await saveImageToDB(`company-cover-${myCompanyId}`, value);
-    }
+    setCoverImage(value); // Updates UI immediately
   };
 
   const onSubmit = async (data: SettingsFormData) => {
-    if (!config || !myCompanyId) return;
+    if (!config) return;
 
-    // FIX: Ensure images are saved to company-specific keys on submit
+    // 1. Determine the exact ID to use for the company list
+    let targetCompanyId = myCompanyId;
+    if (!targetCompanyId) {
+        targetCompanyId = `COMP-ME-${data.businessName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}`;
+    }
+
+    // 2. IMPORTANT: Save the images to IndexedDB using the SPECIFIC Company ID key
+    // This allows the Marketplace to find the image using the Company ID
     if (logoImage) {
-        await saveImageToDB(`company-logo-${myCompanyId}`, logoImage);
+        await saveImageToDB(`company-logo-${targetCompanyId}`, logoImage);
     }
     if (coverImage) {
-        await saveImageToDB(`company-cover-${myCompanyId}`, coverImage);
+        await saveImageToDB(`company-cover-${targetCompanyId}`, coverImage);
     }
 
+    // 3. Update the companies list
     const companies = config.companies || [];
-    const myCompanyIndex = companies.findIndex(c => c.id === myCompanyId);
+    const myCompanyIndex = companies.findIndex(c => c.id === targetCompanyId);
 
     const updatedMyCompany: Partial<Company> = {
-        id: myCompanyId, // Ensure ID is set
+        id: targetCompanyId,
         name: data.businessName,
         companyName: data.businessName,
         description: data.description,
-        logo: 'indexed-db',
-        coverImage: 'indexed-db',
+        // IMPORTANT: We must explicitly tell the system the image is in IndexedDB
+        logo: logoImage ? 'indexed-db' : undefined,
+        coverImage: coverImage ? 'indexed-db' : undefined,
         website: data.website,
         phone: data.phone,
         email: data.email,
         address: data.address,
         town: data.town,
         industry: data.industry,
+        customerType: 'company',
+        version: (myCompanyIndex > -1 ? companies[myCompanyIndex].version || 0 : 0) + 1
     };
 
     const newCompanies = [...companies];
+    
     if (myCompanyIndex > -1) {
-        newCompanies[myCompanyIndex] = { ...newCompanies[myCompanyIndex], ...updatedMyCompany };
+        // Update existing
+        newCompanies[myCompanyIndex] = { ...newCompanies[myCompanyIndex], ...updatedMyCompany } as Company;
     } else {
-        // FIX: Create new company entry with all required fields
+        // Create new
         newCompanies.push({
-            id: myCompanyId,
-            name: data.businessName,
-            companyName: data.businessName,
-            description: data.description,
-            logo: 'indexed-db',
-            coverImage: 'indexed-db',
-            website: data.website,
-            phone: data.phone,
-            email: data.email,
-            address: data.address,
-            town: data.town,
-            industry: data.industry,
+            ...updatedMyCompany,
+            id: targetCompanyId, 
+            logo: logoImage ? 'indexed-db' : undefined,
+            coverImage: coverImage ? 'indexed-db' : undefined,
         } as Company);
     }
 
+    // 4. Update the global config
     const newConfig: BrandsoftConfig = {
         ...config,
         brand: {
             ...config.brand,
             businessName: data.businessName,
             description: data.description || '',
-            logo: 'indexed-db',
+            logo: logoImage ? 'indexed-db' : config.brand.logo, // Update global brand logic
             primaryColor: data.primaryColor || '#d58d30',
             secondaryColor: data.secondaryColor || '#111825',
             font: data.font || 'Poppins',
@@ -291,9 +289,10 @@ export default function SettingsPage() {
     };
     
     saveConfig(newConfig, { redirect: false, revalidate: true });
+    
     toast({
         title: "Settings Saved",
-        description: "Your new settings have been applied.",
+        description: "Your company profile and marketplace listing have been updated.",
     });
   };
 
@@ -318,7 +317,7 @@ export default function SettingsPage() {
               <div className="absolute inset-0 bg-black/60" />
                <div className="absolute top-4 right-4 z-10">
                   <SimpleImageUploadButton
-                    onChange={handleCoverChange} // FIX: Use new handler
+                    onChange={handleCoverChange}
                     buttonText="Change Cover"
                   />
               </div>
@@ -331,7 +330,7 @@ export default function SettingsPage() {
                       </Avatar>
                        <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover/avatar:opacity-100 flex items-center justify-center transition-opacity">
                             <SimpleImageUploadButton
-                              onChange={handleLogoChange} // FIX: Use new handler
+                              onChange={handleLogoChange}
                               buttonText="Change Logo"
                               iconOnly={true}
                             />

@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState, useMemo, useRef, ChangeEvent, useEffect } from 'react';
@@ -64,6 +62,7 @@ const formSchema = z.object({
   coverImage: z.string().optional(),
   website: z.string().url("Invalid URL").optional().or(z.literal('')),
   activationKey: z.string().optional(),
+  version: z.number().optional(), // Added for re-render trigger
 });
 
 type CompanyFormData = z.infer<typeof formSchema>;

@@ -71,7 +71,7 @@ const CompanyCardWithImages = ({
       fetchImages();
 
       return () => { isMounted = false; }
-    }, [company.id, company.logo, company.coverImage]);
+    }, [company.id, company.logo, company.coverImage, company.version]);
   
     if (isLoading) {
       return (
