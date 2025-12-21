@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -7,7 +6,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from '@/components/ui/dialog';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
@@ -20,7 +18,6 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Checkbox } from './ui/checkbox';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { saveReceiptToDB } from '@/hooks/use-receipt-upload';
 
 
@@ -333,7 +330,8 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                                 <StepIndicator step={1} label="Enter WhatsApp Number" isComplete={!!whatsappNumber} />
                                 <StepIndicator step={2} label="Select Payment Method" isComplete={!!selectedPayment} />
                                 <StepIndicator step={3} label={selectedPayment === 'wallet' ? "Confirm" : "Upload Receipt"} isComplete={selectedPayment === 'wallet' ? true : !!receiptFile} />
-                                <StepIndicator step={4} label="Confirm Purchase" isComplete={purchaseState === 'success'} />
+                                {/* FIX: Changed check to false, because if it was success we wouldn't be in this block */}
+                                <StepIndicator step={4} label="Confirm Purchase" isComplete={false} />
                             </div>
 
                              {!plan.name.startsWith('Activation Key') && (

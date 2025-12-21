@@ -43,8 +43,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import { saveImageToDB } from '@/hooks/use-brand-image';
-import { getImageFromDB } from '@/hooks/use-receipt-upload';
+// FIX 1: Import both image functions from the correct hook file
+import { saveImageToDB, getImageFromDB } from '@/hooks/use-brand-image';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -62,7 +62,7 @@ const formSchema = z.object({
   coverImage: z.string().optional(),
   website: z.string().url("Invalid URL").optional().or(z.literal('')),
   activationKey: z.string().optional(),
-  version: z.number().optional(), // Added for re-render trigger
+  version: z.number().optional(),
 });
 
 type CompanyFormData = z.infer<typeof formSchema>;
@@ -70,7 +70,6 @@ type CompanyFormData = z.infer<typeof formSchema>;
 const ITEMS_PER_PAGE = 20;
 const fallBackCover = 'https://picsum.photos/seed/shopcover/1200/400';
 
-// Helper to check if a value is a valid image URL
 const isValidImageUrl = (value: string | undefined): boolean => {
   if (!value) return false;
   if (value === 'indexed-db') return false;
@@ -106,7 +105,6 @@ const ImageUploadField = ({
   };
   
   useEffect(() => {
-    // Only update if it's a valid image URL (not 'indexed-db' marker)
     if (isValidImageUrl(currentValue)) {
       setPreview(currentValue);
     } else {
@@ -140,7 +138,7 @@ const ImageUploadField = ({
   );
 };
 
-// NEW: Component to handle image loading for company cards
+// FIX 2: Updated component prop types to match CompanyCard expectation (1 arg)
 const CompanyCardWithImages = ({
     company,
     averageRating,
@@ -151,7 +149,7 @@ const CompanyCardWithImages = ({
     company: Company & { averageRating: number; reviewCount: number };
     averageRating: number;
     reviewCount: number;
-    onSelectAction: (action: 'view' | 'edit' | 'delete', company: Company) => void;
+    onSelectAction: (action: 'view' | 'edit' | 'delete') => void;
     showActionsMenu?: boolean;
   }) => {
     const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -163,6 +161,7 @@ const CompanyCardWithImages = ({
       const fetchImages = async () => {
         setIsLoading(true);
         
+        // Ensure keys match what is saved in onSubmit
         const logoKey = `company-logo-${company.id}`;
         const coverKey = `company-cover-${company.id}`;
   
@@ -232,20 +231,19 @@ export default function CompaniesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
   
-  // NEW: State for view dialog images
   const [viewLogoUrl, setViewLogoUrl] = useState<string | null>(null);
   const [viewCoverUrl, setViewCoverUrl] = useState<string | null>(null);
   const [isViewImagesLoading, setIsViewImagesLoading] = useState(true);
   
-  // NEW: State for form image previews (loaded from IndexedDB when editing)
   const [formLogoPreview, setFormLogoPreview] = useState<string | null>(null);
   const [formCoverPreview, setFormCoverPreview] = useState<string | null>(null);
 
   const activePlan = useMemo(() => {
     const activePurchase = config?.purchases?.find(p => p.status === 'active');
-    if (!activePurchase) return { name: 'Free Trial', features: [] };
+    // FIX 3: Cast the empty array as string[] to fix "never" type error
+    if (!activePurchase) return { name: 'Free Trial', features: [] as string[] };
     const planDetails = config?.plans?.find(p => p.name === activePurchase.planName);
-    return planDetails || { name: activePurchase.planName, features: [] };
+    return planDetails || { name: activePurchase.planName, features: [] as string[] };
   }, [config?.purchases, config?.plans]);
 
   const hasBulkOperations = useMemo(() => activePlan.features.includes('bulkOperations'), [activePlan]);
@@ -293,7 +291,6 @@ export default function CompaniesPage() {
 
   const totalPages = Math.ceil(filteredCompanies.length / ITEMS_PER_PAGE);
 
-  // NEW: Load images when view dialog opens
   useEffect(() => {
     if (!isViewOpen || !selectedCompany) {
       setIsViewImagesLoading(true);
@@ -326,14 +323,12 @@ export default function CompaniesPage() {
     return () => { isMounted = false; };
   }, [isViewOpen, selectedCompany]);
 
-  // NEW: Load images when form opens for editing
   const handleOpenForm = async (company: Company | null = null) => {
     setSelectedCompany(company);
     setFormLogoPreview(null);
     setFormCoverPreview(null);
     
     if (company) {
-      // Load existing images from IndexedDB
       const logoKey = `company-logo-${company.id}`;
       const coverKey = `company-cover-${company.id}`;
 
@@ -372,7 +367,6 @@ export default function CompaniesPage() {
       if (action === 'view') setIsViewOpen(true);
   };
 
-  // FIX: Save images to IndexedDB on submit
   const onSubmit = async (data: CompanyFormData) => {
     if (!config) return;
 
@@ -387,13 +381,12 @@ export default function CompaniesPage() {
       await saveImageToDB(`company-cover-${companyId}`, data.coverImage);
     }
     
-    // 3. Prepare the Company Object - mark images as 'indexed-db' if they were uploaded
+    // 3. Prepare the Company Object
     const companyToSave: Company = {
         ...data,
         id: companyId,
         customerType: 'company',
         referredBy: data.activationKey || undefined,
-        // Mark as indexed-db if we saved an image, otherwise keep original value
         logo: (data.logo && isValidImageUrl(data.logo)) ? 'indexed-db' : data.logo,
         coverImage: (data.coverImage && isValidImageUrl(data.coverImage)) ? 'indexed-db' : data.coverImage,
         version: (data.id ? (config.companies.find(c => c.id === data.id)?.version || 0) : 0) + 1,
@@ -419,7 +412,7 @@ export default function CompaniesPage() {
             const newClient: AffiliateClient = {
                 id: companyId,
                 name: companyToSave.companyName,
-                avatar: 'indexed-db', // We'll load from IndexedDB when displaying
+                avatar: 'indexed-db', 
                 plan: 'Free Trial',
                 status: 'active',
                 joinDate: new Date().toISOString(),
@@ -523,7 +516,8 @@ export default function CompaniesPage() {
                         company={company} 
                         averageRating={company.averageRating}
                         reviewCount={company.reviewCount}
-                        onSelectAction={(action) => handleSelectAction(action as 'view' | 'edit' | 'delete', company)} 
+                        // FIX: Passing the action correctly to the 1-arg function defined above
+                        onSelectAction={(action) => handleSelectAction(action, company)} 
                         showActionsMenu={true}
                     />
                 ))}
@@ -547,6 +541,7 @@ export default function CompaniesPage() {
       </div>
       
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+          {/* Form Content Omitted for brevity, it remains the same as your input */}
           <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
             <DialogHeader>
                 <DialogTitle>{selectedCompany ? 'Edit' : 'Add New'} Company Profile</DialogTitle>
@@ -571,7 +566,6 @@ export default function CompaniesPage() {
                     <div className="space-y-4">
                       <h3 className="text-sm font-medium text-muted-foreground">Visuals</h3>
                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                         {/* FIX: Pass the loaded preview as currentValue */}
                          <ImageUploadField 
                            form={form} 
                            name="logo" 
@@ -634,7 +628,6 @@ export default function CompaniesPage() {
             <>
               <div className="flex-grow overflow-y-auto">
                 <div className="relative h-40">
-                  {/* FIX: Use loaded images from IndexedDB */}
                   {isViewImagesLoading ? (
                     <Skeleton className="h-full w-full rounded-t-lg" />
                   ) : (
