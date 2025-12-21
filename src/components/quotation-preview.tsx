@@ -81,21 +81,21 @@ const Background = ({ design }: { design: DesignSettings }) => {
 };
 
 const Header = ({ design, config }: { design: DesignSettings, config: BrandsoftConfig }) => {
-    if (!design.showHeader) return null;
+    const isVisible = design.showHeader ?? true;
     if (design.headerImage) {
         return (
-            <div className="w-full h-auto flex-shrink-0">
+            <div className="w-full h-auto flex-shrink-0" style={{ visibility: isVisible ? 'visible' : 'hidden' }}>
                  <img src={design.headerImage} className="w-full h-full object-cover z-10" style={{maxHeight: '60px', opacity: design.headerImageOpacity}} alt="header"/>
             </div>
         );
     }
-    return <div className="w-full flex-shrink-0 relative z-10" style={{ backgroundColor: design.headerColor, height: '35px' }}></div>
+    return <div className="w-full flex-shrink-0 relative z-10" style={{ backgroundColor: design.headerColor, height: '35px', visibility: isVisible ? 'visible' : 'hidden' }}></div>
 };
 
 const Footer = ({ design, pageNumber, totalPages }: { design: DesignSettings, pageNumber?: number, totalPages?: number }) => {
-    if (!design.showFooter) return null;
+    const isVisible = design.showFooter ?? true;
     return (
-        <footer className="w-full relative z-10 mt-auto flex-shrink-0">
+        <footer className="w-full relative z-10 mt-auto flex-shrink-0" style={{ visibility: isVisible ? 'visible' : 'hidden' }}>
             {design.footerImage ? (
                 <img src={design.footerImage} className="w-full h-auto object-cover z-10" style={{maxHeight: '60px', opacity: design.footerImageOpacity}} alt="footer"/>
             ) : (
@@ -282,46 +282,42 @@ export function QuotationPreview({
 
                         <header className="flex justify-between items-start relative z-10">
                             <div className="flex items-center gap-4">
-                                 {design.showLogo && displayLogo && (
-                                    <img src={displayLogo} alt="Logo" className="h-20 w-auto object-contain" />
-                                )}
-                                {design.showInvoiceTitle && <h1 className="text-4xl font-bold tracking-tight ml-2" style={{ color: design.headerColor }}>Quotation</h1>}
-                            </div>
-                            {design.showBusinessAddress && (
-                                <div className="text-right text-sm leading-relaxed ml-10" style={{color: design.textColor ? design.textColor : 'inherit'}}>
-                                    <p className="font-bold text-lg mb-1" style={{color: design.textColor ? design.textColor : 'inherit'}}>{config.brand?.businessName}</p>
-                                    <p>{config.profile?.address}</p>
-                                    <p>{config.profile?.email}</p>
-                                    <p>{config.profile?.phone}</p>
+                                 <div style={{ visibility: (design.showLogo ?? true) ? 'visible' : 'hidden' }}>
+                                    {displayLogo && (
+                                        <img src={displayLogo} alt="Logo" className="h-20 w-auto object-contain" />
+                                    )}
                                 </div>
-                            )}
+                                <h1 className="text-4xl font-bold tracking-tight ml-2" style={{ color: design.headerColor, visibility: (design.showInvoiceTitle ?? true) ? 'visible' : 'hidden' }}>Quotation</h1>
+                            </div>
+                            <div className="text-right text-sm leading-relaxed ml-10" style={{color: design.textColor ? design.textColor : 'inherit', visibility: (design.showBusinessAddress ?? true) ? 'visible' : 'hidden'}}>
+                                <p className="font-bold text-lg mb-1" style={{color: design.textColor ? design.textColor : 'inherit'}}>{config.brand?.businessName}</p>
+                                <p>{config.profile?.address}</p>
+                                <p>{config.profile?.email}</p>
+                                <p>{config.profile?.phone}</p>
+                            </div>
                         </header>
 
                         <main className="flex-grow relative z-10 mt-10">
                             <section className="flex justify-between items-start mb-10">
-                                {design.showBillingAddress && (
-                                     <div className="w-1/2">
-                                        <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Quote For</h3>
-                                        <p className="font-bold text-xl">{customerDisplayName}</p>
-                                        <p className="text-sm mt-1 whitespace-pre-wrap">{customer.companyAddress || customer.address}</p>
-                                        <p className="text-sm">{customer.email}</p>
+                                <div className="w-1/2" style={{ visibility: (design.showBillingAddress ?? true) ? 'visible' : 'hidden' }}>
+                                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Quote For</h3>
+                                    <p className="font-bold text-xl">{customerDisplayName}</p>
+                                    <p className="text-sm mt-1 whitespace-pre-wrap">{customer.companyAddress || customer.address}</p>
+                                    <p className="text-sm">{customer.email}</p>
+                                </div>
+
+                                <div className="w-auto min-w-[200px]" style={{ visibility: (design.showDates ?? true) ? 'visible' : 'hidden' }}>
+                                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-right">
+                                        <span className="font-bold text-gray-500 uppercase text-xs self-center">Quote #</span>
+                                        <span className="font-bold text-base">{quotationId || 'QUO-001'}</span>
+
+                                        <span className="font-bold text-gray-500 uppercase text-xs self-center">Date</span>
+                                        <span className="font-medium">{quotationDateStr}</span>
+
+                                        <span className="font-bold text-gray-500 uppercase text-xs self-center">Valid Until</span>
+                                        <span className="font-medium">{validUntilStr}</span>
                                     </div>
-                                )}
-
-                                {design.showDates && (
-                                    <div className="w-auto min-w-[200px]">
-                                        <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-right">
-                                            <span className="font-bold text-gray-500 uppercase text-xs self-center">Quote #</span>
-                                            <span className="font-bold text-base">{quotationId || 'QUO-001'}</span>
-
-                                            <span className="font-bold text-gray-500 uppercase text-xs self-center">Date</span>
-                                            <span className="font-medium">{quotationDateStr}</span>
-
-                                            <span className="font-bold text-gray-500 uppercase text-xs self-center">Valid Until</span>
-                                            <span className="font-medium">{validUntilStr}</span>
-                                        </div>
-                                    </div>
-                                )}
+                                </div>
                             </section>
 
                             <section className="mb-10">
@@ -355,18 +351,22 @@ export function QuotationPreview({
 
                             <section className="flex flex-row gap-12 items-start mt-auto mb-8">
                                 <div className="flex-1 text-xs">
-                                     {design.showPaymentDetails && paymentDetailsToDisplay && (
-                                        <div>
-                                            <h3 className="font-bold text-gray-400 uppercase tracking-wider mb-2">Payment Details</h3>
-                                            <p className="whitespace-pre-wrap leading-relaxed">{paymentDetailsToDisplay}</p>
-                                        </div>
-                                    )}
-                                     {design.showNotes && quotationData.notes && (
-                                        <div className="mt-4 pt-4 border-t" style={{borderColor: 'rgba(0,0,0,0.05)'}}>
-                                            <h3 className="font-bold text-gray-400 uppercase tracking-wider mb-1">Notes</h3>
-                                            <p>{quotationData.notes}</p>
-                                        </div>
-                                    )}
+                                     <div style={{ visibility: (design.showPaymentDetails ?? true) ? 'visible' : 'hidden' }}>
+                                        {paymentDetailsToDisplay && (
+                                            <div>
+                                                <h3 className="font-bold text-gray-400 uppercase tracking-wider mb-2">Payment Details</h3>
+                                                <p className="whitespace-pre-wrap leading-relaxed">{paymentDetailsToDisplay}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                     <div className="mt-4 pt-4 border-t" style={{borderColor: 'rgba(0,0,0,0.05)', visibility: (design.showNotes ?? true) ? 'visible' : 'hidden' }}>
+                                        {quotationData.notes && (
+                                            <div>
+                                                <h3 className="font-bold text-gray-400 uppercase tracking-wider mb-1">Notes</h3>
+                                                <p>{quotationData.notes}</p>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
 
                                 <div className="w-[40%] min-w-[260px] text-sm">

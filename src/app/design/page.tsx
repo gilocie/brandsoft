@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useForm, useWatch } from 'react-hook-form';
@@ -520,7 +519,9 @@ function DocumentDesignPage() {
 
     const [document, setDocument] = useState<Invoice | Quotation | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const isInitialLoad = useRef(true);
+    
+    // FIX 1: New ref to track initial logo setup
+    const hasSetLogoFromDefault = useRef(false);
 
     const activePlan = useMemo(() => {
         const activePurchase = config?.purchases?.find(p => p.status === 'active');
@@ -532,7 +533,7 @@ function DocumentDesignPage() {
     const hasFullTemplateEditor = useMemo(() => activePlan.features.includes('fullTemplateEditor'), [activePlan]);
     const hasRemoveBranding = useMemo(() => activePlan.features.includes('removeBranding'), [activePlan]);
 
-    const { image: defaultLogo } = useBrandImage('logo');
+    const { image: defaultLogo, isLoading: isLogoLoading } = useBrandImage('logo');
 
     const form = useForm<DesignSettingsFormData>({
         resolver: zodResolver(designSettingsSchema),
@@ -595,14 +596,14 @@ function DocumentDesignPage() {
     };
     
     const statusColors: Record<string, string> = {
-      PAID: '#22c55e', // green-500
-      PENDING: '#f97316', // orange-500
-      OVERDUE: '#ef4444', // red-500
-      DRAFT: '#a1a1aa', // zinc-400
-      CANCELED: '#64748b', // slate-500
-      SENT: '#3b82f6', // blue-500
-      ACCEPTED: '#22c55e', // green-500
-      DECLINED: '#ef4444', // red-500
+      PAID: '#22c55e',
+      PENDING: '#f97316',
+      OVERDUE: '#ef4444',
+      DRAFT: '#a1a1aa',
+      CANCELED: '#64748b',
+      SENT: '#3b82f6',
+      ACCEPTED: '#22c55e',
+      DECLINED: '#ef4444',
       DEFAULT: '#dddddd',
     };
 
@@ -617,8 +618,10 @@ function DocumentDesignPage() {
             ? (statusColors[docStatus] || statusColors.DEFAULT) 
             : watchedValues.watermarkColor;
 
+        const effectiveLogo = watchedValues.logo || defaultLogo || '';
+
         return {
-            logo: watchedValues.logo,
+            logo: effectiveLogo,
             backgroundColor: watchedValues.backgroundColor,
             textColor: watchedValues.textColor,
             headerImage: watchedValues.headerImage,
@@ -646,7 +649,7 @@ function DocumentDesignPage() {
             showFooter: watchedValues.showFooter,
             paymentDetails: watchedValues.paymentDetails,
         }
-    }, [watchedValues, document, statusColors, getFormData]);
+    }, [watchedValues, document, statusColors, getFormData, defaultLogo]);
 
     const getDefaultTemplate = useCallback((type: 'invoice' | 'quotation'): Partial<DesignSettings> => {
         if (!config?.profile) return {};
@@ -660,17 +663,29 @@ function DocumentDesignPage() {
         return templateOrId || {};
     }, [config]);
 
-    const stableGetFormData = useCallback(getFormData, [getFormData]);
+    const stableGetFormData = useCallback(getFormData, []);
 
+    // FIX 2: Check for valid logo data, not just truthiness
+    const isValidLogoValue = useCallback((value: string | undefined): boolean => {
+        return !!value && value !== 'indexed-db';
+    }, []);
+    
+    // FIX 1: This useEffect now handles both initial load and async logo update
     useEffect(() => {
-        if (!config || !documentType || !isInitialLoad.current) return;
-        
+        if (!config || !documentType || isLogoLoading) return;
+
+        const currentFormLogo = form.getValues('logo');
+
+        // Only run initialization once or if the logo is missing and the default becomes available
+        if (!isLoading && isValidLogoValue(currentFormLogo) && hasSetLogoFromDefault.current) return;
+
         const sessionData = stableGetFormData('designFormData');
 
-        if (sessionData && Object.keys(sessionData).length > 0) {
+        // Prioritize session data if it exists and has a logo
+        if (sessionData && Object.keys(sessionData).length > 0 && isValidLogoValue(sessionData.logo)) {
             form.reset(sessionData);
             setIsLoading(false);
-            isInitialLoad.current = false;
+            hasSetLogoFromDefault.current = true; // Assume session data is what we want
             return;
         }
 
@@ -695,23 +710,31 @@ function DocumentDesignPage() {
         
         if (doc) setDocument(doc);
         
+        // Define logo priority
+        const getLogoValue = () => {
+            if (isValidLogoValue(existingDesign.logo)) return existingDesign.logo;
+            if (isValidLogoValue(defaultTemplate.logo)) return defaultTemplate.logo;
+            if (defaultLogo) return defaultLogo; // Use the loaded default logo from useBrandImage
+            return ''; // Fallback
+        };
+
         const initialValues: DesignSettingsFormData = {
-            logo: existingDesign.logo ?? defaultTemplate.logo ?? defaultLogo ?? '', 
-            backgroundColor: existingDesign.backgroundColor ?? defaultTemplate.backgroundColor ?? brand.backgroundColor ?? '#FFFFFF',
-            textColor: existingDesign.textColor ?? defaultTemplate.textColor ?? brand.textColor ?? '#000000',
-            headerImage: existingDesign.headerImage ?? defaultTemplate.headerImage ?? brand.headerImage ?? '',
+            logo: getLogoValue(),
+            backgroundColor: existingDesign.backgroundColor || defaultTemplate.backgroundColor || brand.backgroundColor || '#FFFFFF',
+            textColor: existingDesign.textColor || defaultTemplate.textColor || brand.textColor || '#000000',
+            headerImage: existingDesign.headerImage || defaultTemplate.headerImage || brand.headerImage || '',
             headerImageOpacity: existingDesign.headerImageOpacity ?? defaultTemplate.headerImageOpacity ?? 1,
-            footerImage: existingDesign.footerImage ?? defaultTemplate.footerImage ?? brand.footerImage ?? '',
+            footerImage: existingDesign.footerImage || defaultTemplate.footerImage || brand.footerImage || '',
             footerImageOpacity: existingDesign.footerImageOpacity ?? defaultTemplate.footerImageOpacity ?? 1,
-            backgroundImage: existingDesign.backgroundImage ?? defaultTemplate.backgroundImage ?? brand.backgroundImage ?? '',
+            backgroundImage: existingDesign.backgroundImage || defaultTemplate.backgroundImage || brand.backgroundImage || '',
             backgroundImageOpacity: existingDesign.backgroundImageOpacity ?? defaultTemplate.backgroundImageOpacity ?? 1,
-            watermarkText: existingDesign.watermarkText ?? defaultTemplate.watermarkText ?? 'AUTO',
-            watermarkColor: existingDesign.watermarkColor ?? defaultTemplate.watermarkColor ?? '#dddddd',
+            watermarkText: existingDesign.watermarkText || defaultTemplate.watermarkText || 'AUTO',
+            watermarkColor: existingDesign.watermarkColor || defaultTemplate.watermarkColor || '#dddddd',
             watermarkOpacity: existingDesign.watermarkOpacity ?? defaultTemplate.watermarkOpacity ?? 0.05,
             watermarkFontSize: existingDesign.watermarkFontSize ?? defaultTemplate.watermarkFontSize ?? 96,
             watermarkAngle: existingDesign.watermarkAngle ?? defaultTemplate.watermarkAngle ?? -45,
-            headerColor: existingDesign.headerColor ?? defaultTemplate.headerColor ?? brand.primaryColor ?? '#F97316',
-            footerColor: existingDesign.footerColor ?? defaultTemplate.footerColor ?? brand.secondaryColor ?? '#1E40AF',
+            headerColor: existingDesign.headerColor || defaultTemplate.headerColor || brand.primaryColor || '#F97316',
+            footerColor: existingDesign.footerColor || defaultTemplate.footerColor || brand.secondaryColor || '#1E40AF',
             showLogo: existingDesign.showLogo ?? brand.showLogo ?? true,
             showBusinessAddress: existingDesign.showBusinessAddress ?? brand.showBusinessAddress ?? true,
             showInvoiceTitle: existingDesign.showInvoiceTitle ?? brand.showInvoiceTitle ?? true,
@@ -732,9 +755,9 @@ function DocumentDesignPage() {
         };
         
         form.reset(initialValues);
+        if (initialValues.logo) hasSetLogoFromDefault.current = true;
         setIsLoading(false);
-        isInitialLoad.current = false;
-    }, [config, documentType, documentId, isNew, stableGetFormData, getDefaultTemplate, form, getFormData, defaultLogo]);
+    }, [config, documentType, documentId, isNew, stableGetFormData, getDefaultTemplate, form, getFormData, defaultLogo, isLogoLoading, isValidLogoValue]);
     
     
      const onSubmit = (data: DesignSettingsFormData) => {
@@ -758,12 +781,12 @@ function DocumentDesignPage() {
             const updateFn = documentType === 'invoice' ? updateInvoice : updateQuotation;
             updateFn(documentId, { design: newDesignSettings });
             saveConfig({ ...config, profile: newProfileSettings });
-        } else if (documentType) { // Fallback for safety
+        } else if (documentType) {
              const templateKey = documentType === 'invoice' ? 'defaultInvoiceTemplate' : 'defaultQuotationTemplate';
             saveConfig({ ...config, profile: { ...newProfileSettings, [templateKey]: newDesignSettings } });
         }
         
-        setFormData(null); // Clear session storage after saving
+        setFormData(null);
         toast({ title: "Design Saved", description: "Your changes have been saved." });
         router.push(returnUrl);
     };
@@ -789,7 +812,6 @@ function DocumentDesignPage() {
             };
         }
 
-        // Return a minimal object if no data is available
         const status = getFormData('newDocumentData')?.status || '';
         return {
             date: new Date().toISOString(),
@@ -819,7 +841,7 @@ function DocumentDesignPage() {
     const returnUrl = isNew ? `/${documentType}s/new` : (documentId ? `/${documentType}s/${documentId}/edit` : `/${documentType}s`);
     const hasContentForPreview = finalDocumentData && previewCustomer;
     
-    if (isLoading) {
+    if (isLoading || isLogoLoading) {
         return (
           <div className="w-full h-screen flex items-center justify-center">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
