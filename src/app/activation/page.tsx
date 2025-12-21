@@ -55,7 +55,7 @@ export default function ActivationPage() {
       data-ai-hint="business building"
     >
       <div className="absolute inset-0 bg-black/80" />
-      <Card className="w-full max-w-md shadow-2xl z-10">
+      <Card className="w-full max-w-md shadow-2xl z-10 bg-background">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4">
             <Logo />

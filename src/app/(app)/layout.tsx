@@ -339,7 +339,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </SidebarHeader>
         <SidebarContent>
-          <SidebarMenu>
+          <SidebarMenu className="mt-4">
             {config ? visibleMainNavItems.map((item) => (
               <SidebarMenuItem key={item.href}>
                 <Link href={item.href} className="relative">
@@ -418,7 +418,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                    <Avatar className="h-12 w-12 bg-transparent">
                       <AvatarImage src={brandsoftLogo.src} />
                   </Avatar>
-                  <p className="text-xs font-semibold text-sidebar-foreground/80">BrandSoft</p>
+                  <p className="text-sm font-semibold text-sidebar-foreground/80">BrandSoft</p>
                 </div>
               ) : (
                 <div className="flex items-center justify-center p-2">
