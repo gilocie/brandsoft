@@ -222,7 +222,7 @@ const CompanyCardWithImages = ({
 };
 
 export default function CompaniesPage() {
-  const { config, deleteCompany, saveConfig } = useBrandsoft();
+  const { config, addCompany, deleteCompany } = useBrandsoft();
   const { toast } = useToast();
   const router = useRouter();
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -232,12 +232,10 @@ export default function CompaniesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
   
-  // NEW: State for view dialog images
   const [viewLogoUrl, setViewLogoUrl] = useState<string | null>(null);
   const [viewCoverUrl, setViewCoverUrl] = useState<string | null>(null);
   const [isViewImagesLoading, setIsViewImagesLoading] = useState(true);
   
-  // NEW: State for form image previews (loaded from IndexedDB when editing)
   const [formLogoPreview, setFormLogoPreview] = useState<string | null>(null);
   const [formCoverPreview, setFormCoverPreview] = useState<string | null>(null);
 
@@ -293,7 +291,6 @@ export default function CompaniesPage() {
 
   const totalPages = Math.ceil(filteredCompanies.length / ITEMS_PER_PAGE);
 
-  // NEW: Load images when view dialog opens
   useEffect(() => {
     if (!isViewOpen || !selectedCompany) {
       setIsViewImagesLoading(true);
@@ -326,14 +323,12 @@ export default function CompaniesPage() {
     return () => { isMounted = false; };
   }, [isViewOpen, selectedCompany]);
 
-  // NEW: Load images when form opens for editing
   const handleOpenForm = async (company: Company | null = null) => {
     setSelectedCompany(company);
     setFormLogoPreview(null);
     setFormCoverPreview(null);
     
     if (company) {
-      // Load existing images from IndexedDB
       const logoKey = `company-logo-${company.id}`;
       const coverKey = `company-cover-${company.id}`;
 
@@ -372,81 +367,10 @@ export default function CompaniesPage() {
       if (action === 'view') setIsViewOpen(true);
   };
 
-  // FIX: Save images to IndexedDB on submit
   const onSubmit = async (data: CompanyFormData) => {
     if (!config) return;
-
-    // 1. Generate ID if new, or use existing
-    const companyId = data.id || `COMP-${Date.now()}`;
-    
-    // 2. FIX: Save images to IndexedDB with company-specific keys
-    if (data.logo && isValidImageUrl(data.logo)) {
-      await saveImageToDB(`company-logo-${companyId}`, data.logo);
-    }
-    if (data.coverImage && isValidImageUrl(data.coverImage)) {
-      await saveImageToDB(`company-cover-${companyId}`, data.coverImage);
-    }
-    
-    // 3. Prepare the Company Object - mark images as 'indexed-db' if they were uploaded
-    const companyToSave: Company = {
-        ...data,
-        id: companyId,
-        customerType: 'company',
-        referredBy: data.activationKey || undefined,
-        // Mark as indexed-db if we saved an image, otherwise keep original value
-        logo: (data.logo && isValidImageUrl(data.logo)) ? 'indexed-db' : data.logo,
-        coverImage: (data.coverImage && isValidImageUrl(data.coverImage)) ? 'indexed-db' : data.coverImage,
-    } as Company;
-
-    // 4. Prepare the updated List of Companies
-    let updatedCompanies = [...(config.companies || [])];
-    if (data.id) {
-        updatedCompanies = updatedCompanies.map(c => c.id === data.id ? { ...c, ...companyToSave } : c);
-    } else {
-        updatedCompanies = [companyToSave, ...updatedCompanies];
-    }
-
-    // 5. Prepare Affiliate Data
-    let updatedAffiliate = { ...(config.affiliate || {}) };
-    let wasAddedToAffiliate = false;
-
-    if (data.activationKey && config.affiliate && data.activationKey === config.affiliate.staffId) {
-        const existingClients = updatedAffiliate.clients || [];
-        const isAlreadyClient = existingClients.some(c => c.id === companyId);
-
-        if (!isAlreadyClient) {
-            const newClient: AffiliateClient = {
-                id: companyId,
-                name: companyToSave.companyName,
-                avatar: 'indexed-db', // We'll load from IndexedDB when displaying
-                plan: 'Free Trial',
-                status: 'active',
-                joinDate: new Date().toISOString(),
-                remainingDays: 30,
-                walletBalance: 0,
-            };
-            
-            updatedAffiliate.clients = [newClient, ...existingClients];
-            wasAddedToAffiliate = true;
-        }
-    }
-
-    // 6. Save config
-    saveConfig({
-        ...config,
-        companies: updatedCompanies,
-        affiliate: updatedAffiliate as any
-    }, { redirect: false });
-
-    // 7. Notifications
-    if (wasAddedToAffiliate) {
-         toast({ title: "Success!", description: "Company created and linked to your Affiliate account." });
-    } else if (data.activationKey) {
-         toast({ title: "Company Saved", description: "Saved to Companies list (Key did not match your Staff ID)." });
-    } else {
-         toast({ title: "Company Saved", description: "Company added to list." });
-    }
-    
+    addCompany(data as Omit<Company, 'id'>);
+    toast({ title: "Company Saved", description: "The new company has been added to your list." });
     setIsFormOpen(false);
   };
   
@@ -570,7 +494,6 @@ export default function CompaniesPage() {
                     <div className="space-y-4">
                       <h3 className="text-sm font-medium text-muted-foreground">Visuals</h3>
                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                         {/* FIX: Pass the loaded preview as currentValue */}
                          <ImageUploadField 
                            form={form} 
                            name="logo" 
@@ -633,15 +556,14 @@ export default function CompaniesPage() {
             <>
               <div className="flex-grow overflow-y-auto">
                 <div className="relative h-40">
-                  {/* FIX: Use loaded images from IndexedDB */}
                   {isViewImagesLoading ? (
                     <Skeleton className="h-full w-full rounded-t-lg" />
                   ) : (
                     <Image 
                       src={viewCoverUrl || fallBackCover} 
                       alt={`${currentViewedCompany.companyName} cover`} 
-                      layout="fill" 
-                      objectFit="cover" 
+                      fill
+                      style={{objectFit: 'cover'}}
                       className="rounded-t-lg" 
                       data-ai-hint="office workspace" 
                     />
