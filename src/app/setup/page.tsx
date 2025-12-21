@@ -22,6 +22,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { useSetup } from '@/hooks/use-setup';
 import brandsoftBackground from '@/app/backgrounds/background.jpg';
+import BrandsoftLogo from '@/app/brandsoftlogo.png';
+import Image from 'next/image';
 
 
 const TOTAL_STEPS = 4;
@@ -71,7 +73,7 @@ export default function SetupPage() {
       businessName: '',
       description: '',
       logo: '',
-      primaryColor: '#f9aa2b',
+      primaryColor: '#f5c22a',
       secondaryColor: '#2d2d2d',
       font: 'Poppins',
       brandsoftFooter: true,
@@ -101,6 +103,7 @@ export default function SetupPage() {
       const primaryHsl = hexToHsl(primaryColor);
       if (primaryHsl) {
         document.documentElement.style.setProperty('--primary', `${primaryHsl.h} ${primaryHsl.s}% ${primaryHsl.l}%`);
+        document.documentElement.style.setProperty('--ring', `${primaryHsl.h} ${primaryHsl.s}% ${primaryHsl.l}%`);
       }
     }
     if (secondaryColor) {
@@ -164,8 +167,12 @@ export default function SetupPage() {
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2">
-                      <Avatar>
-                          <AvatarImage src={watchedLogo || undefined} />
+                      <Avatar className="h-10 w-10 bg-transparent">
+                          {watchedLogo ? (
+                            <AvatarImage src={watchedLogo} />
+                          ) : (
+                            <Image src={BrandsoftLogo} alt="BrandSoft" width={40} height={40} />
+                          )}
                           <AvatarFallback><BriefcaseBusiness className="h-6 w-6 text-primary" /></AvatarFallback>
                       </Avatar>
                       <h1 className={cn("text-3xl font-bold text-primary", getFontClass(font))}>{watchedBusinessName || 'BrandSoft'}</h1>
