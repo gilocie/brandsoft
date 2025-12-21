@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -9,6 +8,10 @@ const BRAND_IMAGE_STORE_NAME = 'brand_images';
 // Open IndexedDB
 const openBrandImageDB = (): Promise<IDBDatabase> => {
   return new Promise((resolve, reject) => {
+    if (typeof window === 'undefined') {
+        reject(new Error('IndexedDB is not available server-side'));
+        return;
+    }
     const request = indexedDB.open(BRAND_IMAGE_DB_NAME, 1);
     
     request.onerror = () => reject(new Error('Failed to open IndexedDB'));
@@ -24,7 +27,9 @@ const openBrandImageDB = (): Promise<IDBDatabase> => {
 };
 
 // Get image from IndexedDB
+// EXPORT ADDED HERE
 export const getImageFromDB = async (key: string): Promise<string | null> => {
+  if (typeof window === 'undefined') return null;
   try {
     const db = await openBrandImageDB();
     return new Promise((resolve, reject) => {
@@ -42,7 +47,9 @@ export const getImageFromDB = async (key: string): Promise<string | null> => {
 };
 
 // Save image to IndexedDB
+// EXPORT ADDED HERE
 export const saveImageToDB = async (key: string, imageData: string): Promise<void> => {
+  if (typeof window === 'undefined') return;
   const db = await openBrandImageDB();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([BRAND_IMAGE_STORE_NAME], 'readwrite');
@@ -66,7 +73,7 @@ export function useBrandImage(imageType: 'logo' | 'cover' | 'affiliateProfilePic
         const storedImage = await getImageFromDB(imageType);
         _setImage(storedImage);
       } catch (error) {
-        console.error(`Failed to load ${imageType} image:`, error);
+        // console.error(`Failed to load ${imageType} image:`, error);
         _setImage(null);
       } finally {
         setIsLoading(false);

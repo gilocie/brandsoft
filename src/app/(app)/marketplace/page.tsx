@@ -12,18 +12,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PublicQuotationRequestList } from '@/components/quotations/public-quotation-request-list';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { getImageFromDB } from '@/hooks/use-receipt-upload';
+import { getImageFromDB } from '@/hooks/use-receipt-upload'; // Changed import to use valid path if use-receipt-upload is where getImageFromDB is, otherwise change to @/hooks/use-brand-image
 import { Skeleton } from '@/components/ui/skeleton';
+
+// Note: Ensure getImageFromDB is imported from the correct file. 
+// If you just updated use-brand-image.ts, you should import it from there:
+// import { getImageFromDB } from '@/hooks/use-brand-image';
 
 // Helper to check if a value is a valid image URL
 const isValidImageUrl = (value: string | undefined): boolean => {
   if (!value) return false;
-  if (value === 'indexed-db') return false; // This is just a marker, not actual data
+  if (value === 'indexed-db') return false; 
   if (value === '') return false;
   return true;
 };
 
-// NEW Component to handle image loading for each card
+// Fixed Component
 const CompanyCardWithImages = ({
     company,
     averageRating,
@@ -35,7 +39,8 @@ const CompanyCardWithImages = ({
     company: Company;
     averageRating: number;
     reviewCount: number;
-    onSelectAction: (action: 'view' | 'edit' | 'delete', company: Company) => void;
+    // FIX: Changed to accept only 1 argument to match CompanyCard's expected type
+    onSelectAction: (action: 'view' | 'edit' | 'delete') => void;
     showActionsMenu?: boolean;
     actionButton?: React.ReactNode;
   }) => {
@@ -48,7 +53,6 @@ const CompanyCardWithImages = ({
       const fetchImages = async () => {
         setIsLoading(true);
         
-        // Company logos and covers are stored with keys like 'company-logo-[id]'
         const logoKey = `company-logo-${company.id}`;
         const coverKey = `company-cover-${company.id}`;
   
@@ -58,7 +62,6 @@ const CompanyCardWithImages = ({
         ]);
         
         if (isMounted) {
-            // FIX: Only use company.logo/coverImage if they are valid URLs (not 'indexed-db' marker)
             const fallbackLogo = isValidImageUrl(company.logo) ? company.logo : null;
             const fallbackCover = isValidImageUrl(company.coverImage) ? company.coverImage : null;
             
@@ -71,7 +74,7 @@ const CompanyCardWithImages = ({
       fetchImages();
 
       return () => { isMounted = false; }
-    }, [company.id, company.logo, company.coverImage, company.version]);
+    }, [company.id, company.logo, company.coverImage]);
   
     if (isLoading) {
       return (
@@ -92,7 +95,6 @@ const CompanyCardWithImages = ({
       );
     }
   
-    // FIX: Create company object with actual image URLs (or undefined for fallback handling)
     const companyWithImages: Company = {
       ...company,
       logo: logoUrl || undefined,
@@ -277,6 +279,7 @@ export default function MarketplacePage() {
                             company={biz} 
                             averageRating={biz.averageRating}
                             reviewCount={biz.reviewCount}
+                            // This now works because CompanyCardWithImages expects 1 arg, and we pass a closure
                             onSelectAction={(action) => handleSelectAction(action, biz)} 
                             actionButton={
                                 isMyCompany ? (

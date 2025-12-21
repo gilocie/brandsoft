@@ -257,7 +257,14 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
         if (!open) {
             const wasSuccessful = purchaseState === 'success';
 
-            // Reset all state
+            // Call the correct parent handler first
+            if (wasSuccessful) {
+                onSuccess();
+            } else {
+                onClose();
+            }
+
+            // Reset all state after handling close
             setPurchaseState('idle');
             setReceiptFile(null);
             setReceiptDataUrl(null);
@@ -265,13 +272,6 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
             setWhatsappNumber('');
             setSaveWhatsapp(false);
             setOrderId('');
-
-            // Call the correct parent handler
-            if (wasSuccessful) {
-                onSuccess();
-            } else {
-                onClose();
-            }
         }
     };
     
