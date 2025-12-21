@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useForm, useWatch, Controller } from 'react-hook-form';
@@ -28,6 +29,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Combobox } from '@/components/ui/combobox';
 import Link from 'next/link';
 import { useBrandImage } from '@/hooks/use-brand-image';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 const fallBackCover = 'https://picsum.photos/seed/settingscover/1200/300';
