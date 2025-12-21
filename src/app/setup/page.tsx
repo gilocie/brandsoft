@@ -164,7 +164,7 @@ export default function SetupPage() {
       <div className="flex min-h-screen items-center justify-center bg-black/80 p-4">
         <Form {...form}>
             <Card className="w-full max-w-4xl shadow-2xl flex flex-col max-h-[90vh]">
-              <CardHeader>
+              <CardHeader className="flex-shrink-0">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2">
                       <Avatar className="h-10 w-10 bg-transparent">
@@ -187,7 +187,7 @@ export default function SetupPage() {
                 <CardTitle className={cn("text-3xl", step === 1 ? 'font-headline' : 'font-body')}>{stepInfo[step-1].title}</CardTitle>
                 <CardDescription>{stepInfo[step-1].description}</CardDescription>
               </CardHeader>
-              <CardContent className="flex-grow overflow-auto pr-3">
+              <CardContent className="flex-grow overflow-auto pr-6 mr-[-8px]">
                 <form className="space-y-6">
                     <div style={{ display: step === 1 ? 'block' : 'none' }}><Step1BrandIdentity control={form.control} form={form} /></div>
                     <div style={{ display: step === 2 ? 'block' : 'none' }}><Step2BusinessProfile control={form.control} /></div>
@@ -209,7 +209,7 @@ export default function SetupPage() {
                     </div>
                 </form>
               </CardContent>
-              <CardFooter className="flex justify-between pt-6 sticky bottom-0 bg-card">
+              <CardFooter className="flex justify-between pt-6 flex-shrink-0">
                 <Button type="button" variant="outline" onClick={prevStep} disabled={step === 1 || isFinishing}>
                   <ArrowLeft className="mr-2 h-4 w-4" /> Previous
                 </Button>
