@@ -17,7 +17,7 @@ export * from '@/types/brandsoft';
 
 const LICENSE_KEY = 'brandsoft_license';
 const CONFIG_KEY = 'brandsoft_config';
-const VALID_SERIAL = 'BRANDSOFT-2024';
+const VALID_SERIAL = 'BS-GSS-DEMO0000-000000';
 
 const initialAffiliateData: Affiliate = {
     fullName: 'Your Affiliate Name',
@@ -444,7 +444,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
   }, [config]);
 
   const activate = (serial: string) => {
-    if (serial === VALID_SERIAL) {
+    if (serial.toUpperCase() === VALID_SERIAL) {
       localStorage.setItem(LICENSE_KEY, 'true');
       setIsActivated(true);
       router.push('/setup');

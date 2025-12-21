@@ -1,8 +1,7 @@
 
-
 "use client";
 
-import { useState } from 'react';
+import { useState, ChangeEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -20,6 +19,11 @@ const formSchema = z.object({
   serialKey: z.string().min(1, { message: "Serial key is required." }),
 });
 
+// Admin Activation Key: BS-GSS-XXXXXXXX-XXXXXX (Brandsoft-GoSaveSite)
+// Affiliate Activation Key: BS-AFF-XXXXXXXX-XXXXXX (Brandsoft-Affiliate)
+// For testing, we will use a valid admin key format.
+const VALID_SERIAL = 'BS-GSS-DEMO0000-000000';
+
 export default function ActivationPage() {
   const { activate } = useBrandsoft();
   const { toast } = useToast();
@@ -31,20 +35,48 @@ export default function ActivationPage() {
       serialKey: "",
     },
   });
+  
+  const handleSerialKeyChange = (e: ChangeEvent<HTMLInputElement>) => {
+      const rawValue = e.target.value.replace(/[^A-Z0-9]/ig, '').toUpperCase();
+      let formattedValue = rawValue;
+      
+      if (rawValue.length > 2) {
+        formattedValue = `${rawValue.slice(0, 2)}-${rawValue.slice(2)}`;
+      }
+      if (rawValue.length > 5) {
+        formattedValue = `${rawValue.slice(0, 2)}-${rawValue.slice(2, 5)}-${rawValue.slice(5)}`;
+      }
+      if (rawValue.length > 13) {
+        formattedValue = `${rawValue.slice(0, 2)}-${rawValue.slice(2, 5)}-${rawValue.slice(5, 13)}-${rawValue.slice(13, 20)}`;
+      }
+
+      form.setValue('serialKey', formattedValue.slice(0, 26)); // Max length with hyphens
+  };
+  
+  const rawValue = form.watch('serialKey').replace(/-/g, '');
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     setTimeout(() => { // Simulate network delay
-      const success = activate(values.serialKey);
+      // Normalize both keys for comparison
+      const submittedKey = values.serialKey.replace(/-/g, '').toUpperCase();
+      const validKey = VALID_SERIAL.replace(/-/g, '').toUpperCase();
+
+      let success = false;
+      if(submittedKey === validKey) {
+        success = activate(VALID_SERIAL);
+      } else {
+        success = activate(values.serialKey);
+      }
+
       if (!success) {
         toast({
           variant: "destructive",
           title: "Activation Failed",
           description: "The serial key is invalid. Please try again.",
         });
-        setIsLoading(false);
       }
-      // On success, the useBrandsoft hook will handle redirection.
+      setIsLoading(false);
     }, 1000);
   }
 
@@ -72,9 +104,20 @@ export default function ActivationPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-center block">Serial Key</FormLabel>
-                    <FormControl>
-                      <Input placeholder="XXXX-XXXX-XXXX-XXXX" {...field} className="text-center placeholder:text-center"/>
-                    </FormControl>
+                     <div className="relative">
+                        <FormControl>
+                          <Input 
+                            {...field}
+                            onChange={handleSerialKeyChange}
+                            placeholder="XX-XXX-XXXXXXXX-XXXXXX" 
+                            className="text-center placeholder:text-center font-mono tracking-widest"
+                            maxLength={26}
+                          />
+                        </FormControl>
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                            {rawValue.length}/20
+                        </div>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -88,7 +131,7 @@ export default function ActivationPage() {
         </CardContent>
         <CardFooter className="flex-col text-center text-xs text-muted-foreground">
             <p>Enter your serial key to unlock all features of BrandSoft.</p>
-            <p className="mt-2">For testing purposes, use: <code className="font-code p-1 bg-muted rounded-sm">BRANDSOFT-2024</code></p>
+            <p className="mt-2">For testing purposes, use: <code className="font-code p-1 bg-muted rounded-sm">{VALID_SERIAL}</code></p>
         </CardFooter>
       </Card>
     </div>
