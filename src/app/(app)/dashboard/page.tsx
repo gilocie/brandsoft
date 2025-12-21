@@ -433,7 +433,7 @@ export default function DashboardPage() {
           Hi, {config.brand.businessName}!
         </h1>
         <p className="text-muted-foreground">
-          Here's a snapshot of your business activity.
+          Welcome to your snapshot of your business activity.
         </p>
       </div>
 
