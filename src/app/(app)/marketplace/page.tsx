@@ -13,6 +13,91 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PublicQuotationRequestList } from '@/components/quotations/public-quotation-request-list';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { getImageFromDB } from '@/hooks/use-receipt-upload'; // Reusing this as it's a generic IndexedDB getter
+import { Skeleton } from '@/components/ui/skeleton';
+
+
+// NEW Component to handle image loading for each card
+const CompanyCardWithImages = ({
+    company,
+    averageRating,
+    reviewCount,
+    onSelectAction,
+    showActionsMenu,
+    actionButton,
+  }: {
+    company: Company;
+    averageRating: number;
+    reviewCount: number;
+    onSelectAction: (action: 'view' | 'edit' | 'delete', company: Company) => void;
+    showActionsMenu?: boolean;
+    actionButton?: React.ReactNode;
+  }) => {
+    const [logoUrl, setLogoUrl] = useState<string | null>(null);
+    const [coverUrl, setCoverUrl] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+  
+    useEffect(() => {
+      let isMounted = true;
+      const fetchImages = async () => {
+        setIsLoading(true);
+        // Company logos and covers are stored with keys like 'company-logo-[id]'
+        const logoKey = `company-logo-${company.id}`;
+        const coverKey = `company-cover-${company.id}`;
+  
+        const [logo, cover] = await Promise.all([
+          getImageFromDB(logoKey),
+          getImageFromDB(coverKey)
+        ]);
+        
+        if (isMounted) {
+            setLogoUrl(logo || company.logo || null); // Fallback to original logo path
+            setCoverUrl(cover || company.coverImage || null); // Fallback to original cover path
+            setIsLoading(false);
+        }
+      };
+  
+      fetchImages();
+
+      return () => { isMounted = false; }
+    }, [company.id, company.logo, company.coverImage]);
+  
+    if (isLoading) {
+      return (
+        <Card className="w-full max-w-sm mx-auto rounded-xl overflow-hidden shadow-lg">
+            <div className="relative">
+                <Skeleton className="h-28 w-full" />
+                <div className="absolute -bottom-10 left-1/2 -translate-x-1/2">
+                    <Skeleton className="h-20 w-20 rounded-full border-4 border-background" />
+                </div>
+            </div>
+            <CardContent className="pt-12 text-center">
+                 <Skeleton className="h-6 w-3/4 mx-auto" />
+                 <Skeleton className="h-4 w-1/2 mx-auto mt-2" />
+                 <Skeleton className="h-5 w-24 mx-auto mt-4" />
+                 <Skeleton className="h-9 w-full mt-4" />
+            </CardContent>
+        </Card>
+      );
+    }
+  
+    const companyWithImages: Company = {
+      ...company,
+      logo: logoUrl || undefined,
+      coverImage: coverUrl || undefined,
+    };
+  
+    return (
+      <CompanyCard
+        company={companyWithImages}
+        averageRating={averageRating}
+        reviewCount={reviewCount}
+        onSelectAction={onSelectAction}
+        showActionsMenu={showActionsMenu}
+        actionButton={actionButton}
+      />
+    );
+  };
 
 
 export default function MarketplacePage() {
@@ -175,7 +260,7 @@ export default function MarketplacePage() {
                 {filteredBusinesses.map(biz => {
                     const isMyCompany = biz.id === currentUserId;
                     return (
-                        <CompanyCard 
+                        <CompanyCardWithImages 
                             key={biz.id} 
                             company={biz} 
                             averageRating={biz.averageRating}

@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useForm, useWatch, Controller } from 'react-hook-form';
@@ -30,6 +29,7 @@ import { Combobox } from '@/components/ui/combobox';
 import Link from 'next/link';
 import { useBrandImage } from '@/hooks/use-brand-image';
 import { Skeleton } from '@/components/ui/skeleton';
+import { saveReceiptToDB } from '@/hooks/use-receipt-upload';
 
 
 const fallBackCover = 'https://picsum.photos/seed/settingscover/1200/300';
@@ -130,7 +130,6 @@ export default function SettingsPage() {
   const { config, saveConfig } = useBrandsoft();
   const { toast } = useToast();
   
-  // Use the new brand image hooks
   const { image: logoImage, isLoading: isLogoLoading, setImage: setLogoImage } = useBrandImage('logo');
   const { image: coverImage, isLoading: isCoverLoading, setImage: setCoverImage } = useBrandImage('cover');
   
@@ -192,11 +191,19 @@ export default function SettingsPage() {
     }
   }, [config, form]);
 
-  const onSubmit = (data: SettingsFormData) => {
-    if (!config) return;
+  const onSubmit = async (data: SettingsFormData) => {
+    if (!config || !myCompanyId) return;
+
+    // Save logo and cover images to IndexedDB for the specific company
+    if (logoImage) {
+        await saveReceiptToDB(`company-logo-${myCompanyId}`, logoImage);
+    }
+    if (coverImage) {
+        await saveReceiptToDB(`company-cover-${myCompanyId}`, coverImage);
+    }
 
     const companies = config.companies || [];
-    const myCompanyIndex = companies.findIndex(c => c.companyName === config.brand.businessName);
+    const myCompanyIndex = companies.findIndex(c => c.id === myCompanyId);
 
     const updatedMyCompany: Partial<Company> = {
         name: data.businessName,
