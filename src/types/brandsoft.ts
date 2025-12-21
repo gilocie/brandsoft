@@ -103,6 +103,7 @@ export type Company = {
   website?: string;
   referredBy?: string;
   walletBalance?: number;
+  version?: number;
 };
 
 export type Customer = {
