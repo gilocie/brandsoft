@@ -2,14 +2,51 @@
 'use client';
 
 import type { BrandsoftConfig, Company } from '@/types/brandsoft';
+import { saveImageToDB } from '@/hooks/use-brand-image';
+
+// Helper to check if a value is a valid image data URL (uploaded by user)
+const isDataUrl = (value: string | undefined): boolean => {
+  if (!value) return false;
+  return value.startsWith('data:image/');
+};
 
 export function useCompanies(
   config: BrandsoftConfig | null,
   saveConfig: (newConfig: BrandsoftConfig, options?: { redirect?: boolean; revalidate?: boolean }) => void
 ) {
 
-  const addCompany = (company: Omit<Company, 'id'>): Company => {
-      const newCompany = { ...company, id: `COMP-${Date.now()}` };
+  const addCompany = async (company: Omit<Company, 'id'>): Promise<Company> => {
+      const companyId = `COMP-${Date.now()}`;
+      
+      // Handle logo - save to IndexedDB if it's a data URL
+      let logoValue = company.logo;
+      if (company.logo && isDataUrl(company.logo)) {
+        try {
+          await saveImageToDB(`company-logo-${companyId}`, company.logo);
+          logoValue = 'indexed-db';
+        } catch (error) {
+          console.error('Failed to save logo to IndexedDB:', error);
+        }
+      }
+      
+      // Handle cover image - save to IndexedDB if it's a data URL
+      let coverValue = company.coverImage;
+      if (company.coverImage && isDataUrl(company.coverImage)) {
+        try {
+          await saveImageToDB(`company-cover-${companyId}`, company.coverImage);
+          coverValue = 'indexed-db';
+        } catch (error) {
+          console.error('Failed to save cover to IndexedDB:', error);
+        }
+      }
+      
+      const newCompany: Company = { 
+        ...company, 
+        id: companyId,
+        logo: logoValue,
+        coverImage: coverValue,
+      };
+      
       if (config) {
           const newConfig = { ...config, companies: [...(config.companies || []), newCompany] };
           saveConfig(newConfig, { redirect: false, revalidate: false });
@@ -17,13 +54,41 @@ export function useCompanies(
       return newCompany;
   };
   
-  const updateCompany = (companyId: string, data: Partial<Omit<Company, 'id'>>) => {
-      if (config) {
-          const newCompanies = (config.companies || []).map(c => 
-              c.id === companyId ? { ...c, ...data } : c
-          );
-          saveConfig({ ...config, companies: newCompanies }, { redirect: false, revalidate: false });
+  const updateCompany = async (companyId: string, data: Partial<Omit<Company, 'id'>>) => {
+      if (!config) return;
+      
+      // Handle logo - save to IndexedDB if it's a data URL
+      let logoValue = data.logo;
+      if (data.logo && isDataUrl(data.logo)) {
+        try {
+          await saveImageToDB(`company-logo-${companyId}`, data.logo);
+          logoValue = 'indexed-db';
+        } catch (error) {
+          console.error('Failed to save logo to IndexedDB:', error);
+        }
       }
+      
+      // Handle cover image - save to IndexedDB if it's a data URL
+      let coverValue = data.coverImage;
+      if (data.coverImage && isDataUrl(data.coverImage)) {
+        try {
+          await saveImageToDB(`company-cover-${companyId}`, data.coverImage);
+          coverValue = 'indexed-db';
+        } catch (error) {
+          console.error('Failed to save cover to IndexedDB:', error);
+        }
+      }
+      
+      const updatedData = {
+        ...data,
+        ...(logoValue !== undefined && { logo: logoValue }),
+        ...(coverValue !== undefined && { coverImage: coverValue }),
+      };
+      
+      const newCompanies = (config.companies || []).map(c => 
+          c.id === companyId ? { ...c, ...updatedData } : c
+      );
+      saveConfig({ ...config, companies: newCompanies }, { redirect: false, revalidate: false });
   };
   
   const deleteCompany = (companyId: string) => {
@@ -31,6 +96,8 @@ export function useCompanies(
           const newCompanies = (config.companies || []).filter(c => c.id !== companyId);
           saveConfig({ ...config, companies: newCompanies }, { redirect: false, revalidate: false });
       }
+      // Note: We could also delete the images from IndexedDB here, but leaving them
+      // doesn't cause issues and they'll be cleaned up if the user clears browser data
   };
 
   const getInitialCompanies = (): Omit<Company, 'id'>[] => {
@@ -45,6 +112,7 @@ export function useCompanies(
           town: 'Blantyre',
           customerType: 'company',
           logo: 'https://picsum.photos/seed/biz1/200',
+          coverImage: 'https://picsum.photos/seed/bizcov1/1200/300',
           website: 'https://creativeprints.mw',
       },
       { 
@@ -57,6 +125,7 @@ export function useCompanies(
           town: 'Lilongwe',
           customerType: 'company',
           logo: 'https://picsum.photos/seed/biz2/200',
+          coverImage: 'https://picsum.photos/seed/bizcov2/1200/300',
           website: 'https://bytesolutions.mw',
       },
       { 
@@ -69,6 +138,7 @@ export function useCompanies(
           town: 'Mzuzu',
           customerType: 'company',
           logo: 'https://picsum.photos/seed/biz3/200',
+          coverImage: 'https://picsum.photos/seed/bizcov3/1200/300',
           website: 'https://maketesupplies.mw',
       },
       { 
@@ -81,6 +151,7 @@ export function useCompanies(
           town: 'Zomba',
           customerType: 'company',
           logo: 'https://picsum.photos/seed/biz4/200',
+          coverImage: 'https://picsum.photos/seed/bizcov4/1200/300',
           website: 'https://buildright.mw',
       },
       {
@@ -93,6 +164,7 @@ export function useCompanies(
           town: 'Blantyre',
           customerType: 'company',
           logo: 'https://picsum.photos/seed/biz5/200',
+          coverImage: 'https://picsum.photos/seed/bizcov5/1200/300',
           website: 'https://urbanoasis.mw',
       },
       {
@@ -105,6 +177,7 @@ export function useCompanies(
           town: 'Lilongwe',
           customerType: 'company',
           logo: 'https://picsum.photos/seed/biz6/200',
+          coverImage: 'https://picsum.photos/seed/bizcov6/1200/300',
           website: 'https://naturesbest.mw',
       }
     ];

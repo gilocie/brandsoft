@@ -2,6 +2,7 @@
 'use client';
 
 import type { BrandsoftConfig, Company, Customer, Invoice, Quotation, QuotationRequest, Affiliate, Transaction, AdminSettings, Plan } from '@/types/brandsoft';
+import { saveImageToDB } from '@/hooks/use-brand-image';
 
 const initialCompanies: Omit<Company, 'id'>[] = [
     { 
@@ -14,6 +15,7 @@ const initialCompanies: Omit<Company, 'id'>[] = [
         town: 'Blantyre',
         customerType: 'company',
         logo: 'https://picsum.photos/seed/biz1/200',
+        coverImage: 'https://picsum.photos/seed/bizcov1/1200/300',
         website: 'https://creativeprints.mw',
     },
     { 
@@ -26,6 +28,7 @@ const initialCompanies: Omit<Company, 'id'>[] = [
         town: 'Lilongwe',
         customerType: 'company',
         logo: 'https://picsum.photos/seed/biz2/200',
+        coverImage: 'https://picsum.photos/seed/bizcov2/1200/300',
         website: 'https://bytesolutions.mw',
     },
     { 
@@ -38,6 +41,7 @@ const initialCompanies: Omit<Company, 'id'>[] = [
         town: 'Mzuzu',
         customerType: 'company',
         logo: 'https://picsum.photos/seed/biz3/200',
+        coverImage: 'https://picsum.photos/seed/bizcov3/1200/300',
         website: 'https://maketesupplies.mw',
     },
     { 
@@ -50,6 +54,7 @@ const initialCompanies: Omit<Company, 'id'>[] = [
         town: 'Zomba',
         customerType: 'company',
         logo: 'https://picsum.photos/seed/biz4/200',
+        coverImage: 'https://picsum.photos/seed/bizcov4/1200/300',
         website: 'https://buildright.mw',
     },
     {
@@ -62,6 +67,7 @@ const initialCompanies: Omit<Company, 'id'>[] = [
         town: 'Blantyre',
         customerType: 'company',
         logo: 'https://picsum.photos/seed/biz5/200',
+        coverImage: 'https://picsum.photos/seed/bizcov5/1200/300',
         website: 'https://urbanoasis.mw',
     },
     {
@@ -74,6 +80,7 @@ const initialCompanies: Omit<Company, 'id'>[] = [
         town: 'Lilongwe',
         customerType: 'company',
         logo: 'https://picsum.photos/seed/biz6/200',
+        coverImage: 'https://picsum.photos/seed/bizcov6/1200/300',
         website: 'https://naturesbest.mw',
     },
     // Add affiliate's clients to the main companies list
@@ -87,6 +94,7 @@ const initialCompanies: Omit<Company, 'id'>[] = [
         town: 'Blantyre',
         customerType: 'company',
         logo: 'https://picsum.photos/seed/c1/100',
+        coverImage: 'https://picsum.photos/seed/c1cov/1200/300',
     },
     {
         name: 'Manja Factory CEO',
@@ -98,6 +106,7 @@ const initialCompanies: Omit<Company, 'id'>[] = [
         town: 'Lilongwe',
         customerType: 'company',
         logo: 'https://picsum.photos/seed/c2/100',
+        coverImage: 'https://picsum.photos/seed/c2cov/1200/300',
     },
     {
         name: 'Kicks & Co. Manager',
@@ -109,8 +118,15 @@ const initialCompanies: Omit<Company, 'id'>[] = [
         town: 'Mzuzu',
         customerType: 'company',
         logo: 'https://picsum.photos/seed/c3/100',
+        coverImage: 'https://picsum.photos/seed/c3cov/1200/300',
     }
 ];
+
+// Helper to check if a value is a valid image data URL (uploaded by user)
+const isDataUrl = (value: string | undefined): boolean => {
+  if (!value) return false;
+  return value.startsWith('data:image/');
+};
 
 export function useSetup(
   saveConfig: (newConfig: BrandsoftConfig, options?: { redirect?: boolean }) => void
@@ -275,6 +291,36 @@ export function useSetup(
 
   async function finalizeSetup(data: any) {
     const userCompanyId = `COMP-ME-${Date.now()}`;
+    
+    // ============================================
+    // FIX: Save user's uploaded logo to IndexedDB
+    // ============================================
+    let logoValue: string | undefined = undefined;
+    
+    if (data.logo && isDataUrl(data.logo)) {
+      // User uploaded a logo (data URL) - save to IndexedDB
+      try {
+        // Save to generic 'logo' key (for useBrandImage hook, invoice preview, etc.)
+        await saveImageToDB('logo', data.logo);
+        
+        // Save to company-specific key (for marketplace display)
+        await saveImageToDB(`company-logo-${userCompanyId}`, data.logo);
+        
+        // Mark as stored in IndexedDB
+        logoValue = 'indexed-db';
+      } catch (error) {
+        console.error('Failed to save logo to IndexedDB:', error);
+        // Fallback to storing directly (not ideal for large images)
+        logoValue = data.logo;
+      }
+    } else if (data.logo) {
+      // It's a URL (not data URL) - keep as is
+      logoValue = data.logo;
+    }
+    
+    // ============================================
+    // Create user's company entry
+    // ============================================
     const userAsCompany: Company = {
         id: userCompanyId,
         name: data.businessName,
@@ -286,7 +332,8 @@ export function useSetup(
         industry: data.industry,
         town: data.town,
         description: data.description,
-        logo: data.logo,
+        logo: logoValue, // Will be 'indexed-db' if uploaded, URL if provided, or undefined
+        coverImage: 'indexed-db', // User can set cover later via settings
         website: data.website,
         referredBy: 'BRANDSOFT-ADMIN',
     };
@@ -312,7 +359,7 @@ export function useSetup(
       id: `QR-${Date.now() + i}`,
       requesterId: userAsCompany.id,
       requesterName: data.businessName,
-      requesterLogo: data.logo,
+      requesterLogo: logoValue, // Use the same value we stored
       date: new Date(Date.now() - (i + 1) * 3 * 24 * 60 * 60 * 1000).toISOString(),
       dueDate: new Date(Date.now() + (10 - i) * 24 * 60 * 60 * 1000).toISOString(),
       status: 'open' as const,
@@ -322,7 +369,7 @@ export function useSetup(
       brand: {
         businessName: data.businessName,
         description: data.description || '',
-        logo: data.logo || '',
+        logo: logoValue || '', // Will be 'indexed-db' if uploaded
         primaryColor: data.primaryColor || '#9400D3',
         secondaryColor: data.secondaryColor || '#D87093',
         font: data.font || 'Poppins',
