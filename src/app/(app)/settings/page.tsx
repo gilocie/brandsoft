@@ -160,7 +160,7 @@ export default function SettingsPage() {
 
   const industries = useMemo(() => {
     if (!config?.companies) return [];
-    const uniqueIndustries = [...new Set(config.companies.map(c => c.industry).filter(Boolean).map(i => i.trim()))];
+    const uniqueIndustries = [...new Set(config.companies.map(c => c.industry).filter((i): i is string => !!i).map(i => i.trim()))];
     return uniqueIndustries.map(industry => ({ value: industry.toLowerCase(), label: industry }));
   }, [config?.companies]);
 
@@ -229,7 +229,6 @@ export default function SettingsPage() {
         businessName: data.businessName,
         description: data.description || '',
         logo: 'indexed-db',
-        coverImage: 'indexed-db',
         primaryColor: data.primaryColor || '#d58d30',
         secondaryColor: data.secondaryColor || '#111825',
         font: data.font || 'Poppins',
