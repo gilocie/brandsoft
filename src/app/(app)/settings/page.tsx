@@ -28,7 +28,7 @@ import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Combobox } from '@/components/ui/combobox';
 import Link from 'next/link';
-import { useBrandImage, saveImageToDB } from '@/hooks/use-brand-image.tsx';
+import { useBrandImage, saveImageToDB } from '@/hooks/use-brand-image';
 import { Skeleton } from '@/components/ui/skeleton';
 
 
