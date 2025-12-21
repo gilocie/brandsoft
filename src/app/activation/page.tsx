@@ -54,7 +54,7 @@ export default function ActivationPage() {
       style={{ backgroundImage: `url(${brandsoftBackground.src})` }}
       data-ai-hint="business building"
     >
-      <div className="absolute inset-0 bg-black/50" />
+      <div className="absolute inset-0 bg-black/80" />
       <Card className="w-full max-w-md shadow-2xl z-10">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4">

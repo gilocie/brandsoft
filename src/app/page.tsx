@@ -38,7 +38,7 @@ export default function HomePage() {
       style={{ backgroundImage: `url(${brandsoftBackground.src})` }}
       data-ai-hint="business building"
     >
-       <div className="absolute inset-0 bg-black/50" />
+       <div className="absolute inset-0 bg-black/80" />
       <div className="relative flex flex-col items-center gap-4">
         <Logo logoUrl={logoImage || undefined} />
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
