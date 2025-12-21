@@ -70,8 +70,8 @@ export default function SetupPage() {
       businessName: '',
       description: '',
       logo: '',
-      primaryColor: '#9400D3',
-      secondaryColor: '#D87093',
+      primaryColor: '#f9aa2b',
+      secondaryColor: '#2d2d2d',
       font: 'Poppins',
       brandsoftFooter: true,
       address: '',
@@ -153,7 +153,9 @@ export default function SetupPage() {
 
   return (
     <div 
-        className="min-h-screen bg-background"
+        className="min-h-screen bg-cover bg-center"
+        style={{ backgroundImage: "url('/background.jpg')" }}
+        data-ai-hint="business building"
     >
       <div className="flex min-h-screen items-center justify-center bg-background/80 backdrop-blur-sm p-4">
         <Form {...form}>
