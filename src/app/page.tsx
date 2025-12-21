@@ -31,8 +31,11 @@ export default function HomePage() {
 
   return (
     <div 
-      className="flex h-screen w-full items-center justify-center bg-background"
+      className="flex h-screen w-full items-center justify-center bg-background bg-cover bg-center"
+      style={{ backgroundImage: "url('/background.jpg')" }}
+      data-ai-hint="business building"
     >
+       <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
       <div className="relative flex flex-col items-center gap-4">
         <Logo />
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
