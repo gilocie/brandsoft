@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -164,13 +165,13 @@ export default function AdminPage() {
 
             let plan = 'Free Trial';
             let status: 'active' | 'expired' = 'active';
-            let remainingDays;
+            let remainingDays = 0;
             
             const purchaseToUse = activePurchase || latestPurchase;
 
             if (purchaseToUse) {
                 plan = purchaseToUse.planName;
-                remainingDays = purchaseToUse.remainingTime?.value;
+                remainingDays = purchaseToUse.remainingTime?.value || 0;
                 if(purchaseToUse.status === 'active') {
                     status = (remainingDays !== undefined && remainingDays > 0) ? 'active' : 'expired';
                 } else {
@@ -189,7 +190,7 @@ export default function AdminPage() {
                 plan: plan,
                 status: status,
                 remainingDays: remainingDays,
-                walletBalance: 0,
+                walletBalance: company.walletBalance || 0,
             };
         });
     }, [config?.companies, affiliates]);
