@@ -14,7 +14,7 @@ export interface ClientCardProps {
     name: string;
     avatar?: string | null;
     plan: string;
-    remainingDays: number;
+    remainingDays?: number;
     walletBalance?: number;
     status: 'active' | 'expired';
   };
@@ -25,6 +25,7 @@ export interface ClientCardProps {
 export function ClientCard({ client, baseUrl = '/office', isLoadingImage = false }: ClientCardProps) {
   const isFreeTrial = client.plan === 'Free Trial';
   const isExpired = client.status === 'expired';
+  const remainingDays = client.remainingDays ?? 0;
 
   return (
     <Card className="overflow-hidden">
@@ -58,7 +59,7 @@ export function ClientCard({ client, baseUrl = '/office', isLoadingImage = false
             ) : isFreeTrial ? (
               <span className="text-green-600 font-medium">Always Active</span>
             ) : (
-              <span>{client.remainingDays} days left</span>
+              <span>{remainingDays} days left</span>
             )}
           </div>
           <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${

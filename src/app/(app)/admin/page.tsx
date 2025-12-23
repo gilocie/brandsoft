@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -29,6 +28,8 @@ import { ManageReserveDialog, type ManageReserveFormData } from '@/components/ad
 import { StatCard } from '@/components/admin/stat-card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
+import { getImageFromDB } from '@/hooks/use-brand-image';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 const ADMIN_ACTIVATION_KEY = 'BRANDSOFT-ADMIN';
@@ -48,6 +49,43 @@ const creditSettingsSchema = z.object({
 });
 type CreditSettingsFormData = z.infer<typeof creditSettingsSchema>;
 
+// Wrapper component to load client avatar from IndexedDB
+const ClientCardWithImage = ({ client, baseUrl }: { client: AffiliateClient, baseUrl?: string }) => {
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchImage = async () => {
+      setIsLoading(true);
+      const dbImage = await getImageFromDB(`company-logo-${client.id}`);
+      
+      if (isMounted) {
+        if (dbImage) {
+          setAvatarUrl(dbImage);
+        } else if (client.avatar && client.avatar !== 'indexed-db') {
+          setAvatarUrl(client.avatar);
+        } else {
+          setAvatarUrl(null);
+        }
+        setIsLoading(false);
+      }
+    };
+    
+    fetchImage();
+    return () => { isMounted = false; };
+  }, [client.id, client.avatar]);
+
+  return (
+    <ClientCard 
+      key={client.id} 
+      client={{ ...client, avatar: avatarUrl }} 
+      baseUrl={baseUrl}
+      isLoadingImage={isLoading}
+    />
+  );
+};
+
 
 export default function AdminPage() {
     const { config, saveConfig } = useBrandsoft();
@@ -60,6 +98,7 @@ export default function AdminPage() {
     const [isResetFinancialsOpen, setIsResetFinancialsOpen] = useState(false);
     
     const adminSettings: AdminSettings = useMemo(() => config?.admin || {
+        username: 'admin',
         maxCredits: 1000000,
         buyPrice: 850,
         sellPrice: 900,
@@ -68,6 +107,15 @@ export default function AdminPage() {
         soldCredits: 0,
         creditsBoughtBack: 0,
         isReserveLocked: false,
+        keyPrice: 5000,
+        keyFreeDays: 30,
+        keyPeriodReserveDays: 30,
+        keyUsageLimit: 1,
+        keysSold: 0,
+        revenueFromKeys: 0,
+        revenueFromPlans: 0,
+        trendingPlan: 'None',
+        planPeriods: [],
     }, [config?.admin]);
 
     const isReserveLocked = adminSettings.isReserveLocked;
@@ -147,6 +195,7 @@ export default function AdminPage() {
     }
 
    
+    // ========== SYNCED ADMIN CLIENTS - SAME LOGIC AS STAFF PAGE ==========
     const adminClients = useMemo(() => {
         if (!config?.companies) return [];
 
@@ -158,42 +207,38 @@ export default function AdminPage() {
         const unique = Array.from(new Map(combined.map(c => [c.id, c])).values());
 
         return unique.map((company: Company): AffiliateClient => {
-            const companyPurchases = company.purchases || [];
+            // Get REAL plan info from company purchases - same logic as staff page
+            const activePurchase = company.purchases?.find(p => p.status === 'active');
+            const pendingPurchase = company.purchases?.find(p => p.status === 'pending');
             
-            const activePurchase = companyPurchases.find(p => p.status === 'active');
-            const latestPurchase = companyPurchases.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
-
-            let plan = 'Free Trial';
-            let status: 'active' | 'expired' = 'active';
+            // Always derive plan info from company purchases, never use cached values
+            let planName = 'Free Trial';
             let remainingDays = 0;
-            
-            const purchaseToUse = activePurchase || latestPurchase;
 
-            if (purchaseToUse) {
-                plan = purchaseToUse.planName;
-                remainingDays = purchaseToUse.remainingTime?.value || 0;
-                if(purchaseToUse.status === 'active') {
-                    status = (remainingDays !== undefined && remainingDays > 0) ? 'active' : 'expired';
-                } else {
-                     status = 'expired';
-                     remainingDays = 0;
-                }
-            } else {
-                status = 'expired';
+            if (activePurchase) {
+                planName = activePurchase.planName;
+                remainingDays = activePurchase.remainingTime?.value ?? 0;
+            } else if (pendingPurchase) {
+                planName = `${pendingPurchase.planName} (Pending)`;
                 remainingDays = 0;
             }
+
+            // Derive status from actual purchase state
+            const isActive = activePurchase || planName === 'Free Trial';
+            const status = isActive ? 'active' : 'expired';
             
             return {
                 id: company.id,
                 name: company.companyName,
-                avatar: company.logo || `https://picsum.photos/seed/${company.id}/100`,
-                plan: plan,
+                avatar: company.logo || undefined,
+                plan: planName,
                 status: status,
                 remainingDays: remainingDays,
-                walletBalance: company.walletBalance || 0,
+                walletBalance: company.walletBalance ?? 0,
             };
         });
     }, [config?.companies, affiliates]);
+    // =====================================================================
 
     const totalAffiliates = affiliates.length;
     
@@ -245,7 +290,7 @@ export default function AdminPage() {
 
     const handleDeleteAffiliate = () => {
         if (config && affiliateToActOn) {
-             const newConfig = { ...config, affiliate: undefined };
+             const newConfig: BrandsoftConfig = { ...config, affiliate: undefined };
              saveConfig(newConfig, { redirect: false });
              toast({ title: 'Affiliate Deleted' });
              setIsDeleteOpen(false);
@@ -292,7 +337,7 @@ export default function AdminPage() {
             ...config.admin,
             availableCredits: (config.admin.availableCredits || 0) + creditsToPush,
             creditsBoughtBack: 0,
-            revenueFromKeys: 0, // Assuming this tracks cost of buy-backs, resetting it
+            revenueFromKeys: 0,
         };
 
         saveConfig({ ...config, admin: newAdminSettings }, { revalidate: true });
@@ -333,6 +378,10 @@ export default function AdminPage() {
         toast({ title: 'Financial Records Reset!', description: 'All credit sales and affiliate balances have been reset.' });
         setIsResetFinancialsOpen(false);
     };
+
+    // Count active and expired clients
+    const activeClientsCount = adminClients.filter(c => c.status === 'active').length;
+    const expiredClientsCount = adminClients.filter(c => c.status === 'expired').length;
 
     return (
         <div className="container mx-auto space-y-8">
@@ -386,18 +435,30 @@ export default function AdminPage() {
 
              <Tabs defaultValue="admin-clients" className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="admin-clients">Admin Clients ({adminClients.length})</TabsTrigger>
+                    <TabsTrigger value="admin-clients">
+                        Admin Clients ({adminClients.length})
+                        {expiredClientsCount > 0 && (
+                            <Badge variant="secondary" className="ml-2">{activeClientsCount} active</Badge>
+                        )}
+                    </TabsTrigger>
                     <TabsTrigger value="options">Options</TabsTrigger>
                 </TabsList>
                  <TabsContent value="admin-clients" className="pt-6">
                     <Card>
                         <CardHeader>
                             <CardTitle>Admin-Managed Clients</CardTitle>
-                            <CardDescription>Clients directly managed by Brandsoft.</CardDescription>
+                            <CardDescription>
+                                Clients directly managed by Brandsoft. 
+                                {adminClients.length > 0 && (
+                                    <span className="ml-1">
+                                        ({activeClientsCount} active, {expiredClientsCount} expired)
+                                    </span>
+                                )}
+                            </CardDescription>
                         </CardHeader>
                         <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                              {adminClients.length > 0 ? adminClients.map((client: AffiliateClient) => (
-                                <ClientCard key={client.id} client={client} baseUrl="/admin" />
+                                <ClientCardWithImage key={client.id} client={client} baseUrl="/admin" />
                             )) : (
                                 <div className="col-span-full flex h-40 items-center justify-center rounded-lg border-2 border-dashed">
                                     <p className="text-muted-foreground">No admin-managed clients found.</p>

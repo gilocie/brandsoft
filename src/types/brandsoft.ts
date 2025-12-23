@@ -8,7 +8,7 @@ import { Page } from '@/stores/canvas-store';
 export type AffiliateClient = {
   id: string;
   name: string;
-  avatar: string;
+  avatar?: string;
   plan: string;
   status: 'active' | 'expired';
   joinDate?: string;
