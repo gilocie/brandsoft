@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useBrandsoft, type Transaction, type Affiliate, type Purchase, type Company } from '@/hooks/use-brandsoft';
@@ -94,7 +95,7 @@ export function OfficePageContent() {
   const staffAvatarUrl = useMemo(() => {
     if (staffProfilePic) return staffProfilePic;
     if (systemLogo) return systemLogo;
-    return brandsoftLogo.src; // Ultimate fallback
+    return brandsoftLogo.src;
   }, [staffProfilePic, systemLogo]);
 
   const isStaffAvatarLoading = isStaffPicLoading || isSystemLogoLoading;
@@ -299,22 +300,22 @@ export function OfficePageContent() {
                 <DialogTrigger asChild>
                     <Button variant="ghost" size="icon"><Edit className="h-4 w-4"/></Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="sm:max-w-[600px]">
                     <DialogHeader>
                         <DialogTitle>Edit Staff Profile</DialogTitle>
                         <DialogDescription>Update your staff profile information and photo.</DialogDescription>
                     </DialogHeader>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                {/* Staff Avatar Upload Section - LEFT */}
-                                <div className="md:col-span-1 flex flex-col items-center gap-4 p-4 border rounded-lg bg-muted/30">
-                                    <Avatar className="h-24 w-24 border-2 border-primary/20">
+                            <div className="flex flex-col md:flex-row gap-6">
+                                {/* LEFT: Staff Avatar Upload Section */}
+                                <div className="flex flex-col items-center justify-center gap-4 p-4 border rounded-lg bg-muted/30 md:w-[200px] flex-shrink-0">
+                                    <Avatar className="h-28 w-28 border-2 border-primary/20">
                                         {isStaffPicLoading ? (
                                             <Skeleton className="h-full w-full rounded-full" />
                                         ) : (
                                             <>
-                                                <AvatarImage src={staffProfilePic || systemLogo || undefined} />
+                                                <AvatarImage src={staffProfilePic || systemLogo || brandsoftLogo.src} />
                                                 <AvatarFallback className="text-3xl">{form.getValues('fullName')?.charAt(0)}</AvatarFallback>
                                             </>
                                         )}
@@ -323,17 +324,17 @@ export function OfficePageContent() {
                                         <SimpleImageUploadButton
                                             value={staffProfilePic || ''}
                                             onChange={setStaffProfilePic}
-                                            buttonText="Upload Staff Photo"
+                                            buttonText="Upload Photo"
                                         />
                                         <p className="text-xs text-muted-foreground">
-                                            If not set, the system logo will be used.
+                                            Your personal staff photo
                                         </p>
                                         {staffProfilePic && (
                                             <Button 
                                                 type="button" 
                                                 variant="ghost" 
                                                 size="sm"
-                                                className="text-destructive hover:text-destructive"
+                                                className="text-destructive hover:text-destructive text-xs"
                                                 onClick={() => setStaffProfilePic('')}
                                             >
                                                 Remove Photo
@@ -342,15 +343,15 @@ export function OfficePageContent() {
                                     </div>
                                 </div>
                                 
-                                {/* Form Fields - RIGHT */}
-                                <div className="md:col-span-2 space-y-4">
+                                {/* RIGHT: Form Fields */}
+                                <div className="flex-1 space-y-4">
                                     <FormField
                                         control={form.control}
                                         name="fullName"
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Full Name</FormLabel>
-                                                <FormControl><Input {...field} /></FormControl>
+                                                <FormControl><Input placeholder="John Doe" {...field} /></FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
@@ -361,7 +362,7 @@ export function OfficePageContent() {
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Username</FormLabel>
-                                                <FormControl><Input {...field} /></FormControl>
+                                                <FormControl><Input placeholder="johndoe" {...field} /></FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
@@ -372,14 +373,16 @@ export function OfficePageContent() {
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Phone Number</FormLabel>
-                                                <FormControl><Input {...field} /></FormControl>
+                                                <FormControl><Input placeholder="+265 999 123 456" {...field} /></FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
                                     />
                                 </div>
                             </div>
-                            <div className="flex justify-end gap-2">
+                            
+                            {/* Footer Buttons */}
+                            <div className="flex justify-end gap-2 pt-4 border-t">
                                 <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
                                 <Button type="submit">Save Changes</Button>
                             </div>

@@ -180,6 +180,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { config, acknowledgeDeclinedPurchase } = useBrandsoft();
+  
+  // Use hooks for each specific image type
   const { image: logoImage } = useBrandImage('logo');
   const { image: affiliateImage } = useBrandImage('affiliateProfilePic');
 
@@ -215,7 +217,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         (role === 'client' && !pathname.startsWith('/admin') && !pathname.startsWith('/office'));
 
       if (isCorrectPage) {
-        // A small delay can help ensure the new page content has started rendering
         setTimeout(() => setIsChangingRole(false), 100);
       }
     }
@@ -306,7 +307,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   const visibleMainNavItems = getVisibleNavItems(mainNavItems, role);
-  const visibleUpcomingNavItems = getVisibleNavItems(upcomingNavItems, role);
   
   const pageTitle = [...mainNavItems, ...upcomingNavItems].find(item => pathname.startsWith(item.href))?.label || 'Dashboard';
   
@@ -324,7 +324,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         };
       case 'staff':
         return {
-          avatarSrc: affiliateImage || brandsoftLogo.src,
+          avatarSrc: affiliateImage || logoImage || brandsoftLogo.src,
           headerTitle: config.affiliate?.fullName || 'Office Room',
           avatarFallback: config.affiliate?.fullName?.charAt(0) || 'S',
         };
@@ -403,39 +403,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               Array.from({length: 5}).map((_, i) => <SidebarMenuSkeleton key={i} showIcon />)
             )}
           </SidebarMenu>
-          
-          {visibleUpcomingNavItems.length > 0 && (
-            <>
-              <SidebarSeparator className="my-2" />
-              <Accordion type="single" collapsible defaultValue="upcoming-tools" className="w-full px-2">
-                <AccordionItem value="upcoming-tools" className="border-none">
-                  <AccordionTrigger className="text-sidebar-foreground/70 hover:text-sidebar-foreground hover:no-underline text-xs font-medium rounded-md px-2 [&[data-state=open]>svg]:text-sidebar-foreground">
-                    <span className="flex-1 text-left">Upcoming Tools</span>
-                  </AccordionTrigger>
-                  <AccordionContent className="pt-2">
-                    <SidebarMenu className="px-0">
-                        {config ? visibleUpcomingNavItems.map((item) => (
-                        <SidebarMenuItem key={item.href}>
-                            <SidebarMenuButton
-                                disabled
-                                isActive={pathname.startsWith(item.href)}
-                                tooltip={item.label}
-                            >
-                                <item.icon />
-                                <span>{item.label}</span>
-                            </SidebarMenuButton>
-                        </SidebarMenuItem>
-                        )) : (
-                        // Skeleton loading for nav items
-                        Array.from({length: 4}).map((_, i) => <SidebarMenuSkeleton key={i} showIcon />)
-                        )}
-                    </SidebarMenu>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            </>
-          )}
-
         </SidebarContent>
         <SidebarFooter className="mt-auto relative overflow-hidden">
           <div 
