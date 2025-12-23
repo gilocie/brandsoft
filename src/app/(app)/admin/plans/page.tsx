@@ -312,23 +312,14 @@ export default function AdminPlansPage() {
     
     // DEMO MODE STATE
     const [isClientPickerOpen, setIsClientPickerOpen] = useState(false);
-    const [demoClientId, setDemoClientId] = useState<string | null>(null);
-    const [demoDurations, setDemoDurations] = useState<Record<string, { value: number, unit: string }>>({});
+    const adminSettings = useMemo(() => config?.admin, [config]);
 
     const plans = useMemo(() => config?.plans || [], [config]);
-    const adminSettings = useMemo(() => config?.admin, [config]);
     const planPeriods = useMemo(() => adminSettings?.planPeriods || [], [adminSettings]);
     const allClients = useMemo(() => config?.companies || [], [config?.companies]);
 
-    useEffect(() => {
-        if (plans.length > 0) {
-            const initialDurations: Record<string, { value: number, unit: string }> = {};
-            plans.forEach(plan => {
-                initialDurations[plan.name] = { value: 10, unit: 'minutes' };
-            });
-            setDemoDurations(initialDurations);
-        }
-    }, [plans]);
+    const demoClientId = adminSettings?.demoClientId || null;
+    const demoDurations = useMemo(() => adminSettings?.demoDurations || {}, [adminSettings?.demoDurations]);
 
     const newPlanForm = useForm<NewPlanFormData>({
         resolver: zodResolver(newPlanSchema),
@@ -535,19 +526,33 @@ export default function AdminPlansPage() {
     
     // DEMO LOGIC
     const handleDemoToggle = (checked: boolean) => {
+        if (!config) return;
         if (checked) {
             setIsClientPickerOpen(true);
         } else {
-            setDemoClientId(null);
-            // Here you would also update the config to remove the demo state
+             saveConfig({ ...config, admin: { ...config.admin, demoClientId: null } }, { redirect: false });
         }
     };
     
     const handleSelectDemoClient = (client: Company) => {
-        setDemoClientId(client.id);
+        if (!config) return;
+        saveConfig({ ...config, admin: { ...config.admin, demoClientId: client.id } }, { redirect: false });
         setIsClientPickerOpen(false);
-        // Here you would save the demo client ID and durations to your main config
         toast({ title: 'Demo Mode Activated', description: `Demo settings are now active for ${client.companyName}.` });
+    };
+
+    const handleDemoDurationChange = (planName: string, field: 'value' | 'unit', value: string | number) => {
+        if (!config || !config.admin) return;
+        
+        const newDurations = {
+            ...(config.admin.demoDurations || {}),
+            [planName]: {
+                ...(config.admin.demoDurations?.[planName] || { value: 10, unit: 'minutes' }),
+                [field]: value
+            }
+        };
+
+        saveConfig({ ...config, admin: { ...config.admin, demoDurations: newDurations } }, { redirect: false });
     };
 
     const demoClient = useMemo(() => {
@@ -825,7 +830,7 @@ export default function AdminPlansPage() {
                                     onCheckedChange={handleDemoToggle}
                                 />
                                 {demoClientId && (
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 ml-2" onClick={() => setDemoClientId(null)}>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 ml-2" onClick={() => handleDemoToggle(false)}>
                                         <XCircle className="h-5 w-5 text-destructive" />
                                     </Button>
                                 )}
@@ -838,14 +843,14 @@ export default function AdminPlansPage() {
                                         <div className="flex items-center gap-2">
                                             <Input 
                                                 type="number" 
-                                                value={demoDurations[plan.name]?.value || 10}
-                                                onChange={(e) => setDemoDurations(prev => ({...prev, [plan.name]: {...prev[plan.name], value: parseInt(e.target.value) || 0}}))}
+                                                value={demoDurations[plan.name]?.value ?? 10}
+                                                onChange={(e) => handleDemoDurationChange(plan.name, 'value', parseInt(e.target.value))}
                                                 className="w-20"
                                                 disabled={!demoClientId}
                                             />
                                             <Select 
                                                 value={demoDurations[plan.name]?.unit || 'minutes'}
-                                                onValueChange={(value) => setDemoDurations(prev => ({...prev, [plan.name]: {...prev[plan.name], unit: value}}))}
+                                                onValueChange={(value) => handleDemoDurationChange(plan.name, 'unit', value)}
                                                 disabled={!demoClientId}
                                             >
                                                 <SelectTrigger className="w-[120px]">
@@ -968,3 +973,4 @@ const LimitField = ({
         </div>
     </div>
 );
+
