@@ -28,6 +28,7 @@ import { BonusProgressDialog } from '@/components/office/bonus-progress-dialog';
 import { useRouter } from 'next/navigation';
 import { useBrandImage, getImageFromDB } from '@/hooks/use-brand-image';
 import { Skeleton } from '@/components/ui/skeleton';
+import brandsoftLogo from '@/app/brandsoftlogo.png';
 
 
 const affiliateSchema = z.object({
@@ -88,17 +89,13 @@ export function OfficePageContent() {
   const router = useRouter();
   
   // ========== STAFF AVATAR LOGIC ==========
-  // 1. Staff's personal profile pic from IndexedDB (highest priority)
   const { image: staffProfilePic, isLoading: isStaffPicLoading, setImage: setStaffProfilePic } = useBrandImage('affiliateProfilePic');
-  
-  // 2. Main system/sidebar logo from IndexedDB (fallback)
   const { image: systemLogo, isLoading: isSystemLogoLoading } = useBrandImage('logo');
 
-  // Determine staff avatar: Staff pic → System logo → null
   const staffAvatarUrl = useMemo(() => {
     if (staffProfilePic) return staffProfilePic;
     if (systemLogo) return systemLogo;
-    return null;
+    return brandsoftLogo.src; // Ultimate fallback
   }, [staffProfilePic, systemLogo]);
 
   const isStaffAvatarLoading = isStaffPicLoading || isSystemLogoLoading;

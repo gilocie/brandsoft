@@ -324,7 +324,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         };
       case 'staff':
         return {
-          avatarSrc: affiliateImage || config.affiliate?.profilePic,
+          avatarSrc: affiliateImage || brandsoftLogo.src,
           headerTitle: config.affiliate?.fullName || 'Office Room',
           avatarFallback: config.affiliate?.fullName?.charAt(0) || 'S',
         };
