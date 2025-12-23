@@ -20,7 +20,7 @@ import { Label } from './ui/label';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Checkbox } from './ui/checkbox';
 import { saveReceiptToDB } from '@/hooks/use-receipt-upload';
-
+import type { Purchase } from '@/types/brandsoft'; // Import Purchase type
 
 export type PlanDetails = {
     name: string;
@@ -72,8 +72,18 @@ const iconMap: Record<string, React.ElementType> = {
     default: Building2,
 };
 
+// Helper function to get days from period string
+const getPlanDays = (period: string): number => {
+    const lowerPeriod = period.toLowerCase();
+    if (lowerPeriod.includes('1 month')) return 30;
+    if (lowerPeriod.includes('3 month')) return 90;
+    if (lowerPeriod.includes('6 month')) return 180;
+    if (lowerPeriod.includes('1 year')) return 365;
+    return 0; // One-time or error
+};
+
 export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = false }: PurchaseDialogProps) {
-    const { config, addPurchaseOrder, saveConfig, activatePurchaseOrder } = useBrandsoft();
+    const { config, saveConfig } = useBrandsoft(); // Removed activatePurchaseOrder
     const { toast } = useToast();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -193,45 +203,83 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
 
         setTimeout(() => {
             setOrderId(newOrderId);
-            
             const myCompany = config?.companies.find(c => c.companyName === config?.brand.businessName);
             
-            const newOrder = {
+            if (!config || !myCompany) return;
+
+            // Determine Status and Days based on Wallet payment
+            const isWalletPayment = selectedPayment === 'wallet';
+            const status = isWalletPayment ? 'active' : 'pending';
+            
+            let planDays = 0;
+            let expiresAt: string | undefined = undefined;
+
+            if (isWalletPayment && !isTopUp) {
+                planDays = getPlanDays(plan.period);
+                const expiryDate = new Date();
+                expiryDate.setDate(expiryDate.getDate() + planDays);
+                expiresAt = expiryDate.toISOString();
+            }
+
+            const newOrder: Purchase = {
                 orderId: newOrderId,
                 planName: plan.name,
                 planPrice: plan.price,
                 planPeriod: plan.period,
                 paymentMethod: selectedPayment,
-                status: 'pending' as const, // Always start as pending
+                status: status,
                 date: new Date().toISOString(),
                 receipt: receiptDataUrl ? 'indexed-db' : 'none',
                 whatsappNumber: whatsappNumber,
                 customerId: myCompany?.id,
                 affiliateId: plan.affiliateId,
-                remainingTime: { value: 0, unit: 'days' as const },
+                // Apply calculated days immediately for wallet
+                remainingTime: { value: planDays, unit: 'days' },
+                expiresAt: expiresAt
             };
             
-            if (selectedPayment === 'wallet' && config && myCompany) {
+            if (isWalletPayment) {
+                // Deduct Balance
                 const newBalance = (myCompany.walletBalance || 0) - priceAmount;
-                const updatedCompanies = config.companies.map(c => 
-                    c.id === myCompany.id ? { ...c, walletBalance: newBalance } : c
-                );
                 
-                // Activate the order BEFORE saving config
-                const { purchases: purchasesAfterActivation } = activatePurchaseOrder(
-                    [...(config.purchases || []), newOrder], // Pass the new list of purchases
-                    newOrderId
-                );
-                
-                // Save everything at once
+                // Update Company: Add purchase AND update wallet
+                const updatedCompanies = config.companies.map(c => {
+                    if (c.id === myCompany.id) {
+                        return { 
+                            ...c, 
+                            walletBalance: newBalance,
+                            purchases: [...(c.purchases || []), newOrder] // Add to internal purchases
+                        };
+                    }
+                    return c;
+                });
+
+                // Save Config (Removed Global Purchases Update)
                 saveConfig({ 
                     ...config, 
-                    companies: updatedCompanies,
-                    purchases: purchasesAfterActivation
+                    companies: updatedCompanies
+                }, {redirect: false, revalidate: true});
+                
+                toast({ title: 'Success', description: 'Plan activated successfully!' });
+                
+            } else {
+                // Manual Payment: Just add to company internal list as pending
+                const updatedCompanies = config.companies.map(c => {
+                    if (c.id === myCompany.id) {
+                        return { 
+                            ...c, 
+                            purchases: [...(c.purchases || []), newOrder] // Add to internal purchases
+                        };
+                    }
+                    return c;
+                });
+
+                saveConfig({ 
+                    ...config, 
+                    companies: updatedCompanies 
                 }, {redirect: false, revalidate: true});
 
-            } else {
-                addPurchaseOrder(newOrder);
+                // Open WhatsApp logic
                 const message = `*Please Activate My New Order!*
 %0A%0AOrder ID: ${newOrderId}
 %0APlan: ${plan.name} (${plan.period})
@@ -337,7 +385,7 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                                 <StepIndicator step={1} label="Enter WhatsApp Number" isComplete={!!whatsappNumber} />
                                 <StepIndicator step={2} label="Select Payment Method" isComplete={!!selectedPayment} />
                                 <StepIndicator step={3} label={selectedPayment === 'wallet' ? "Confirm" : "Upload Receipt"} isComplete={selectedPayment === 'wallet' ? true : !!receiptFile} />
-                                <StepIndicator step={4} label="Confirm Purchase" isComplete={purchaseState === 'success'} />
+                                <StepIndicator step={4} label="Confirm Purchase" isComplete={false} />
                             </div>
 
                              {!plan.name.startsWith('Activation Key') && (

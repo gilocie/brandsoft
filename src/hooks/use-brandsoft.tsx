@@ -34,8 +34,8 @@ const initialAffiliateData: Affiliate = {
     creditBalance: 0,
     bonus: 0,
     staffId: 'BS-AFF-12345678',
-    clients: [], // EMPTY THIS ARRAY to remove demo data
-    transactions: [], // You might want to empty this too
+    clients: [],
+    transactions: [],
     generatedKeys: [],
     withdrawalMethods: {
         airtel: undefined,
@@ -198,7 +198,7 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
         
         keyData.status = 'used';
         keyData.usedBy = companyId;
-        keyData.remainingDays = totalDays; // Store the initial days
+        keyData.remainingDays = totalDays; 
 
         newConfig.affiliate.generatedKeys[keyIndex] = keyData;
 
@@ -298,7 +298,13 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
         
         let needsSave = false;
 
-        // Migration for wallet balance from affiliate.clients to companies
+        // Clean up global purchases if found
+        if ((parsedConfig as any).purchases) {
+            delete (parsedConfig as any).purchases;
+            needsSave = true;
+        }
+
+        // Migration for wallet balance
         if (parsedConfig.affiliate?.clients && parsedConfig.companies) {
             parsedConfig.affiliate.clients.forEach((client: any) => {
                 if (client.walletBalance && client.walletBalance > 0) {
@@ -318,7 +324,6 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
                 }
             });
         }
-
 
         // Migration logic for affiliate data
         if (!parsedConfig.affiliate) {
@@ -374,7 +379,6 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
               needsSave = true;
            }
         }
-
 
         setConfig(parsedConfig);
 

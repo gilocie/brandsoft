@@ -3,6 +3,8 @@
 
 import { Page } from '@/stores/canvas-store';
 
+// ... (All other types remain exactly the same until BrandsoftConfig) ...
+
 export type AffiliateClient = {
   id: string;
   name: string;
@@ -45,10 +47,9 @@ export type GeneratedKey = {
     key: string;
     status: 'unused' | 'used';
     generatedDate: string;
-    usedBy?: string; // e.g., company ID
+    usedBy?: string; 
     remainingDays?: number;
 };
-
 
 export type Affiliate = {
   fullName: string;
@@ -56,17 +57,17 @@ export type Affiliate = {
   phone: string;
   profilePic: string;
   affiliateLink: string;
-  securityQuestion: boolean; // true if set, false if not
+  securityQuestion: boolean; 
   securityQuestionData?: {
     question: string;
-    answer: string; // This would be hashed in a real app
+    answer: string; 
   };
-  idUploaded: boolean; // true if both front and back are uploaded
+  idUploaded: boolean; 
   isPinSet: boolean;
   pin?: string;
-  myWallet: number; // This is the main withdrawable wallet balance
-  unclaimedCommission: number; // Commissions from sales, not yet moved to balance
-  totalSales: number; // Lifetime total sales volume
+  myWallet: number; 
+  unclaimedCommission: number; 
+  totalSales: number; 
   creditBalance: number;
   bonus: number;
   bonusChallengeStartDate?: string;
@@ -84,9 +85,31 @@ export type Affiliate = {
   generatedKeys: GeneratedKey[];
 };
 
+export type Purchase = {
+    orderId: string;
+    planName: string;
+    planPrice: string;
+    planPeriod: string;
+    paymentMethod: string;
+    status: 'pending' | 'active' | 'declined' | 'inactive' | 'processing';
+    date: string;
+    receipt?: string | 'none';
+    whatsappNumber?: string;
+    declineReason?: string;
+    isAcknowledged?: boolean;
+    expiresAt?: string;
+    remainingTime: {
+        value: number;
+        unit: 'minutes' | 'days';
+    };
+    customerId?: string; 
+    periodReserve?: number; 
+    affiliateId?: string; 
+}
+
 export type Company = {
   id: string;
-  name: string; // Contact person's name
+  name: string; 
   email: string;
   phone?: string;
   address?: string;
@@ -94,7 +117,7 @@ export type Company = {
   companyAddress?: string;
   vatNumber?: string;
   associatedProductIds?: string[];
-  customerType?: 'personal' | 'company'; // Can be used to differentiate B2B from B2C
+  customerType?: 'personal' | 'company'; 
   industry?: string;
   town?: string;
   description?: string;
@@ -104,7 +127,7 @@ export type Company = {
   referredBy?: string;
   walletBalance?: number;
   version?: number;
-  purchases?: Purchase[];
+  purchases?: Purchase[]; // KEPT THIS ONE
 };
 
 export type Customer = {
@@ -151,7 +174,6 @@ export interface DesignSettings {
     headerColor?: string;
     footerColor?: string;
     footerContent?: string;
-    // Visibility toggles
     showLogo?: boolean;
     showBusinessAddress?: boolean;
     showInvoiceTitle?: boolean;
@@ -165,35 +187,13 @@ export interface DesignSettings {
     paymentDetails?: string;
 }
 
-export type Purchase = {
-    orderId: string;
-    planName: string;
-    planPrice: string;
-    planPeriod: string;
-    paymentMethod: string;
-    status: 'pending' | 'active' | 'declined' | 'inactive' | 'processing';
-    date: string;
-    receipt?: string | 'none';
-    whatsappNumber?: string;
-    declineReason?: string;
-    isAcknowledged?: boolean;
-    expiresAt?: string;
-    remainingTime: {
-        value: number;
-        unit: 'minutes' | 'days';
-    };
-    customerId?: string; // Link purchase to a company
-    periodReserve?: number; // Days held in reserve
-    affiliateId?: string; // Link key purchase to an affiliate
-}
-
 export type BrandsoftTemplate = {
   id: string;
   name: string;
   description?: string;
   category: 'invoice' | 'quotation' | 'certificate' | 'id-card' | 'marketing';
   pages: Page[];
-  previewImage?: string; // data URL
+  previewImage?: string; 
   createdAt?: string;
 };
 
@@ -286,6 +286,62 @@ export type AdminSettings = {
   commissionRate?: number;
 };
 
+export type Invoice = {
+    invoiceId: string;
+    customer: string;
+    customerId?: string;
+    date: string;
+    dueDate: string;
+    amount: number;
+    status: 'Draft' | 'Pending' | 'Paid' | 'Overdue' | 'Canceled';
+    subtotal?: number;
+    discount?: number;
+    discountType?: 'percentage' | 'flat';
+    discountValue?: number;
+    tax?: number;
+    taxName?: string;
+    taxType?: 'percentage' | 'flat';
+    taxValue?: number;
+    shipping?: number;
+    notes?: string;
+    lineItems: LineItem[];
+    partialPayment?: number;
+    partialPaymentType?: 'percentage' | 'flat';
+    partialPaymentValue?: number;
+    currency?: string;
+    design?: DesignSettings;
+    origin?: 'quotation' | 'manual';
+};
+
+export type Quotation = {
+    quotationId: string;
+    customer: string;
+    customerId: string;
+    senderId?: string; 
+    requestId?: string; 
+    date: string;
+    validUntil: string;
+    amount: number;
+    status: 'Draft' | 'Sent' | 'Accepted' | 'Declined';
+    subtotal?: number;
+    discount?: number;
+    discountType?: 'percentage' | 'flat';
+    discountValue?: number;
+    tax?: number;
+    taxName?: string;
+    taxType?: 'percentage' | 'flat';
+    taxValue?: number;
+    shipping?: number;
+    notes?: string;
+    lineItems: LineItem[];
+    partialPayment?: number;
+    partialPaymentType?: 'percentage' | 'flat';
+    partialPaymentValue?: number;
+    currency?: string;
+    design?: DesignSettings;
+    isRequest?: boolean;
+};
+
 export type BrandsoftConfig = {
   brand: {
     logo: string;
@@ -303,7 +359,6 @@ export type BrandsoftConfig = {
     showCustomerAddress: boolean;
     backgroundColor?: string;
     textColor?: string;
-    // Default visibility
     showLogo?: boolean;
     showBusinessAddress?: boolean;
     showInvoiceTitle?: boolean;
@@ -314,7 +369,6 @@ export type BrandsoftConfig = {
     showBrandsoftFooter?: boolean;
     showHeader?: boolean;
     showFooter?: boolean;
-    // Button styles
     buttonPrimaryBg?: string;
     buttonPrimaryBgHover?: string;
     buttonPrimaryText?: string;
@@ -354,7 +408,6 @@ export type BrandsoftConfig = {
   products: Product[];
   invoices: Invoice[];
   quotations: Quotation[];
-  // New structure for quotation requests
   incomingRequests?: QuotationRequest[];
   outgoingRequests?: QuotationRequest[];
   requestResponses?: Quotation[];
@@ -362,60 +415,4 @@ export type BrandsoftConfig = {
   plans?: Plan[];
   currencies: string[];
   reviews?: Review[];
-};
-
-export type Invoice = {
-    invoiceId: string;
-    customer: string;
-    customerId?: string;
-    date: string;
-    dueDate: string;
-    amount: number;
-    status: 'Draft' | 'Pending' | 'Paid' | 'Overdue' | 'Canceled';
-    subtotal?: number;
-    discount?: number;
-    discountType?: 'percentage' | 'flat';
-    discountValue?: number;
-    tax?: number;
-    taxName?: string;
-    taxType?: 'percentage' | 'flat';
-    taxValue?: number;
-    shipping?: number;
-    notes?: string;
-    lineItems: LineItem[];
-    partialPayment?: number;
-    partialPaymentType?: 'percentage' | 'flat';
-    partialPaymentValue?: number;
-    currency?: string;
-    design?: DesignSettings;
-    origin?: 'quotation' | 'manual';
-};
-
-export type Quotation = {
-    quotationId: string;
-    customer: string;
-    customerId: string;
-    senderId?: string; // ID of the company who sent the request
-    requestId?: string; // ID of the QuotationRequest this is a response to
-    date: string;
-    validUntil: string;
-    amount: number;
-    status: 'Draft' | 'Sent' | 'Accepted' | 'Declined';
-    subtotal?: number;
-    discount?: number;
-    discountType?: 'percentage' | 'flat';
-    discountValue?: number;
-    tax?: number;
-    taxName?: string;
-    taxType?: 'percentage' | 'flat';
-    taxValue?: number;
-    shipping?: number;
-    notes?: string;
-    lineItems: LineItem[];
-    partialPayment?: number;
-    partialPaymentType?: 'percentage' | 'flat';
-    partialPaymentValue?: number;
-    currency?: string;
-    design?: DesignSettings;
-    isRequest?: boolean;
 };
