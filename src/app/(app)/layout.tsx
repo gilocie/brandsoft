@@ -437,7 +437,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                    <Avatar className="h-12 w-12 bg-transparent">
                       <AvatarImage src={brandsoftLogo.src} />
                   </Avatar>
-                  <p className="text-sm font-semibold text-sidebar-foreground/80">{config.brand.businessName}</p>
+                  <p className="text-sm font-semibold text-sidebar-foreground/80">BrandSoft</p>
                 </div>
               ) : (
                 <div className="flex items-center justify-center p-2">
