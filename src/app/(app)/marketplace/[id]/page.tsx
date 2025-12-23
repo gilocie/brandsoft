@@ -15,7 +15,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Image from 'next/image';
 import { RatingDialog } from '@/components/rating-dialog';
 import { Separator } from '@/components/ui/separator';
-import { getImageFromDB } from '@/hooks/use-receipt-upload';
+import { getImageFromDB } from '@/hooks/use-brand-image';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const fallBackCover = 'https://picsum.photos/seed/shopcover/1200/400';

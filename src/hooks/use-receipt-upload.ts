@@ -4,12 +4,16 @@
 // This hook is analogous to use-plan-image.ts but for purchase receipts.
 // We can rename it to be more generic, e.g., use-image-storage.ts, since it's being used for multiple purposes.
 
-const IMAGE_DB_NAME = 'BrandsoftImagesDB'; // Generic name
+const IMAGE_DB_NAME = 'BrandImagesDB'; // Generic name
 const IMAGE_STORE_NAME = 'images';
 
 // Open IndexedDB for receipts
 const openImageDB = (): Promise<IDBDatabase> => {
   return new Promise((resolve, reject) => {
+    if (typeof window === 'undefined') {
+        reject(new Error('IndexedDB is not available server-side'));
+        return;
+    }
     const request = indexedDB.open(IMAGE_DB_NAME, 1);
     
     request.onerror = () => reject(request.error);
@@ -53,3 +57,4 @@ export const saveReceiptToDB = async (key: string, imageData: string): Promise<v
     request.onsuccess = () => resolve();
   });
 };
+

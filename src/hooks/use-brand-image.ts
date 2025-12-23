@@ -28,7 +28,6 @@ const openBrandImageDB = (): Promise<IDBDatabase> => {
 };
 
 // Get image from IndexedDB
-// EXPORT ADDED HERE
 export const getImageFromDB = async (key: string): Promise<string | null> => {
   if (typeof window === 'undefined') return null;
   try {
@@ -47,7 +46,6 @@ export const getImageFromDB = async (key: string): Promise<string | null> => {
 };
 
 // Save image to IndexedDB
-// EXPORT ADDED HERE
 export const saveImageToDB = async (key: string, imageData: string): Promise<void> => {
   if (typeof window === 'undefined') return;
   const db = await openBrandImageDB();
@@ -60,8 +58,12 @@ export const saveImageToDB = async (key: string, imageData: string): Promise<voi
   });
 };
 
+// Define allowed image types
+type BrandImageType = 'logo' | 'cover' | 'affiliateProfilePic' | 'adminProfilePic';
+
+
 // Hook to manage a specific brand image
-export function useBrandImage(imageType: 'logo' | 'cover' | 'affiliateProfilePic') {
+export function useBrandImage(imageType: BrandImageType) {
   const [image, _setImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -82,8 +84,15 @@ export function useBrandImage(imageType: 'logo' | 'cover' | 'affiliateProfilePic
 
   const setImage = async (imageDataUrl: string) => {
     try {
-      await saveImageToDB(imageType, imageDataUrl);
-      _setImage(imageDataUrl);
+      if (imageDataUrl) {
+        await saveImageToDB(imageType, imageDataUrl);
+      } else {
+        // Delete the image from DB
+        const db = await openBrandImageDB();
+        const transaction = db.transaction([BRAND_IMAGE_STORE_NAME], 'readwrite');
+        transaction.objectStore(BRAND_IMAGE_STORE_NAME).delete(imageType);
+      }
+      _setImage(imageDataUrl || null);
     } catch (error) {
       console.error(`Failed to save ${imageType} image:`, error);
     }
