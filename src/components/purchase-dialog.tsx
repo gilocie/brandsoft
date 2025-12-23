@@ -233,7 +233,6 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                 whatsappNumber: whatsappNumber,
                 customerId: myCompany?.id,
                 affiliateId: plan.affiliateId,
-                // Apply calculated days immediately for wallet
                 remainingTime: { value: planDays, unit: 'days' },
                 expiresAt: expiresAt
             };
@@ -248,13 +247,12 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                         return { 
                             ...c, 
                             walletBalance: newBalance,
-                            purchases: [...(c.purchases || []), newOrder] // Add to internal purchases
+                            purchases: [...(c.purchases || []), newOrder]
                         };
                     }
                     return c;
                 });
 
-                // Save Config (Removed Global Purchases Update)
                 saveConfig({ 
                     ...config, 
                     companies: updatedCompanies
@@ -268,7 +266,7 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                     if (c.id === myCompany.id) {
                         return { 
                             ...c, 
-                            purchases: [...(c.purchases || []), newOrder] // Add to internal purchases
+                            purchases: [...(c.purchases || []), newOrder]
                         };
                     }
                     return c;
@@ -279,7 +277,6 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                     companies: updatedCompanies 
                 }, {redirect: false, revalidate: true});
 
-                // Open WhatsApp logic
                 const message = `*Please Activate My New Order!*
 %0A%0AOrder ID: ${newOrderId}
 %0APlan: ${plan.name} (${plan.period})
@@ -309,14 +306,12 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
         if (!open) {
             const wasSuccessful = purchaseState === 'success';
 
-            // Call the correct parent handler first
             if (wasSuccessful) {
                 onSuccess();
             } else {
                 onClose();
             }
 
-            // Reset all state after handling close
             setPurchaseState('idle');
             setReceiptFile(null);
             setReceiptDataUrl(null);
@@ -330,7 +325,7 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
     const StepIndicator = ({ step, label, isComplete }: { step: number, label: string, isComplete: boolean }) => (
         <div className="flex items-center gap-2">
             <div className={cn("h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold", isComplete ? "bg-green-500 text-white" : "bg-muted text-muted-foreground")}>
-                {isComplete ? <FileCheck className="h-4 w-4" /> : step}
+                {isComplete ? <Check className="h-4 w-4" /> : step}
             </div>
             <span className={cn("text-sm", isComplete && "text-muted-foreground line-through")}>{label}</span>
         </div>
