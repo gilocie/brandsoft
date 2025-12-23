@@ -194,7 +194,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     setHasMounted(true);
   }, []);
 
-  const handleRoleChange = (newRole: 'admin' | 'staff' | 'client') => {
+  // Sync role with URL path
+  useEffect(() => {
+    if (pathname.startsWith('/admin')) {
+      if (role !== 'admin') setRole('admin');
+    } else if (pathname.startsWith('/office')) {
+      if (role !== 'staff') setRole('staff');
+    } else {
+      if (role !== 'client') setRole('client');
+    }
+  }, [pathname, role, setRole]);
+
+  const handleRoleChange = (newRole: 'client' | 'staff' | 'admin') => {
     if (role !== newRole) {
         setIsChangingRole(true);
         setRole(newRole);
