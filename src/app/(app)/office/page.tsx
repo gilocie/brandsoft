@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useBrandsoft } from '@/hooks/use-brandsoft';
@@ -8,7 +7,7 @@ import dynamic from 'next/dynamic';
 import { Loader2 } from 'lucide-react';
 
 const OfficePageContent = dynamic(
-  () => import('./office-page-content').then(mod => mod.OfficePageContent),
+  () => import('@/components/office/office-page-content').then(mod => mod.OfficePageContent),
   {
     ssr: false,
     loading: () => (

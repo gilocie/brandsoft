@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useBrandsoft, type Transaction, type Affiliate, type Purchase } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Transaction, type Affiliate, type Purchase, type Company } from '@/hooks/use-brandsoft';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,9 +35,10 @@ import { Badge } from '@/components/ui/badge';
 import { GenerateKeyDialog } from '@/components/office/dialogs/generate-key-dialog';
 import { PurchaseDialog, type PlanDetails } from '@/components/purchase-dialog';
 import { SellCreditsDialog } from '@/components/office/dialogs/sell-credits-dialog';
-import { BonusProgressDialog } from './bonus-progress-dialog';
+import { BonusProgressDialog } from '@/components/office/bonus-progress-dialog';
 import { useRouter } from 'next/navigation';
-import { useBrandImage } from '@/hooks/use-brand-image';
+import { useBrandImage, getImageFromDB } from '@/hooks/use-brand-image';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 const affiliateSchema = z.object({
@@ -52,6 +52,43 @@ type AffiliateFormData = z.infer<typeof affiliateSchema>;
 const CREDIT_TO_MWK = 1000;
 const ITEMS_PER_PAGE = 10;
 
+// Helper component for client card with IndexedDB image loading
+export const ClientCardWithImage = ({ client, baseUrl }: { client: any, baseUrl?: string }) => {
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchImage = async () => {
+      setIsLoading(true);
+      const dbImage = await getImageFromDB(`company-logo-${client.id}`);
+      
+      if (isMounted) {
+        if (dbImage) {
+          setAvatarUrl(dbImage);
+        } else if (client.avatar && client.avatar !== 'indexed-db') {
+          setAvatarUrl(client.avatar);
+        } else {
+          setAvatarUrl(null);
+        }
+        setIsLoading(false);
+      }
+    };
+    
+    fetchImage();
+    return () => { isMounted = false; };
+  }, [client.id, client.avatar]);
+
+  return (
+    <ClientCard 
+      key={client.id} 
+      client={{ ...client, avatar: avatarUrl }} 
+      baseUrl={baseUrl}
+      isLoadingImage={isLoading}
+    />
+  );
+};
+
 
 export function OfficePageContent() {
   const { config, saveConfig } = useBrandsoft();
@@ -62,8 +99,11 @@ export function OfficePageContent() {
   const [purchaseDetails, setPurchaseDetails] = useState<PlanDetails | null>(null);
   const [isSellCreditsOpen, setIsSellCreditsOpen] = useState(false);
   const router = useRouter();
-  const { image: affiliateImage, setImage: setAffiliateImage } = useBrandImage('affiliateProfilePic');
-
+  const { image: affiliateImage, isLoading: isAffiliateImageLoading, setImage: setAffiliateImage } = useBrandImage('affiliateProfilePic');
+  
+  // Also try to load company logo for this staff member
+  const [companyLogo, setCompanyLogo] = useState<string | null>(null);
+  const [isCompanyLogoLoading, setIsCompanyLogoLoading] = useState(true);
 
   const affiliate = config?.affiliate;
 
@@ -76,26 +116,98 @@ export function OfficePageContent() {
       }
   });
 
+  const myCompany = useMemo(() => {
+    if (!config || !config.profile?.id) return null;
+    return config.companies?.find(c => c.id === config.profile?.id);
+  }, [config]);
 
-  // NEW: Create a synchronized list of clients
-  // This merges the Affiliate Client entry with the latest real Company Data
+  // Load company logo from IndexedDB
+  useEffect(() => {
+    if (!myCompany) {
+      setIsCompanyLogoLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+    const fetchCompanyLogo = async () => {
+      setIsCompanyLogoLoading(true);
+      const dbImage = await getImageFromDB(`company-logo-${myCompany.id}`);
+      
+      if (isMounted) {
+        if (dbImage) {
+          setCompanyLogo(dbImage);
+        } else if (myCompany.logo && myCompany.logo !== 'indexed-db') {
+          setCompanyLogo(myCompany.logo);
+        } else {
+          setCompanyLogo(null);
+        }
+        setIsCompanyLogoLoading(false);
+      }
+    };
+
+    fetchCompanyLogo();
+    return () => { isMounted = false; };
+  }, [myCompany]);
+
+  // Determine the best profile image to show (priority: affiliate pic > company logo > fallback)
+  const profilePicUrl = useMemo(() => {
+    // Staff's personal profile pic takes priority
+    if (affiliateImage) return affiliateImage;
+    // Then company logo
+    if (companyLogo) return companyLogo;
+    // Then fallback from affiliate config
+    return affiliate?.profilePic || null;
+  }, [affiliateImage, companyLogo, affiliate?.profilePic]);
+
+  const isProfilePicLoading = isAffiliateImageLoading || isCompanyLogoLoading;
+
+  // Sync logic to get REAL plan details from company purchases
   const syncedClients = useMemo(() => {
     if (!affiliate?.clients || !config?.companies) return [];
 
     return affiliate.clients.map(client => {
-        // Find the actual company record
         const realCompany = config.companies.find(c => c.id === client.id);
         
         if (realCompany) {
-            // Return the client data, but override name/avatar with real company data
+            // Find active purchase - this is the source of truth
+            const activePurchase = realCompany.purchases?.find(p => p.status === 'active');
+            const pendingPurchase = realCompany.purchases?.find(p => p.status === 'pending');
+            
+            // Always derive plan info from company purchases, never use cached client data
+            let planName = 'Free Trial';
+            let remainingDays = 0;
+
+            if (activePurchase) {
+                planName = activePurchase.planName;
+                // Get remaining days from the purchase, fallback to 0
+                remainingDays = activePurchase.remainingTime?.value ?? 0;
+            } else if (pendingPurchase) {
+                planName = `${pendingPurchase.planName} (Pending)`;
+                remainingDays = 0;
+            }
+
+            // Determine status from purchases, not cached client status
+            const isActive = activePurchase || planName === 'Free Trial';
+            const status = isActive ? 'active' : 'expired';
+
             return {
                 ...client,
                 name: realCompany.companyName,
                 avatar: realCompany.logo || client.avatar,
-                // You could also sync email/phone here if needed
+                walletBalance: realCompany.walletBalance ?? 0,
+                plan: planName,
+                remainingDays: remainingDays,
+                status: status,
             };
         }
-        return client;
+        
+        // If company not found in system, mark as expired with no plan
+        return {
+            ...client,
+            plan: 'Unknown',
+            remainingDays: 0,
+            status: 'expired' as const,
+        };
     });
   }, [affiliate?.clients, config?.companies]);
 
@@ -224,8 +336,14 @@ export function OfficePageContent() {
     <div className="space-y-8">
       <div className="flex items-center gap-4">
           <Avatar className="h-20 w-20">
-            <AvatarImage src={affiliateImage || affiliate.profilePic} />
-            <AvatarFallback>{affiliate.fullName.charAt(0)}</AvatarFallback>
+            {isProfilePicLoading ? (
+              <Skeleton className="h-full w-full rounded-full" />
+            ) : (
+              <>
+                <AvatarImage src={profilePicUrl || undefined} />
+                <AvatarFallback>{affiliate.fullName.charAt(0)}</AvatarFallback>
+              </>
+            )}
           </Avatar>
           <div className="flex items-center gap-2">
             <div>
@@ -245,8 +363,14 @@ export function OfficePageContent() {
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
                             <div className="flex items-center gap-4">
                                 <Avatar className="h-16 w-16">
-                                    <AvatarImage src={affiliateImage || affiliate.profilePic} />
-                                    <AvatarFallback>{form.getValues('fullName')?.charAt(0)}</AvatarFallback>
+                                    {isAffiliateImageLoading ? (
+                                        <Skeleton className="h-full w-full rounded-full" />
+                                    ) : (
+                                        <>
+                                            <AvatarImage src={affiliateImage || affiliate.profilePic || undefined} />
+                                            <AvatarFallback>{form.getValues('fullName')?.charAt(0)}</AvatarFallback>
+                                        </>
+                                    )}
                                 </Avatar>
                                 <div className="flex-grow">
                                     <SimpleImageUploadButton
@@ -254,6 +378,7 @@ export function OfficePageContent() {
                                         onChange={setAffiliateImage}
                                         buttonText="Upload New Picture"
                                     />
+                                    <p className="text-xs text-muted-foreground mt-1">This is your personal staff photo</p>
                                 </div>
                             </div>
                             
@@ -424,7 +549,7 @@ export function OfficePageContent() {
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {syncedClients.length > 0 ? (
                     syncedClients.map(client => (
-                        <ClientCard key={client.id} client={client} />
+                        <ClientCardWithImage key={client.id} client={client} />
                     ))
                 ) : (
                     <div className="col-span-full flex flex-col items-center justify-center h-40 border-2 border-dashed rounded-lg text-muted-foreground">
@@ -466,4 +591,3 @@ export function OfficePageContent() {
     </div>
   );
 }
-

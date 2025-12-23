@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo } from 'react';
@@ -7,6 +6,7 @@ import { ClientCard } from '@/components/affiliate/client-card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, User, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { ClientCardWithImage } from '@/components/office/office-page-content';
 
 export default function OfficeClientsPage() {
   const { config } = useBrandsoft();
@@ -70,7 +70,7 @@ export default function OfficeClientsPage() {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {syncedClients.length > 0 ? (
                 syncedClients.map(client => (
-                    <ClientCard key={client.id} client={client} baseUrl="/office" />
+                    <ClientCardWithImage key={client.id} client={client} baseUrl="/office" />
                 ))
             ) : (
                 <div className="col-span-full flex flex-col items-center justify-center h-64 border-2 border-dashed rounded-lg text-muted-foreground">
