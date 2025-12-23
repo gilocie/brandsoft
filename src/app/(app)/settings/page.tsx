@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useBrandsoft, type BrandsoftConfig, type Company } from '@/hooks/use-brandsoft';
@@ -16,7 +16,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import React, { useEffect, useRef, ChangeEvent, useMemo, useCallback } from 'react';
+import React, { useEffect, useRef, ChangeEvent, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { UploadCloud, Paintbrush, SlidersHorizontal, User, Building, MapPin, Globe, Phone, Mail, Eye } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';

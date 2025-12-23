@@ -1,8 +1,7 @@
 
-
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useBrandsoft, type AffiliateClient, type Company, type Affiliate } from '@/hooks/use-brandsoft';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -19,6 +18,8 @@ import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { getImageFromDB } from '@/hooks/use-brand-image';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const CREDIT_TO_MWK = 1000;
 
@@ -96,13 +97,74 @@ export default function ClientDetailsPage() {
   const { config, saveConfig } = useBrandsoft();
   const [isSuspendOpen, setIsSuspendOpen] = useState(false);
   const [isTopUpOpen, setIsTopUpOpen] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [isLoadingImage, setIsLoadingImage] = useState(true);
 
-  const { client, affiliate } = useMemo(() => {
-    if (!config || !config.affiliate) return { client: undefined, affiliate: undefined };
+  // Merge the lightweight affiliate client data with the real company data to get the live plan info
+  const { client, affiliate, realCompany } = useMemo(() => {
+    if (!config || !config.affiliate) return { client: undefined, affiliate: undefined, realCompany: undefined };
     
     const foundClient = config.affiliate.clients.find(c => c.id === params.id);
-    return { client: foundClient, affiliate: config.affiliate };
+    const foundCompany = config.companies.find(c => c.id === params.id);
+
+    return { client: foundClient, affiliate: config.affiliate, realCompany: foundCompany };
   }, [config, params.id]);
+
+  // Derive display data
+  const displayData = useMemo(() => {
+    if (!client || !realCompany) return client;
+
+    const activePurchase = realCompany.purchases?.find(p => p.status === 'active');
+    const pendingPurchase = realCompany.purchases?.find(p => p.status === 'pending');
+
+    let planName = 'Free Trial';
+    let remainingDays = 0;
+
+    if (activePurchase) {
+        planName = activePurchase.planName;
+        remainingDays = activePurchase.remainingTime?.value || 0;
+    } else if (pendingPurchase) {
+        planName = `${pendingPurchase.planName} (Pending)`;
+        remainingDays = 0;
+    }
+
+    return {
+        ...client,
+        name: realCompany.companyName,
+        plan: planName,
+        remainingDays: remainingDays,
+        walletBalance: realCompany.walletBalance,
+        status: client.status // Keep affiliate status (active/expired)
+    };
+  }, [client, realCompany]);
+
+  useEffect(() => {
+    if (!realCompany) return;
+
+    let isMounted = true;
+    const fetchLogo = async () => {
+        setIsLoadingImage(true);
+        // Try getting from IndexedDB first using the standard key format
+        const dbImage = await getImageFromDB(`company-logo-${realCompany.id}`);
+        
+        if (isMounted) {
+            if (dbImage) {
+                setLogoUrl(dbImage);
+            } else if (realCompany.logo && realCompany.logo !== 'indexed-db') {
+                setLogoUrl(realCompany.logo);
+            } else if (client?.avatar && client.avatar !== 'indexed-db') {
+                setLogoUrl(client.avatar);
+            } else {
+                setLogoUrl(null);
+            }
+            setIsLoadingImage(false);
+        }
+    };
+
+    fetchLogo();
+    return () => { isMounted = false; };
+  }, [realCompany, client]);
+
 
   const handleSuspend = () => {
     if (!client) return;
@@ -136,14 +198,23 @@ export default function ClientDetailsPage() {
         ],
     };
     
-    // 2. Update Client in Affiliate's list
+    // 2. Update Client in Affiliate's list (Visual)
     const updatedAffiliateClients = affiliate.clients.map(c => 
         c.id === client.id ? { ...c, walletBalance: (c.walletBalance || 0) + costInMWK } : c
     );
     newAffiliateData.clients = updatedAffiliateClients;
 
-    // 3. Save config
-    saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
+    // 3. Update the ACTUAL Company Wallet
+    const updatedCompanies = config.companies.map(c => 
+        c.id === client.id ? { ...c, walletBalance: (c.walletBalance || 0) + costInMWK } : c
+    );
+
+    // 4. Save config
+    saveConfig({ 
+        ...config, 
+        affiliate: newAffiliateData,
+        companies: updatedCompanies
+    }, { redirect: false, revalidate: true });
 
     toast({
       title: "Top-up Successful!",
@@ -153,7 +224,7 @@ export default function ClientDetailsPage() {
     setIsTopUpOpen(false);
   };
 
-  if (!client || !affiliate) {
+  if (!displayData || !affiliate) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center">
         <h2 className="text-xl font-semibold">Client not found</h2>
@@ -165,8 +236,8 @@ export default function ClientDetailsPage() {
     );
   }
   
-  const isExpired = client.status === 'expired' || client.remainingDays === 0;
-
+  const isExpired = displayData.status === 'expired';
+  const isFreeTrial = displayData.plan === 'Free Trial';
 
   return (
     <div className="container mx-auto space-y-6">
@@ -177,25 +248,43 @@ export default function ClientDetailsPage() {
       <Card>
         <CardHeader className="flex flex-col md:flex-row items-center gap-6">
           <Avatar className="h-28 w-28 border">
-            <AvatarImage src={client.avatar} alt={client.name} />
-            <AvatarFallback>{client.name.charAt(0)}</AvatarFallback>
+            {isLoadingImage ? (
+                <Skeleton className="h-full w-full rounded-full" />
+            ) : (
+                <>
+                    <AvatarImage src={logoUrl || undefined} alt={displayData.name} />
+                    <AvatarFallback>{displayData.name.charAt(0)}</AvatarFallback>
+                </>
+            )}
           </Avatar>
           <div className="flex-1 space-y-1 text-center md:text-left">
-            <CardTitle className="text-3xl font-headline">{client.name}</CardTitle>
-            <CardDescription className="text-base text-muted-foreground flex items-center justify-center md:justify-start gap-4">
+            <CardTitle className="text-3xl font-headline">{displayData.name}</CardTitle>
+            <CardDescription className="text-base text-muted-foreground flex items-center justify-center md:justify-start gap-4 flex-wrap">
               <span className="flex items-center gap-2">
-                <Briefcase className="h-4 w-4" /> Plan: {client.plan}
-                {!isExpired && client.remainingDays !== undefined && (
-                  <span className="flex items-center gap-2 text-sm"><Clock className="h-4 w-4 ml-2" /> {client.remainingDays} days left</span>
-                )}
-                {isExpired && (
-                  <span className="flex items-center gap-2 text-destructive"><Clock className="h-4 w-4 ml-2" /> Expired</span>
-                )}
+                <Briefcase className="h-4 w-4" /> Plan: <span className="font-semibold text-primary">{displayData.plan}</span>
               </span>
+              
+              {!isExpired && (
+                  isFreeTrial ? (
+                    <span className="flex items-center gap-2 text-sm text-green-600 font-medium">
+                        <Clock className="h-4 w-4" /> Always Active
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2 text-sm">
+                        <Clock className="h-4 w-4" /> {displayData.remainingDays} days left
+                    </span>
+                  )
+              )}
+              
+              {isExpired && (
+                  <span className="flex items-center gap-2 text-destructive font-medium">
+                      <Clock className="h-4 w-4" /> Expired
+                  </span>
+              )}
             </CardDescription>
              <div className="pt-2">
-                <span className={`px-3 py-1 text-xs font-semibold rounded-full ${client.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                  {client.status.charAt(0).toUpperCase() + client.status.slice(1)}
+                <span className={`px-3 py-1 text-xs font-semibold rounded-full ${displayData.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                  {displayData.status.charAt(0).toUpperCase() + displayData.status.slice(1)}
                 </span>
              </div>
           </div>
@@ -203,14 +292,14 @@ export default function ClientDetailsPage() {
       </Card>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <StatCard title="Client Wallet" value={client.walletBalance || 0} isCurrency icon={Wallet} footer="Funds available to the client">
+        <StatCard title="Client Wallet" value={displayData.walletBalance || 0} isCurrency icon={Wallet} footer="Funds available to the client">
              <Dialog open={isTopUpOpen} onOpenChange={setIsTopUpOpen}>
                 <DialogTrigger asChild>
                     <Button variant="outline" size="sm" className="w-full mt-2">
                         <CirclePlus className="mr-2 h-4 w-4" /> Top Up Wallet
                     </Button>
                 </DialogTrigger>
-                <TopUpDialog client={client} affiliate={affiliate} onTopUp={handleTopUp} />
+                <TopUpDialog client={client!} affiliate={affiliate} onTopUp={handleTopUp} />
             </Dialog>
         </StatCard>
         <Card className="flex flex-col">
@@ -229,7 +318,7 @@ export default function ClientDetailsPage() {
        <AlertDialog open={isSuspendOpen} onOpenChange={setIsSuspendOpen}>
           <AlertDialogContent>
               <AlertDialogHeader>
-                  <AlertDialogTitle>Suspend {client.name}?</AlertDialogTitle>
+                  <AlertDialogTitle>Suspend {displayData.name}?</AlertDialogTitle>
                   <AlertDialogDescription>
                       This will temporarily disable their account. Are you sure?
                   </AlertDialogDescription>
@@ -243,5 +332,3 @@ export default function ClientDetailsPage() {
     </div>
   );
 }
-
-    

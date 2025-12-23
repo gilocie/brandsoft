@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -36,7 +37,6 @@ export const getImageFromDB = async (key: string): Promise<string | null> => {
       const transaction = db.transaction([BRAND_IMAGE_STORE_NAME], 'readonly');
       const store = transaction.objectStore(BRAND_IMAGE_STORE_NAME);
       const request = store.get(key);
-      
       request.onerror = () => reject(request.error);
       request.onsuccess = () => resolve(request.result || null);
     });
@@ -55,7 +55,6 @@ export const saveImageToDB = async (key: string, imageData: string): Promise<voi
     const transaction = db.transaction([BRAND_IMAGE_STORE_NAME], 'readwrite');
     const store = transaction.objectStore(BRAND_IMAGE_STORE_NAME);
     const request = store.put(imageData, key);
-    
     request.onerror = () => reject(request.error);
     request.onsuccess = () => resolve();
   });
@@ -73,13 +72,11 @@ export function useBrandImage(imageType: 'logo' | 'cover' | 'affiliateProfilePic
         const storedImage = await getImageFromDB(imageType);
         _setImage(storedImage);
       } catch (error) {
-        // console.error(`Failed to load ${imageType} image:`, error);
         _setImage(null);
       } finally {
         setIsLoading(false);
       }
     };
-
     loadImage();
   }, [imageType]);
 

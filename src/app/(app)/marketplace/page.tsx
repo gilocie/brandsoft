@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -276,7 +277,6 @@ export default function MarketplacePage() {
                             company={biz} 
                             averageRating={biz.averageRating}
                             reviewCount={biz.reviewCount}
-                            // This now works because CompanyCardWithImages expects 1 arg, and we pass a closure
                             onSelectAction={(action) => handleSelectAction(action, biz)} 
                             actionButton={
                                 isMyCompany ? (

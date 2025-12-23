@@ -81,12 +81,7 @@ export function OfficePageContent() {
     return config.companies?.find(c => c.id === config.profile?.id);
   }, [config]);
 
-  const currentPlan = useMemo(() => {
-    const purchases = myCompany?.purchases || [];
-    const activePurchase = purchases.find(p => p.status === 'active');
-    return activePurchase ? activePurchase.planName : 'Free Trial';
-  }, [myCompany]);
-
+  // Sync logic to get REAL plan details from company purchases
   const syncedClients = useMemo(() => {
     if (!affiliate?.clients || !config?.companies) return [];
 
@@ -94,11 +89,29 @@ export function OfficePageContent() {
         const realCompany = config.companies.find(c => c.id === client.id);
         
         if (realCompany) {
+            // Find active purchase
+            const activePurchase = realCompany.purchases?.find(p => p.status === 'active');
+            // Find pending purchase
+            const pendingPurchase = realCompany.purchases?.find(p => p.status === 'pending');
+            
+            let planName = 'Free Trial';
+            let remainingDays = 0; // Default for free trial (infinity essentially)
+
+            if (activePurchase) {
+                planName = activePurchase.planName;
+                remainingDays = activePurchase.remainingTime?.value || 0;
+            } else if (pendingPurchase) {
+                planName = `${pendingPurchase.planName} (Pending)`;
+                remainingDays = 0;
+            }
+
             return {
                 ...client,
                 name: realCompany.companyName,
                 avatar: realCompany.logo || client.avatar,
                 walletBalance: realCompany.walletBalance,
+                plan: planName,
+                remainingDays: remainingDays,
             };
         }
         return client;
@@ -236,7 +249,7 @@ export function OfficePageContent() {
           <div className="flex items-center gap-2">
             <div>
                 <h1 className="text-2xl font-bold font-headline">{affiliate.fullName}</h1>
-                <p className="text-muted-foreground">@{affiliate.username} - <span className="font-semibold text-primary">{currentPlan}</span></p>
+                <p className="text-muted-foreground">@{affiliate.username}</p>
             </div>
              <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                 <DialogTrigger asChild>
@@ -472,4 +485,3 @@ export function OfficePageContent() {
     </div>
   );
 }
-

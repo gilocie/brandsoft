@@ -12,17 +12,35 @@ export default function OfficeClientsPage() {
   const { config } = useBrandsoft();
   const affiliate = config?.affiliate;
 
+  // Same logic as OfficePageContent to ensure data consistency
   const syncedClients = useMemo(() => {
     if (!affiliate?.clients || !config?.companies) return [];
 
     return affiliate.clients.map(client => {
         const realCompany = config.companies.find(c => c.id === client.id);
         if (realCompany) {
+            // Find active purchase
+            const activePurchase = realCompany.purchases?.find(p => p.status === 'active');
+            const pendingPurchase = realCompany.purchases?.find(p => p.status === 'pending');
+            
+            let planName = 'Free Trial';
+            let remainingDays = 0;
+
+            if (activePurchase) {
+                planName = activePurchase.planName;
+                remainingDays = activePurchase.remainingTime?.value || 0;
+            } else if (pendingPurchase) {
+                planName = `${pendingPurchase.planName} (Pending)`;
+                remainingDays = 0;
+            }
+
             return {
                 ...client,
                 name: realCompany.companyName,
                 avatar: realCompany.logo || client.avatar,
                 walletBalance: realCompany.walletBalance,
+                plan: planName,
+                remainingDays: remainingDays,
             };
         }
         return client;
@@ -65,5 +83,3 @@ export default function OfficeClientsPage() {
     </div>
   );
 }
-
-    
