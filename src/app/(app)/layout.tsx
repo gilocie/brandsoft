@@ -435,17 +435,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </Accordion>
               </>
             )}
-             {(role === 'staff' || role === 'admin') && (
-                <>
-                  <SidebarSeparator className="my-2" />
-                   <SidebarMenuItem>
-                      <SidebarMenuButton onClick={role === 'admin' ? adminLogout : affiliateLogout}>
-                          <LogOut />
-                          <span>Logout</span>
-                      </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </>
-             )}
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter className="mt-auto relative overflow-hidden">
@@ -477,8 +466,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <h1 className="text-lg font-semibold font-headline flex-1 truncate hidden sm:block">
             {pageTitle}
           </h1>
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-             <div className="sm:ml-auto flex-1 sm:flex-none hidden">
+          <div className="flex items-center gap-2 w-full sm:w-auto ml-auto">
+             <div className="hidden">
                 <Select value={role || 'client'} onValueChange={(value) => handleRoleChange(value as any)}>
                     <SelectTrigger className="w-full sm:w-[130px] h-9">
                         <SelectValue placeholder="Select a role" />
@@ -567,6 +556,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                             </Button>
                         </>
                     )}
+                    {(role === 'staff' || role === 'admin') && (
+                      <Button variant="outline" size="sm" onClick={role === 'admin' ? adminLogout : affiliateLogout}>
+                          <LogOut className="mr-2 h-4 w-4"/>
+                          Logout
+                      </Button>
+                    )}
               </div>
             )}
           </div>
@@ -587,4 +582,3 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   );
 }
-
