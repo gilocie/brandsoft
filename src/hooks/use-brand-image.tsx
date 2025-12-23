@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 
-const BRAND_IMAGE_DB_NAME = 'BrandImagesDB';
+const BRAND_IMAGE_DB_NAME = 'BrandsoftImagesDB';
 const BRAND_IMAGE_STORE_NAME = 'brand_images';
 
 // Open IndexedDB

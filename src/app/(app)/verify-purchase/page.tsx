@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, Suspense, useCallback, useMemo } from 'react';
@@ -21,7 +22,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle as ShadcnDialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { getReceiptFromDB } from '@/hooks/use-receipt-upload';
+import { getImageFromDB } from '@/hooks/use-brand-image';
 
 
 const formSchema = z.object({
@@ -32,7 +33,8 @@ type FormData = z.infer<typeof formSchema>;
 const ADMIN_PIN_SUFFIX = '@8090';
 
 const topUpActivationSchema = z.object({
-    creditsToSell: z.coerce.number().min(1, 'Must sell at least 1 credit.')
+    creditsToSell: z.coerce.number().min(1, 'Must sell at least 1 credit.'),
+    pin: z.string().optional(),
 });
 type TopUpActivationFormData = z.infer<typeof topUpActivationSchema>;
 
@@ -43,66 +45,140 @@ const TopUpActivationDialog = ({
     onClose,
     onConfirm,
     affiliateCreditBalance,
+    affiliatePin,
+    isPinSet,
 }: {
     order: Purchase,
     isOpen: boolean,
     onClose: () => void,
     onConfirm: (credits: number) => void,
     affiliateCreditBalance: number,
+    affiliatePin?: string;
+    isPinSet?: boolean;
 }) => {
     const { config } = useBrandsoft();
+    const { toast } = useToast();
     const exchangeValue = config?.admin?.exchangeValue || 1000;
     const suggestedCredits = parseFloat(order.planPrice.replace(/[^0-9.-]+/g,"")) / exchangeValue;
+    const [step, setStep] = useState(1);
 
     const form = useForm<TopUpActivationFormData>({
         resolver: zodResolver(topUpActivationSchema),
-        defaultValues: { creditsToSell: suggestedCredits }
+        defaultValues: { creditsToSell: suggestedCredits, pin: '' }
     });
 
     const creditsToSell = form.watch('creditsToSell');
     const hasEnoughCredits = affiliateCreditBalance >= creditsToSell;
     const remainingBalance = affiliateCreditBalance - creditsToSell;
 
+    const handleNextStep = async () => {
+        const isValid = await form.trigger(['creditsToSell']);
+        if (isValid) {
+            if (!isPinSet) {
+                 toast({
+                    variant: 'destructive',
+                    title: "PIN Not Set",
+                    description: "Please set your withdrawal PIN in 'My Features' before selling credits.",
+                });
+                return;
+            }
+            setStep(2);
+        }
+    }
+    
+    const handleConfirmSubmit = (data: TopUpActivationFormData) => {
+        if (!data.pin || data.pin !== affiliatePin) {
+            form.setError('pin', { message: 'The entered PIN is incorrect.' });
+            return;
+        }
+        onConfirm(data.creditsToSell);
+    };
+    
+    useEffect(() => {
+        if (!isOpen) {
+            setTimeout(() => {
+                form.reset({ creditsToSell: suggestedCredits, pin: ''});
+                setStep(1);
+            }, 200);
+        }
+    }, [isOpen, form, suggestedCredits]);
+
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent>
                 <DialogHeader>
-                    <ShadcnDialogTitle>Confirm Credit Sale</ShadcnDialogTitle>
-                    <p className="text-sm text-muted-foreground">Confirm the amount of BS Credits being sold for this top-up.</p>
+                    <ShadcnDialogTitle>
+                         {step === 1 ? 'Confirm Credit Sale' : 'Enter PIN to Confirm'}
+                    </ShadcnDialogTitle>
+                    <p className="text-sm text-muted-foreground">
+                        {step === 1
+                            ? 'Confirm the amount of BS Credits being sold for this top-up.'
+                            : 'Enter your 4-digit PIN to authorize this transaction.'}
+                    </p>
                 </DialogHeader>
                 <div className="py-4 space-y-4">
-                    <div className="p-4 bg-muted rounded-lg text-center space-y-1">
-                        <p className="text-sm text-muted-foreground">Client Paid</p>
-                        <p className="text-2xl font-bold">{order.planPrice}</p>
-                    </div>
                      <Form {...form}>
-                        <form id="topup-activation-form" onSubmit={form.handleSubmit(data => onConfirm(data.creditsToSell))}>
-                             <FormField
-                                control={form.control}
-                                name="creditsToSell"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>BS Credits to Sell</FormLabel>
-                                        <FormControl>
-                                            <Input type="number" step="0.01" {...field} />
-                                        </FormControl>
-                                         <FormDescription>
-                                            {!hasEnoughCredits
-                                                ? <span className="text-destructive">Your current credit balance is BS {affiliateCreditBalance.toLocaleString()}. Please add more before continuing.</span>
-                                                : `Your balance will be BS ${remainingBalance.toLocaleString()} after this sale.`
-                                            }
-                                        </FormDescription>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                        <form id="topup-activation-form" onSubmit={form.handleSubmit(handleConfirmSubmit)}>
+                           {step === 1 && (
+                                <div className="space-y-4">
+                                     <div className="p-4 bg-muted rounded-lg text-center space-y-1">
+                                        <p className="text-sm text-muted-foreground">Client Paid</p>
+                                        <p className="text-2xl font-bold">{order.planPrice}</p>
+                                    </div>
+                                    <FormField
+                                        control={form.control}
+                                        name="creditsToSell"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>BS Credits to Sell</FormLabel>
+                                                <FormControl>
+                                                    <Input type="number" step="0.01" {...field} />
+                                                </FormControl>
+                                                <FormDescription>
+                                                    {!hasEnoughCredits
+                                                        ? <span className="text-destructive">Your current credit balance is BS {affiliateCreditBalance.toLocaleString()}. Please add more before continuing.</span>
+                                                        : `Your balance will be BS ${remainingBalance.toLocaleString()} after this sale.`
+                                                    }
+                                                </FormDescription>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <DialogFooter>
+                                        <Button variant="outline" onClick={onClose}>Cancel</Button>
+                                        <Button type="button" disabled={!hasEnoughCredits} onClick={handleNextStep}>Proceed to PIN</Button>
+                                    </DialogFooter>
+                                </div>
+                            )}
+
+                            {step === 2 && (
+                                <div className="space-y-4">
+                                     <div className="p-4 bg-muted rounded-lg text-center space-y-1">
+                                        <p className="text-sm text-muted-foreground">Selling <strong className="text-primary">{creditsToSell.toLocaleString()} BS Credits</strong> for</p>
+                                        <p className="text-2xl font-bold">{order.planPrice}</p>
+                                    </div>
+                                     <FormField
+                                        control={form.control}
+                                        name="pin"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>4-Digit PIN</FormLabel>
+                                                <FormControl>
+                                                    <Input type="password" maxLength={4} className="text-center font-bold tracking-[1rem]" {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                     <DialogFooter>
+                                        <Button type="button" variant="outline" onClick={() => setStep(1)}>Back</Button>
+                                        <Button type="submit">Confirm &amp; Activate</Button>
+                                    </DialogFooter>
+                                </div>
+                            )}
                         </form>
                     </Form>
                 </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={onClose}>Cancel</Button>
-                    <Button type="submit" form="topup-activation-form" disabled={!hasEnoughCredits}>Confirm &amp; Activate</Button>
-                </DialogFooter>
             </DialogContent>
         </Dialog>
     );
@@ -131,8 +207,8 @@ function VerifyPurchaseContent() {
         defaultValues: { orderId: orderIdFromUrl || '' },
     });
     
-     const handleSearch = useCallback(async (orderIdWithPin: string, silent = false) => {
-        if (!orderIdWithPin) {
+     const handleSearch = useCallback(async (orderIdToSearch: string, silent = false) => {
+        if (!orderIdToSearch) {
             setIsLoading(false);
             setOrder(null);
             return;
@@ -148,12 +224,12 @@ function VerifyPurchaseContent() {
             clearInterval(progressInterval);
         }
 
-        let cleanOrderId = orderIdWithPin;
+        let cleanOrderId = orderIdToSearch;
         let admin = false;
 
-        if (orderIdWithPin.endsWith(ADMIN_PIN_SUFFIX)) {
+        if (orderIdToSearch.endsWith(ADMIN_PIN_SUFFIX)) {
             admin = true;
-            cleanOrderId = orderIdWithPin.replace(ADMIN_PIN_SUFFIX, '');
+            cleanOrderId = orderIdToSearch.replace(ADMIN_PIN_SUFFIX, '');
         }
         
         setIsAdminMode(admin);
@@ -162,7 +238,7 @@ function VerifyPurchaseContent() {
         setOrder(foundOrder);
 
         if (foundOrder?.receipt === 'indexed-db') {
-            const image = await getReceiptFromDB(foundOrder.orderId);
+            const image = await getImageFromDB(`receipt-${foundOrder.orderId}`);
             setReceiptImage(image);
         } else {
             setReceiptImage(null);
@@ -186,16 +262,12 @@ function VerifyPurchaseContent() {
     }, [orderIdFromUrl, form, handleSearch]);
 
      useEffect(() => {
-        if (
-          (!isAdminMode && order?.status === 'declined' && !order.isAcknowledged) ||
-          (!isAdminMode && order?.status === 'active')
-        ) {
-          return; // Stop polling for stable non-admin states
-        }
+        if (order?.status === 'declined' && !order.isAcknowledged) return;
+        if (order?.status === 'active') return;
 
         const forceRefresh = () => {
              if (orderIdFromUrl) {
-                handleSearch(orderIdFromUrl, true); // Perform a silent refresh
+                handleSearch(orderIdFromUrl, true);
              }
         };
 
@@ -219,7 +291,7 @@ function VerifyPurchaseContent() {
           forceRefresh();
         };
 
-        const pollInterval = setInterval(forceRefresh, 2000); // Poll every 2 seconds
+        const pollInterval = setInterval(forceRefresh, 2000);
 
         window.addEventListener('storage', handleStorageChange);
         window.addEventListener('brandsoft-update', handleCustomUpdate);
@@ -233,7 +305,7 @@ function VerifyPurchaseContent() {
           document.removeEventListener('visibilitychange', handleVisibilityChange);
           window.removeEventListener('focus', handleFocus);
         };
-      }, [orderIdFromUrl, handleSearch, order, isAdminMode]);
+      }, [orderIdFromUrl, handleSearch, order]);
 
 
     const handleDownloadReceipt = () => {
@@ -248,7 +320,7 @@ function VerifyPurchaseContent() {
 
     const handleActivation = () => {
         if (order) {
-            if (isAdminMode && (order.planName.startsWith('Credit Purchase') || order.planName === 'Wallet Top-up')) {
+            if (order.planName.startsWith('Credit Purchase') || order.planName === 'Wallet Top-up') {
                 setIsTopUpActivationOpen(true);
             } else {
                 activatePurchaseOrder(order.orderId);
@@ -260,12 +332,8 @@ function VerifyPurchaseContent() {
 
     const handleConfirmTopUpActivation = (creditsToSell: number) => {
         if (!order || !config?.affiliate) return;
-
-        // Activate the client's plan (which just marks the purchase as 'active' for top-ups)
-        activatePurchaseOrder(order.orderId);
-
-        // Deduct credits from affiliate and record sale
-        addCreditPurchaseToAffiliate(creditsToSell, order.planPrice);
+        
+        addCreditPurchaseToAffiliate(creditsToSell, order.orderId);
         
         toast({
             title: "Top-Up Activated!",
@@ -288,26 +356,21 @@ function VerifyPurchaseContent() {
     };
     
     const onFormSubmit = (data: FormData) => {
-        router.push(`/verify-purchase?orderId=${data.orderId}`);
+        router.push(`/office/verify-purchase?orderId=${data.orderId}`);
     };
     
     const handleAcknowledgeAndRedirect = () => {
       if (order) {
         acknowledgeDeclinedPurchase(order.orderId);
         setTimeout(() => {
-            router.push('/dashboard');
+            router.push('/office/orders');
         }, 100);
       }
     };
     
     const affiliateCreditBalance = config?.affiliate?.creditBalance || 0;
-    
-    const contactNumber = useMemo(() => {
-        if (order?.affiliateId && config?.affiliate?.staffId === order.affiliateId && config.affiliate.phone) {
-            return config.affiliate.phone;
-        }
-        return '+265 991 972 336';
-    }, [order, config]);
+    const affiliatePin = config?.affiliate?.pin;
+    const isPinSet = config?.affiliate?.isPinSet;
 
     const renderContent = () => {
         if (isLoading) {
@@ -341,6 +404,9 @@ function VerifyPurchaseContent() {
         }
 
         if (order) {
+            const isTopUp = order.planName.startsWith('Credit Purchase') || order.planName === 'Wallet Top-up';
+            const isActionable = order.status === 'pending' || order.status === 'processing';
+
              return (
                 <div className="mt-6 space-y-6">
                     <div className="flex flex-col md:flex-row gap-6">
@@ -395,7 +461,7 @@ function VerifyPurchaseContent() {
                                     </span>
                                 </p>
                             </CardContent>
-                             {isAdminMode && (order.status === 'pending' || order.status === 'processing') && (
+                             {isActionable && (
                                 <CardFooter className="p-0 pt-6 flex gap-2">
                                      <AlertDialog open={declineDialogOpen} onOpenChange={setDeclineDialogOpen}>
                                         <AlertDialogTrigger asChild>
@@ -422,7 +488,7 @@ function VerifyPurchaseContent() {
                                         </AlertDialogContent>
                                     </AlertDialog>
                                     <Button className="w-full" onClick={handleActivation}>
-                                        Activate Plan
+                                        {isTopUp ? 'Activate Top Up' : 'Activate Plan'}
                                     </Button>
                                 </CardFooter>
                             )}
@@ -436,15 +502,10 @@ function VerifyPurchaseContent() {
                                     <AlertDescription>
                                         <p>{order.declineReason}</p>
                                         <p className="mt-2 text-xs">
-                                            If you believe this is a mistake, please contact us on {contactNumber}.
+                                            If you believe this is a mistake, please contact us.
                                         </p>
                                     </AlertDescription>
                                 </div>
-                                {!isAdminMode && !order.isAcknowledged && (
-                                    <Button variant="destructive" onClick={handleAcknowledgeAndRedirect}>
-                                        Understood
-                                    </Button>
-                                )}
                             </div>
                         </Alert>
                     )}
@@ -498,7 +559,7 @@ function VerifyPurchaseContent() {
                 {order && (
                     <CardFooter>
                         <Button asChild variant="outline">
-                            <Link href={isAdminMode ? '/office/orders' : '/history'}><Wallet className="mr-2 h-4 w-4" /> Return to {isAdminMode ? 'Orders' : 'History'}</Link>
+                            <Link href={'/office/orders'}><Wallet className="mr-2 h-4 w-4" /> Return to Orders</Link>
                         </Button>
                     </CardFooter>
                 )}
@@ -510,6 +571,8 @@ function VerifyPurchaseContent() {
                     onClose={() => setIsTopUpActivationOpen(false)}
                     onConfirm={handleConfirmTopUpActivation}
                     affiliateCreditBalance={affiliateCreditBalance}
+                    affiliatePin={affiliatePin}
+                    isPinSet={isPinSet}
                 />
             )}
         </>
@@ -517,7 +580,7 @@ function VerifyPurchaseContent() {
 }
 
 
-export default function VerifyPurchasePage() {
+export default function OfficeVerifyPurchasePage() {
     return (
         <div className="flex min-h-screen items-center justify-center bg-muted p-4">
            <Suspense fallback={<div className="flex items-center justify-center h-full"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>}>

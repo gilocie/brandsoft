@@ -19,7 +19,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Checkbox } from './ui/checkbox';
-import { saveReceiptToDB } from '@/hooks/use-receipt-upload';
+import { saveImageToDB } from '@/hooks/use-brand-image';
 import type { Purchase } from '@/types/brandsoft'; // Import Purchase type
 
 export type PlanDetails = {
@@ -198,7 +198,7 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
         const newOrderId = `BSO-${Date.now()}`;
         
         if (selectedPayment !== 'wallet' && receiptDataUrl) {
-            await saveReceiptToDB(newOrderId, receiptDataUrl);
+            await saveImageToDB(`receipt-${newOrderId}`, receiptDataUrl);
         }
 
         setTimeout(() => {
