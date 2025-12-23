@@ -238,7 +238,7 @@ export function useSetup(
 
   const initialAffiliateData: Affiliate = {
     fullName: 'Sant',
-    username: 'sant',
+    username: 'Sant',
     phone: '265994985371',
     password: 'password',
     profilePic: 'https://picsum.photos/seed/affiliate/200',
