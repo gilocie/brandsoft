@@ -58,6 +58,7 @@ interface BrandsoftContextType {
   login: (username: string, password: string) => { success: boolean; role?: 'admin' | 'staff' };
   isAffiliateLoggedIn: boolean | null;
   affiliateLogout: () => void;
+  adminLogout: () => void;
   role: 'client' | 'staff' | 'admin';
   setRole: (role: 'client' | 'staff' | 'admin') => void;
   // Company methods
@@ -537,6 +538,11 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       router.push('/staff/login');
   };
   
+  const adminLogout = () => {
+    setRole('client');
+    router.push('/staff/login');
+  };
+  
   const logout = () => {
     localStorage.removeItem(LICENSE_KEY);
     localStorage.removeItem(CONFIG_KEY);
@@ -560,6 +566,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     setRole,
     login,
     affiliateLogout,
+    adminLogout,
     isAffiliateLoggedIn,
     ...dataMethods,
   };

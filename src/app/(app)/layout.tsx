@@ -181,7 +181,7 @@ function ThemeToggle() {
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { config, acknowledgeDeclinedPurchase, role, setRole, affiliateLogout } = useBrandsoft();
+  const { config, acknowledgeDeclinedPurchase, role, setRole, affiliateLogout, adminLogout } = useBrandsoft();
   
   const { image: logoImage } = useBrandImage('logo');
   const { image: affiliateImage } = useBrandImage('affiliateProfilePic');
@@ -435,16 +435,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </Accordion>
               </>
             )}
-             {role === 'staff' && (
-                  <>
-                    <SidebarSeparator className="my-2" />
-                     <SidebarMenuItem>
-                        <SidebarMenuButton onClick={affiliateLogout}>
-                            <LogOut />
-                            <span>Logout</span>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  </>
+             {(role === 'staff' || role === 'admin') && (
+                <>
+                  <SidebarSeparator className="my-2" />
+                   <SidebarMenuItem>
+                      <SidebarMenuButton onClick={role === 'admin' ? adminLogout : affiliateLogout}>
+                          <LogOut />
+                          <span>Logout</span>
+                      </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </>
              )}
           </SidebarMenu>
         </SidebarContent>
