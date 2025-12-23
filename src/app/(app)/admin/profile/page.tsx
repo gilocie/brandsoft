@@ -3,7 +3,11 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, PlusCircle } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { User, PlusCircle, BriefcaseBusiness } from "lucide-react";
+import { useBrandImage } from "@/hooks/use-brand-image";
+import brandsoftLogo from '@/app/brandsoftlogo.png';
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminProfilePage() {
     // In a real app, you'd fetch admin details from your config/state
@@ -11,6 +15,8 @@ export default function AdminProfilePage() {
         fullName: 'Brandsoft Admin',
         username: 'admin'
     };
+
+    const { image: logoImage, isLoading: isLogoLoading } = useBrandImage('logo');
 
     return (
         <div className="container mx-auto space-y-6">
@@ -24,9 +30,18 @@ export default function AdminProfilePage() {
                     <CardTitle>Current Administrator</CardTitle>
                 </CardHeader>
                 <CardContent className="flex items-center gap-4">
-                     <div className="p-3 bg-muted rounded-full">
-                        <User className="h-8 w-8 text-muted-foreground" />
-                    </div>
+                     <Avatar className="h-16 w-16">
+                        {isLogoLoading ? (
+                            <Skeleton className="h-full w-full rounded-full" />
+                        ) : (
+                            <>
+                                <AvatarImage src={logoImage || brandsoftLogo.src} alt="Brandsoft Admin" />
+                                <AvatarFallback>
+                                    <BriefcaseBusiness />
+                                </AvatarFallback>
+                            </>
+                        )}
+                     </Avatar>
                     <div>
                         <p className="text-lg font-semibold">{adminUser.fullName}</p>
                         <p className="text-sm text-muted-foreground">@{adminUser.username}</p>

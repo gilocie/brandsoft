@@ -319,7 +319,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         return {
           avatarSrc: logoImage || brandsoftLogo.src,
           headerTitle: 'Admin Room',
-          avatarFallback: 'A',
+          avatarFallback: <BriefcaseBusiness />,
         };
       case 'staff':
         return {
@@ -351,7 +351,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <SidebarHeader>
           <div className="flex items-center gap-2">
             {config ? (
-                <Link href={role === 'client' ? '/settings' : (role === 'admin' ? '/admin' : '/office')} className="flex items-center gap-2 text-sidebar-foreground">
+                <Link href={role === 'client' ? '/settings' : (role === 'admin' ? '/admin/profile' : '/office')} className="flex items-center gap-2 text-sidebar-foreground">
                     <Avatar className="h-8 w-8">
                        <AvatarImage src={avatarSrc} />
                        <AvatarFallback>{avatarFallback}</AvatarFallback>
