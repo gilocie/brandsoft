@@ -92,6 +92,7 @@ const mainNavItems = [
   { href: '/office/features', icon: Shield, label: 'Features', enabledKey: null, roles: ['staff'] },
   { href: '/office/keys', icon: KeyRound, label: 'Keys', enabledKey: null, roles: ['staff'] },
   { href: '/admin', icon: LayoutDashboard, label: 'Dashboard', enabledKey: null, roles: ['admin'] },
+  { href: '/admin/profile', icon: User, label: 'Profile', enabledKey: null, roles: ['admin'] },
   { href: '/admin/staff', icon: Users, label: 'Staff', enabledKey: null, roles: ['admin'] },
   { href: '/admin/plans', icon: Briefcase, label: 'Plans', enabledKey: null, roles: ['admin'] },
   { href: '/companies', icon: Users, label: 'Companies', enabledKey: null, roles: ['admin'] },
@@ -181,7 +182,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { config, acknowledgeDeclinedPurchase } = useBrandsoft();
   
-  // Use hooks for each specific image type
   const { image: logoImage } = useBrandImage('logo');
   const { image: affiliateImage } = useBrandImage('affiliateProfilePic');
 
@@ -201,14 +201,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         setRole(newRole);
         localStorage.setItem('brandsoft-role', newRole);
 
-        // Determine destination and redirect
         if (newRole === 'admin') router.push('/admin');
         else if (newRole === 'staff') router.push('/office');
         else router.push('/dashboard');
     }
   };
 
-  // Effect to turn off loading state once navigation is complete
   useEffect(() => {
     if(isChangingRole) {
       const isCorrectPage = 
@@ -307,6 +305,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   const visibleMainNavItems = getVisibleNavItems(mainNavItems, role);
+  const visibleUpcomingNavItems = getVisibleNavItems(upcomingNavItems, role);
   
   const pageTitle = [...mainNavItems, ...upcomingNavItems].find(item => pathname.startsWith(item.href))?.label || 'Dashboard';
   
@@ -318,7 +317,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     switch (role) {
       case 'admin':
         return {
-          avatarSrc: 'https://picsum.photos/seed/admin/200',
+          avatarSrc: logoImage || brandsoftLogo.src,
           headerTitle: 'Admin Room',
           avatarFallback: 'A',
         };
@@ -399,8 +398,29 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </Link>
               </SidebarMenuItem>
             )) : (
-              // Skeleton loading for nav items
               Array.from({length: 5}).map((_, i) => <SidebarMenuSkeleton key={i} showIcon />)
+            )}
+            
+            {visibleUpcomingNavItems.length > 0 && (
+              <>
+                <SidebarSeparator className="my-2" />
+                <Accordion type="single" collapsible defaultValue="upcoming-tools" className="w-full px-2">
+                    <AccordionItem value="upcoming-tools" className="border-b-0">
+                        <AccordionTrigger className="p-2 text-xs font-medium text-sidebar-foreground/70 hover:no-underline">
+                            Upcoming Tools
+                        </AccordionTrigger>
+                        <AccordionContent className="pb-0 pl-1">
+                             <SidebarMenu className="px-0">
+                                {visibleUpcomingNavItems.map(item => (
+                                    <SidebarMenuItem key={item.href}>
+                                        <Link href={item.href}><SidebarMenuButton isActive={isLinkActive(item.href)} tooltip={item.label}><item.icon /><span>{item.label}</span></SidebarMenuButton></Link>
+                                    </SidebarMenuItem>
+                                ))}
+                            </SidebarMenu>
+                        </AccordionContent>
+                    </AccordionItem>
+                </Accordion>
+              </>
             )}
           </SidebarMenu>
         </SidebarContent>
