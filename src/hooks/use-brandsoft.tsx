@@ -54,6 +54,11 @@ interface BrandsoftContextType {
   activate: (serial: string) => boolean;
   saveConfig: (newConfig: BrandsoftConfig, options?: { redirect?: boolean; revalidate?: boolean }) => void;
   logout: () => void;
+  affiliateLogin: (username: string, password: string) => boolean;
+  isAffiliateLoggedIn: boolean | null;
+  affiliateLogout: () => void;
+  role: 'client' | 'staff' | 'admin';
+  setRole: (role: 'client' | 'staff' | 'admin') => void;
   // Company methods
   addCompany: (company: Omit<Company, 'id'>) => Company;
   updateCompany: (companyId: string, data: Partial<Omit<Company, 'id'>>) => void;
@@ -76,9 +81,9 @@ interface BrandsoftContextType {
   updateQuotationRequest: (requestId: string, data: Partial<Omit<QuotationRequest, 'id'>>) => void;
   deleteQuotationRequest: (requestId: string) => void;
   // Purchase methods
-  addPurchaseOrder: (companyId: string, order: Omit<Purchase, 'remainingTime'>) => Purchase;
-  getPurchaseOrder: (orderId: string) => { purchase: Purchase, companyId: string } | null;
-  activatePurchaseOrder: (companyId: string, orderId: string) => void;
+  addPurchaseOrder: (purchase: Omit<Purchase, 'remainingTime'>) => Purchase;
+  getPurchaseOrder: (orderId: string) => Purchase | null;
+  activatePurchaseOrder: (orderId: string) => void;
   declinePurchaseOrder: (orderId: string, reason: string) => void;
   acknowledgeDeclinedPurchase: (orderId: string) => void;
   updatePurchaseStatus: () => void;
@@ -90,6 +95,8 @@ interface BrandsoftContextType {
   addReview: (review: Omit<Review, 'id'>) => void;
   // Key activation
   useActivationKey: (key: string, companyId: string) => boolean;
+  // Affiliate registration
+  registerAffiliate: (data: any) => string | null;
 }
 
 const BrandsoftContext = createContext<BrandsoftContextType | undefined>(undefined);
@@ -126,8 +133,8 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
     const addCreditPurchaseToAffiliate = (credits: number, orderId: string) => {
       if (!config || !config.affiliate || !config.admin) return;
   
-      const { purchase: order, companyId } = purchaseMethods.getPurchaseOrder(orderId) || {};
-      if (!order || !companyId) return;
+      const order = purchaseMethods.getPurchaseOrder(orderId);
+      if (!order || !order.customerId) return;
   
       const costInMWK = parseFloat(order.planPrice.replace(/[^0-9.-]+/g,""));
       
@@ -140,7 +147,7 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
       
       newAffiliateData.creditBalance = (newAffiliateData.creditBalance || 0) - credits;
   
-      const companyIndex = newConfig.companies.findIndex(c => c.id === companyId);
+      const companyIndex = newConfig.companies.findIndex(c => c.id === order.customerId);
       if (companyIndex > -1) {
           const company = newConfig.companies[companyIndex];
           newConfig.companies[companyIndex] = {
@@ -148,12 +155,12 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
               walletBalance: (company.walletBalance || 0) + costInMWK,
           };
       } else {
-          console.error(`Company not found: ${companyId}`);
+          console.error(`Company not found: ${order.customerId}`);
           return; 
       }
       
       if (newAffiliateData.clients) {
-          const affiliateClientIndex = newAffiliateData.clients.findIndex(c => c.id === companyId);
+          const affiliateClientIndex = newAffiliateData.clients.findIndex(c => c.id === order.customerId);
           if (affiliateClientIndex > -1) {
               const client = newAffiliateData.clients[affiliateClientIndex];
               newAffiliateData.clients[affiliateClientIndex] = {
@@ -163,7 +170,7 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
           }
       }
       
-      purchaseMethods.activatePurchaseOrder(companyId, orderId);
+      purchaseMethods.activatePurchaseOrder(orderId);
       
       const updatedConfigWithActivatedPurchase = get().config;
 
@@ -205,6 +212,33 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
         saveConfig(newConfig, { revalidate: true });
         return true;
     };
+    
+    const registerAffiliate = (data: Omit<Affiliate, 'id'>): string | null => {
+        if (config?.affiliate) {
+            // In this demo, we only allow one affiliate.
+            return null; 
+        }
+        
+        const staffId = `BS-AFF-${Date.now().toString(36).toUpperCase()}`;
+        const affiliateLink = `https://brandsoft.com/join?ref=${data.username}`;
+
+        const newAffiliate: Affiliate = {
+            ...initialAffiliateData,
+            fullName: data.fullName,
+            username: data.username,
+            password: data.password, // In a real app, this should be hashed
+            staffId: staffId,
+            affiliateLink: affiliateLink,
+        };
+
+        const newConfig: BrandsoftConfig = {
+            ...config!,
+            affiliate: newAffiliate,
+        };
+        
+        saveConfig(newConfig, { redirect: false });
+        return staffId;
+    };
 
     return {
         ...companyMethods,
@@ -218,6 +252,7 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
         addReview,
         addCreditPurchaseToAffiliate,
         useActivationKey,
+        registerAffiliate,
     };
 }
 
@@ -226,6 +261,8 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
   const [isActivated, setIsActivated] = useState<boolean | null>(null);
   const [isConfigured, setIsConfigured] = useState<boolean | null>(null);
   const [config, setConfig] = useState<BrandsoftConfig | null>(null);
+  const [role, setRole] = useState<'client' | 'staff' | 'admin'>('client');
+  const [isAffiliateLoggedIn, setIsAffiliateLoggedIn] = useState<boolean | null>(null);
   const router = useRouter();
   
   const revalidate = useCallback(() => {
@@ -293,6 +330,10 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       const storedConfig = localStorage.getItem(CONFIG_KEY);
       setIsActivated(!!license);
       setIsConfigured(!!storedConfig);
+      
+      const storedAffiliateLogin = sessionStorage.getItem('isAffiliateLoggedIn') === 'true';
+      setIsAffiliateLoggedIn(storedAffiliateLogin);
+      
       if (storedConfig) {
         let parsedConfig = JSON.parse(storedConfig);
         
@@ -326,10 +367,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
         }
 
         // Migration logic for affiliate data
-        if (!parsedConfig.affiliate) {
-            parsedConfig.affiliate = initialAffiliateData;
-            needsSave = true;
-        } else {
+        if (parsedConfig.affiliate) {
             const fieldsToCheck: (keyof Affiliate)[] = ['totalSales', 'creditBalance', 'bonus', 'staffId', 'phone', 'transactions', 'isPinSet', 'unclaimedCommission', 'myWallet', 'generatedKeys'];
             fieldsToCheck.forEach(field => {
                 if (typeof parsedConfig.affiliate[field] === 'undefined') {
@@ -450,13 +488,34 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     return false;
   };
   
+  const affiliateLogin = (username: string, password: string): boolean => {
+      if (config?.affiliate?.username === username && config?.affiliate?.password === password) {
+          sessionStorage.setItem('isAffiliateLoggedIn', 'true');
+          setIsAffiliateLoggedIn(true);
+          setRole('staff');
+          router.push('/office');
+          return true;
+      }
+      return false;
+  };
+
+  const affiliateLogout = () => {
+      sessionStorage.removeItem('isAffiliateLoggedIn');
+      setIsAffiliateLoggedIn(false);
+      setRole('client');
+      router.push('/staff/login');
+  };
+  
   const logout = () => {
     localStorage.removeItem(LICENSE_KEY);
     localStorage.removeItem(CONFIG_KEY);
     setIsActivated(false);
     setIsConfigured(false);
+    affiliateLogout(); // Also log out affiliate
     router.push('/activation');
   };
+  
+  const get = () => ({ config });
 
   const value: BrandsoftContextType = {
     isActivated,
@@ -466,6 +525,11 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     activate,
     saveConfig,
     logout,
+    role,
+    setRole,
+    affiliateLogin,
+    affiliateLogout,
+    isAffiliateLoggedIn,
     ...dataMethods,
   };
 
