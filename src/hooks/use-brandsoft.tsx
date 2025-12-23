@@ -21,7 +21,7 @@ const VALID_SERIAL = 'BS-GSS-DEMO0000-000000';
 
 const initialAffiliateData: Affiliate = {
     fullName: 'Sant',
-    username: 'sant',
+    username: 'Sant',
     phone: '265994985371',
     password: 'password',
     profilePic: 'https://picsum.photos/seed/affiliate/200',
@@ -498,8 +498,12 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
 
       // Check for Admin
       const adminUser = config.admin?.username;
-      const adminPass = config.admin?.password;
-      if (adminUser && adminUser.toLowerCase() === username.toLowerCase() && adminPass === password) {
+      // If admin password isn't set, allow default 'password'
+      const isAdminPasswordMatch = 
+          (config.admin?.password && config.admin.password === password) || 
+          (!config.admin?.password && password === 'password');
+
+      if (adminUser && adminUser.toLowerCase() === username.toLowerCase() && isAdminPasswordMatch) {
           setRole('admin');
           router.push('/admin');
           return { success: true, role: 'admin' };
@@ -509,7 +513,10 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       const affiliate = config.affiliate;
       if (affiliate) {
           const isUsernameMatch = affiliate.username.toLowerCase() === username.toLowerCase();
-          const isPasswordMatch = (!affiliate.password && password === 'password') || affiliate.password === password;
+          // If affiliate password isn't set, allow default 'password'
+          const isPasswordMatch = 
+              (affiliate.password && affiliate.password === password) ||
+              (!affiliate.password && password === 'password');
           
           if (isUsernameMatch && isPasswordMatch) {
               sessionStorage.setItem('isAffiliateLoggedIn', 'true');
