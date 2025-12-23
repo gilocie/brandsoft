@@ -21,7 +21,7 @@ const openBrandImageDB = (): Promise<IDBDatabase> => {
     request.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result;
       if (!db.objectStoreNames.contains(BRAND_IMAGE_STORE_NAME)) {
-        db.createObjectStore(IMAGE_STORE_NAME);
+        db.createObjectStore(BRAND_IMAGE_STORE_NAME);
       }
     };
   });
