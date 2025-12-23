@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Loader2, UploadCloud, FileCheck, Building2, Smartphone, Banknote, Wallet } from 'lucide-react';
+import { CheckCircle, Loader2, UploadCloud, FileCheck, Building2, Smartphone, Banknote, Wallet, ArrowRight, Check } from 'lucide-react';
 import { useBrandsoft } from '@/hooks/use-brandsoft';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -229,7 +229,7 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                 paymentMethod: selectedPayment,
                 status: status,
                 date: new Date().toISOString(),
-                receipt: receiptDataUrl ? 'indexed-db' : 'none',
+                receipt: (selectedPayment !== 'wallet' && receiptFile) ? 'indexed-db' : 'none',
                 whatsappNumber: whatsappNumber,
                 customerId: myCompany?.id,
                 affiliateId: plan.affiliateId,
