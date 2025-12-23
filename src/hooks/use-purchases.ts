@@ -1,7 +1,7 @@
-
 'use client';
 
-import type { BrandsoftConfig, Purchase, AdminSettings } from '@/types/brandsoft';
+import type { BrandsoftConfig, Purchase, AdminSettings, Company } from '@/types/brandsoft';
+import { useCallback } from 'react';
 
 const TEST_PERIOD_MINUTES: Record<string, number> = {
   '1 Month': 10,
@@ -33,247 +33,257 @@ export function usePurchases(
   };
 
   const getPurchaseOrder = (orderId: string): Purchase | null => {
-    return config?.purchases?.find(p => p.orderId === orderId) || null;
+    // Search across all companies for the purchase order
+    if (!config || !config.companies) return null;
+    for (const company of config.companies) {
+        const purchase = (company.purchases || []).find(p => p.orderId === orderId);
+        if (purchase) return purchase;
+    }
+    return null;
   };
 
-  const activatePurchaseOrder = (allPurchases: Purchase[], orderId: string): ActivationResult => {
-    if (!config || !config.admin) return { purchases: allPurchases };
+  const activatePurchaseOrder = (orderId: string): void => {
+    if (!config || !config.admin) return;
 
-    const purchaseToActivate = allPurchases.find(p => p.orderId === orderId);
-    if (!purchaseToActivate) return { purchases: allPurchases };
+    let companyIdWithOrder: string | null = null;
+    const company = config.companies.find(c => {
+        const hasOrder = (c.purchases || []).some(p => p.orderId === orderId);
+        if (hasOrder) companyIdWithOrder = c.id;
+        return hasOrder;
+    });
 
+    if (!company || !companyIdWithOrder) return;
+    
     let newAdminSettings: AdminSettings = { ...(config.admin as AdminSettings) };
     let newAffiliateData: BrandsoftConfig['affiliate'] | undefined = config.affiliate ? { ...config.affiliate } : undefined;
+
+    const companyIndex = config.companies.findIndex(c => c.id === companyIdWithOrder);
+    const updatedCompany = JSON.parse(JSON.stringify(config.companies[companyIndex]));
+
+    let allPurchases = updatedCompany.purchases || [];
+    const purchaseToActivate = allPurchases.find((p: Purchase) => p.orderId === orderId);
+
+    if (!purchaseToActivate) return;
     
     // Top-ups are simple activations without time logic.
     if (purchaseToActivate.planName === 'Wallet Top-up' || purchaseToActivate.planName.startsWith('Credit Purchase')) {
-        const updatedPurchases = allPurchases.map(p => 
+        updatedCompany.purchases = allPurchases.map((p: Purchase) => 
             p.orderId === orderId ? { ...p, status: 'active' as const, date: new Date().toISOString() } : p
         );
-        return { purchases: updatedPurchases };
-    }
-    
-    // Key Activation with Affiliate Commission
-    if (purchaseToActivate.planName.toLowerCase().includes('key') && purchaseToActivate.affiliateId) {
-        if(newAffiliateData && newAffiliateData.staffId === purchaseToActivate.affiliateId) {
-            newAffiliateData = {
-                ...newAffiliateData,
-                unclaimedCommission: (newAffiliateData.unclaimedCommission || 0) + 10000,
-                bonus: (newAffiliateData.bonus || 0) + 2000,
-                transactions: [
-                    { id: `TRN-COMM-${orderId}`, date: new Date().toISOString(), description: `Commission for Key Sale`, amount: 10000, type: 'credit' },
-                    { id: `TRN-BONUS-${orderId}`, date: new Date().toISOString(), description: `Bonus for Key Sale`, amount: 2000, type: 'credit' },
-                    ...(newAffiliateData.transactions || [])
-                ],
-            };
+    } else {
+        // Handle plan activations...
+        if (purchaseToActivate.planName.toLowerCase().includes('key') && purchaseToActivate.affiliateId) {
+            if(newAffiliateData && newAffiliateData.staffId === purchaseToActivate.affiliateId) {
+                newAffiliateData = {
+                    ...newAffiliateData,
+                    unclaimedCommission: (newAffiliateData.unclaimedCommission || 0) + 10000,
+                    bonus: (newAffiliateData.bonus || 0) + 2000,
+                    transactions: [
+                        { id: `TRN-COMM-${orderId}`, date: new Date().toISOString(), description: `Commission for Key Sale`, amount: 10000, type: 'credit' },
+                        { id: `TRN-BONUS-${orderId}`, date: new Date().toISOString(), description: `Bonus for Key Sale`, amount: 2000, type: 'credit' },
+                        ...(newAffiliateData.transactions || [])
+                    ],
+                };
+            }
         }
-    }
-
-
-    const now = Date.now();
-    let remainingMsFromOldPlan = 0;
-
-    const currentActivePlan = allPurchases.find(p => p.status === 'active' && p.expiresAt);
-    if (currentActivePlan) {
-        const expiryTime = new Date(currentActivePlan.expiresAt).getTime();
-        if (expiryTime > now) {
-            remainingMsFromOldPlan = expiryTime - now;
-        }
-    }
-
-    let period = purchaseToActivate.planPeriod;
-    let periodReserve = purchaseToActivate.periodReserve || 0;
-    let totalInitialDays = 0;
-
-    // Logic for new key activation
-    if (purchaseToActivate.planName.toLowerCase().includes('key')) {
-        const freeDays = config.admin?.keyFreeDays || 30;
-        const paidDays = config.admin?.keyPeriodReserveDays || 30;
         
-        totalInitialDays = freeDays + paidDays;
-        period = `${totalInitialDays} days`;
-    }
-
-    const isTestPlan = isTestPlanPeriod(period);
-
-    const planDurations: Record<string, {days: number, isTest: boolean, unit: 'days' | 'minutes'}> = {
-      '1 Month': { days: isTestPlan ? TEST_PERIOD_MINUTES['1 Month'] : 30, isTest: isTestPlan, unit: isTestPlan ? 'minutes' : 'days' },
-      '3 Months': { days: isTestPlan ? TEST_PERIOD_MINUTES['3 Months'] : 90, isTest: isTestPlan, unit: isTestPlan ? 'minutes' : 'days' },
-      '6 Months': { days: isTestPlan ? TEST_PERIOD_MINUTES['6 Months'] : 180, isTest: isTestPlan, unit: isTestPlan ? 'minutes' : 'days' },
-      '1 Year': { days: isTestPlan ? TEST_PERIOD_MINUTES['1 Year'] : 365, isTest: isTestPlan, unit: isTestPlan ? 'minutes' : 'days' },
-      'Once OFF': { days: 365 * 3, isTest: false, unit: 'days' },
-    };
-    
-    let durationInfo = planDurations[period];
-
-    if (!durationInfo && period.includes('days')) {
-        const days = parseInt(period, 10) || 0;
-        durationInfo = { days, isTest: false, unit: 'days' };
-    } else if (!durationInfo) {
-        durationInfo = { days: 0, isTest: false, unit: 'days' };
-    }
-
-    let activationDuration = durationInfo.days;
-    let totalDurationMs = activationDuration * (durationInfo.unit === 'minutes' ? 60 * 1000 : 24 * 60 * 60 * 1000);
-    
-    // Manual payments use reserve. Wallet payments add directly.
-    if (purchaseToActivate.paymentMethod !== 'wallet' && !isTestPlan && !purchaseToActivate.planName.toLowerCase().includes('key') && activationDuration > 30) {
-        periodReserve += (activationDuration - 30);
-        activationDuration = 30;
-        totalDurationMs = activationDuration * 24 * 60 * 60 * 1000;
-    }
-    
-    const expiresAt = new Date(now + totalDurationMs + remainingMsFromOldPlan).toISOString();
-
-    const remainingValue = isTestPlan
-        ? Math.ceil((totalDurationMs + remainingMsFromOldPlan) / (1000 * 60))
-        : Math.ceil((totalDurationMs + remainingMsFromOldPlan) / (1000 * 60 * 60 * 24));
-
-    let updatedPurchases = allPurchases.map(p => {
-        if (p.orderId === orderId) {
-            return {
-                ...p,
-                status: 'active' as const,
-                date: new Date().toISOString(),
-                remainingTime: { value: remainingValue, unit: durationInfo.unit },
-                expiresAt,
-                periodReserve,
-            };
-        }
-        if (p.status === 'active') {
-            return { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: 'days' as 'days' } };
-        }
-        return p;
-    });
-
-    const newlyActivatedPurchase = updatedPurchases.find(p => p.orderId === orderId);
-    if (newlyActivatedPurchase && !newlyActivatedPurchase.planName.toLowerCase().includes('key')) {
-        const price = parseFloat(newlyActivatedPurchase.planPrice.replace(/[^0-9.-]+/g, ""));
-        if (!isNaN(price)) {
-            newAdminSettings.revenueFromPlans = (newAdminSettings.revenueFromPlans || 0) + price;
+        const now = Date.now();
+        let remainingMsFromOldPlan = 0;
+        const currentActivePlan = allPurchases.find((p: Purchase) => p.status === 'active' && p.expiresAt);
+        if (currentActivePlan) {
+            const expiryTime = new Date(currentActivePlan.expiresAt).getTime();
+            if (expiryTime > now) {
+                remainingMsFromOldPlan = expiryTime - now;
+            }
         }
 
-        const activePlanPurchases = updatedPurchases.filter(p => p.status === 'active' && !p.planName.toLowerCase().includes('key'));
-        const planCounts = activePlanPurchases.reduce((acc, p) => {
-            acc[p.planName] = (acc[p.planName] || 0) + 1;
-            return acc;
-        }, {} as Record<string, number>);
+        let period = purchaseToActivate.planPeriod;
+        let periodReserve = purchaseToActivate.periodReserve || 0;
+        let totalInitialDays = 0;
 
-        const trending = Object.keys(planCounts).sort((a,b) => planCounts[b] - planCounts[a]);
-        newAdminSettings.trendingPlan = trending[0] || 'None';
+        if (purchaseToActivate.planName.toLowerCase().includes('key')) {
+            totalInitialDays = (config.admin.keyFreeDays || 30) + (config.admin.keyPeriodReserveDays || 30);
+            period = `${totalInitialDays} days`;
+        }
+        
+        const isTestPlan = isTestPlanPeriod(period);
+        const planDurations: Record<string, {days: number, isTest: boolean, unit: 'days' | 'minutes'}> = {
+            '1 Month': { days: isTestPlan ? TEST_PERIOD_MINUTES['1 Month'] : 30, isTest: isTestPlan, unit: isTestPlan ? 'minutes' : 'days' },
+            '3 Months': { days: isTestPlan ? TEST_PERIOD_MINUTES['3 Months'] : 90, isTest: isTestPlan, unit: isTestPlan ? 'minutes' : 'days' },
+            '6 Months': { days: isTestPlan ? TEST_PERIOD_MINUTES['6 Months'] : 180, isTest: isTestPlan, unit: isTestPlan ? 'minutes' : 'days' },
+            '1 Year': { days: isTestPlan ? TEST_PERIOD_MINUTES['1 Year'] : 365, isTest: isTestPlan, unit: isTestPlan ? 'minutes' : 'days' },
+            'Once OFF': { days: 365 * 3, isTest: false, unit: 'days' },
+        };
+        let durationInfo = planDurations[period];
+        if (!durationInfo && period.includes('days')) {
+            durationInfo = { days: parseInt(period, 10) || 0, isTest: false, unit: 'days' };
+        } else if (!durationInfo) {
+            durationInfo = { days: 0, isTest: false, unit: 'days' };
+        }
+        
+        let activationDuration = durationInfo.days;
+        let totalDurationMs = activationDuration * (durationInfo.unit === 'minutes' ? 60 * 1000 : 24 * 60 * 60 * 1000);
+        
+        if (purchaseToActivate.paymentMethod !== 'wallet' && !isTestPlan && !purchaseToActivate.planName.toLowerCase().includes('key') && activationDuration > 30) {
+            periodReserve += (activationDuration - 30);
+            activationDuration = 30;
+            totalDurationMs = activationDuration * 24 * 60 * 60 * 1000;
+        }
+        
+        const expiresAt = new Date(now + totalDurationMs + remainingMsFromOldPlan).toISOString();
+        const remainingValue = isTestPlan ? Math.ceil(remainingMsFromOldPlan / (1000 * 60)) + activationDuration : Math.ceil(remainingMsFromOldPlan / (1000 * 60 * 60 * 24)) + activationDuration;
+
+        updatedCompany.purchases = allPurchases.map((p: Purchase) => {
+            if (p.orderId === orderId) {
+                return { ...p, status: 'active' as const, date: new Date().toISOString(), remainingTime: { value: remainingValue, unit: durationInfo.unit }, expiresAt, periodReserve };
+            }
+            if (p.status === 'active') {
+                return { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: 'days' as 'days' } };
+            }
+            return p;
+        });
+
+        const newlyActivatedPurchase = updatedCompany.purchases.find((p: Purchase) => p.orderId === orderId);
+        if (newlyActivatedPurchase && !newlyActivatedPurchase.planName.toLowerCase().includes('key')) {
+            const price = parseFloat(newlyActivatedPurchase.planPrice.replace(/[^0-9.-]+/g, ""));
+            if (!isNaN(price)) {
+                newAdminSettings.revenueFromPlans = (newAdminSettings.revenueFromPlans || 0) + price;
+            }
+            const activePlanPurchases = updatedCompany.purchases.filter((p: Purchase) => p.status === 'active' && !p.planName.toLowerCase().includes('key'));
+            const planCounts = activePlanPurchases.reduce((acc: Record<string, number>, p: Purchase) => {
+                acc[p.planName] = (acc[p.planName] || 0) + 1;
+                return acc;
+            }, {});
+            const trending = Object.keys(planCounts).sort((a,b) => planCounts[b] - planCounts[a]);
+            newAdminSettings.trendingPlan = trending[0] || 'None';
+        }
     }
-
-    return { purchases: updatedPurchases, admin: newAdminSettings, affiliate: newAffiliateData };
+    
+    const newCompanies = [...config.companies];
+    newCompanies[companyIndex] = updatedCompany;
+    
+    saveConfig({ ...config, companies: newCompanies, admin: newAdminSettings, affiliate: newAffiliateData }, { revalidate: true });
 };
   
   const declinePurchaseOrder = (orderId: string, reason: string) => {
-    if (!config || !config.purchases) return;
-    const updatedPurchases = config.purchases.map(p => {
-      if (p.orderId === orderId) {
-        return {
-          ...p,
-          status: 'declined' as const,
-          declineReason: reason,
-          isAcknowledged: false,
-        };
-      }
-      if (p.status === 'active') {
-        return { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: 'days' as 'days'} };
-      }
-      return p;
-    });
-    saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: true });
+      if (!config || !config.companies) return;
+
+      const newCompanies = config.companies.map(c => {
+          const purchaseIndex = (c.purchases || []).findIndex(p => p.orderId === orderId);
+          if (purchaseIndex > -1) {
+              const newPurchases = [...(c.purchases || [])];
+              newPurchases[purchaseIndex] = {
+                  ...newPurchases[purchaseIndex],
+                  status: 'declined' as const,
+                  declineReason: reason,
+                  isAcknowledged: false,
+              };
+              return { ...c, purchases: newPurchases };
+          }
+          return c;
+      });
+      saveConfig({ ...config, companies: newCompanies }, { redirect: false, revalidate: true });
   };
   
   const acknowledgeDeclinedPurchase = (orderId: string) => {
-    if (!config || !config.purchases) return;
-    const updatedPurchases = config.purchases.map(p => 
-      (p.orderId === orderId && p.status === 'declined') ? { ...p, isAcknowledged: true } : p
-    );
-    saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: true });
+      if (!config || !config.companies) return;
+      const newCompanies = config.companies.map(c => {
+          const purchaseIndex = (c.purchases || []).findIndex(p => p.orderId === orderId && p.status === 'declined');
+          if (purchaseIndex > -1) {
+              const newPurchases = [...(c.purchases || [])];
+              newPurchases[purchaseIndex].isAcknowledged = true;
+              return { ...c, purchases: newPurchases };
+          }
+          return c;
+      });
+      saveConfig({ ...config, companies: newCompanies }, { redirect: false, revalidate: true });
   };
   
-  const updatePurchaseStatus = () => {
-    if (!config?.purchases) return;
+  const updatePurchaseStatus = useCallback(() => {
+    if (!config?.companies) return;
 
     let changed = false;
-    let newConfig = { ...config };
+    let newConfig = JSON.parse(JSON.stringify(config)); // Deep copy to avoid mutation issues
 
-    const updatedPurchases = newConfig.purchases.map(p => {
-        if (p.status === 'active' && p.expiresAt) {
-            const expiryTime = new Date(p.expiresAt).getTime();
-            const now = Date.now();
-            
-            if (expiryTime <= now) {
-                // Plan expired, check for reserve
-                if (p.periodReserve && p.periodReserve > 0) {
-                    changed = true;
-                    const daysToActivate = Math.min(30, p.periodReserve);
-                    const newReserve = p.periodReserve - daysToActivate;
-                    const activationMs = daysToActivate * 24 * 60 * 60 * 1000;
-                    
-                     // Add commission to affiliate if applicable
-                    if (newConfig.affiliate && p.customerId) {
-                        const client = newConfig.companies.find(c => c.id === p.customerId);
-                        if(client && client.referredBy === newConfig.affiliate.staffId) {
-                            const commissionRate = newConfig.admin?.commissionRate || 0.10;
-                            const price = parseFloat(p.planPrice.replace(/[^0-9.-]+/g, ""));
-                            if (!isNaN(price)) {
-                                const commissionAmount = price * commissionRate;
-                                newConfig.affiliate.unclaimedCommission = (newConfig.affiliate.unclaimedCommission || 0) + commissionAmount;
-                                newConfig.affiliate.transactions = [
-                                    {
-                                        id: `TRN-RENEW-${Date.now()}`,
-                                        date: new Date().toISOString(),
-                                        description: `Monthly renewal commission for ${client.companyName}`,
-                                        amount: commissionAmount,
-                                        type: 'credit'
-                                    },
-                                    ...(newConfig.affiliate.transactions || [])
-                                ];
-                            }
-                        }
-                    }
+    const { demoClientId, demoDurations } = config.admin || {};
 
-                    return {
-                        ...p,
-                        status: 'active' as const,
-                        expiresAt: new Date(now + activationMs).toISOString(),
-                        remainingTime: { value: daysToActivate, unit: 'days' as const },
-                        periodReserve: newReserve,
-                    };
-                } else {
-                    changed = true;
-                    return { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: 'days' as const } };
+    const updatedCompanies = newConfig.companies.map((company: Company) => {
+        if (!company.purchases || company.purchases.length === 0) return company;
+
+        const newPurchases = company.purchases.map((p: Purchase) => {
+            if (p.status !== 'active' || !p.expiresAt) return p;
+
+            let expiryTime: number;
+            let timeUnit: 'days' | 'minutes' | 'seconds' = 'days';
+
+            // DEMO MODE LOGIC
+            if (company.id === demoClientId && demoDurations && demoDurations[p.planName]) {
+                const demoSettings = demoDurations[p.planName];
+                const purchaseDate = new Date(p.date).getTime();
+                let durationMs = 0;
+                timeUnit = demoSettings.unit;
+
+                if (demoSettings.unit === 'seconds') {
+                    durationMs = demoSettings.value * 1000;
+                } else if (demoSettings.unit === 'minutes') {
+                    durationMs = demoSettings.value * 60 * 1000;
+                } else { // days
+                    durationMs = demoSettings.value * 24 * 60 * 60 * 1000;
                 }
+                expiryTime = purchaseDate + durationMs;
+            } else {
+                // REGULAR LOGIC
+                expiryTime = new Date(p.expiresAt).getTime();
+            }
+
+            const now = Date.now();
+
+            if (expiryTime <= now) {
+                // Plan expired
+                changed = true;
+                return { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: timeUnit } };
             } else {
                 // Plan is still active, update remaining time
                 const remainingMs = expiryTime - now;
-                const isTest = isTestPlanPeriod(p.planPeriod);
-                const unit = isTest ? 'minutes' : 'days';
-                
-                const remaining = isTest
-                    ? Math.ceil(remainingMs / (1000 * 60))
-                    : Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
-                
-                if (p.remainingTime?.value !== remaining || p.remainingTime?.unit !== unit) {
+                let remainingValue: number;
+
+                if (timeUnit === 'seconds') {
+                    remainingValue = Math.ceil(remainingMs / 1000);
+                } else if (timeUnit === 'minutes') {
+                    remainingValue = Math.ceil(remainingMs / (1000 * 60));
+                } else { // days
+                    remainingValue = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
+                }
+
+                if (p.remainingTime?.value !== remainingValue || p.remainingTime?.unit !== timeUnit) {
                     changed = true;
-                    return { ...p, remainingTime: { value: remaining, unit } };
+                    return { ...p, remainingTime: { value: remainingValue, unit: timeUnit } };
                 }
             }
+            return p;
+        });
+
+        if(changed) {
+            return { ...company, purchases: newPurchases };
         }
-        return p;
+        return company;
     });
 
     if (changed) {
-        saveConfig({ ...newConfig, purchases: updatedPurchases }, { redirect: false, revalidate: false });
+        saveConfig({ ...newConfig, companies: updatedCompanies }, { redirect: false, revalidate: false });
     }
-};
+  }, [config, saveConfig]);
 
   const downgradeToTrial = () => {
     if (!config) return;
-    const updatedPurchases: Purchase[] = [];
-    saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: true });
+    const myCompanyId = config.profile.id;
+    const newCompanies = config.companies.map(c => {
+        if (c.id === myCompanyId) {
+            return { ...c, purchases: [] };
+        }
+        return c;
+    });
+    saveConfig({ ...config, companies: newCompanies }, { redirect: false, revalidate: true });
   };
 
   return {

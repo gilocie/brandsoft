@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Page } from '@/stores/canvas-store';
@@ -101,7 +100,7 @@ export type Purchase = {
     expiresAt?: string;
     remainingTime: {
         value: number;
-        unit: 'minutes' | 'days';
+        unit: 'minutes' | 'days' | 'seconds';
     };
     customerId?: string; 
     periodReserve?: number; 
@@ -288,6 +287,8 @@ export type AdminSettings = {
   revenueFromPlans: number;
   planPeriods: PlanPeriod[];
   commissionRate?: number;
+  demoClientId?: string | null;
+  demoDurations?: Record<string, { value: number; unit: 'seconds' | 'minutes' | 'days' }>;
 };
 
 export type Invoice = {

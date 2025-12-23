@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, createContext, useContext, ReactNode, useCallback } from 'react';
@@ -58,7 +57,7 @@ interface BrandsoftContextType {
   login: (username: string, password: string) => { success: boolean; role?: 'admin' | 'staff' };
   isAffiliateLoggedIn: boolean | null;
   affiliateLogout: () => void;
-  adminLogout: () => void;
+  adminLogout: () => void; // ADD THIS
   role: 'client' | 'staff' | 'admin';
   setRole: (role: 'client' | 'staff' | 'admin') => void;
   // Company methods
