@@ -103,51 +103,53 @@ export default function AdminProfilePage() {
                         <DialogTrigger asChild>
                             <Button variant="outline"><Edit className="mr-2 h-4 w-4" /> Edit Profile</Button>
                         </DialogTrigger>
-                        <DialogContent>
+                        <DialogContent className="sm:max-w-2xl">
                              <DialogHeader>
                                 <DialogTitle>Edit Admin Profile</DialogTitle>
                                 <DialogDescription>Update your admin information and profile picture.</DialogDescription>
                             </DialogHeader>
                              <Form {...form}>
                                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
-                                     <div className="flex flex-col items-center gap-4 p-4 border rounded-lg bg-muted/30">
-                                        <Avatar className="h-24 w-24 border-2 border-primary/20">
-                                            {isAdminImageLoading ? (
-                                                <Skeleton className="h-full w-full rounded-full" />
-                                            ) : (
-                                                <>
-                                                    <AvatarImage src={adminImage || brandsoftLogo.src} />
-                                                    <AvatarFallback className="text-3xl">{form.getValues('fullName')?.charAt(0)}</AvatarFallback>
-                                                </>
-                                            )}
-                                        </Avatar>
-                                        <div className="text-center space-y-2">
-                                            <SimpleImageUploadButton
-                                                value={adminImage || ''}
-                                                onChange={setAdminImage}
-                                                buttonText="Upload Admin Photo"
-                                            />
-                                            {adminImage && (
-                                                <Button 
-                                                    type="button" 
-                                                    variant="ghost" 
-                                                    size="sm"
-                                                    className="text-destructive hover:text-destructive text-xs"
-                                                    onClick={() => setAdminImage('')}
-                                                >
-                                                    Remove Photo
-                                                </Button>
-                                            )}
+                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        <div className="md:col-span-1 flex flex-col items-center gap-4 p-4 border rounded-lg bg-muted/30">
+                                            <Avatar className="h-24 w-24 border-2 border-primary/20">
+                                                {isAdminImageLoading ? (
+                                                    <Skeleton className="h-full w-full rounded-full" />
+                                                ) : (
+                                                    <>
+                                                        <AvatarImage src={adminImage || brandsoftLogo.src} />
+                                                        <AvatarFallback className="text-3xl">{form.getValues('fullName')?.charAt(0)}</AvatarFallback>
+                                                    </>
+                                                )}
+                                            </Avatar>
+                                            <div className="text-center space-y-2">
+                                                <SimpleImageUploadButton
+                                                    value={adminImage || ''}
+                                                    onChange={setAdminImage}
+                                                    buttonText="Upload Admin Photo"
+                                                />
+                                                {adminImage && (
+                                                    <Button 
+                                                        type="button" 
+                                                        variant="ghost" 
+                                                        size="sm"
+                                                        className="text-destructive hover:text-destructive text-xs"
+                                                        onClick={() => setAdminImage('')}
+                                                    >
+                                                        Remove Photo
+                                                    </Button>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                    
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <FormField control={form.control} name="fullName" render={({ field }) => (
-                                            <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                        )} />
-                                        <FormField control={form.control} name="username" render={({ field }) => (
-                                            <FormItem><FormLabel>Username</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                        )} />
+                                        
+                                        <div className="md:col-span-2 space-y-4">
+                                            <FormField control={form.control} name="fullName" render={({ field }) => (
+                                                <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                            )} />
+                                            <FormField control={form.control} name="username" render={({ field }) => (
+                                                <FormItem><FormLabel>Username</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                            )} />
+                                        </div>
                                     </div>
                                     
                                     <div className="flex justify-end gap-2 pt-4 border-t">
