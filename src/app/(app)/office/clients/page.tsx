@@ -22,6 +22,7 @@ export default function OfficeClientsPage() {
                 ...client,
                 name: realCompany.companyName,
                 avatar: realCompany.logo || client.avatar,
+                walletBalance: realCompany.walletBalance,
             };
         }
         return client;

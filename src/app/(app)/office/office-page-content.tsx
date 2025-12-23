@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useBrandsoft, type Transaction, type Affiliate, type Purchase } from '@/hooks/use-brandsoft';
@@ -39,13 +38,13 @@ import { PurchaseDialog, type PlanDetails } from '@/components/purchase-dialog';
 import { SellCreditsDialog } from '@/components/office/dialogs/sell-credits-dialog';
 import { BonusProgressDialog } from './bonus-progress-dialog';
 import { useRouter } from 'next/navigation';
+import { useBrandImage } from '@/hooks/use-brand-image';
 
 
 const affiliateSchema = z.object({
     fullName: z.string().min(2, "Full name is required"),
     username: z.string().min(3, "Username must be at least 3 characters"),
     phone: z.string().optional(),
-    profilePic: z.string().optional(),
 });
 
 type AffiliateFormData = z.infer<typeof affiliateSchema>;
@@ -63,6 +62,7 @@ export function OfficePageContent() {
   const [purchaseDetails, setPurchaseDetails] = useState<PlanDetails | null>(null);
   const [isSellCreditsOpen, setIsSellCreditsOpen] = useState(false);
   const router = useRouter();
+  const { image: affiliateImage, setImage: setAffiliateImage } = useBrandImage('affiliateProfilePic');
 
 
   const affiliate = config?.affiliate;
@@ -73,27 +73,23 @@ export function OfficePageContent() {
           fullName: affiliate?.fullName || '',
           username: affiliate?.username || '',
           phone: affiliate?.phone || '',
-          profilePic: affiliate?.profilePic || '',
       }
   });
 
 
-  // NEW: Create a synchronized list of clients
   // This merges the Affiliate Client entry with the latest real Company Data
   const syncedClients = useMemo(() => {
     if (!affiliate?.clients || !config?.companies) return [];
 
     return affiliate.clients.map(client => {
-        // Find the actual company record
         const realCompany = config.companies.find(c => c.id === client.id);
         
         if (realCompany) {
-            // Return the client data, but override name/avatar with real company data
             return {
                 ...client,
                 name: realCompany.companyName,
                 avatar: realCompany.logo || client.avatar,
-                // You could also sync email/phone here if needed
+                walletBalance: realCompany.walletBalance,
             };
         }
         return client;
@@ -106,7 +102,6 @@ export function OfficePageContent() {
             fullName: affiliate.fullName,
             username: affiliate.username,
             phone: affiliate.phone,
-            profilePic: affiliate.profilePic,
         });
     }
   }, [affiliate, form]);
@@ -219,14 +214,14 @@ export function OfficePageContent() {
   const totalCreditsSold = affiliate.transactions
     ?.filter(t => t.description.toLowerCase().startsWith('credit sale to'))
     .reduce((sum, t) => sum + t.amount, 0) || 0;
-    
-  const creditSalesRevenue = totalCreditsSold * CREDIT_TO_MWK;
+
+  const creditSalesProfit = totalCreditsSold * ((config.admin?.sellPrice || 900) - (config.admin?.buyPrice || 850));
 
     return (
     <div className="space-y-8">
       <div className="flex items-center gap-4">
           <Avatar className="h-20 w-20">
-            <AvatarImage src={affiliate.profilePic} />
+            <AvatarImage src={affiliateImage || affiliate.profilePic} />
             <AvatarFallback>{affiliate.fullName.charAt(0)}</AvatarFallback>
           </Avatar>
           <div className="flex items-center gap-2">
@@ -245,29 +240,20 @@ export function OfficePageContent() {
                     </DialogHeader>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
-                            <FormField
-                                control={form.control}
-                                name="profilePic"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Profile Picture</FormLabel>
-                                        <div className="flex items-center gap-4">
-                                            <Avatar className="h-16 w-16">
-                                                <AvatarImage src={field.value} />
-                                                <AvatarFallback>{form.getValues('fullName')?.charAt(0)}</AvatarFallback>
-                                            </Avatar>
-                                            <div className="flex-grow">
-                                                <SimpleImageUploadButton
-                                                    value={field.value}
-                                                    onChange={field.onChange}
-                                                    buttonText="Upload New Picture"
-                                                />
-                                            </div>
-                                        </div>
-                                    </FormItem>
-                                )}
-                            />
-
+                            <div className="flex items-center gap-4">
+                                <Avatar className="h-16 w-16">
+                                    <AvatarImage src={affiliateImage || affiliate.profilePic} />
+                                    <AvatarFallback>{form.getValues('fullName')?.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <div className="flex-grow">
+                                    <SimpleImageUploadButton
+                                        value={affiliateImage || ''}
+                                        onChange={setAffiliateImage}
+                                        buttonText="Upload New Picture"
+                                    />
+                                </div>
+                            </div>
+                            
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <FormField
                                     control={form.control}
@@ -346,7 +332,7 @@ export function OfficePageContent() {
                         title="Credit Balance" 
                         value={affiliate.creditBalance || 0}
                         valuePrefix={`BS `}
-                        footer={`Value: K${((affiliate.creditBalance || 0) * CREDIT_TO_MWK).toLocaleString()}`}
+                        footer={`Value: K${((affiliate.creditBalance || 0) * (config.admin?.buyPrice || 850)).toLocaleString()}`}
                     >
                        <div className="flex gap-2 mt-2">
                             <BuyCreditsDialog
@@ -389,10 +375,10 @@ export function OfficePageContent() {
                     <StatCard icon={Users} title="Active Clients" value={activeClients} footer={`${syncedClients.length - activeClients} expired`} />
                     <StatCard 
                         icon={BarChart} 
-                        title="Credit Sales Revenue" 
-                        value={creditSalesRevenue} 
+                        title="Credit Sales Profit" 
+                        value={creditSalesProfit} 
                         isCurrency
-                        footer="Gross revenue from selling credits"
+                        footer="Profit from selling credits"
                     />
                     <StatCard icon={UserCheck} title="Total Referrals" value={syncedClients.length} footer="All-time client sign-ups" />
                 </div>
@@ -477,4 +463,3 @@ export function OfficePageContent() {
     </div>
   );
 }
-

@@ -76,7 +76,7 @@ interface BrandsoftContextType {
   updateQuotationRequest: (requestId: string, data: Partial<Omit<QuotationRequest, 'id'>>) => void;
   deleteQuotationRequest: (requestId: string) => void;
   // Purchase methods
-  addPurchaseOrder: (order: Omit<Purchase, 'remainingTime'>) => Purchase;
+  addPurchaseOrder: (companyId: string, order: Omit<Purchase, 'remainingTime'>) => Purchase;
   getPurchaseOrder: (orderId: string) => { purchase: Purchase, companyId: string } | null;
   activatePurchaseOrder: (companyId: string, orderId: string) => void;
   declinePurchaseOrder: (orderId: string, reason: string) => void;
@@ -163,7 +163,8 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
           }
       }
       
-      purchaseMethods.activatePurchaseOrder(companyId, orderId); // This will update the status in the yet-to-be-saved config
+      purchaseMethods.activatePurchaseOrder(companyId, orderId);
+      
       const updatedConfigWithActivatedPurchase = get().config;
 
       const newAdminSettings: AdminSettings = {
@@ -296,32 +297,6 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
         let parsedConfig = JSON.parse(storedConfig);
         
         let needsSave = false;
-
-        // One-time migration: Move global purchases to company-specific purchases
-        if ((parsedConfig as any).purchases) {
-          const globalPurchases = (parsedConfig as any).purchases as Purchase[];
-          if (globalPurchases.length > 0) {
-            parsedConfig.companies = parsedConfig.companies.map((company: Company) => {
-              const companyPurchases = globalPurchases.filter(p => p.customerId === company.id);
-              if (companyPurchases.length > 0) {
-                return { ...company, purchases: [...(company.purchases || []), ...companyPurchases] };
-              }
-              return company;
-            });
-            delete (parsedConfig as any).purchases;
-            needsSave = true;
-          }
-        }
-        
-        if (parsedConfig.companies) {
-          parsedConfig.companies.forEach((company: Company) => {
-            if (!company.purchases) {
-              company.purchases = [];
-              needsSave = true;
-            }
-          });
-        }
-
 
         // Migration for wallet balance from affiliate.clients to companies
         if (parsedConfig.affiliate?.clients && parsedConfig.companies) {

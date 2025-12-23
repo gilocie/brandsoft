@@ -33,7 +33,7 @@ export const SellCreditsDialog = ({
     isOpen: boolean,
     onOpenChange: (open: boolean) => void,
     buyPrice: number,
-    onSellConfirm: (amount: number) => void;
+    onSellConfirm?: (amount: number) => void;
     affiliatePin?: string;
     isPinSet?: boolean;
 }) => {
@@ -80,7 +80,9 @@ export const SellCreditsDialog = ({
             toast({ variant: 'destructive', title: 'Invalid PIN' });
             return;
         }
-        onSellConfirm(data.amount);
+        if (onSellConfirm) {
+            onSellConfirm(data.amount);
+        }
         onOpenChange(false);
     };
 

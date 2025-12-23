@@ -17,6 +17,7 @@ const initialCompanies: Omit<Company, 'id'>[] = [
         logo: 'https://picsum.photos/seed/biz1/200',
         coverImage: 'https://picsum.photos/seed/bizcov1/1200/300',
         website: 'https://creativeprints.mw',
+        purchases: [],
     },
     { 
         name: 'Jane Chirwa', 
@@ -30,6 +31,7 @@ const initialCompanies: Omit<Company, 'id'>[] = [
         logo: 'https://picsum.photos/seed/biz2/200',
         coverImage: 'https://picsum.photos/seed/bizcov2/1200/300',
         website: 'https://bytesolutions.mw',
+        purchases: [],
     },
     { 
         name: 'Mike Phiri', 
@@ -43,6 +45,7 @@ const initialCompanies: Omit<Company, 'id'>[] = [
         logo: 'https://picsum.photos/seed/biz3/200',
         coverImage: 'https://picsum.photos/seed/bizcov3/1200/300',
         website: 'https://maketesupplies.mw',
+        purchases: [],
     },
     { 
         name: 'Grace Moyo', 
@@ -56,6 +59,7 @@ const initialCompanies: Omit<Company, 'id'>[] = [
         logo: 'https://picsum.photos/seed/biz4/200',
         coverImage: 'https://picsum.photos/seed/bizcov4/1200/300',
         website: 'https://buildright.mw',
+        purchases: [],
     },
     {
         name: 'Thoko Kamwendo',
@@ -69,6 +73,7 @@ const initialCompanies: Omit<Company, 'id'>[] = [
         logo: 'https://picsum.photos/seed/biz5/200',
         coverImage: 'https://picsum.photos/seed/bizcov5/1200/300',
         website: 'https://urbanoasis.mw',
+        purchases: [],
     },
     {
         name: 'David Ngwira',
@@ -82,6 +87,7 @@ const initialCompanies: Omit<Company, 'id'>[] = [
         logo: 'https://picsum.photos/seed/biz6/200',
         coverImage: 'https://picsum.photos/seed/bizcov6/1200/300',
         website: 'https://naturesbest.mw',
+        purchases: [],
     },
     // Add affiliate's clients to the main companies list
     {
@@ -95,6 +101,7 @@ const initialCompanies: Omit<Company, 'id'>[] = [
         customerType: 'company',
         logo: 'https://picsum.photos/seed/c1/100',
         coverImage: 'https://picsum.photos/seed/c1cov/1200/300',
+        purchases: [],
     },
     {
         name: 'Manja Factory CEO',
@@ -107,6 +114,7 @@ const initialCompanies: Omit<Company, 'id'>[] = [
         customerType: 'company',
         logo: 'https://picsum.photos/seed/c2/100',
         coverImage: 'https://picsum.photos/seed/c2cov/1200/300',
+        purchases: [],
     },
     {
         name: 'Kicks & Co. Manager',
@@ -119,6 +127,7 @@ const initialCompanies: Omit<Company, 'id'>[] = [
         customerType: 'company',
         logo: 'https://picsum.photos/seed/c3/100',
         coverImage: 'https://picsum.photos/seed/c3cov/1200/300',
+        purchases: [],
     }
 ];
 
@@ -292,35 +301,21 @@ export function useSetup(
   async function finalizeSetup(data: any) {
     const userCompanyId = `COMP-ME-${Date.now()}`;
     
-    // ============================================
-    // FIX: Save user's uploaded logo to IndexedDB
-    // ============================================
     let logoValue: string | undefined = undefined;
     
     if (data.logo && isDataUrl(data.logo)) {
-      // User uploaded a logo (data URL) - save to IndexedDB
       try {
-        // Save to generic 'logo' key (for useBrandImage hook, invoice preview, etc.)
         await saveImageToDB('logo', data.logo);
-        
-        // Save to company-specific key (for marketplace display)
         await saveImageToDB(`company-logo-${userCompanyId}`, data.logo);
-        
-        // Mark as stored in IndexedDB
         logoValue = 'indexed-db';
       } catch (error) {
         console.error('Failed to save logo to IndexedDB:', error);
-        // Fallback to storing directly (not ideal for large images)
         logoValue = data.logo;
       }
     } else if (data.logo) {
-      // It's a URL (not data URL) - keep as is
       logoValue = data.logo;
     }
     
-    // ============================================
-    // Create user's company entry
-    // ============================================
     const userAsCompany: Company = {
         id: userCompanyId,
         name: data.businessName,
@@ -332,10 +327,11 @@ export function useSetup(
         industry: data.industry,
         town: data.town,
         description: data.description,
-        logo: logoValue, // Will be 'indexed-db' if uploaded, URL if provided, or undefined
-        coverImage: 'indexed-db', // User can set cover later via settings
+        logo: logoValue,
+        coverImage: 'indexed-db',
         website: data.website,
         referredBy: 'BRANDSOFT-ADMIN',
+        purchases: [],
     };
     
     const userAsCustomer: Customer = {
@@ -359,7 +355,7 @@ export function useSetup(
       id: `QR-${Date.now() + i}`,
       requesterId: userAsCompany.id,
       requesterName: data.businessName,
-      requesterLogo: logoValue, // Use the same value we stored
+      requesterLogo: logoValue,
       date: new Date(Date.now() - (i + 1) * 3 * 24 * 60 * 60 * 1000).toISOString(),
       dueDate: new Date(Date.now() + (10 - i) * 24 * 60 * 60 * 1000).toISOString(),
       status: 'open' as const,
@@ -369,7 +365,7 @@ export function useSetup(
       brand: {
         businessName: data.businessName,
         description: data.description || '',
-        logo: logoValue || '', // Will be 'indexed-db' if uploaded
+        logo: logoValue || '',
         primaryColor: data.primaryColor || '#9400D3',
         secondaryColor: data.secondaryColor || '#D87093',
         font: data.font || 'Poppins',
@@ -418,11 +414,10 @@ export function useSetup(
       templates: [],
       plans: initialPlans,
       currencies: ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD'],
-      purchases: [],
       reviews: [],
     };
     
-    await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate saving
+    await new Promise(resolve => setTimeout(resolve, 1500));
     saveConfig(config);
   }
 
