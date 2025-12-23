@@ -184,6 +184,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   
   const { image: logoImage } = useBrandImage('logo');
   const { image: affiliateImage } = useBrandImage('affiliateProfilePic');
+  const { image: adminImage } = useBrandImage('adminProfilePic');
 
   const [role, setRole] = useState<'admin' | 'staff' | 'client' | null>(null);
   const [hasMounted, setHasMounted] = useState(false);
@@ -317,13 +318,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     switch (role) {
       case 'admin':
         return {
-          avatarSrc: logoImage || brandsoftLogo.src,
-          headerTitle: 'Admin Room',
+          avatarSrc: adminImage || brandsoftLogo.src,
+          headerTitle: config.admin?.fullName || 'Admin Room',
           avatarFallback: <BriefcaseBusiness />,
         };
       case 'staff':
         return {
-          avatarSrc: affiliateImage || logoImage || brandsoftLogo.src,
+          avatarSrc: affiliateImage || brandsoftLogo.src,
           headerTitle: config.affiliate?.fullName || 'Office Room',
           avatarFallback: config.affiliate?.fullName?.charAt(0) || 'S',
         };
@@ -335,7 +336,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           avatarFallback: config.brand.businessName?.charAt(0) || 'B',
         };
     }
-  }, [role, config, logoImage, affiliateImage]);
+  }, [role, config, logoImage, affiliateImage, adminImage]);
 
 
   const isLinkActive = (href: string) => {
@@ -436,7 +437,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                    <Avatar className="h-12 w-12 bg-transparent">
                       <AvatarImage src={brandsoftLogo.src} />
                   </Avatar>
-                  <p className="text-sm font-semibold text-sidebar-foreground/80">BrandSoft</p>
+                  <p className="text-sm font-semibold text-sidebar-foreground/80">{config.brand.businessName}</p>
                 </div>
               ) : (
                 <div className="flex items-center justify-center p-2">

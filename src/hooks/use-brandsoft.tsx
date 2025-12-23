@@ -350,7 +350,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
         
         if (parsedConfig.affiliateSettings) {
             const adminSettings: AdminSettings = {
-                ...(parsedConfig.affiliateSettings as Omit<AdminSettings, 'soldCredits' | 'creditsBoughtBack' | 'revenueFromKeys' | 'revenueFromPlans' | 'keysSold' | 'trendingPlan'>),
+                ...(parsedConfig.affiliateSettings as Omit<AdminSettings, 'fullName' | 'username' | 'soldCredits' | 'creditsBoughtBack' | 'revenueFromKeys' | 'revenueFromPlans' | 'keysSold' | 'trendingPlan'>),
                 soldCredits: (parsedConfig.affiliateSettings.maxCredits || 0) - (parsedConfig.affiliateSettings.availableCredits || 0),
                 creditsBoughtBack: 0,
                 revenueFromKeys: 0,

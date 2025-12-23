@@ -127,7 +127,7 @@ export type Company = {
   referredBy?: string;
   walletBalance?: number;
   version?: number;
-  purchases?: Purchase[]; // KEPT THIS ONE
+  purchases?: Purchase[];
 };
 
 export type Customer = {
@@ -266,6 +266,8 @@ export type PlanPeriod = {
 };
 
 export type AdminSettings = {
+  fullName?: string;
+  username?: string;
   maxCredits: number;
   buyPrice: number;
   sellPrice: number;

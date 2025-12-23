@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -20,7 +21,7 @@ const openBrandImageDB = (): Promise<IDBDatabase> => {
     request.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result;
       if (!db.objectStoreNames.contains(BRAND_IMAGE_STORE_NAME)) {
-        db.createObjectStore(BRAND_IMAGE_STORE_NAME);
+        db.createObjectStore(IMAGE_STORE_NAME);
       }
     };
   });
@@ -62,7 +63,7 @@ export const saveImageToDB = async (key: string, imageData: string): Promise<voi
 };
 
 // Hook to manage a specific brand image
-export function useBrandImage(imageType: 'logo' | 'cover' | 'affiliateProfilePic') {
+export function useBrandImage(imageType: 'logo' | 'cover' | 'affiliateProfilePic' | 'adminProfilePic') {
   const [image, _setImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -85,7 +86,13 @@ export function useBrandImage(imageType: 'logo' | 'cover' | 'affiliateProfilePic
 
   const setImage = async (imageDataUrl: string) => {
     try {
-      await saveImageToDB(imageType, imageDataUrl);
+      if (imageDataUrl) {
+        await saveImageToDB(imageType, imageDataUrl);
+      } else {
+        const db = await openBrandImageDB();
+        const transaction = db.transaction([BRAND_IMAGE_STORE_NAME], 'readwrite');
+        transaction.objectStore(BRAND_IMAGE_STORE_NAME).delete(imageType);
+      }
       _setImage(imageDataUrl);
     } catch (error) {
       console.error(`Failed to save ${imageType} image:`, error);
