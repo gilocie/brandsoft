@@ -28,7 +28,6 @@ const openBrandImageDB = (): Promise<IDBDatabase> => {
 };
 
 // Get image from IndexedDB
-// EXPORT ADDED HERE
 export const getImageFromDB = async (key: string): Promise<string | null> => {
   if (typeof window === 'undefined') return null;
   try {
@@ -48,7 +47,6 @@ export const getImageFromDB = async (key: string): Promise<string | null> => {
 };
 
 // Save image to IndexedDB
-// EXPORT ADDED HERE
 export const saveImageToDB = async (key: string, imageData: string): Promise<void> => {
   if (typeof window === 'undefined') return;
   const db = await openBrandImageDB();
