@@ -54,6 +54,7 @@ export type GeneratedKey = {
 export type Affiliate = {
   fullName: string;
   username: string;
+  password?: string;
   phone: string;
   profilePic: string;
   affiliateLink: string;

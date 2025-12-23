@@ -237,11 +237,12 @@ export function useSetup(
   const USD_TO_MWK_RATE = 1700;
 
   const initialAffiliateData: Affiliate = {
-    fullName: 'Your Affiliate Name',
-    username: 'affiliate_user',
-    phone: '',
+    fullName: 'Sant',
+    username: 'sant',
+    phone: '265994985371',
+    password: 'password',
     profilePic: 'https://picsum.photos/seed/affiliate/200',
-    affiliateLink: 'https://brandsoft.com/join?ref=affiliate_user',
+    affiliateLink: 'https://brandsoft.com/join?ref=sant',
     securityQuestion: false,
     idUploaded: false,
     isPinSet: false,
