@@ -1,18 +1,17 @@
-
 'use client';
 
 import { useBrandsoft, type Transaction, type Affiliate, type Purchase, type Company } from '@/hooks/use-brandsoft';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Copy, DollarSign, ExternalLink, UserCheck, Users, Edit, CreditCard, TrendingUp, TrendingDown, ArrowRight, Wallet, Send, Loader2, BarChart } from 'lucide-react';
+import { Copy, DollarSign, ExternalLink, UserCheck, Users, Edit, CreditCard, TrendingUp, TrendingDown, ArrowRight, Wallet, Send, Loader2, BarChart, Eye, EyeOff, Lock, User, Shield } from 'lucide-react';
 import { ClientCard } from '@/components/affiliate/client-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useState, useEffect, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -28,13 +27,26 @@ import { BonusProgressDialog } from '@/components/office/bonus-progress-dialog';
 import { useRouter } from 'next/navigation';
 import { useBrandImage, getImageFromDB } from '@/hooks/use-brand-image';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Separator } from '@/components/ui/separator';
 import brandsoftLogo from '@/app/brandsoftlogo.png';
 
 
+// Updated schema with password fields
 const affiliateSchema = z.object({
     fullName: z.string().min(2, "Full name is required"),
     username: z.string().min(3, "Username must be at least 3 characters"),
     phone: z.string().optional(),
+    currentPassword: z.string().optional(),
+    newPassword: z.string().optional().refine(val => !val || val.length >= 6, {
+        message: "Password must be at least 6 characters.",
+    }),
+    confirmPassword: z.string().optional(),
+}).refine(data => !data.newPassword || data.newPassword === data.confirmPassword, {
+    message: "Passwords do not match.",
+    path: ["confirmPassword"],
+}).refine(data => !data.newPassword || data.currentPassword, {
+    message: "Current password is required to set a new password.",
+    path: ["currentPassword"],
 });
 
 type AffiliateFormData = z.infer<typeof affiliateSchema>;
@@ -83,6 +95,9 @@ export function OfficePageContent() {
   const { config, saveConfig } = useBrandsoft();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [dialogTab, setDialogTab] = useState('profile'); // Tab state for dialog
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const { toast } = useToast();
   const [purchaseDetails, setPurchaseDetails] = useState<PlanDetails | null>(null);
   const [isSellCreditsOpen, setIsSellCreditsOpen] = useState(false);
@@ -109,6 +124,9 @@ export function OfficePageContent() {
           fullName: affiliate?.fullName || '',
           username: affiliate?.username || '',
           phone: affiliate?.phone || '',
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: '',
       }
   });
 
@@ -157,29 +175,54 @@ export function OfficePageContent() {
     });
   }, [affiliate?.clients, config?.companies]);
 
+  // Reset form when dialog opens
   useEffect(() => {
-    if (affiliate) {
+    if (isEditDialogOpen && affiliate) {
         form.reset({
             fullName: affiliate.fullName,
             username: affiliate.username,
             phone: affiliate.phone,
+            currentPassword: '',
+            newPassword: '',
+            confirmPassword: '',
         });
+        setDialogTab('profile');
+        setShowCurrentPassword(false);
+        setShowNewPassword(false);
     }
-  }, [affiliate, form]);
+  }, [affiliate, form, isEditDialogOpen]);
 
   const onSubmit = (data: AffiliateFormData) => {
     if (!config || !affiliate) return;
 
+    // Validate current password if trying to change password
+    if (data.newPassword) {
+        const storedPassword = affiliate.password || 'password'; // Default password
+        if (data.currentPassword !== storedPassword) {
+            form.setError('currentPassword', { 
+                type: 'manual', 
+                message: 'Current password is incorrect.' 
+            });
+            return;
+        }
+    }
+
     const newAffiliateData = {
         ...affiliate,
-        ...data
+        fullName: data.fullName,
+        username: data.username,
+        phone: data.phone,
+        // Only update password if new password is provided
+        ...(data.newPassword && { password: data.newPassword }),
     };
     
     saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false });
     
     toast({
         title: "Profile Updated",
-        description: "Your staff profile has been successfully updated.",
+        description: data.newPassword 
+            ? "Your profile and password have been updated successfully."
+            : "Your staff profile has been successfully updated.",
     });
 
     setIsEditDialogOpen(false);
@@ -300,91 +343,230 @@ export function OfficePageContent() {
                 <DialogTrigger asChild>
                     <Button variant="ghost" size="icon"><Edit className="h-4 w-4"/></Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[600px]">
+                <DialogContent className="sm:max-w-2xl">
                     <DialogHeader>
                         <DialogTitle>Edit Staff Profile</DialogTitle>
-                        <DialogDescription>Update your staff profile information and photo.</DialogDescription>
+                        <DialogDescription>Update your profile information and security settings.</DialogDescription>
                     </DialogHeader>
                     <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
-                            <div className="flex flex-col md:flex-row gap-6">
-                                {/* LEFT: Staff Avatar Upload Section */}
-                                <div className="flex flex-col items-center justify-center gap-4 p-4 border rounded-lg bg-muted/30 md:w-[200px] flex-shrink-0">
-                                    <Avatar className="h-28 w-28 border-2 border-primary/20">
-                                        {isStaffPicLoading ? (
-                                            <Skeleton className="h-full w-full rounded-full" />
-                                        ) : (
-                                            <>
-                                                <AvatarImage src={staffProfilePic || systemLogo || brandsoftLogo.src} />
-                                                <AvatarFallback className="text-3xl">{form.getValues('fullName')?.charAt(0)}</AvatarFallback>
-                                            </>
-                                        )}
-                                    </Avatar>
-                                    <div className="text-center space-y-2">
-                                        <SimpleImageUploadButton
-                                            value={staffProfilePic || ''}
-                                            onChange={setStaffProfilePic}
-                                            buttonText="Upload Photo"
-                                        />
-                                        <p className="text-xs text-muted-foreground">
-                                            Your personal staff photo
-                                        </p>
-                                        {staffProfilePic && (
-                                            <Button 
-                                                type="button" 
-                                                variant="ghost" 
-                                                size="sm"
-                                                className="text-destructive hover:text-destructive text-xs"
-                                                onClick={() => setStaffProfilePic('')}
-                                            >
-                                                Remove Photo
-                                            </Button>
-                                        )}
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-2">
+                           {/* TABS INSIDE DIALOG */}
+                           <Tabs value={dialogTab} onValueChange={setDialogTab} className="w-full">
+                               <TabsList className="grid w-full grid-cols-2">
+                                   <TabsTrigger value="profile" className="gap-2">
+                                       <User className="h-4 w-4" /> Profile
+                                   </TabsTrigger>
+                                   <TabsTrigger value="security" className="gap-2">
+                                       <Shield className="h-4 w-4" /> Security
+                                   </TabsTrigger>
+                               </TabsList>
+                               
+                               {/* PROFILE TAB */}
+                               <TabsContent value="profile" className="pt-6">
+                                    <div className="flex flex-col md:flex-row gap-6">
+                                        {/* LEFT: Avatar Upload */}
+                                        <div className="flex flex-col items-center gap-4 p-4 border rounded-lg bg-muted/30 md:w-[180px] flex-shrink-0">
+                                            <Avatar className="h-24 w-24 border-2 border-primary/20">
+                                                {isStaffPicLoading ? (
+                                                    <Skeleton className="h-full w-full rounded-full" />
+                                                ) : (
+                                                    <>
+                                                        <AvatarImage src={staffProfilePic || systemLogo || brandsoftLogo.src} />
+                                                        <AvatarFallback className="text-3xl">{form.getValues('fullName')?.charAt(0)}</AvatarFallback>
+                                                    </>
+                                                )}
+                                            </Avatar>
+                                            <div className="text-center space-y-2">
+                                                <SimpleImageUploadButton
+                                                    value={staffProfilePic || ''}
+                                                    onChange={setStaffProfilePic}
+                                                    buttonText="Upload Photo"
+                                                />
+                                                {staffProfilePic && (
+                                                    <Button 
+                                                        type="button" 
+                                                        variant="ghost" 
+                                                        size="sm" 
+                                                        className="text-destructive hover:text-destructive text-xs" 
+                                                        onClick={() => setStaffProfilePic('')}
+                                                    >
+                                                        Remove
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </div>
+                                        
+                                        {/* RIGHT: Profile Fields */}
+                                        <div className="flex-1 space-y-4">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                <FormField 
+                                                    control={form.control} 
+                                                    name="fullName" 
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Full Name</FormLabel>
+                                                            <FormControl>
+                                                                <Input placeholder="John Doe" {...field} />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )} 
+                                                />
+                                                <FormField 
+                                                    control={form.control} 
+                                                    name="username" 
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Username</FormLabel>
+                                                            <FormControl>
+                                                                <Input placeholder="johndoe" {...field} />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )} 
+                                                />
+                                            </div>
+                                            <FormField 
+                                                control={form.control} 
+                                                name="phone" 
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Phone Number</FormLabel>
+                                                        <FormControl>
+                                                            <Input placeholder="+265 999 123 456" {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )} 
+                                            />
+                                            
+                                            {/* Staff Info Display */}
+                                            <div className="pt-2 space-y-2 text-sm">
+                                                <div className="flex justify-between text-muted-foreground">
+                                                    <span>Staff ID:</span>
+                                                    <span className="font-mono font-medium text-foreground">{affiliate.staffId}</span>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                                
-                                {/* RIGHT: Form Fields */}
-                                <div className="flex-1 space-y-4">
-                                    <FormField
-                                        control={form.control}
-                                        name="fullName"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Full Name</FormLabel>
-                                                <FormControl><Input placeholder="John Doe" {...field} /></FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="username"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Username</FormLabel>
-                                                <FormControl><Input placeholder="johndoe" {...field} /></FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="phone"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Phone Number</FormLabel>
-                                                <FormControl><Input placeholder="+265 999 123 456" {...field} /></FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                </div>
-                            </div>
-                            
+                               </TabsContent>
+                               
+                               {/* SECURITY TAB */}
+                               <TabsContent value="security" className="pt-6">
+                                    <div className="space-y-6">
+                                        {/* Header */}
+                                        <div className="flex items-center gap-3 p-4 border rounded-lg bg-muted/30">
+                                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                                                <Lock className="h-5 w-5 text-primary" />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-medium">Change Password</h4>
+                                                <p className="text-sm text-muted-foreground">
+                                                    Update your password to keep your account secure.
+                                                </p>
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Password Fields */}
+                                        <div className="space-y-4">
+                                            <FormField 
+                                                control={form.control} 
+                                                name="currentPassword" 
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Current Password</FormLabel>
+                                                        <div className="relative">
+                                                            <FormControl>
+                                                                <Input 
+                                                                    type={showCurrentPassword ? 'text' : 'password'} 
+                                                                    placeholder="Enter current password" 
+                                                                    {...field} 
+                                                                />
+                                                            </FormControl>
+                                                            <Button 
+                                                                type="button" 
+                                                                variant="ghost" 
+                                                                size="icon" 
+                                                                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" 
+                                                                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                                            >
+                                                                {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                                            </Button>
+                                                        </div>
+                                                        <FormDescription>
+                                                            Required to change your password.
+                                                        </FormDescription>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )} 
+                                            />
+                                            
+                                            <Separator />
+                                            
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                <FormField 
+                                                    control={form.control} 
+                                                    name="newPassword" 
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>New Password</FormLabel>
+                                                            <div className="relative">
+                                                                <FormControl>
+                                                                    <Input 
+                                                                        type={showNewPassword ? 'text' : 'password'} 
+                                                                        placeholder="Enter new password" 
+                                                                        {...field} 
+                                                                    />
+                                                                </FormControl>
+                                                                <Button 
+                                                                    type="button" 
+                                                                    variant="ghost" 
+                                                                    size="icon" 
+                                                                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" 
+                                                                    onClick={() => setShowNewPassword(!showNewPassword)}
+                                                                >
+                                                                    {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                                                </Button>
+                                                            </div>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )} 
+                                                />
+                                                <FormField 
+                                                    control={form.control} 
+                                                    name="confirmPassword" 
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel>Confirm New Password</FormLabel>
+                                                            <FormControl>
+                                                                <Input 
+                                                                    type={showNewPassword ? 'text' : 'password'} 
+                                                                    placeholder="Confirm new password" 
+                                                                    {...field} 
+                                                                />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )} 
+                                                />
+                                            </div>
+                                            
+                                            <p className="text-xs text-muted-foreground">
+                                                Password must be at least 6 characters. Leave blank to keep your current password.
+                                            </p>
+                                        </div>
+                                    </div>
+                               </TabsContent>
+                           </Tabs>
+                           
                             {/* Footer Buttons */}
                             <div className="flex justify-end gap-2 pt-4 border-t">
-                                <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
-                                <Button type="submit">Save Changes</Button>
+                                <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                                    Cancel
+                                </Button>
+                                <Button type="submit">
+                                    Save Changes
+                                </Button>
                             </div>
                         </form>
                     </Form>

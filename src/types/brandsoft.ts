@@ -55,7 +55,7 @@ export type Affiliate = {
   fullName: string;
   username: string;
   password?: string;
-  phone: string;
+  phone?: string;
   profilePic: string;
   affiliateLink: string;
   securityQuestion: boolean; 
