@@ -67,7 +67,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useBrandsoft, type Company } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Company, type Purchase } from '@/hooks/use-brandsoft';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -222,10 +222,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, [pathname, role, isChangingRole]);
 
 
-  const currentUserId = useMemo(() => {
-    if (!config || !config.brand) return null;
-    const myCompany = config.companies?.find(c => c.companyName === config.brand.businessName);
-    return myCompany?.id || null;
+  const myCompany = useMemo(() => {
+    if (!config || !config.profile?.id) return null;
+    return config.companies?.find(c => c.id === config.profile?.id);
   }, [config]);
 
   const {
@@ -238,15 +237,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     declinedPurchasesCount,
     declinedPurchaseOrders,
   } = useMemo(() => {
+    const allPurchases = myCompany?.purchases || [];
+    
     if (!config) return { notificationCount: 0, requestNotificationCount: 0, incomingRequestsCount: 0, responsesCount: 0, pendingPurchasesCount: 0, processingPurchasesCount: 0, declinedPurchasesCount: 0, declinedPurchaseOrders: [] };
 
     const incomingRequestsCount = config.incomingRequests?.length || 0;
     const responsesCount = config.requestResponses?.length || 0;
     const requestTotal = incomingRequestsCount + responsesCount;
 
-    const pendingPurchases = (config.purchases || []).filter(p => p.status === 'pending');
-    const processingPurchases = (config.purchases || []).filter(p => p.status === 'processing');
-    const declinedPurchases = (config.purchases || []).filter(p => p.status === 'declined' && !p.isAcknowledged);
+    const pendingPurchases = allPurchases.filter(p => p.status === 'pending');
+    const processingPurchases = allPurchases.filter(p => p.status === 'processing');
+    const declinedPurchases = allPurchases.filter(p => p.status === 'declined' && !p.isAcknowledged);
 
     const total = requestTotal + pendingPurchases.length + processingPurchases.length + declinedPurchases.length;
     
@@ -260,7 +261,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         declinedPurchasesCount: declinedPurchases.length,
         declinedPurchaseOrders: declinedPurchases,
     };
-  }, [config]);
+  }, [config, myCompany]);
 
   const handleAcknowledgeAll = () => {
     declinedPurchaseOrders.forEach(order => {
@@ -270,23 +271,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 };
   
   const ordersNotificationCount = useMemo(() => {
-    if (!config?.purchases) return 0;
-    return config.purchases.filter(
-        p => (p.planName.startsWith('Credit Purchase') || p.planName === 'Wallet Top-up') &&
-             (p.status === 'pending' || p.status === 'processing')
-    ).length;
-  }, [config?.purchases]);
+    if (!config?.companies) return 0;
+    return config.companies.flatMap(c => c.purchases || [])
+      .filter(p => (p.planName.startsWith('Credit Purchase') || p.planName === 'Wallet Top-up') && (p.status === 'pending' || p.status === 'processing')).length;
+  }, [config?.companies]);
   
   const walletNotificationCount = useMemo(() => {
-    if (!config?.purchases) return 0;
-    // Only client-facing top-ups count for the wallet icon
-    const myTopUps = config.purchases.filter(p =>
+    if (!myCompany?.purchases) return 0;
+    const myTopUps = myCompany.purchases.filter(p =>
       !p.affiliateId && 
       (p.planName.toLowerCase().includes('top-up') || p.planName.toLowerCase().includes('credit purchase')) &&
       (p.status === 'pending' || p.status === 'processing')
     );
     return myTopUps.length;
-  }, [config?.purchases]);
+  }, [myCompany]);
   
   const getVisibleNavItems = (items: typeof mainNavItems, currentRole: typeof role) => {
     if (!config || !currentRole) return [];

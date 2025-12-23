@@ -26,6 +26,11 @@ export function HistoryPageContent() {
     const [isAutoRenewConfirmOpen, setIsAutoRenewConfirmOpen] = useState(false);
     const [pendingAutoRenewState, setPendingAutoRenewState] = useState(false);
     const [isFundsAlertOpen, setIsFundsAlertOpen] = useState(false);
+    
+    const myCompany = useMemo(() => {
+        if (!config || !config.profile?.id) return null;
+        return config.companies.find((c: Company) => c.id === config.profile?.id);
+    }, [config]);
 
     const { 
         planPurchases, 
@@ -39,14 +44,14 @@ export function HistoryPageContent() {
         declinedTopups,
         periodReserve,
     } = useMemo(() => {
-        const allPurchases = (config?.purchases || [])
+        const allPurchases = (myCompany?.purchases || [])
             .filter(p => p.status !== 'declined' || !p.isAcknowledged) 
             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         
         const planPurchases = allPurchases.filter(p => !p.planName.toLowerCase().includes('top-up') && !p.planName.toLowerCase().includes('credit purchase'));
         const topUps = allPurchases.filter(p => p.planName.toLowerCase().includes('top-up') || p.planName.toLowerCase().includes('credit purchase'));
         
-        const totalReserve = (config?.purchases || []).filter(p => p.status === 'active').reduce((sum, p) => sum + (p.periodReserve || 0), 0);
+        const totalReserve = (myCompany?.purchases || []).filter(p => p.status === 'active').reduce((sum, p) => sum + (p.periodReserve || 0), 0);
 
         return { 
             planPurchases, 
@@ -61,15 +66,9 @@ export function HistoryPageContent() {
             periodReserve: totalReserve,
         };
 
-    }, [config?.purchases]);
+    }, [myCompany]);
 
-    const { company: currentCompany } = useMemo(() => {
-        if (!config || !config.profile?.id) return { company: undefined };
-        const foundCompany = config.companies.find((c: Company) => c.id === (config.profile as any).id);
-        return { company: foundCompany };
-    }, [config]);
-
-    const walletBalance = currentCompany?.walletBalance || 0;
+    const walletBalance = myCompany?.walletBalance || 0;
     
     const currencySymbol = config?.profile.defaultCurrency === 'MWK' ? 'K' : config?.profile.defaultCurrency || '';
     
@@ -101,14 +100,18 @@ export function HistoryPageContent() {
     };
     
     const handleClearHistory = (type: 'plans' | 'topups') => {
-        if (!config || !config.purchases) return;
+        if (!config || !myCompany) return;
 
-        const newPurchases = (config.purchases || []).filter(p => {
+        const otherPurchases = (myCompany.purchases || []).filter(p => {
             const isTopUp = p.planName.toLowerCase().includes('top-up') || p.planName.toLowerCase().includes('credit purchase');
             return type === 'plans' ? isTopUp : !isTopUp;
         });
 
-        saveConfig({ ...config, purchases: newPurchases }, { redirect: false });
+        const updatedCompanies = config.companies.map(c => 
+            c.id === myCompany.id ? { ...c, purchases: otherPurchases } : c
+        );
+
+        saveConfig({ ...config, companies: updatedCompanies }, { redirect: false });
         toast({
             title: "History Cleared",
             description: `All ${type === 'plans' ? 'plan purchase' : 'top-up'} transactions have been deleted.`,
@@ -117,7 +120,7 @@ export function HistoryPageContent() {
 
 
     const totalSpent = useMemo(() => {
-        const purchases = config?.purchases || [];
+        const purchases = myCompany?.purchases || [];
         return purchases
             .filter(p => p.status === 'active')
             .reduce((sum, p) => {
@@ -125,7 +128,7 @@ export function HistoryPageContent() {
                 const price = parseFloat(priceString.replace(/[^0-9.-]+/g,""));
                 return sum + (isNaN(price) ? 0 : price);
             }, 0);
-    }, [config?.purchases]);
+    }, [myCompany?.purchases]);
     
     const TopUpNotificationCard = ({ 
         orders, 

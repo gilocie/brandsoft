@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -16,24 +17,41 @@ export default function OfficeOrdersPage() {
 
     const affiliate = config?.affiliate;
 
+    const allClientPurchases = useMemo(() => {
+        if (!config?.companies) return [];
+        return config.companies.flatMap(c => 
+            (c.purchases || []).map(p => ({ ...p, companyId: c.id }))
+        );
+    }, [config?.companies]);
+
     const pendingTopUps = useMemo(() => {
-        if (!config?.purchases) return [];
-        // Assuming top-ups are identified by planName
-        return config.purchases.filter(p => p.planName.startsWith('Credit Purchase') || p.planName === 'Wallet Top-up');
-    }, [config?.purchases]);
+        if (!affiliate) return [];
+        return allClientPurchases.filter(p =>
+            p.affiliateId === affiliate.staffId &&
+            (p.planName.startsWith('Credit Purchase') || p.planName === 'Wallet Top-up')
+        );
+    }, [allClientPurchases, affiliate]);
 
     const pendingOrders = useMemo(() => pendingTopUps.filter(p => p.status === 'pending'), [pendingTopUps]);
     const processingOrders = useMemo(() => pendingTopUps.filter(p => p.status === 'processing'), [pendingTopUps]);
     const completedOrders = useMemo(() => pendingTopUps.filter(p => p.status === 'active'), [pendingTopUps]);
 
     const handleStatusChange = (orderId: string, newStatus: 'pending' | 'processing' | 'active') => {
-        if (!config?.purchases) return;
+        if (!config?.companies) return;
 
-        const updatedPurchases = config.purchases.map(p => 
-            p.orderId === orderId ? { ...p, status: newStatus } : p
-        );
+        const updatedCompanies = config.companies.map(c => {
+            if (c.purchases?.some(p => p.orderId === orderId)) {
+                return {
+                    ...c,
+                    purchases: (c.purchases || []).map(p =>
+                        p.orderId === orderId ? { ...p, status: newStatus } : p
+                    ),
+                };
+            }
+            return c;
+        });
         
-        saveConfig({ ...config, purchases: updatedPurchases }, { redirect: false, revalidate: true });
+        saveConfig({ ...config, companies: updatedCompanies }, { redirect: false, revalidate: true });
         
         toast({
             title: "Status Updated",
@@ -89,4 +107,3 @@ export default function OfficeOrdersPage() {
         </div>
     );
 }
-    

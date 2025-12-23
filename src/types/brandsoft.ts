@@ -104,6 +104,7 @@ export type Company = {
   referredBy?: string;
   walletBalance?: number;
   version?: number;
+  purchases?: Purchase[];
 };
 
 export type Customer = {
@@ -360,7 +361,6 @@ export type BrandsoftConfig = {
   templates: BrandsoftTemplate[];
   plans?: Plan[];
   currencies: string[];
-  purchases: Purchase[];
   reviews?: Review[];
 };
 

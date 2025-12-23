@@ -77,8 +77,8 @@ interface BrandsoftContextType {
   deleteQuotationRequest: (requestId: string) => void;
   // Purchase methods
   addPurchaseOrder: (order: Omit<Purchase, 'remainingTime'>) => Purchase;
-  getPurchaseOrder: (orderId: string) => Purchase | null;
-  activatePurchaseOrder: (orderId: string) => void;
+  getPurchaseOrder: (orderId: string) => { purchase: Purchase, companyId: string } | null;
+  activatePurchaseOrder: (companyId: string, orderId: string) => void;
   declinePurchaseOrder: (orderId: string, reason: string) => void;
   acknowledgeDeclinedPurchase: (orderId: string) => void;
   updatePurchaseStatus: () => void;
@@ -126,24 +126,21 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
     const addCreditPurchaseToAffiliate = (credits: number, orderId: string) => {
       if (!config || !config.affiliate || !config.admin) return;
   
-      const order = (config.purchases || []).find(p => p.orderId === orderId);
-      if (!order || !order.customerId) return;
+      const { purchase: order, companyId } = purchaseMethods.getPurchaseOrder(orderId) || {};
+      if (!order || !companyId) return;
   
       const costInMWK = parseFloat(order.planPrice.replace(/[^0-9.-]+/g,""));
       
       let newConfig = { ...config };
       
-      // Ensure newAffiliateData is a complete Affiliate object
       const newAffiliateData: Affiliate = {
         ...initialAffiliateData,
         ...newConfig.affiliate,
       };
       
-      // 1. Deduct credits from affiliate's balance
       newAffiliateData.creditBalance = (newAffiliateData.creditBalance || 0) - credits;
   
-      // 2. Add cash value to client's wallet in COMPANIES array (PRIMARY)
-      const companyIndex = newConfig.companies.findIndex(c => c.id === order.customerId);
+      const companyIndex = newConfig.companies.findIndex(c => c.id === companyId);
       if (companyIndex > -1) {
           const company = newConfig.companies[companyIndex];
           newConfig.companies[companyIndex] = {
@@ -151,32 +148,27 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
               walletBalance: (company.walletBalance || 0) + costInMWK,
           };
       } else {
-          console.error(`Company not found: ${order.customerId}`);
-          return; // Stop if company doesn't exist
+          console.error(`Company not found: ${companyId}`);
+          return; 
       }
       
-      // 3. Record the transaction in affiliate's client metadata (for tracking only)
       if (newAffiliateData.clients) {
-          const affiliateClientIndex = newAffiliateData.clients.findIndex(c => c.id === order.customerId);
+          const affiliateClientIndex = newAffiliateData.clients.findIndex(c => c.id === companyId);
           if (affiliateClientIndex > -1) {
               const client = newAffiliateData.clients[affiliateClientIndex];
               newAffiliateData.clients[affiliateClientIndex] = {
                   ...client,
-                  walletBalance: (client.walletBalance || 0) + costInMWK, // Also update here for affiliate view consistency
+                  walletBalance: (client.walletBalance || 0) + costInMWK, 
               };
           }
       }
       
-      // 4. Mark the purchase as 'active' (completed)
-      const updatedPurchases = (newConfig.purchases || []).map(p =>
-          p.orderId === orderId ? { ...p, status: 'active' as const } : p
-      );
-      newConfig.purchases = updatedPurchases;
-      
-      // 5. Update admin's records
+      purchaseMethods.activatePurchaseOrder(companyId, orderId); // This will update the status in the yet-to-be-saved config
+      const updatedConfigWithActivatedPurchase = get().config;
+
       const newAdminSettings: AdminSettings = {
-          ...(newConfig.admin as AdminSettings),
-          soldCredits: (newConfig.admin?.soldCredits || 0) + credits,
+          ...((updatedConfigWithActivatedPurchase || newConfig).admin as AdminSettings),
+          soldCredits: ((updatedConfigWithActivatedPurchase || newConfig).admin?.soldCredits || 0) + credits,
       };
       
       newConfig.admin = newAdminSettings;
@@ -304,6 +296,32 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
         let parsedConfig = JSON.parse(storedConfig);
         
         let needsSave = false;
+
+        // One-time migration: Move global purchases to company-specific purchases
+        if ((parsedConfig as any).purchases) {
+          const globalPurchases = (parsedConfig as any).purchases as Purchase[];
+          if (globalPurchases.length > 0) {
+            parsedConfig.companies = parsedConfig.companies.map((company: Company) => {
+              const companyPurchases = globalPurchases.filter(p => p.customerId === company.id);
+              if (companyPurchases.length > 0) {
+                return { ...company, purchases: [...(company.purchases || []), ...companyPurchases] };
+              }
+              return company;
+            });
+            delete (parsedConfig as any).purchases;
+            needsSave = true;
+          }
+        }
+        
+        if (parsedConfig.companies) {
+          parsedConfig.companies.forEach((company: Company) => {
+            if (!company.purchases) {
+              company.purchases = [];
+              needsSave = true;
+            }
+          });
+        }
+
 
         // Migration for wallet balance from affiliate.clients to companies
         if (parsedConfig.affiliate?.clients && parsedConfig.companies) {

@@ -8,7 +8,7 @@ import dynamic from 'next/dynamic';
 import { Loader2 } from 'lucide-react';
 
 const OfficePageContent = dynamic(
-  () => import('@/components/office/office-page-content').then(mod => mod.OfficePageContent),
+  () => import('./office-page-content').then(mod => mod.OfficePageContent),
   {
     ssr: false,
     loading: () => (

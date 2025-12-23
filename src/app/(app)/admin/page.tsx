@@ -112,7 +112,18 @@ export default function AdminPage() {
     const soldCredits = adminSettings.soldCredits || 0;
     const netCreditRevenue = soldCredits * (adminSettings.sellPrice || 0);
 
-    const combinedRevenue = (adminSettings.revenueFromKeys || 0) + (adminSettings.revenueFromPlans || 0);
+    const allPlanPurchases = useMemo(() => {
+        return (config?.companies || []).flatMap(c => c.purchases || []).filter(p => !p.planName.toLowerCase().includes('key'));
+    }, [config?.companies]);
+
+    const allKeyPurchases = useMemo(() => {
+        return (config?.companies || []).flatMap(c => c.purchases || []).filter(p => p.planName.toLowerCase().includes('key'));
+    }, [config?.companies]);
+    
+    const revenueFromPlans = allPlanPurchases.reduce((sum, p) => sum + parseFloat(p.planPrice.replace(/[^0-9.-]+/g,"")), 0);
+    const revenueFromKeys = allKeyPurchases.reduce((sum, p) => sum + parseFloat(p.planPrice.replace(/[^0-9.-]+/g,"")), 0);
+
+    const combinedRevenue = revenueFromPlans + revenueFromKeys;
 
 
     const onCreditSettingsSubmit = (data: CreditSettingsFormData) => {
@@ -145,15 +156,11 @@ export default function AdminPage() {
         const combined = [...referredByAdmin, ...unassigned];
         const unique = Array.from(new Map(combined.map(c => [c.id, c])).values());
 
-        const clientPurchases = config.purchases || [];
-
         return unique.map((company: Company): AffiliateClient => {
-            const companyPurchases = clientPurchases
-                .filter(p => p.customerId === company.id)
-                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            const companyPurchases = company.purchases || [];
             
             const activePurchase = companyPurchases.find(p => p.status === 'active');
-            const latestPurchase = companyPurchases[0];
+            const latestPurchase = companyPurchases.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
 
             let plan = 'Free Trial';
             let status: 'active' | 'expired' = 'active';
@@ -185,7 +192,7 @@ export default function AdminPage() {
                 walletBalance: 0,
             };
         });
-    }, [config?.companies, config?.purchases, affiliates]);
+    }, [config?.companies, affiliates]);
 
     const totalAffiliates = affiliates.length;
     
@@ -318,10 +325,10 @@ export default function AdminPage() {
             };
         }
 
-        const updatedPurchases = (config.purchases || []).filter(p => !p.planName.toLowerCase().includes('key'));
+        const updatedCompanies = (config.companies || []).map(c => ({...c, purchases: []}));
 
 
-        saveConfig({ ...config, admin: newAdminSettings, affiliate: newAffiliateData, purchases: updatedPurchases }, { redirect: false, revalidate: true });
+        saveConfig({ ...config, admin: newAdminSettings, affiliate: newAffiliateData, companies: updatedCompanies }, { redirect: false, revalidate: true });
         toast({ title: 'Financial Records Reset!', description: 'All credit sales and affiliate balances have been reset.' });
         setIsResetFinancialsOpen(false);
     };
@@ -603,5 +610,3 @@ export default function AdminPage() {
         </div>
     );
 }
-
-    

@@ -4,7 +4,7 @@
 import {
   useBrandsoft,
 } from '@/hooks/use-brandsoft';
-import { type Invoice, type Purchase } from '@/types/brandsoft';
+import { type Invoice, type Purchase, type Company } from '@/types/brandsoft';
 import {
   Card,
   CardHeader,
@@ -276,14 +276,13 @@ export default function DashboardPage() {
     };
   }, [revalidate, updatePurchaseStatus]);
   
-  const currentUserId = useMemo(() => {
-    if (!config || !config.brand) return null;
-    const myCompany = config.companies?.find(c => c.companyName === config.brand.businessName);
-    return myCompany?.id || null;
+  const myCompany = useMemo(() => {
+    if (!config || !config.profile?.id) return null;
+    return config.companies?.find(c => c.id === config.profile?.id);
   }, [config]);
 
   const stats = useMemo(() => {
-    if (!config || !currentUserId) {
+    if (!config || !myCompany) {
       return {
         paidCount: 0,
         unpaidCount: 0,
@@ -323,40 +322,33 @@ export default function DashboardPage() {
       canceledAmount,
       incomingRequests: incomingRequestsCount,
     };
-  }, [config, currentUserId]);
+  }, [config, myCompany]);
 
   const purchaseToShow = useMemo((): Purchase | null => {
-    if (!config?.purchases || config.purchases.length === 0) return null;
+    if (!myCompany?.purchases || myCompany.purchases.length === 0) return null;
   
-    // IMPORTANT: Filter out top-up orders from this view
-    const planPurchases = config.purchases.filter(p => !p.planName.toLowerCase().includes('top-up') && !p.planName.toLowerCase().includes('credit purchase'));
+    const planPurchases = myCompany.purchases.filter(p => !p.planName.toLowerCase().includes('top-up') && !p.planName.toLowerCase().includes('credit purchase'));
   
     const purchases = [...planPurchases].sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
   
-    // Priority 1: Always show the active plan if one exists.
     const activePlan = purchases.find(p => p.status === 'active');
     if (activePlan) return activePlan;
   
-    // Priority 2: Check for any unacknowledged declined orders.
     const unacknowledgedDeclined = purchases.find(p => p.status === 'declined' && !p.isAcknowledged);
     if (unacknowledgedDeclined) return unacknowledgedDeclined;
   
-    // Priority 3: Check for any pending order.
     const pending = purchases.find((p) => p.status === 'pending');
     if (pending) return pending;
   
-    // Priority 4: Find the most recently expired plan.
     const expiredPlans = purchases.filter(p => p.status === 'inactive' && p.expiresAt);
     if(expiredPlans.length > 0) {
         return expiredPlans.sort((a,b) => new Date(b.expiresAt!).getTime() - new Date(a.expiresAt!).getTime())[0];
     }
     
-    // Fallback: If nothing else matches (e.g., only an acknowledged declined plan exists), return null.
-    // This allows the UI to show the 'Free Trial' card.
     return null;
-  }, [config?.purchases]);
+  }, [myCompany]);
 
   if (!config) {
     return (
