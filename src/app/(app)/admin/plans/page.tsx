@@ -15,7 +15,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { MoreHorizontal, PackagePlus, Briefcase, Check, Pencil, Trash2, KeyRound, TrendingUp, BarChart, AlertTriangle, Settings, Package, Users, HardDrive, Contact, Star, Gem, Crown, Award, Gift, Rocket, ShieldCheck, Loader2 } from 'lucide-react';
+import { MoreHorizontal, PackagePlus, Briefcase, Check, Pencil, Trash2, KeyRound, TrendingUp, BarChart, AlertTriangle, Settings, Package, Users, HardDrive, Contact, Star, Gem, Crown, Award, Gift, Rocket, ShieldCheck, Loader2, TestTube2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
@@ -24,6 +24,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { PlanSettingsDialog } from '@/components/plan-settings-dialog';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const premiumFeatures = [
     { id: 'fullTemplateEditor', label: 'Full Template Editor Access' },
@@ -475,6 +476,7 @@ export default function AdminPlansPage() {
                     <TabsTrigger value="plans-list">Plans</TabsTrigger>
                     <TabsTrigger value="plan-features">Plan Features</TabsTrigger>
                     <TabsTrigger value="activation-keys">Activation Key Options</TabsTrigger>
+                    <TabsTrigger value="demo"><TestTube2 className="mr-2 h-4 w-4"/>Demo</TabsTrigger>
                 </TabsList>
                 <TabsContent value="plans-list" className="pt-4">
                     <Card>
@@ -696,6 +698,47 @@ export default function AdminPlansPage() {
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                <TabsContent value="demo" className="pt-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Demo Mode Configuration</CardTitle>
+                            <CardDescription>
+                                Temporarily override plan durations for demonstration purposes. 
+                                Changes here are not saved and only affect your current session.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <div className="flex items-center justify-between rounded-lg border p-4">
+                                <div className="space-y-0.5">
+                                    <Label className="text-base" htmlFor="demo-mode-switch">Enable Demo Mode</Label>
+                                    <p className="text-sm text-muted-foreground">Override real plan durations with the demo values below.</p>
+                                </div>
+                                <Switch id="demo-mode-switch" />
+                            </div>
+
+                            <div className="space-y-4">
+                                {plans.map((plan, index) => (
+                                    <div key={plan.name} className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 rounded-lg border p-4">
+                                        <p className="font-medium flex-1">{plan.name}</p>
+                                        <div className="flex items-center gap-2">
+                                            <Input type="number" defaultValue="10" className="w-20" />
+                                            <Select defaultValue="minutes">
+                                                <SelectTrigger className="w-[120px]">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="seconds">Seconds</SelectItem>
+                                                    <SelectItem value="minutes">Minutes</SelectItem>
+                                                    <SelectItem value="days">Days</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </CardContent>
                     </Card>
