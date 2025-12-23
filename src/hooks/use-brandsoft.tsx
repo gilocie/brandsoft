@@ -22,7 +22,7 @@ const VALID_SERIAL = 'BS-GSS-DEMO0000-000000';
 
 const initialAffiliateData: Affiliate = {
     fullName: 'Sant',
-    username: 'sant',
+    username: 'Sant',
     phone: '265994985371',
     password: 'password',
     profilePic: 'https://picsum.photos/seed/affiliate/200',
@@ -497,11 +497,11 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
   const affiliateLogin = (username: string, password: string): boolean => {
       if (!config?.affiliate) return false;
       
-      const isUsernameMatch = config.affiliate.username === username;
-      // If the stored password exists, check it. Otherwise, check the default password.
-      const isPasswordMatch = config.affiliate.password 
-        ? config.affiliate.password === password 
-        : password === 'password';
+      const isUsernameMatch = config.affiliate.username.toLowerCase() === username.toLowerCase();
+      // If no password is set on the account, allow the default password. Otherwise, check the stored one.
+      const isPasswordMatch = !config.affiliate.password 
+        ? password === 'password'
+        : config.affiliate.password === password;
 
       if (isUsernameMatch && isPasswordMatch) {
           sessionStorage.setItem('isAffiliateLoggedIn', 'true');

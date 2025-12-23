@@ -5,7 +5,7 @@ import { useBrandsoft, type Transaction, type Affiliate, type Purchase, type Com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Copy, DollarSign, ExternalLink, UserCheck, Users, Edit, CreditCard, TrendingUp, TrendingDown, ArrowRight, Wallet, Send, Loader2, BarChart } from 'lucide-react';
+import { Copy, DollarSign, ExternalLink, UserCheck, Users, Edit, CreditCard, TrendingUp, TrendingDown, ArrowRight, Wallet, Send, Loader2, BarChart, Eye, EyeOff } from 'lucide-react';
 import { ClientCard } from '@/components/affiliate/client-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -35,7 +35,13 @@ const affiliateSchema = z.object({
     fullName: z.string().min(2, "Full name is required"),
     username: z.string().min(3, "Username must be at least 3 characters"),
     phone: z.string().optional(),
+    password: z.string().optional(),
+    confirmPassword: z.string().optional(),
+}).refine(data => !data.password || data.password === data.confirmPassword, {
+    message: "Passwords do not match.",
+    path: ["confirmPassword"],
 });
+
 
 type AffiliateFormData = z.infer<typeof affiliateSchema>;
 
@@ -83,6 +89,7 @@ export function OfficePageContent() {
   const { config, saveConfig } = useBrandsoft();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
   const [purchaseDetails, setPurchaseDetails] = useState<PlanDetails | null>(null);
   const [isSellCreditsOpen, setIsSellCreditsOpen] = useState(false);
@@ -95,7 +102,7 @@ export function OfficePageContent() {
   const staffAvatarUrl = useMemo(() => {
     if (staffProfilePic) return staffProfilePic;
     if (systemLogo) return systemLogo;
-    return brandsoftLogo.src; // Ultimate fallback
+    return brandsoftLogo.src;
   }, [staffProfilePic, systemLogo]);
 
   const isStaffAvatarLoading = isStaffPicLoading || isSystemLogoLoading;
@@ -163,6 +170,8 @@ export function OfficePageContent() {
             fullName: affiliate.fullName,
             username: affiliate.username,
             phone: affiliate.phone,
+            password: '',
+            confirmPassword: '',
         });
     }
   }, [affiliate, form]);
@@ -171,8 +180,12 @@ export function OfficePageContent() {
     if (!config || !affiliate) return;
 
     const newAffiliateData = {
-        ...affiliate,
-        ...data
+      ...affiliate,
+      fullName: data.fullName,
+      username: data.username,
+      phone: data.phone,
+      // Only update password if it's provided
+      ...(data.password && { password: data.password }),
     };
     
     saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false });
@@ -300,86 +313,120 @@ export function OfficePageContent() {
                 <DialogTrigger asChild>
                     <Button variant="ghost" size="icon"><Edit className="h-4 w-4"/></Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="sm:max-w-[600px]">
                     <DialogHeader>
                         <DialogTitle>Edit Staff Profile</DialogTitle>
                         <DialogDescription>Update your staff profile information and photo.</DialogDescription>
                     </DialogHeader>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
-                            {/* Staff Avatar Upload Section */}
-                            <div className="flex flex-col items-center gap-4 p-4 border rounded-lg bg-muted/30">
-                                <Avatar className="h-24 w-24 border-2 border-primary/20">
-                                    {isStaffPicLoading ? (
-                                        <Skeleton className="h-full w-full rounded-full" />
-                                    ) : (
-                                        <>
-                                            <AvatarImage src={staffProfilePic || systemLogo || undefined} />
-                                            <AvatarFallback className="text-3xl">{form.getValues('fullName')?.charAt(0)}</AvatarFallback>
-                                        </>
-                                    )}
-                                </Avatar>
-                                <div className="text-center space-y-2">
-                                    <SimpleImageUploadButton
-                                        value={staffProfilePic || ''}
-                                        onChange={setStaffProfilePic}
-                                        buttonText="Upload Staff Photo"
+                            <div className="flex flex-col md:flex-row gap-6">
+                                {/* LEFT: Staff Avatar Upload Section */}
+                                <div className="flex flex-col items-center justify-center gap-4 p-4 border rounded-lg bg-muted/30 md:w-[200px] flex-shrink-0">
+                                    <Avatar className="h-28 w-28 border-2 border-primary/20">
+                                        {isStaffPicLoading ? (
+                                            <Skeleton className="h-full w-full rounded-full" />
+                                        ) : (
+                                            <>
+                                                <AvatarImage src={staffProfilePic || systemLogo || brandsoftLogo.src} />
+                                                <AvatarFallback className="text-3xl">{form.getValues('fullName')?.charAt(0)}</AvatarFallback>
+                                            </>
+                                        )}
+                                    </Avatar>
+                                    <div className="text-center space-y-2">
+                                        <SimpleImageUploadButton
+                                            value={staffProfilePic || ''}
+                                            onChange={setStaffProfilePic}
+                                            buttonText="Upload Photo"
+                                        />
+                                        <p className="text-xs text-muted-foreground">
+                                            Your personal staff photo
+                                        </p>
+                                        {staffProfilePic && (
+                                            <Button 
+                                                type="button" 
+                                                variant="ghost" 
+                                                size="sm"
+                                                className="text-destructive hover:text-destructive text-xs"
+                                                onClick={() => setStaffProfilePic('')}
+                                            >
+                                                Remove Photo
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+                                
+                                {/* RIGHT: Form Fields */}
+                                <div className="flex-1 space-y-4">
+                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <FormField
+                                            control={form.control}
+                                            name="fullName"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Full Name</FormLabel>
+                                                    <FormControl><Input placeholder="John Doe" {...field} /></FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="username"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Username</FormLabel>
+                                                    <FormControl><Input placeholder="johndoe" {...field} /></FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+                                     <FormField
+                                        control={form.control}
+                                        name="phone"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Phone Number</FormLabel>
+                                                <FormControl><Input placeholder="+265 999 123 456" {...field} /></FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
                                     />
-                                    <p className="text-xs text-muted-foreground">
-                                        Your personal staff photo. If not set, the system logo will be used.
-                                    </p>
-                                    {staffProfilePic && (
-                                        <Button 
-                                            type="button" 
-                                            variant="ghost" 
-                                            size="sm"
-                                            className="text-destructive hover:text-destructive"
-                                            onClick={() => setStaffProfilePic('')}
-                                        >
-                                            Remove Photo (Use System Logo)
-                                        </Button>
-                                    )}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                         <FormField
+                                            control={form.control}
+                                            name="password"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>New Password</FormLabel>
+                                                    <div className="relative">
+                                                        <FormControl><Input type={showPassword ? 'text' : 'password'} placeholder="Leave blank to keep current" {...field} /></FormControl>
+                                                        <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowPassword(!showPassword)}>
+                                                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                                        </Button>
+                                                    </div>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="confirmPassword"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>Confirm Password</FormLabel>
+                                                    <FormControl><Input type={showPassword ? 'text' : 'password'} placeholder="Confirm new password" {...field} /></FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                             
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <FormField
-                                    control={form.control}
-                                    name="fullName"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Full Name</FormLabel>
-                                            <FormControl><Input {...field} /></FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="username"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Username</FormLabel>
-                                            <FormControl><Input {...field} /></FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </div>
-                            
-                            <FormField
-                                control={form.control}
-                                name="phone"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Phone Number</FormLabel>
-                                        <FormControl><Input {...field} /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-
-                            <div className="flex justify-end gap-2">
+                            {/* Footer Buttons */}
+                            <div className="flex justify-end gap-2 pt-4 border-t">
                                 <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
                                 <Button type="submit">Save Changes</Button>
                             </div>
