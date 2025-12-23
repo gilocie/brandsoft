@@ -199,9 +199,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         setIsChangingRole(true);
         setRole(newRole);
 
-        if (newRole === 'admin') router.push('/admin');
-        else if (newRole === 'staff') router.push('/office');
-        else router.push('/dashboard');
+        if (newRole === 'admin') {
+            router.push('/admin');
+        } else if (newRole === 'staff') {
+            router.push('/office');
+        } else {
+            router.push('/dashboard');
+        }
     }
   };
 
