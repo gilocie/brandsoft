@@ -5,17 +5,17 @@ import { useState, useEffect, useMemo } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useBrandsoft, type Plan, type AdminSettings, type PlanCustomization, type PlanPeriod } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Plan, type AdminSettings, type PlanCustomization, type PlanPeriod, type Company } from '@/hooks/use-brandsoft';
 import { usePlanImage } from '@/hooks/use-plan-image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { MoreHorizontal, PackagePlus, Briefcase, Check, Pencil, Trash2, KeyRound, TrendingUp, BarChart, AlertTriangle, Settings, Package, Users, HardDrive, Contact, Star, Gem, Crown, Award, Gift, Rocket, ShieldCheck, Loader2, TestTube2 } from 'lucide-react';
+import { MoreHorizontal, PackagePlus, Briefcase, Check, Pencil, Trash2, KeyRound, TrendingUp, BarChart, AlertTriangle, Settings, Package, Users, HardDrive, Contact, Star, Gem, Crown, Award, Gift, Rocket, ShieldCheck, Loader2, TestTube2, Search, XCircle } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
@@ -26,6 +26,8 @@ import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
 
 const premiumFeatures = [
     { id: 'fullTemplateEditor', label: 'Full Template Editor Access' },
@@ -238,6 +240,63 @@ const AdminPlanCard = ({
     );
 };
 
+const ClientPicker = ({
+    onSelect,
+    onClose,
+    clients
+}: {
+    onSelect: (client: Company) => void;
+    onClose: () => void;
+    clients: Company[]
+}) => {
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const filteredClients = useMemo(() => {
+        if (!searchTerm) return clients;
+        return clients.filter(client =>
+            client.companyName.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [clients, searchTerm]);
+
+    return (
+        <div>
+            <DialogHeader>
+                <DialogTitle>Select Client for Demo Mode</DialogTitle>
+                <DialogDescription>
+                    The demo plan durations will only apply to this client.
+                </DialogDescription>
+            </DialogHeader>
+             <div className="py-4 space-y-4">
+                 <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                        placeholder="Search clients..."
+                        className="pl-10"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                 </div>
+                 <ScrollArea className="h-72">
+                    <div className="space-y-2 pr-4">
+                        {filteredClients.map(client => (
+                            <div key={client.id} className="flex items-center justify-between p-2 rounded-md border hover:bg-muted cursor-pointer" onClick={() => onSelect(client)}>
+                                <div className="flex items-center gap-3">
+                                    <Avatar className="h-8 w-8">
+                                        <AvatarImage src={client.logo} />
+                                        <AvatarFallback>{client.companyName.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <p className="text-sm font-medium">{client.companyName}</p>
+                                </div>
+                                <Button size="sm" variant="ghost">Select</Button>
+                            </div>
+                        ))}
+                    </div>
+                 </ScrollArea>
+             </div>
+        </div>
+    )
+}
+
 
 export default function AdminPlansPage() {
     const { config, saveConfig } = useBrandsoft();
@@ -251,12 +310,15 @@ export default function AdminPlansPage() {
     
     const [contactInfo, setContactInfo] = useState<{ planName: string, email?: string, whatsapp?: string } | null>(null);
     
-    const [demoMode, setDemoMode] = useState(false);
+    // DEMO MODE STATE
+    const [isClientPickerOpen, setIsClientPickerOpen] = useState(false);
+    const [demoClientId, setDemoClientId] = useState<string | null>(null);
     const [demoDurations, setDemoDurations] = useState<Record<string, { value: number, unit: string }>>({});
 
     const plans = useMemo(() => config?.plans || [], [config]);
     const adminSettings = useMemo(() => config?.admin, [config]);
     const planPeriods = useMemo(() => adminSettings?.planPeriods || [], [adminSettings]);
+    const allClients = useMemo(() => config?.companies || [], [config?.companies]);
 
     useEffect(() => {
         if (plans.length > 0) {
@@ -470,6 +532,29 @@ export default function AdminPlansPage() {
     const keysSold = adminSettings?.keysSold || 0;
     const totalFromKeys = adminSettings?.revenueFromKeys || 0;
     const totalFromPlans = adminSettings?.revenueFromPlans || 0;
+    
+    // DEMO LOGIC
+    const handleDemoToggle = (checked: boolean) => {
+        if (checked) {
+            setIsClientPickerOpen(true);
+        } else {
+            setDemoClientId(null);
+            // Here you would also update the config to remove the demo state
+        }
+    };
+    
+    const handleSelectDemoClient = (client: Company) => {
+        setDemoClientId(client.id);
+        setIsClientPickerOpen(false);
+        // Here you would save the demo client ID and durations to your main config
+        toast({ title: 'Demo Mode Activated', description: `Demo settings are now active for ${client.companyName}.` });
+    };
+
+    const demoClient = useMemo(() => {
+        if (!demoClientId) return null;
+        return allClients.find(c => c.id === demoClientId);
+    }, [demoClientId, allClients]);
+
 
     return (
         <div className="container mx-auto space-y-8">
@@ -721,17 +806,29 @@ export default function AdminPlansPage() {
                         <CardHeader>
                             <CardTitle>Demo Mode Configuration</CardTitle>
                             <CardDescription>
-                                Temporarily override plan durations for demonstration purposes. 
-                                Changes here are not saved and only affect your current session.
+                               Temporarily override plan durations for a specific client. Changes here are not saved and only affect your current session.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
                             <div className="flex items-center justify-between rounded-lg border p-4">
                                 <div className="space-y-0.5">
-                                    <Label className="text-base" htmlFor="demo-mode-switch">Enable Demo Mode</Label>
-                                    <p className="text-sm text-muted-foreground">Override real plan durations with the demo values below.</p>
+                                    <Label className="text-base" htmlFor="demo-mode-switch">
+                                        {demoClientId ? `Demo Mode Active for: ${demoClient?.companyName}` : 'Enable Demo Mode'}
+                                    </Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        {demoClientId ? 'Custom plan durations are active for this client.' : 'Select a client to apply demo settings.'}
+                                    </p>
                                 </div>
-                                <Switch id="demo-mode-switch" checked={demoMode} onCheckedChange={setDemoMode} />
+                                <Switch
+                                    id="demo-mode-switch"
+                                    checked={!!demoClientId}
+                                    onCheckedChange={handleDemoToggle}
+                                />
+                                {demoClientId && (
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 ml-2" onClick={() => setDemoClientId(null)}>
+                                        <XCircle className="h-5 w-5 text-destructive" />
+                                    </Button>
+                                )}
                             </div>
 
                             <div className="space-y-4">
@@ -744,12 +841,12 @@ export default function AdminPlansPage() {
                                                 value={demoDurations[plan.name]?.value || 10}
                                                 onChange={(e) => setDemoDurations(prev => ({...prev, [plan.name]: {...prev[plan.name], value: parseInt(e.target.value) || 0}}))}
                                                 className="w-20"
-                                                disabled={!demoMode}
+                                                disabled={!demoClientId}
                                             />
                                             <Select 
                                                 value={demoDurations[plan.name]?.unit || 'minutes'}
                                                 onValueChange={(value) => setDemoDurations(prev => ({...prev, [plan.name]: {...prev[plan.name], unit: value}}))}
-                                                disabled={!demoMode}
+                                                disabled={!demoClientId}
                                             >
                                                 <SelectTrigger className="w-[120px]">
                                                     <SelectValue />
@@ -806,6 +903,15 @@ export default function AdminPlansPage() {
                 plan={planToCustomize}
                 onSave={handleSaveCustomization}
             />
+            <Dialog open={isClientPickerOpen} onOpenChange={setIsClientPickerOpen}>
+                <DialogContent>
+                    <ClientPicker
+                        clients={allClients}
+                        onSelect={handleSelectDemoClient}
+                        onClose={() => setIsClientPickerOpen(false)}
+                    />
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
