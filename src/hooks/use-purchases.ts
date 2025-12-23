@@ -11,6 +11,12 @@ const TEST_PERIOD_MINUTES: Record<string, number> = {
 };
 const isTestPlanPeriod = (period: string) => period in TEST_PERIOD_MINUTES;
 
+type ActivationResult = {
+    purchases: Purchase[];
+    admin?: AdminSettings;
+    affiliate?: BrandsoftConfig['affiliate'];
+};
+
 export function usePurchases(
   config: BrandsoftConfig | null,
   saveConfig: (newConfig: BrandsoftConfig, options?: { redirect?: boolean; revalidate?: boolean }) => void,
@@ -30,35 +36,34 @@ export function usePurchases(
     return config?.purchases?.find(p => p.orderId === orderId) || null;
   };
 
-  const activatePurchaseOrder = (orderId: string) => {
-    if (!config || !config.admin) return;
+  const activatePurchaseOrder = (allPurchases: Purchase[], orderId: string): ActivationResult => {
+    if (!config || !config.admin) return { purchases: allPurchases };
 
-    const purchaseToActivate = config.purchases.find(p => p.orderId === orderId);
-    if (!purchaseToActivate) return;
+    const purchaseToActivate = allPurchases.find(p => p.orderId === orderId);
+    if (!purchaseToActivate) return { purchases: allPurchases };
+
+    let newAdminSettings: AdminSettings = { ...(config.admin as AdminSettings) };
+    let newAffiliateData: BrandsoftConfig['affiliate'] | undefined = config.affiliate ? { ...config.affiliate } : undefined;
     
-    let newConfig = { ...config };
-    let newAdminSettings: AdminSettings = { ...(newConfig.admin as AdminSettings) };
-
     // Top-ups are simple activations without time logic.
     if (purchaseToActivate.planName === 'Wallet Top-up' || purchaseToActivate.planName.startsWith('Credit Purchase')) {
-        const updatedPurchases = newConfig.purchases.map(p => 
+        const updatedPurchases = allPurchases.map(p => 
             p.orderId === orderId ? { ...p, status: 'active' as const, date: new Date().toISOString() } : p
         );
-        saveConfig({ ...newConfig, purchases: updatedPurchases }, { redirect: false, revalidate: true });
-        return;
+        return { purchases: updatedPurchases };
     }
     
     // Key Activation with Affiliate Commission
     if (purchaseToActivate.planName.toLowerCase().includes('key') && purchaseToActivate.affiliateId) {
-        if(newConfig.affiliate && newConfig.affiliate.staffId === purchaseToActivate.affiliateId) {
-            newConfig.affiliate = {
-                ...newConfig.affiliate,
-                unclaimedCommission: (newConfig.affiliate.unclaimedCommission || 0) + 10000,
-                bonus: (newConfig.affiliate.bonus || 0) + 2000,
+        if(newAffiliateData && newAffiliateData.staffId === purchaseToActivate.affiliateId) {
+            newAffiliateData = {
+                ...newAffiliateData,
+                unclaimedCommission: (newAffiliateData.unclaimedCommission || 0) + 10000,
+                bonus: (newAffiliateData.bonus || 0) + 2000,
                 transactions: [
                     { id: `TRN-COMM-${orderId}`, date: new Date().toISOString(), description: `Commission for Key Sale`, amount: 10000, type: 'credit' },
                     { id: `TRN-BONUS-${orderId}`, date: new Date().toISOString(), description: `Bonus for Key Sale`, amount: 2000, type: 'credit' },
-                    ...(newConfig.affiliate.transactions || [])
+                    ...(newAffiliateData.transactions || [])
                 ],
             };
         }
@@ -68,7 +73,7 @@ export function usePurchases(
     const now = Date.now();
     let remainingMsFromOldPlan = 0;
 
-    const currentActivePlan = newConfig.purchases.find(p => p.status === 'active' && p.expiresAt);
+    const currentActivePlan = allPurchases.find(p => p.status === 'active' && p.expiresAt);
     if (currentActivePlan) {
         const expiryTime = new Date(currentActivePlan.expiresAt).getTime();
         if (expiryTime > now) {
@@ -82,8 +87,8 @@ export function usePurchases(
 
     // Logic for new key activation
     if (purchaseToActivate.planName.toLowerCase().includes('key')) {
-        const freeDays = newConfig.admin?.keyFreeDays || 30;
-        const paidDays = newConfig.admin?.keyPeriodReserveDays || 30;
+        const freeDays = config.admin?.keyFreeDays || 30;
+        const paidDays = config.admin?.keyPeriodReserveDays || 30;
         
         totalInitialDays = freeDays + paidDays;
         period = `${totalInitialDays} days`;
@@ -124,7 +129,7 @@ export function usePurchases(
         ? Math.ceil((totalDurationMs + remainingMsFromOldPlan) / (1000 * 60))
         : Math.ceil((totalDurationMs + remainingMsFromOldPlan) / (1000 * 60 * 60 * 24));
 
-    let updatedPurchases = newConfig.purchases.map(p => {
+    let updatedPurchases = allPurchases.map(p => {
         if (p.orderId === orderId) {
             return {
                 ...p,
@@ -158,8 +163,7 @@ export function usePurchases(
         newAdminSettings.trendingPlan = trending[0] || 'None';
     }
 
-
-    saveConfig({ ...newConfig, purchases: updatedPurchases, admin: newAdminSettings }, { redirect: false, revalidate: true });
+    return { purchases: updatedPurchases, admin: newAdminSettings, affiliate: newAffiliateData };
 };
   
   const declinePurchaseOrder = (orderId: string, reason: string) => {
@@ -193,12 +197,12 @@ export function usePurchases(
     if (!config?.purchases) return;
 
     let changed = false;
-    const now = Date.now();
     let newConfig = { ...config };
 
     const updatedPurchases = newConfig.purchases.map(p => {
         if (p.status === 'active' && p.expiresAt) {
             const expiryTime = new Date(p.expiresAt).getTime();
+            const now = Date.now();
             
             if (expiryTime <= now) {
                 // Plan expired, check for reserve

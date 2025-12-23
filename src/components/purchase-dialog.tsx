@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -201,7 +202,7 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                 planPrice: plan.price,
                 planPeriod: plan.period,
                 paymentMethod: selectedPayment,
-                status: 'pending' as const, // Always start as pending, activate below if wallet
+                status: 'pending' as const, // Always start as pending
                 date: new Date().toISOString(),
                 receipt: receiptDataUrl ? 'indexed-db' : 'none',
                 whatsappNumber: whatsappNumber,
@@ -215,14 +216,20 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                 const updatedCompanies = config.companies.map(c => 
                     c.id === myCompany.id ? { ...c, walletBalance: newBalance } : c
                 );
-                const updatedPurchases = [...(config.purchases || []), newOrder];
+                
+                // Activate the order BEFORE saving config
+                const { purchases: purchasesAfterActivation } = activatePurchaseOrder(
+                    [...(config.purchases || []), newOrder], // Pass the new list of purchases
+                    newOrderId
+                );
+                
+                // Save everything at once
                 saveConfig({ 
                     ...config, 
                     companies: updatedCompanies,
-                    purchases: updatedPurchases
+                    purchases: purchasesAfterActivation
                 }, {redirect: false, revalidate: true});
-                
-                activatePurchaseOrder(newOrderId);
+
             } else {
                 addPurchaseOrder(newOrder);
                 const message = `*Please Activate My New Order!*
@@ -330,8 +337,7 @@ export function PurchaseDialog({ plan, isOpen, onClose, onSuccess, isTopUp = fal
                                 <StepIndicator step={1} label="Enter WhatsApp Number" isComplete={!!whatsappNumber} />
                                 <StepIndicator step={2} label="Select Payment Method" isComplete={!!selectedPayment} />
                                 <StepIndicator step={3} label={selectedPayment === 'wallet' ? "Confirm" : "Upload Receipt"} isComplete={selectedPayment === 'wallet' ? true : !!receiptFile} />
-                                {/* FIX: Changed check to false, because if it was success we wouldn't be in this block */}
-                                <StepIndicator step={4} label="Confirm Purchase" isComplete={false} />
+                                <StepIndicator step={4} label="Confirm Purchase" isComplete={purchaseState === 'success'} />
                             </div>
 
                              {!plan.name.startsWith('Activation Key') && (
