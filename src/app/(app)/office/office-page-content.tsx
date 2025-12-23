@@ -5,7 +5,7 @@ import { useBrandsoft, type Transaction, type Affiliate, type Purchase, type Com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Copy, DollarSign, ExternalLink, ShieldCheck, ShieldOff, UserCheck, Users, Edit, CreditCard, Gift, KeyRound, Phone, TrendingUp, TrendingDown, MoreHorizontal, ArrowRight, Wallet, Banknote, Smartphone, CheckCircle, Pencil, Eye, EyeOff, Send, Bell, RefreshCw, PlusCircle, User, Loader2, BarChart, ArrowLeftRight } from 'lucide-react';
+import { Copy, DollarSign, ExternalLink, UserCheck, Users, Edit, CreditCard, TrendingUp, TrendingDown, ArrowRight, Wallet, Send, Loader2, BarChart } from 'lucide-react';
 import { ClientCard } from '@/components/affiliate/client-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -16,29 +16,18 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useState, useEffect, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { Separator } from '@/components/ui/separator';
 import { StatCard } from '@/components/office/stat-card';
-import { VerificationItem } from '@/components/office/verification-item';
 import { WithdrawDialog } from '@/components/office/withdraw-dialog';
 import { BuyCreditsDialog } from '@/components/office/buy-credits-dialog';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { SimpleImageUploadButton } from '@/components/simple-image-upload-button';
-import { MethodCard } from '@/components/office/method-card';
-import { SetPinDialog } from '@/components/office/dialogs/set-pin-dialog';
-import { SecurityQuestionsDialog, type SecurityQuestionFormData } from '@/components/office/dialogs/security-questions-dialog';
-import { WithdrawalMethodDialog, type WithdrawalMethodFormData, type EditableWithdrawalMethod } from '@/components/office/dialogs/withdrawal-method-dialog';
-import { BankWithdrawalDialog, type BankWithdrawalFormData } from '@/components/office/dialogs/bank-withdrawal-dialog';
-import { BsCreditsDialog, type BsCreditsFormData } from '@/components/office/dialogs/bs-credits-dialog';
 import Link from 'next/link';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Badge } from '@/components/ui/badge';
-import { GenerateKeyDialog } from '@/components/office/dialogs/generate-key-dialog';
 import { PurchaseDialog, type PlanDetails } from '@/components/purchase-dialog';
 import { SellCreditsDialog } from '@/components/office/dialogs/sell-credits-dialog';
 import { BonusProgressDialog } from '@/components/office/bonus-progress-dialog';
 import { useRouter } from 'next/navigation';
-import { useBrandImage } from '@/hooks/use-brand-image';
+import { useBrandImage, getImageFromDB } from '@/hooks/use-brand-image';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 const affiliateSchema = z.object({
@@ -50,20 +39,70 @@ const affiliateSchema = z.object({
 type AffiliateFormData = z.infer<typeof affiliateSchema>;
 
 const CREDIT_TO_MWK = 1000;
-const ITEMS_PER_PAGE = 10;
+
+// Wrapper component to load client avatar from IndexedDB (for CLIENT cards only)
+const ClientCardWithImage = ({ client, baseUrl }: { client: any, baseUrl?: string }) => {
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchImage = async () => {
+      setIsLoading(true);
+      const dbImage = await getImageFromDB(`company-logo-${client.id}`);
+      
+      if (isMounted) {
+        if (dbImage) {
+          setAvatarUrl(dbImage);
+        } else if (client.avatar && client.avatar !== 'indexed-db') {
+          setAvatarUrl(client.avatar);
+        } else {
+          setAvatarUrl(null);
+        }
+        setIsLoading(false);
+      }
+    };
+    
+    fetchImage();
+    return () => { isMounted = false; };
+  }, [client.id, client.avatar]);
+
+  return (
+    <ClientCard 
+      key={client.id} 
+      client={{ ...client, avatar: avatarUrl }} 
+      baseUrl={baseUrl}
+      isLoadingImage={isLoading}
+    />
+  );
+};
 
 
 export function OfficePageContent() {
   const { config, saveConfig } = useBrandsoft();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [payoutsPage, setPayoutsPage] = useState(0);
   const { toast } = useToast();
   const [purchaseDetails, setPurchaseDetails] = useState<PlanDetails | null>(null);
   const [isSellCreditsOpen, setIsSellCreditsOpen] = useState(false);
   const router = useRouter();
-  const { image: affiliateImage, setImage: setAffiliateImage } = useBrandImage('affiliateProfilePic');
+  
+  // ========== STAFF AVATAR LOGIC ==========
+  // 1. Staff's personal profile pic from IndexedDB (highest priority)
+  const { image: staffProfilePic, isLoading: isStaffPicLoading, setImage: setStaffProfilePic } = useBrandImage('affiliateProfilePic');
+  
+  // 2. Main system/sidebar logo from IndexedDB (fallback)
+  const { image: systemLogo, isLoading: isSystemLogoLoading } = useBrandImage('logo');
 
+  // Determine staff avatar: Staff pic → System logo → null
+  const staffAvatarUrl = useMemo(() => {
+    if (staffProfilePic) return staffProfilePic;
+    if (systemLogo) return systemLogo;
+    return null;
+  }, [staffProfilePic, systemLogo]);
+
+  const isStaffAvatarLoading = isStaffPicLoading || isSystemLogoLoading;
+  // ========================================
 
   const affiliate = config?.affiliate;
 
@@ -76,11 +115,6 @@ export function OfficePageContent() {
       }
   });
 
-  const myCompany = useMemo(() => {
-    if (!config || !config.profile?.id) return null;
-    return config.companies?.find(c => c.id === config.profile?.id);
-  }, [config]);
-
   // Sync logic to get REAL plan details from company purchases
   const syncedClients = useMemo(() => {
     if (!affiliate?.clients || !config?.companies) return [];
@@ -89,32 +123,40 @@ export function OfficePageContent() {
         const realCompany = config.companies.find(c => c.id === client.id);
         
         if (realCompany) {
-            // Find active purchase
             const activePurchase = realCompany.purchases?.find(p => p.status === 'active');
-            // Find pending purchase
             const pendingPurchase = realCompany.purchases?.find(p => p.status === 'pending');
             
             let planName = 'Free Trial';
-            let remainingDays = 0; // Default for free trial (infinity essentially)
+            let remainingDays = 0;
 
             if (activePurchase) {
                 planName = activePurchase.planName;
-                remainingDays = activePurchase.remainingTime?.value || 0;
+                remainingDays = activePurchase.remainingTime?.value ?? 0;
             } else if (pendingPurchase) {
                 planName = `${pendingPurchase.planName} (Pending)`;
                 remainingDays = 0;
             }
 
+            const isActive = activePurchase || planName === 'Free Trial';
+            const status = isActive ? 'active' : 'expired';
+
             return {
                 ...client,
                 name: realCompany.companyName,
                 avatar: realCompany.logo || client.avatar,
-                walletBalance: realCompany.walletBalance,
+                walletBalance: realCompany.walletBalance ?? 0,
                 plan: planName,
                 remainingDays: remainingDays,
+                status: status,
             };
         }
-        return client;
+        
+        return {
+            ...client,
+            plan: 'Unknown',
+            remainingDays: 0,
+            status: 'expired' as const,
+        };
     });
   }, [affiliate?.clients, config?.companies]);
 
@@ -140,7 +182,7 @@ export function OfficePageContent() {
     
     toast({
         title: "Profile Updated",
-        description: "Your affiliate profile has been successfully updated.",
+        description: "Your staff profile has been successfully updated.",
     });
 
     setIsEditDialogOpen(false);
@@ -173,43 +215,42 @@ export function OfficePageContent() {
     });
   };
   
-    const handleWithdraw = (amount: number, source: 'commission' | 'combined' | 'bonus', method: string) => {
-        if (!config || !affiliate) return;
-        
-        const newTransaction: Transaction = {
-          id: `TRN-WTH-${Date.now()}`,
-          date: new Date().toISOString(),
-          description: `Withdrawal via ${method}`,
-          amount: amount,
-          type: 'debit',
-          status: 'pending',
-        } as any;
+  const handleWithdraw = (amount: number, source: 'commission' | 'combined' | 'bonus', method: string) => {
+    if (!config || !affiliate) return;
+    
+    const newTransaction: Transaction = {
+      id: `TRN-WTH-${Date.now()}`,
+      date: new Date().toISOString(),
+      description: `Withdrawal via ${method}`,
+      amount: amount,
+      type: 'debit',
+      status: 'pending',
+    } as any;
 
-        const newAffiliateData = { ...affiliate };
-        
-        const amountToWithdraw = amount;
+    const newAffiliateData = { ...affiliate };
+    const amountToWithdraw = amount;
 
-        if (source === 'combined') {
-            let remainingAmount = amountToWithdraw;
-            const bonusDeduction = Math.min(newAffiliateData.bonus || 0, remainingAmount);
-            newAffiliateData.bonus = (newAffiliateData.bonus || 0) - bonusDeduction;
-            remainingAmount -= bonusDeduction;
-            if (remainingAmount > 0) {
-                newAffiliateData.myWallet = (newAffiliateData.myWallet || 0) - remainingAmount;
-            }
-        } else { // 'commission'
-            newAffiliateData.myWallet = (newAffiliateData.myWallet || 0) - amountToWithdraw;
+    if (source === 'combined') {
+        let remainingAmount = amountToWithdraw;
+        const bonusDeduction = Math.min(newAffiliateData.bonus || 0, remainingAmount);
+        newAffiliateData.bonus = (newAffiliateData.bonus || 0) - bonusDeduction;
+        remainingAmount -= bonusDeduction;
+        if (remainingAmount > 0) {
+            newAffiliateData.myWallet = (newAffiliateData.myWallet || 0) - remainingAmount;
         }
-        
-        newAffiliateData.transactions = [newTransaction, ...(affiliate.transactions || [])];
-        
-        saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
-
-        toast({
-            title: 'Withdrawal Request Submitted!',
-            description: `Your request for K${amount.toLocaleString()} is being processed.`,
-        });
+    } else {
+        newAffiliateData.myWallet = (newAffiliateData.myWallet || 0) - amountToWithdraw;
     }
+    
+    newAffiliateData.transactions = [newTransaction, ...(affiliate.transactions || [])];
+    
+    saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false, revalidate: true });
+
+    toast({
+        title: 'Withdrawal Request Submitted!',
+        description: `Your request for K${amount.toLocaleString()} is being processed.`,
+    });
+  }
 
   const recentTransactions = useMemo(() => {
     if (!affiliate?.transactions) return [];
@@ -239,12 +280,19 @@ export function OfficePageContent() {
 
   const creditSalesProfit = totalCreditsSold * ((config.admin?.sellPrice || 900) - (config.admin?.buyPrice || 850));
 
-    return (
+  return (
     <div className="space-y-8">
+      {/* ========== STAFF PROFILE HEADER ========== */}
       <div className="flex items-center gap-4">
-          <Avatar className="h-20 w-20">
-            <AvatarImage src={myCompany?.logo || affiliateImage || affiliate.profilePic} />
-            <AvatarFallback>{affiliate.fullName.charAt(0)}</AvatarFallback>
+          <Avatar className="h-20 w-20 border-2 border-primary/20">
+            {isStaffAvatarLoading ? (
+              <Skeleton className="h-full w-full rounded-full" />
+            ) : (
+              <>
+                <AvatarImage src={staffAvatarUrl || undefined} alt={affiliate.fullName} />
+                <AvatarFallback className="text-2xl">{affiliate.fullName.charAt(0)}</AvatarFallback>
+              </>
+            )}
           </Avatar>
           <div className="flex items-center gap-2">
             <div>
@@ -257,22 +305,43 @@ export function OfficePageContent() {
                 </DialogTrigger>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Edit Affiliate Profile</DialogTitle>
-                        <DialogDescription>Update your public-facing affiliate information here.</DialogDescription>
+                        <DialogTitle>Edit Staff Profile</DialogTitle>
+                        <DialogDescription>Update your staff profile information and photo.</DialogDescription>
                     </DialogHeader>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
-                            <div className="flex items-center gap-4">
-                                <Avatar className="h-16 w-16">
-                                    <AvatarImage src={affiliateImage || affiliate.profilePic} />
-                                    <AvatarFallback>{form.getValues('fullName')?.charAt(0)}</AvatarFallback>
+                            {/* Staff Avatar Upload Section */}
+                            <div className="flex flex-col items-center gap-4 p-4 border rounded-lg bg-muted/30">
+                                <Avatar className="h-24 w-24 border-2 border-primary/20">
+                                    {isStaffPicLoading ? (
+                                        <Skeleton className="h-full w-full rounded-full" />
+                                    ) : (
+                                        <>
+                                            <AvatarImage src={staffProfilePic || systemLogo || undefined} />
+                                            <AvatarFallback className="text-3xl">{form.getValues('fullName')?.charAt(0)}</AvatarFallback>
+                                        </>
+                                    )}
                                 </Avatar>
-                                <div className="flex-grow">
+                                <div className="text-center space-y-2">
                                     <SimpleImageUploadButton
-                                        value={affiliateImage || ''}
-                                        onChange={setAffiliateImage}
-                                        buttonText="Upload New Picture"
+                                        value={staffProfilePic || ''}
+                                        onChange={setStaffProfilePic}
+                                        buttonText="Upload Staff Photo"
                                     />
+                                    <p className="text-xs text-muted-foreground">
+                                        Your personal staff photo. If not set, the system logo will be used.
+                                    </p>
+                                    {staffProfilePic && (
+                                        <Button 
+                                            type="button" 
+                                            variant="ghost" 
+                                            size="sm"
+                                            className="text-destructive hover:text-destructive"
+                                            onClick={() => setStaffProfilePic('')}
+                                        >
+                                            Remove Photo (Use System Logo)
+                                        </Button>
+                                    )}
                                 </div>
                             </div>
                             
@@ -323,6 +392,7 @@ export function OfficePageContent() {
             </Dialog>
           </div>
       </div>
+      {/* ========================================== */}
 
        <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
@@ -443,7 +513,7 @@ export function OfficePageContent() {
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {syncedClients.length > 0 ? (
                     syncedClients.map(client => (
-                        <ClientCard key={client.id} client={client} />
+                        <ClientCardWithImage key={client.id} client={client} />
                     ))
                 ) : (
                     <div className="col-span-full flex flex-col items-center justify-center h-40 border-2 border-dashed rounded-lg text-muted-foreground">

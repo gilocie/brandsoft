@@ -52,8 +52,8 @@ type AffiliateFormData = z.infer<typeof affiliateSchema>;
 const CREDIT_TO_MWK = 1000;
 const ITEMS_PER_PAGE = 10;
 
-// Helper component for client card with IndexedDB image loading
-export const ClientCardWithImage = ({ client, baseUrl }: { client: any, baseUrl?: string }) => {
+// Wrapper component to load client avatar from IndexedDB
+const ClientCardWithImage = ({ client, baseUrl }: { client: any, baseUrl?: string }) => {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -61,6 +61,7 @@ export const ClientCardWithImage = ({ client, baseUrl }: { client: any, baseUrl?
     let isMounted = true;
     const fetchImage = async () => {
       setIsLoading(true);
+      // Try to get the company logo from IndexedDB
       const dbImage = await getImageFromDB(`company-logo-${client.id}`);
       
       if (isMounted) {
@@ -99,11 +100,12 @@ export function OfficePageContent() {
   const [purchaseDetails, setPurchaseDetails] = useState<PlanDetails | null>(null);
   const [isSellCreditsOpen, setIsSellCreditsOpen] = useState(false);
   const router = useRouter();
+  
+  // Staff's personal profile pic from IndexedDB
   const { image: affiliateImage, isLoading: isAffiliateImageLoading, setImage: setAffiliateImage } = useBrandImage('affiliateProfilePic');
   
-  // Also try to load company logo for this staff member
-  const [companyLogo, setCompanyLogo] = useState<string | null>(null);
-  const [isCompanyLogoLoading, setIsCompanyLogoLoading] = useState(true);
+  // Sidebar logo from IndexedDB - this is the FALLBACK for staff avatar
+  const { image: sidebarLogo, isLoading: isSidebarLogoLoading } = useBrandImage('logo');
 
   const affiliate = config?.affiliate;
 
@@ -121,45 +123,19 @@ export function OfficePageContent() {
     return config.companies?.find(c => c.id === config.profile?.id);
   }, [config]);
 
-  // Load company logo from IndexedDB
-  useEffect(() => {
-    if (!myCompany) {
-      setIsCompanyLogoLoading(false);
-      return;
-    }
-
-    let isMounted = true;
-    const fetchCompanyLogo = async () => {
-      setIsCompanyLogoLoading(true);
-      const dbImage = await getImageFromDB(`company-logo-${myCompany.id}`);
-      
-      if (isMounted) {
-        if (dbImage) {
-          setCompanyLogo(dbImage);
-        } else if (myCompany.logo && myCompany.logo !== 'indexed-db') {
-          setCompanyLogo(myCompany.logo);
-        } else {
-          setCompanyLogo(null);
-        }
-        setIsCompanyLogoLoading(false);
-      }
-    };
-
-    fetchCompanyLogo();
-    return () => { isMounted = false; };
-  }, [myCompany]);
-
-  // Determine the best profile image to show (priority: affiliate pic > company logo > fallback)
+  // Determine the best profile image to show
+  // Priority: Staff's personal pic → Sidebar logo → affiliate.profilePic string → null
   const profilePicUrl = useMemo(() => {
-    // Staff's personal profile pic takes priority
+    // 1. Staff's personal profile pic takes highest priority
     if (affiliateImage) return affiliateImage;
-    // Then company logo
-    if (companyLogo) return companyLogo;
-    // Then fallback from affiliate config
-    return affiliate?.profilePic || null;
-  }, [affiliateImage, companyLogo, affiliate?.profilePic]);
+    // 2. Sidebar logo (company logo from settings) as fallback
+    if (sidebarLogo) return sidebarLogo;
+    // 3. Legacy fallback from affiliate config string
+    if (affiliate?.profilePic) return affiliate.profilePic;
+    return null;
+  }, [affiliateImage, sidebarLogo, affiliate?.profilePic]);
 
-  const isProfilePicLoading = isAffiliateImageLoading || isCompanyLogoLoading;
+  const isProfilePicLoading = isAffiliateImageLoading || isSidebarLogoLoading;
 
   // Sync logic to get REAL plan details from company purchases
   const syncedClients = useMemo(() => {
@@ -179,7 +155,6 @@ export function OfficePageContent() {
 
             if (activePurchase) {
                 planName = activePurchase.planName;
-                // Get remaining days from the purchase, fallback to 0
                 remainingDays = activePurchase.remainingTime?.value ?? 0;
             } else if (pendingPurchase) {
                 planName = `${pendingPurchase.planName} (Pending)`;
@@ -290,7 +265,7 @@ export function OfficePageContent() {
             if (remainingAmount > 0) {
                 newAffiliateData.myWallet = (newAffiliateData.myWallet || 0) - remainingAmount;
             }
-        } else { // 'commission'
+        } else {
             newAffiliateData.myWallet = (newAffiliateData.myWallet || 0) - amountToWithdraw;
         }
         
@@ -334,14 +309,15 @@ export function OfficePageContent() {
 
     return (
     <div className="space-y-8">
+      {/* Staff Profile Header */}
       <div className="flex items-center gap-4">
-          <Avatar className="h-20 w-20">
+          <Avatar className="h-20 w-20 border-2 border-primary/20">
             {isProfilePicLoading ? (
               <Skeleton className="h-full w-full rounded-full" />
             ) : (
               <>
-                <AvatarImage src={profilePicUrl || undefined} />
-                <AvatarFallback>{affiliate.fullName.charAt(0)}</AvatarFallback>
+                <AvatarImage src={profilePicUrl || undefined} alt={affiliate.fullName} />
+                <AvatarFallback className="text-2xl">{affiliate.fullName.charAt(0)}</AvatarFallback>
               </>
             )}
           </Avatar>
@@ -356,29 +332,43 @@ export function OfficePageContent() {
                 </DialogTrigger>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Edit Affiliate Profile</DialogTitle>
-                        <DialogDescription>Update your public-facing affiliate information here.</DialogDescription>
+                        <DialogTitle>Edit Staff Profile</DialogTitle>
+                        <DialogDescription>Update your staff profile information and avatar.</DialogDescription>
                     </DialogHeader>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
-                            <div className="flex items-center gap-4">
-                                <Avatar className="h-16 w-16">
+                            {/* Avatar Upload Section */}
+                            <div className="flex flex-col items-center gap-4 p-4 border rounded-lg bg-muted/30">
+                                <Avatar className="h-24 w-24 border-2 border-primary/20">
                                     {isAffiliateImageLoading ? (
                                         <Skeleton className="h-full w-full rounded-full" />
                                     ) : (
                                         <>
-                                            <AvatarImage src={affiliateImage || affiliate.profilePic || undefined} />
-                                            <AvatarFallback>{form.getValues('fullName')?.charAt(0)}</AvatarFallback>
+                                            <AvatarImage src={affiliateImage || sidebarLogo || affiliate.profilePic || undefined} />
+                                            <AvatarFallback className="text-3xl">{form.getValues('fullName')?.charAt(0)}</AvatarFallback>
                                         </>
                                     )}
                                 </Avatar>
-                                <div className="flex-grow">
+                                <div className="text-center space-y-2">
                                     <SimpleImageUploadButton
                                         value={affiliateImage || ''}
                                         onChange={setAffiliateImage}
-                                        buttonText="Upload New Picture"
+                                        buttonText="Upload Staff Photo"
                                     />
-                                    <p className="text-xs text-muted-foreground mt-1">This is your personal staff photo</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        This is your personal staff photo. If not set, your company logo will be used.
+                                    </p>
+                                    {affiliateImage && (
+                                        <Button 
+                                            type="button" 
+                                            variant="ghost" 
+                                            size="sm"
+                                            className="text-destructive hover:text-destructive"
+                                            onClick={() => setAffiliateImage('')}
+                                        >
+                                            Remove Photo
+                                        </Button>
+                                    )}
                                 </div>
                             </div>
                             
