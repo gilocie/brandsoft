@@ -38,6 +38,11 @@ export default function StaffRegisterPage() {
   const [generatedStaffId, setGeneratedStaffId] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: { fullName: "", username: "", phone: "", password: "", confirmPassword: "" },
+  });
+
   function onSubmit(values: RegistrationFormData) {
     setIsLoading(true);
     setTimeout(() => {
