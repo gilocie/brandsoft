@@ -13,6 +13,7 @@ export type AffiliateClient = {
   status: 'active' | 'expired';
   joinDate?: string;
   remainingDays?: number;
+  remainingTimeUnit?: 'days' | 'minutes' | 'seconds';
   walletBalance?: number;
   lastTopUpAmount?: number;
   lastTopUpDate?: string;
@@ -105,7 +106,8 @@ export type Purchase = {
     };
     customerId?: string; 
     periodReserve?: number; 
-    affiliateId?: string; 
+    affiliateId?: string;
+    isAutoRenew?: boolean;
 }
 
 export type Company = {

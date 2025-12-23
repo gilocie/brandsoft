@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Briefcase, Clock, Wallet, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from "@/lib/utils";
 
 export interface ClientCardProps {
   client: {
@@ -27,7 +28,7 @@ export function ClientCard({ client, baseUrl = '/office', isLoadingImage = false
   const isFreeTrial = client.plan === 'Free Trial';
   const isExpired = client.status === 'expired';
   const remainingValue = client.remainingDays ?? 0;
-  const remainingUnit = (client as any).remainingTimeUnit || 'days';
+  const remainingUnit = client.remainingTimeUnit || 'days';
 
   const formatRemainingTime = () => {
     if (isExpired) return 'Expired';
@@ -67,9 +68,12 @@ export function ClientCard({ client, baseUrl = '/office', isLoadingImage = false
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex items-center justify-between text-sm">
-          <div className="flex items-center gap-1 text-muted-foreground">
+          <div className={cn(
+                "flex items-center gap-1",
+                isExpired ? "text-destructive font-medium" : (isFreeTrial ? "text-green-600 font-medium" : "text-muted-foreground")
+              )}>
             <Clock className="h-4 w-4" />
-            <span className={isExpired ? 'text-destructive font-medium' : isFreeTrial ? 'text-green-600 font-medium' : ''}>
+            <span>
                 {formatRemainingTime()}
             </span>
           </div>
