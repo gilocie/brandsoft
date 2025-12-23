@@ -12,20 +12,26 @@ export default function StaffPage() {
     const router = useRouter();
 
     useEffect(() => {
+        // Wait until the config loading status is determined.
         if (isConfigured === null) {
-            // Still loading config
             return;
         }
 
-        if (config?.affiliate) {
-            // If an affiliate exists, they must log in
-            router.replace('/staff/login');
-        } else if (isConfigured === true && !config?.affiliate) {
-            // If configured but no affiliate, they must register
-            router.replace('/staff/register');
+        // Once the configuration is confirmed to be loaded (or not)
+        if (isConfigured) {
+            // If config exists, check for an affiliate
+            if (config?.affiliate) {
+                // If an affiliate exists, they must log in
+                router.replace('/staff/login');
+            } else {
+                // If no affiliate, they must register
+                router.replace('/staff/register');
+            }
+        } else {
+             // If the app is not configured at all, there's nowhere for a staff member to go.
+             // Redirecting to the root will start the activation/setup flow.
+             router.replace('/');
         }
-        // If not configured, wait for config to be set up.
-        // A user shouldn't land here without config, but this is a safeguard.
         
     }, [config, isConfigured, router]);
 
