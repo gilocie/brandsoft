@@ -60,8 +60,11 @@ export const saveImageToDB = async (key: string, imageData: string): Promise<voi
   });
 };
 
+// Define allowed image types
+type BrandImageType = 'logo' | 'cover' | 'affiliateProfilePic' | 'adminProfilePic';
+
 // Hook to manage a specific brand image
-export function useBrandImage(imageType: 'logo' | 'cover' | 'affiliateProfilePic' | 'adminProfilePic') {
+export function useBrandImage(imageType: BrandImageType) {
   const [image, _setImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -72,7 +75,6 @@ export function useBrandImage(imageType: 'logo' | 'cover' | 'affiliateProfilePic
         const storedImage = await getImageFromDB(imageType);
         _setImage(storedImage);
       } catch (error) {
-        // console.error(`Failed to load ${imageType} image:`, error);
         _setImage(null);
       } finally {
         setIsLoading(false);
@@ -87,11 +89,12 @@ export function useBrandImage(imageType: 'logo' | 'cover' | 'affiliateProfilePic
       if (imageDataUrl) {
         await saveImageToDB(imageType, imageDataUrl);
       } else {
+        // Delete the image from DB
         const db = await openBrandImageDB();
         const transaction = db.transaction([BRAND_IMAGE_STORE_NAME], 'readwrite');
         transaction.objectStore(BRAND_IMAGE_STORE_NAME).delete(imageType);
       }
-      _setImage(imageDataUrl);
+      _setImage(imageDataUrl || null);
     } catch (error) {
       console.error(`Failed to save ${imageType} image:`, error);
     }
