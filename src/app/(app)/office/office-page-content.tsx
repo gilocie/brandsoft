@@ -35,9 +35,11 @@ const affiliateSchema = z.object({
     fullName: z.string().min(2, "Full name is required"),
     username: z.string().min(3, "Username must be at least 3 characters"),
     phone: z.string().optional(),
-    password: z.string().optional(),
+    password: z.string().optional().refine(val => !val || val.length >= 6, {
+        message: "Password must be at least 6 characters if provided.",
+    }),
     confirmPassword: z.string().optional(),
-}).refine(data => !data.password || data.password === data.confirmPassword, {
+}).refine(data => data.password === data.confirmPassword, {
     message: "Passwords do not match.",
     path: ["confirmPassword"],
 });
@@ -174,7 +176,7 @@ export function OfficePageContent() {
             confirmPassword: '',
         });
     }
-  }, [affiliate, form]);
+  }, [affiliate, form, isEditDialogOpen]);
 
   const onSubmit = (data: AffiliateFormData) => {
     if (!config || !affiliate) return;
@@ -184,8 +186,8 @@ export function OfficePageContent() {
       fullName: data.fullName,
       username: data.username,
       phone: data.phone,
-      // Only update password if it's provided
-      ...(data.password && { password: data.password }),
+      // Only update password if it's provided and valid
+      ...(data.password && data.password.length >= 6 && { password: data.password }),
     };
     
     saveConfig({ ...config, affiliate: newAffiliateData }, { redirect: false });
@@ -313,119 +315,79 @@ export function OfficePageContent() {
                 <DialogTrigger asChild>
                     <Button variant="ghost" size="icon"><Edit className="h-4 w-4"/></Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[600px]">
+                <DialogContent className="sm:max-w-xl">
                     <DialogHeader>
                         <DialogTitle>Edit Staff Profile</DialogTitle>
-                        <DialogDescription>Update your staff profile information and photo.</DialogDescription>
+                        <DialogDescription>Update your staff profile information and security settings.</DialogDescription>
                     </DialogHeader>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
-                            <div className="flex flex-col md:flex-row gap-6">
-                                {/* LEFT: Staff Avatar Upload Section */}
-                                <div className="flex flex-col items-center justify-center gap-4 p-4 border rounded-lg bg-muted/30 md:w-[200px] flex-shrink-0">
-                                    <Avatar className="h-28 w-28 border-2 border-primary/20">
-                                        {isStaffPicLoading ? (
-                                            <Skeleton className="h-full w-full rounded-full" />
-                                        ) : (
-                                            <>
-                                                <AvatarImage src={staffProfilePic || systemLogo || brandsoftLogo.src} />
-                                                <AvatarFallback className="text-3xl">{form.getValues('fullName')?.charAt(0)}</AvatarFallback>
-                                            </>
-                                        )}
-                                    </Avatar>
-                                    <div className="text-center space-y-2">
-                                        <SimpleImageUploadButton
-                                            value={staffProfilePic || ''}
-                                            onChange={setStaffProfilePic}
-                                            buttonText="Upload Photo"
-                                        />
-                                        <p className="text-xs text-muted-foreground">
-                                            Your personal staff photo
-                                        </p>
-                                        {staffProfilePic && (
-                                            <Button 
-                                                type="button" 
-                                                variant="ghost" 
-                                                size="sm"
-                                                className="text-destructive hover:text-destructive text-xs"
-                                                onClick={() => setStaffProfilePic('')}
-                                            >
-                                                Remove Photo
-                                            </Button>
-                                        )}
-                                    </div>
-                                </div>
-                                
-                                {/* RIGHT: Form Fields */}
-                                <div className="flex-1 space-y-4">
-                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <FormField
-                                            control={form.control}
-                                            name="fullName"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Full Name</FormLabel>
-                                                    <FormControl><Input placeholder="John Doe" {...field} /></FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
+                           <Tabs defaultValue="profile" className="w-full">
+                               <TabsList className="grid w-full grid-cols-2">
+                                   <TabsTrigger value="profile">Profile</TabsTrigger>
+                                   <TabsTrigger value="security">Security</TabsTrigger>
+                               </TabsList>
+                               <TabsContent value="profile" className="pt-6 space-y-4">
+                                     <div className="flex flex-col items-center gap-4 p-4 border rounded-lg bg-muted/30">
+                                        <Avatar className="h-24 w-24 border-2 border-primary/20">
+                                            {isStaffPicLoading ? (
+                                                <Skeleton className="h-full w-full rounded-full" />
+                                            ) : (
+                                                <>
+                                                    <AvatarImage src={staffProfilePic || systemLogo || brandsoftLogo.src} />
+                                                    <AvatarFallback className="text-3xl">{form.getValues('fullName')?.charAt(0)}</AvatarFallback>
+                                                </>
                                             )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="username"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Username</FormLabel>
-                                                    <FormControl><Input placeholder="johndoe" {...field} /></FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
+                                        </Avatar>
+                                        <div className="text-center space-y-2">
+                                            <SimpleImageUploadButton
+                                                value={staffProfilePic || ''}
+                                                onChange={setStaffProfilePic}
+                                                buttonText="Upload Photo"
+                                            />
+                                            {staffProfilePic && (
+                                                <Button type="button" variant="ghost" size="sm" className="text-destructive hover:text-destructive text-xs" onClick={() => setStaffProfilePic('')}>
+                                                    Remove Photo
+                                                </Button>
                                             )}
-                                        />
+                                        </div>
                                     </div>
-                                     <FormField
-                                        control={form.control}
-                                        name="phone"
-                                        render={({ field }) => (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <FormField control={form.control} name="fullName" render={({ field }) => (
+                                            <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="username" render={({ field }) => (
+                                            <FormItem><FormLabel>Username</FormLabel><FormControl><Input placeholder="johndoe" {...field} /></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                    </div>
+                                    <FormField control={form.control} name="phone" render={({ field }) => (
+                                        <FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input placeholder="+265 999 123 456" {...field} /></FormControl><FormMessage /></FormItem>
+                                    )} />
+                               </TabsContent>
+                               <TabsContent value="security" className="pt-6 space-y-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                         <FormField control={form.control} name="password" render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Phone Number</FormLabel>
-                                                <FormControl><Input placeholder="+265 999 123 456" {...field} /></FormControl>
+                                                <FormLabel>New Password</FormLabel>
+                                                <div className="relative">
+                                                    <FormControl><Input type={showPassword ? 'text' : 'password'} placeholder="Leave blank to keep current" {...field} /></FormControl>
+                                                    <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowPassword(!showPassword)}>
+                                                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                                    </Button>
+                                                </div>
                                                 <FormMessage />
                                             </FormItem>
-                                        )}
-                                    />
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                         <FormField
-                                            control={form.control}
-                                            name="password"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>New Password</FormLabel>
-                                                    <div className="relative">
-                                                        <FormControl><Input type={showPassword ? 'text' : 'password'} placeholder="Leave blank to keep current" {...field} /></FormControl>
-                                                        <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowPassword(!showPassword)}>
-                                                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                                        </Button>
-                                                    </div>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="confirmPassword"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Confirm Password</FormLabel>
-                                                    <FormControl><Input type={showPassword ? 'text' : 'password'} placeholder="Confirm new password" {...field} /></FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
+                                        )} />
+                                        <FormField control={form.control} name="confirmPassword" render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Confirm Password</FormLabel>
+                                                <FormControl><Input type={showPassword ? 'text' : 'password'} placeholder="Confirm new password" {...field} /></FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )} />
                                     </div>
-                                </div>
-                            </div>
-                            
-                            {/* Footer Buttons */}
+                               </TabsContent>
+                           </Tabs>
                             <div className="flex justify-end gap-2 pt-4 border-t">
                                 <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
                                 <Button type="submit">Save Changes</Button>

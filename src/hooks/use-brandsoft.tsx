@@ -215,7 +215,7 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
         return true;
     };
     
-    const registerAffiliate = (data: Omit<Affiliate, 'id'>): string | null => {
+    const registerAffiliate = (data: Partial<Affiliate>): string | null => {
         if (config?.affiliate) {
             // In this demo, we only allow one affiliate.
             return null; 
@@ -226,10 +226,10 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
 
         const newAffiliate: Affiliate = {
             ...initialAffiliateData,
-            fullName: data.fullName,
-            username: data.username,
-            phone: data.phone,
-            password: data.password, // In a real app, this should be hashed
+            fullName: data.fullName!,
+            username: data.username!,
+            phone: data.phone!,
+            password: data.password!, // In a real app, this should be hashed
             staffId: staffId,
             affiliateLink: affiliateLink,
         };
@@ -498,10 +498,8 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       if (!config?.affiliate) return false;
       
       const isUsernameMatch = config.affiliate.username.toLowerCase() === username.toLowerCase();
-      // If no password is set on the account, allow the default password. Otherwise, check the stored one.
-      const isPasswordMatch = !config.affiliate.password 
-        ? password === 'password'
-        : config.affiliate.password === password;
+      // Allow default password if one isn't set on the account
+      const isPasswordMatch = (!config.affiliate.password && password === 'password') || config.affiliate.password === password;
 
       if (isUsernameMatch && isPasswordMatch) {
           sessionStorage.setItem('isAffiliateLoggedIn', 'true');
