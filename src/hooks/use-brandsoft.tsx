@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, createContext, useContext, ReactNode, useCallback } from 'react';
@@ -20,19 +21,20 @@ const CONFIG_KEY = 'brandsoft_config';
 const VALID_SERIAL = 'BS-GSS-DEMO0000-000000';
 
 const initialAffiliateData: Affiliate = {
-    fullName: 'Your Affiliate Name',
-    username: 'affiliate_user',
-    phone: '0999000111',
+    fullName: 'Sant',
+    username: 'sant',
+    phone: '265994985371',
+    password: 'password',
     profilePic: 'https://picsum.photos/seed/affiliate/200',
-    affiliateLink: 'https://brandsoft.com/join?ref=affiliate_user',
-    securityQuestion: true,
+    affiliateLink: 'https://brandsoft.com/join?ref=sant',
+    securityQuestion: false,
     idUploaded: false,
     isPinSet: false,
-    myWallet: 0,
-    unclaimedCommission: 0,
-    totalSales: 0,
-    creditBalance: 0,
-    bonus: 0,
+    myWallet: 2500,
+    unclaimedCommission: 17500,
+    totalSales: 17500,
+    creditBalance: 50.00,
+    bonus: 2500,
     staffId: 'BS-AFF-12345678',
     clients: [],
     transactions: [],
@@ -240,6 +242,8 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
         saveConfig(newConfig, { redirect: false });
         return staffId;
     };
+    
+    const get = () => ({ config });
 
     return {
         ...companyMethods,
@@ -254,6 +258,7 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
         addCreditPurchaseToAffiliate,
         useActivationKey,
         registerAffiliate,
+        get
     };
 }
 
@@ -490,7 +495,15 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
   };
   
   const affiliateLogin = (username: string, password: string): boolean => {
-      if (config?.affiliate?.username === username && config?.affiliate?.password === password) {
+      if (!config?.affiliate) return false;
+      
+      const isUsernameMatch = config.affiliate.username === username;
+      // If the stored password exists, check it. Otherwise, check the default password.
+      const isPasswordMatch = config.affiliate.password 
+        ? config.affiliate.password === password 
+        : password === 'password';
+
+      if (isUsernameMatch && isPasswordMatch) {
           sessionStorage.setItem('isAffiliateLoggedIn', 'true');
           setIsAffiliateLoggedIn(true);
           setRole('staff');
