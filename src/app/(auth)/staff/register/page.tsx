@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, PartyPopper } from 'lucide-react';
+import { Loader2, PartyPopper, Eye, EyeOff } from 'lucide-react';
 import brandsoftBackground from '@/app/backgrounds/background.jpg';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -19,6 +19,7 @@ import { useRouter } from 'next/navigation';
 const formSchema = z.object({
   fullName: z.string().min(2, "Full name is required."),
   username: z.string().min(3, "Username must be at least 3 characters.").refine(s => !s.includes(' '), 'Username cannot contain spaces.'),
+  phone: z.string().min(1, 'WhatsApp number is required.'),
   password: z.string().min(6, "Password must be at least 6 characters."),
   confirmPassword: z.string(),
 }).refine(data => data.password === data.confirmPassword, {
@@ -35,10 +36,11 @@ export default function StaffRegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const [generatedStaffId, setGeneratedStaffId] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<RegistrationFormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: { fullName: "", username: "", password: "", confirmPassword: "" },
+    defaultValues: { fullName: "", username: "", phone: "", password: "", confirmPassword: "" },
   });
 
   function onSubmit(values: RegistrationFormData) {
@@ -104,7 +106,7 @@ export default function StaffRegisterPage() {
       data-ai-hint="business building"
     >
       <div className="absolute inset-0 bg-black/80" />
-      <Card className="w-full max-w-md shadow-2xl z-10 bg-background">
+      <Card className="w-full max-w-lg shadow-2xl z-10 bg-background">
         <CardHeader className="text-center">
           <CardTitle className="font-body text-2xl">Staff Registration</CardTitle>
           <CardDescription>Create your affiliate account to get started.</CardDescription>
@@ -112,50 +114,75 @@ export default function StaffRegisterPage() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="fullName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Full Name</FormLabel>
-                    <FormControl><Input placeholder="John Doe" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="username"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Username</FormLabel>
-                    <FormControl><Input placeholder="johndoe" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl><Input type="password" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-               <FormField
-                control={form.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirm Password</FormLabel>
-                    <FormControl><Input type="password" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <FormField
+                        control={form.control}
+                        name="fullName"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Full Name</FormLabel>
+                            <FormControl><Input placeholder="John Doe" {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="username"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Username</FormLabel>
+                            <FormControl><Input placeholder="johndoe" {...field} /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                </div>
+                 <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>WhatsApp Number</FormLabel>
+                        <FormControl><Input placeholder="+265999123456" {...field} /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="password"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Password</FormLabel>
+                            <div className="relative">
+                                <FormControl><Input type={showPassword ? 'text' : 'password'} {...field} /></FormControl>
+                                <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowPassword(!showPassword)}>
+                                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                </Button>
+                            </div>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="confirmPassword"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Confirm Password</FormLabel>
+                             <div className="relative">
+                                <FormControl><Input type={showPassword ? 'text' : 'password'} {...field} /></FormControl>
+                                <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setShowPassword(!showPassword)}>
+                                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                </Button>
+                            </div>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                </div>
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Register

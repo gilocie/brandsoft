@@ -226,6 +226,7 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
             ...initialAffiliateData,
             fullName: data.fullName,
             username: data.username,
+            phone: data.phone,
             password: data.password, // In a real app, this should be hashed
             staffId: staffId,
             affiliateLink: affiliateLink,
