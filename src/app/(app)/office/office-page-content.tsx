@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useBrandsoft, type Transaction, type Affiliate, type Purchase } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Transaction, type Affiliate, type Purchase, type Company } from '@/hooks/use-brandsoft';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -76,8 +76,17 @@ export function OfficePageContent() {
       }
   });
 
+  const myCompany = useMemo(() => {
+    if (!config || !config.profile?.id) return null;
+    return config.companies?.find(c => c.id === config.profile?.id);
+  }, [config]);
 
-  // This merges the Affiliate Client entry with the latest real Company Data
+  const currentPlan = useMemo(() => {
+    const purchases = myCompany?.purchases || [];
+    const activePurchase = purchases.find(p => p.status === 'active');
+    return activePurchase ? activePurchase.planName : 'Free Trial';
+  }, [myCompany]);
+
   const syncedClients = useMemo(() => {
     if (!affiliate?.clients || !config?.companies) return [];
 
@@ -221,13 +230,13 @@ export function OfficePageContent() {
     <div className="space-y-8">
       <div className="flex items-center gap-4">
           <Avatar className="h-20 w-20">
-            <AvatarImage src={affiliateImage || affiliate.profilePic} />
+            <AvatarImage src={myCompany?.logo || affiliateImage || affiliate.profilePic} />
             <AvatarFallback>{affiliate.fullName.charAt(0)}</AvatarFallback>
           </Avatar>
           <div className="flex items-center gap-2">
             <div>
                 <h1 className="text-2xl font-bold font-headline">{affiliate.fullName}</h1>
-                <p className="text-muted-foreground">@{affiliate.username}</p>
+                <p className="text-muted-foreground">@{affiliate.username} - <span className="font-semibold text-primary">{currentPlan}</span></p>
             </div>
              <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                 <DialogTrigger asChild>
@@ -463,3 +472,4 @@ export function OfficePageContent() {
     </div>
   );
 }
+
