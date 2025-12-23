@@ -405,7 +405,7 @@ export type BrandsoftConfig = {
     quotation: boolean;
     marketing: boolean;
   };
-  affiliate: Affiliate;
+  affiliate?: Affiliate;
   admin: AdminSettings;
   companies: Company[];
   customers: Customer[];
