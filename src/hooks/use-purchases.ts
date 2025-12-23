@@ -6,13 +6,11 @@ import { useCallback } from 'react';
 
 const isTestPlanPeriod = (period: string, config: BrandsoftConfig | null) => period in (config?.admin?.demoDurations || {});
 
-
 type ActivationResult = {
     purchases: Purchase[];
     admin?: AdminSettings;
     affiliate?: BrandsoftConfig['affiliate'];
 };
-
 
 export function usePurchases(
   config: BrandsoftConfig | null,
@@ -203,17 +201,30 @@ export function usePurchases(
   };
   
   const updatePurchaseStatus = useCallback(() => {
-    if (!config) return;
+    if (!config?.companies) return;
   
     let changed = false;
     let newConfig = JSON.parse(JSON.stringify(config));
+  
     const { demoClientId, demoDurations, demoStartedAt } = config.admin || {};
   
+    // Helper to process renewal
+    const tryRenew = (company: Company, planName: string, priceString: string) => {
+        if (!config.profile.autoRenew) return false;
+        
+        const price = parseFloat(priceString.replace(/[^0-9.-]+/g, "") || '0');
+        if (price > 0 && (company.walletBalance || 0) >= price) {
+            company.walletBalance = (company.walletBalance || 0) - price;
+            return true;
+        }
+        return false;
+    };
+
     let updatedCompanies = newConfig.companies.map((company: Company) => {
       if (!company.purchases) company.purchases = [];
   
       let newPurchases: Purchase[] = [];
-      let hasRenewed = false; // Track renewal per company
+      let hasRenewed = false; 
   
       for (let p of [...company.purchases]) {
         const now = Date.now();
@@ -223,70 +234,119 @@ export function usePurchases(
         const isDemoClient = company.id === demoClientId;
         const hasDemoSettings = demoDurations && demoDurations[p.planName];
   
+        // DEMO MODE LOGIC
         if (isDemoClient && hasDemoSettings && demoStartedAt) {
           const demoSettings = demoDurations[p.planName];
+          
+          // CRITICAL FIX: Calculate from when demo mode was STARTED, not purchase date
           const demoStartTime = new Date(demoStartedAt).getTime();
+          
           let durationMs = 0;
           timeUnit = demoSettings.unit as 'days' | 'minutes' | 'seconds';
-  
-          if (demoSettings.unit === 'seconds') durationMs = demoSettings.value * 1000;
-          else if (demoSettings.unit === 'minutes') durationMs = demoSettings.value * 60 * 1000;
-          else durationMs = demoSettings.value * 24 * 60 * 60 * 1000;
+
+          if (demoSettings.unit === 'seconds') {
+              durationMs = demoSettings.value * 1000;
+          } else if (demoSettings.unit === 'minutes') {
+              durationMs = demoSettings.value * 60 * 1000;
+          } else { // days
+              durationMs = demoSettings.value * 24 * 60 * 60 * 1000;
+          }
           
           expiryTime = demoStartTime + durationMs;
-  
+
+          // Calculate remaining time
+          const remainingMs = expiryTime - now;
+          let remainingValue = 0;
+
+          if (timeUnit === 'seconds') remainingValue = Math.ceil(remainingMs / 1000);
+          else if (timeUnit === 'minutes') remainingValue = Math.ceil(remainingMs / (1000 * 60));
+          else remainingValue = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
+
+          // Check for auto-renewal in demo mode (e.g. if <= 1 unit remaining)
+          if (remainingValue <= 1 && p.status === 'active' && !hasRenewed) {
+             if (tryRenew(company, p.planName, p.planPrice)) {
+                 hasRenewed = true;
+                 changed = true;
+                 
+                 // Extend demo start time to simulate renewal
+                 if (newConfig.admin) {
+                     newConfig.admin.demoStartedAt = new Date().toISOString(); 
+                 }
+                 
+                 // Add new purchase record for history
+                 const newPurchase: Purchase = {
+                    orderId: `AUTO-DEMO-${Date.now()}`, 
+                    planName: p.planName, 
+                    planPrice: p.planPrice,
+                    planPeriod: p.planPeriod, 
+                    paymentMethod: 'wallet', 
+                    status: 'active',
+                    date: new Date().toISOString(), 
+                    isAutoRenew: true, 
+                    remainingTime: { value: demoSettings.value, unit: timeUnit }
+                };
+                newPurchases.push(newPurchase);
+                
+                // Continue with active status since we just "renewed"
+                p = { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: timeUnit } }; 
+             }
+          }
+
           if (expiryTime <= now) {
             if (p.status !== 'inactive' || p.remainingTime.value !== 0) {
               changed = true;
               p = { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: timeUnit } };
             }
           } else {
-            const remainingMs = expiryTime - now;
-            let remainingValue: number;
-            if (timeUnit === 'seconds') remainingValue = Math.ceil(remainingMs / 1000);
-            else if (timeUnit === 'minutes') remainingValue = Math.ceil(remainingMs / (1000 * 60));
-            else remainingValue = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
-  
             if (p.remainingTime?.value !== remainingValue || p.remainingTime?.unit !== timeUnit || p.status !== 'active') {
               changed = true;
               p = { ...p, status: 'active' as const, remainingTime: { value: remainingValue, unit: timeUnit } };
             }
           }
-        } else if (p.status === 'active' && p.expiresAt) {
+        } 
+        // REGULAR LOGIC
+        else if (p.status === 'active' && p.expiresAt) {
           expiryTime = new Date(p.expiresAt).getTime();
+          const remainingMs = expiryTime - now;
+          const remainingDays = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
           
-          if (expiryTime <= now) {
-            // Auto-renewal logic
-            if (!hasRenewed && config.profile.autoRenew) {
-              const planDetails = config.plans?.find(plan => plan.name === p.planName);
-              const price = planDetails?.price || 0;
-              if (price > 0 && (company.walletBalance || 0) >= price) {
+          // Auto-renewal check (e.g. 1 day left)
+          if (remainingDays <= 1 && !hasRenewed) {
+             if (tryRenew(company, p.planName, p.planPrice)) {
                 hasRenewed = true;
                 changed = true;
-                company.walletBalance = (company.walletBalance || 0) - price;
                 
-                const newExpiry = new Date(expiryTime + 30 * 24 * 60 * 60 * 1000).toISOString();
+                // Calculate new expiry (30 days from NOW)
+                const newExpiry = new Date(now + 30 * 24 * 60 * 60 * 1000).toISOString();
+                
                 const newPurchase: Purchase = {
-                    orderId: `AUTO-RN-${Date.now()}`, planName: p.planName, planPrice: p.planPrice,
-                    planPeriod: p.planPeriod, paymentMethod: 'wallet', status: 'active',
-                    date: new Date().toISOString(), isAutoRenew: true, expiresAt: newExpiry,
+                    orderId: `AUTO-RN-${Date.now()}`, 
+                    planName: p.planName, 
+                    planPrice: p.planPrice,
+                    planPeriod: p.planPeriod, 
+                    paymentMethod: 'wallet', 
+                    status: 'active',
+                    date: new Date().toISOString(), 
+                    isAutoRenew: true, 
+                    expiresAt: newExpiry,
                     remainingTime: { value: 30, unit: 'days' }
                 };
                 newPurchases.push(newPurchase);
+                
+                // Mark old one inactive
                 p = { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: 'days' } };
-              }
-            }
+             }
+          }
 
+          if (expiryTime <= now) {
             if (p.status !== 'inactive') {
               changed = true;
               p = { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: 'days' } };
             }
           } else {
-            const remainingMs = expiryTime - now;
-            const remainingValue = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
-            if (p.remainingTime?.value !== remainingValue) {
+            if (p.remainingTime?.value !== remainingDays) {
               changed = true;
-              p = { ...p, remainingTime: { value: remainingValue, unit: 'days' as const } };
+              p = { ...p, remainingTime: { value: remainingDays, unit: 'days' as const } };
             }
           }
         }
@@ -302,7 +362,7 @@ export function usePurchases(
   }, [config, saveConfig]);
 
   const downgradeToTrial = () => {
-    if (!config) return;
+    if (!config || !config.profile.id) return;
     const myCompanyId = config.profile.id;
     const newCompanies = config.companies.map(c => {
         if (c.id === myCompanyId) {
