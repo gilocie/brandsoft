@@ -273,6 +273,9 @@ export function useSetup(
   };
 
   const initialAdminSettings: AdminSettings = {
+    fullName: 'Sangwani',
+    username: 'Sang',
+    password: 'password',
     maxCredits: 200000,
     buyPrice: 850,
     sellPrice: 900,

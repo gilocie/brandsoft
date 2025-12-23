@@ -55,7 +55,7 @@ export type Affiliate = {
   fullName: string;
   username: string;
   password?: string;
-  phone?: string;
+  phone: string;
   profilePic: string;
   affiliateLink: string;
   securityQuestion: boolean; 
@@ -268,7 +268,8 @@ export type PlanPeriod = {
 
 export type AdminSettings = {
   fullName?: string;
-  username?: string;
+  username: string;
+  password?: string;
   maxCredits: number;
   buyPrice: number;
   sellPrice: number;

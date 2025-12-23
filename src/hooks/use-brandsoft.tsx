@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, createContext, useContext, ReactNode, useCallback } from 'react';
@@ -22,7 +21,7 @@ const VALID_SERIAL = 'BS-GSS-DEMO0000-000000';
 
 const initialAffiliateData: Affiliate = {
     fullName: 'Sant',
-    username: 'Sant',
+    username: 'sant',
     phone: '265994985371',
     password: 'password',
     profilePic: 'https://picsum.photos/seed/affiliate/200',
@@ -56,7 +55,7 @@ interface BrandsoftContextType {
   activate: (serial: string) => boolean;
   saveConfig: (newConfig: BrandsoftConfig, options?: { redirect?: boolean; revalidate?: boolean }) => void;
   logout: () => void;
-  affiliateLogin: (username: string, password: string) => boolean;
+  login: (username: string, password: string) => { success: boolean; role?: 'admin' | 'staff' };
   isAffiliateLoggedIn: boolean | null;
   affiliateLogout: () => void;
   role: 'client' | 'staff' | 'admin';
@@ -374,7 +373,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
 
         // Migration logic for affiliate data
         if (parsedConfig.affiliate) {
-            const fieldsToCheck: (keyof Affiliate)[] = ['totalSales', 'creditBalance', 'bonus', 'staffId', 'phone', 'transactions', 'isPinSet', 'unclaimedCommission', 'myWallet', 'generatedKeys'];
+            const fieldsToCheck: (keyof Affiliate)[] = ['totalSales', 'creditBalance', 'bonus', 'staffId', 'phone', 'transactions', 'isPinSet', 'unclaimedCommission', 'myWallet', 'generatedKeys', 'password'];
             fieldsToCheck.forEach(field => {
                 if (typeof parsedConfig.affiliate[field] === 'undefined') {
                     if (field === 'myWallet' && typeof (parsedConfig.affiliate as any).balance !== 'undefined') {
@@ -494,21 +493,34 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     return false;
   };
   
-  const affiliateLogin = (username: string, password: string): boolean => {
-      if (!config?.affiliate) return false;
-      
-      const isUsernameMatch = config.affiliate.username.toLowerCase() === username.toLowerCase();
-      // Allow default password if one isn't set on the account
-      const isPasswordMatch = (!config.affiliate.password && password === 'password') || config.affiliate.password === password;
+  const login = (username: string, password: string): { success: boolean, role?: 'admin' | 'staff' } => {
+      if (!config) return { success: false };
 
-      if (isUsernameMatch && isPasswordMatch) {
-          sessionStorage.setItem('isAffiliateLoggedIn', 'true');
-          setIsAffiliateLoggedIn(true);
-          setRole('staff');
-          router.push('/office');
-          return true;
+      // Check for Admin
+      const adminUser = config.admin?.username;
+      const adminPass = config.admin?.password;
+      if (adminUser && adminUser.toLowerCase() === username.toLowerCase() && adminPass === password) {
+          setRole('admin');
+          router.push('/admin');
+          return { success: true, role: 'admin' };
       }
-      return false;
+
+      // Check for Affiliate/Staff
+      const affiliate = config.affiliate;
+      if (affiliate) {
+          const isUsernameMatch = affiliate.username.toLowerCase() === username.toLowerCase();
+          const isPasswordMatch = (!affiliate.password && password === 'password') || affiliate.password === password;
+          
+          if (isUsernameMatch && isPasswordMatch) {
+              sessionStorage.setItem('isAffiliateLoggedIn', 'true');
+              setIsAffiliateLoggedIn(true);
+              setRole('staff');
+              router.push('/office');
+              return { success: true, role: 'staff' };
+          }
+      }
+
+      return { success: false };
   };
 
   const affiliateLogout = () => {
@@ -539,7 +551,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     logout,
     role,
     setRole,
-    affiliateLogin,
+    login,
     affiliateLogout,
     isAffiliateLoggedIn,
     ...dataMethods,

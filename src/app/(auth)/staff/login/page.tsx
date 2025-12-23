@@ -21,7 +21,7 @@ const formSchema = z.object({
 });
 
 export default function StaffLoginPage() {
-  const { affiliateLogin } = useBrandsoft();
+  const { login } = useBrandsoft();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -34,8 +34,8 @@ export default function StaffLoginPage() {
   function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     setTimeout(() => {
-      const success = affiliateLogin(values.username, values.password);
-      if (!success) {
+      const loginResult = login(values.username, values.password);
+      if (!loginResult.success) {
         toast({
           variant: "destructive",
           title: "Login Failed",
@@ -55,8 +55,8 @@ export default function StaffLoginPage() {
       <div className="absolute inset-0 bg-black/80" />
       <Card className="w-full max-w-md shadow-2xl z-10 bg-background">
         <CardHeader className="text-center">
-          <CardTitle className="font-body text-2xl">Staff Login</CardTitle>
-          <CardDescription>Enter your credentials to access your office.</CardDescription>
+          <CardTitle className="font-body text-2xl">Admin & Staff Login</CardTitle>
+          <CardDescription>Enter your credentials to access your dashboard.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -111,7 +111,7 @@ export default function StaffLoginPage() {
         </CardContent>
         <CardFooter className="flex flex-col text-center text-sm">
            <p className="text-muted-foreground">
-                Don't have an account?{' '}
+                Affiliate staff?{' '}
                 <Link href="/staff/register" className="font-medium text-primary hover:underline">
                     Register here
                 </Link>
