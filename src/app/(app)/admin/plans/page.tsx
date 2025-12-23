@@ -250,10 +250,23 @@ export default function AdminPlansPage() {
     const [isResetRevenueOpen, setIsResetRevenueOpen] = useState(false);
     
     const [contactInfo, setContactInfo] = useState<{ planName: string, email?: string, whatsapp?: string } | null>(null);
+    
+    const [demoMode, setDemoMode] = useState(false);
+    const [demoDurations, setDemoDurations] = useState<Record<string, { value: number, unit: string }>>({});
 
     const plans = useMemo(() => config?.plans || [], [config]);
     const adminSettings = useMemo(() => config?.admin, [config]);
     const planPeriods = useMemo(() => adminSettings?.planPeriods || [], [adminSettings]);
+
+    useEffect(() => {
+        if (plans.length > 0) {
+            const initialDurations: Record<string, { value: number, unit: string }> = {};
+            plans.forEach(plan => {
+                initialDurations[plan.name] = { value: 10, unit: 'minutes' };
+            });
+            setDemoDurations(initialDurations);
+        }
+    }, [plans]);
 
     const newPlanForm = useForm<NewPlanFormData>({
         resolver: zodResolver(newPlanSchema),
@@ -718,16 +731,26 @@ export default function AdminPlansPage() {
                                     <Label className="text-base" htmlFor="demo-mode-switch">Enable Demo Mode</Label>
                                     <p className="text-sm text-muted-foreground">Override real plan durations with the demo values below.</p>
                                 </div>
-                                <Switch id="demo-mode-switch" />
+                                <Switch id="demo-mode-switch" checked={demoMode} onCheckedChange={setDemoMode} />
                             </div>
 
                             <div className="space-y-4">
-                                {plans.map((plan, index) => (
+                                {plans.map((plan) => (
                                     <div key={plan.name} className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 rounded-lg border p-4">
                                         <p className="font-medium flex-1">{plan.name}</p>
                                         <div className="flex items-center gap-2">
-                                            <Input type="number" defaultValue="10" className="w-20" />
-                                            <Select defaultValue="minutes">
+                                            <Input 
+                                                type="number" 
+                                                value={demoDurations[plan.name]?.value || 10}
+                                                onChange={(e) => setDemoDurations(prev => ({...prev, [plan.name]: {...prev[plan.name], value: parseInt(e.target.value) || 0}}))}
+                                                className="w-20"
+                                                disabled={!demoMode}
+                                            />
+                                            <Select 
+                                                value={demoDurations[plan.name]?.unit || 'minutes'}
+                                                onValueChange={(value) => setDemoDurations(prev => ({...prev, [plan.name]: {...prev[plan.name], unit: value}}))}
+                                                disabled={!demoMode}
+                                            >
                                                 <SelectTrigger className="w-[120px]">
                                                     <SelectValue />
                                                 </SelectTrigger>
