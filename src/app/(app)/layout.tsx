@@ -478,7 +478,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             {pageTitle}
           </h1>
           <div className="flex items-center gap-2 w-full sm:w-auto">
-             <div className="sm:ml-auto flex-1 sm:flex-none">
+             <div className="sm:ml-auto flex-1 sm:flex-none hidden">
                 <Select value={role || 'client'} onValueChange={(value) => handleRoleChange(value as any)}>
                     <SelectTrigger className="w-full sm:w-[130px] h-9">
                         <SelectValue placeholder="Select a role" />
