@@ -4,7 +4,8 @@
 import type { BrandsoftConfig, Purchase, AdminSettings, Company } from '@/types/brandsoft';
 import { useCallback } from 'react';
 
-const isTestPlanPeriod = (period: string) => period in (config?.admin?.demoDurations || {});
+const isTestPlanPeriod = (period: string, config: BrandsoftConfig | null) => period in (config?.admin?.demoDurations || {});
+
 
 type ActivationResult = {
     purchases: Purchase[];
@@ -12,22 +13,27 @@ type ActivationResult = {
     affiliate?: BrandsoftConfig['affiliate'];
 };
 
-let config: BrandsoftConfig | null = null; // Local config for helper
 
 export function usePurchases(
-  initialConfig: BrandsoftConfig | null,
+  config: BrandsoftConfig | null,
   saveConfig: (newConfig: BrandsoftConfig, options?: { redirect?: boolean; revalidate?: boolean }) => void,
 ) {
-  config = initialConfig;
-  
   const addPurchaseOrder = (orderData: Omit<Purchase, 'remainingTime'>): Purchase => {
     if (!config) throw new Error("Configuration not loaded.");
     const newOrder: Purchase = {
         ...orderData,
         remainingTime: { value: 0, unit: 'days' }
     };
-    const allPurchases = [...(config.purchases || []), newOrder];
-    saveConfig({ ...config, purchases: allPurchases }, { redirect: false, revalidate: true });
+    
+    let companyToUpdate = config.companies.find(c => c.id === orderData.customerId);
+    if (companyToUpdate) {
+        const newPurchases = [...(companyToUpdate.purchases || []), newOrder];
+        const newCompanies = config.companies.map(c => c.id === orderData.customerId ? {...c, purchases: newPurchases} : c);
+        saveConfig({ ...config, companies: newCompanies }, { redirect: false, revalidate: true });
+    } else {
+        console.error("Could not find company to add purchase order to.");
+    }
+    
     return newOrder;
   };
 
@@ -102,31 +108,33 @@ export function usePurchases(
             period = `${totalInitialDays} days`;
         }
         
-        const planDurations: Record<string, {days: number, unit: 'days' | 'minutes' | 'seconds'}> = {
-            '1 Month': { days: 30, unit: 'days' },
-            '3 Months': { days: 90, unit: 'days' },
-            '6 Months': { days: 180, unit: 'days' },
-            '1 Year': { days: 365, unit: 'days' },
-            'Once OFF': { days: 365 * 3, unit: 'days' },
+        const isTest = isTestPlanPeriod(period, config);
+
+        const planDurations: Record<string, {days: number, isTest: boolean, unit: 'days' | 'minutes'}> = {
+            '1 Month': { days: 30, isTest: false, unit: 'days' },
+            '3 Months': { days: 90, isTest: false, unit: 'days' },
+            '6 Months': { days: 180, isTest: false, unit: 'days' },
+            '1 Year': { days: 365, isTest: false, unit: 'days' },
+            'Once OFF': { days: 365 * 3, isTest: false, unit: 'days' },
         };
         let durationInfo = planDurations[period];
         if (!durationInfo && period.includes('days')) {
-            durationInfo = { days: parseInt(period, 10) || 0, unit: 'days' };
+            durationInfo = { days: parseInt(period, 10) || 0, isTest: false, unit: 'days' };
         } else if (!durationInfo) {
-            durationInfo = { days: 0, unit: 'days' };
+            durationInfo = { days: 0, isTest: false, unit: 'days' };
         }
         
         let activationDuration = durationInfo.days;
         let totalDurationMs = activationDuration * (durationInfo.unit === 'minutes' ? 60 * 1000 : 24 * 60 * 60 * 1000);
         
-        if (purchaseToActivate.paymentMethod !== 'wallet' && !purchaseToActivate.planName.toLowerCase().includes('key') && activationDuration > 30) {
+        if (purchaseToActivate.paymentMethod !== 'wallet' && !isTest && !purchaseToActivate.planName.toLowerCase().includes('key') && activationDuration > 30) {
             periodReserve += (activationDuration - 30);
             activationDuration = 30;
             totalDurationMs = activationDuration * 24 * 60 * 60 * 1000;
         }
         
         const expiresAt = new Date(now + totalDurationMs + remainingMsFromOldPlan).toISOString();
-        const remainingValue = Math.ceil((new Date(expiresAt).getTime() - now) / (1000 * 60 * 60 * 24));
+        const remainingValue = isTest ? Math.ceil(remainingMsFromOldPlan / (1000 * 60)) + activationDuration : Math.ceil(remainingMsFromOldPlan / (1000 * 60 * 60 * 24)) + activationDuration;
 
         updatedCompany.purchases = allPurchases.map((p: Purchase) => {
             if (p.orderId === orderId) {
@@ -195,39 +203,42 @@ export function usePurchases(
   };
   
   const updatePurchaseStatus = useCallback(() => {
-    if (!config || !config.companies) return;
+    if (!config) return;
   
     let changed = false;
     let newConfig = JSON.parse(JSON.stringify(config));
     const { demoClientId, demoDurations, demoStartedAt } = config.admin || {};
-    let companiesToUpdate = [...newConfig.companies];
   
-    companiesToUpdate.forEach((company, companyIndex) => {
-      if (!company.purchases || company.purchases.length === 0) return;
+    let updatedCompanies = newConfig.companies.map((company: Company) => {
+      if (!company.purchases) company.purchases = [];
   
-      let hasRenewed = false;
-      const now = Date.now();
+      let newPurchases: Purchase[] = [];
+      let hasRenewed = false; // Track renewal per company
   
-      const newPurchases = company.purchases.map((p) => {
-        // --- DEMO MODE LOGIC ---
+      for (let p of [...company.purchases]) {
+        const now = Date.now();
+        let expiryTime: number;
+        let timeUnit: 'days' | 'minutes' | 'seconds' = 'days';
+  
         const isDemoClient = company.id === demoClientId;
         const hasDemoSettings = demoDurations && demoDurations[p.planName];
+  
         if (isDemoClient && hasDemoSettings && demoStartedAt) {
           const demoSettings = demoDurations[p.planName];
           const demoStartTime = new Date(demoStartedAt).getTime();
           let durationMs = 0;
-          const timeUnit = demoSettings.unit as 'days' | 'minutes' | 'seconds';
+          timeUnit = demoSettings.unit as 'days' | 'minutes' | 'seconds';
   
-          if (timeUnit === 'seconds') durationMs = demoSettings.value * 1000;
-          else if (timeUnit === 'minutes') durationMs = demoSettings.value * 60 * 1000;
+          if (demoSettings.unit === 'seconds') durationMs = demoSettings.value * 1000;
+          else if (demoSettings.unit === 'minutes') durationMs = demoSettings.value * 60 * 1000;
           else durationMs = demoSettings.value * 24 * 60 * 60 * 1000;
           
-          const expiryTime = demoStartTime + durationMs;
-          
+          expiryTime = demoStartTime + durationMs;
+  
           if (expiryTime <= now) {
-            if (p.status !== 'inactive') {
+            if (p.status !== 'inactive' || p.remainingTime.value !== 0) {
               changed = true;
-              return { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: timeUnit } };
+              p = { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: timeUnit } };
             }
           } else {
             const remainingMs = expiryTime - now;
@@ -236,60 +247,57 @@ export function usePurchases(
             else if (timeUnit === 'minutes') remainingValue = Math.ceil(remainingMs / (1000 * 60));
             else remainingValue = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
   
-            if (p.remainingTime?.value !== remainingValue || p.status !== 'active') {
+            if (p.remainingTime?.value !== remainingValue || p.remainingTime?.unit !== timeUnit || p.status !== 'active') {
               changed = true;
-              return { ...p, status: 'active' as const, remainingTime: { value: remainingValue, unit: timeUnit } };
+              p = { ...p, status: 'active' as const, remainingTime: { value: remainingValue, unit: timeUnit } };
             }
           }
-          return p;
-        }
-  
-        // --- REGULAR & AUTO-RENEWAL LOGIC ---
-        if (p.status !== 'active' || !p.expiresAt) return p;
-  
-        const expiryTime = new Date(p.expiresAt).getTime();
-        const remainingMs = expiryTime - now;
-        const remainingDays = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
-  
-        if (remainingMs <= 0 && !hasRenewed && config.profile.autoRenew) {
-          const planDetails = config.plans?.find(plan => plan.name === p.planName);
-          const price = planDetails?.price || 0;
-          if (price > 0 && (company.walletBalance || 0) >= price) {
-            hasRenewed = true; 
-            const newExpiry = new Date(expiryTime + 30 * 24 * 60 * 60 * 1000).toISOString();
-            const newPurchase: Purchase = {
-                orderId: `AUTO-RN-${Date.now()}`,
-                planName: p.planName, planPrice: p.planPrice, planPeriod: p.planPeriod,
-                paymentMethod: 'wallet', status: 'active', date: new Date().toISOString(),
-                isAutoRenew: true, expiresAt: newExpiry,
-                remainingTime: { value: 30, unit: 'days' }
-            };
-            companiesToUpdate[companyIndex].purchases?.push(newPurchase);
-            companiesToUpdate[companyIndex].walletBalance = (company.walletBalance || 0) - price;
-            changed = true;
-            return { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: 'days' } };
+        } else if (p.status === 'active' && p.expiresAt) {
+          expiryTime = new Date(p.expiresAt).getTime();
+          
+          if (expiryTime <= now) {
+            // Auto-renewal logic
+            if (!hasRenewed && config.profile.autoRenew) {
+              const planDetails = config.plans?.find(plan => plan.name === p.planName);
+              const price = planDetails?.price || 0;
+              if (price > 0 && (company.walletBalance || 0) >= price) {
+                hasRenewed = true;
+                changed = true;
+                company.walletBalance = (company.walletBalance || 0) - price;
+                
+                const newExpiry = new Date(expiryTime + 30 * 24 * 60 * 60 * 1000).toISOString();
+                const newPurchase: Purchase = {
+                    orderId: `AUTO-RN-${Date.now()}`, planName: p.planName, planPrice: p.planPrice,
+                    planPeriod: p.planPeriod, paymentMethod: 'wallet', status: 'active',
+                    date: new Date().toISOString(), isAutoRenew: true, expiresAt: newExpiry,
+                    remainingTime: { value: 30, unit: 'days' }
+                };
+                newPurchases.push(newPurchase);
+                p = { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: 'days' } };
+              }
+            }
+
+            if (p.status !== 'inactive') {
+              changed = true;
+              p = { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: 'days' } };
+            }
+          } else {
+            const remainingMs = expiryTime - now;
+            const remainingValue = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
+            if (p.remainingTime?.value !== remainingValue) {
+              changed = true;
+              p = { ...p, remainingTime: { value: remainingValue, unit: 'days' as const } };
+            }
           }
         }
-  
-        if (remainingMs <= 0) {
-          if (p.status !== 'inactive') {
-            changed = true;
-            return { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: 'days' } };
-          }
-        } else if (p.remainingTime?.value !== remainingDays) {
-          changed = true;
-          return { ...p, remainingTime: { value: remainingDays, unit: 'days' } };
-        }
-        return p;
-      });
-      if (newPurchases.some((p, i) => JSON.stringify(p) !== JSON.stringify(company.purchases![i]))) {
-          companiesToUpdate[companyIndex].purchases = newPurchases;
+        newPurchases.push(p);
       }
+      company.purchases = newPurchases;
+      return company;
     });
   
     if (changed) {
-      newConfig.companies = companiesToUpdate;
-      saveConfig(newConfig, { redirect: false, revalidate: false });
+      saveConfig({ ...newConfig, companies: updatedCompanies }, { redirect: false, revalidate: false });
     }
   }, [config, saveConfig]);
 
