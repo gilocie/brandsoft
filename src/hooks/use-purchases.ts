@@ -34,7 +34,6 @@ export function usePurchases(
   };
 
   const getPurchaseOrder = (orderId: string): Purchase | null => {
-    // Search across all companies for the purchase order
     if (!config || !config.companies) return null;
     for (const company of config.companies) {
         const purchase = (company.purchases || []).find(p => p.orderId === orderId);
@@ -66,13 +65,11 @@ export function usePurchases(
 
     if (!purchaseToActivate) return;
     
-    // Top-ups are simple activations without time logic.
     if (purchaseToActivate.planName === 'Wallet Top-up' || purchaseToActivate.planName.startsWith('Credit Purchase')) {
         updatedCompany.purchases = allPurchases.map((p: Purchase) => 
             p.orderId === orderId ? { ...p, status: 'active' as const, date: new Date().toISOString() } : p
         );
     } else {
-        // Handle plan activations...
         if (purchaseToActivate.planName.toLowerCase().includes('key') && purchaseToActivate.affiliateId) {
             if(newAffiliateData && newAffiliateData.staffId === purchaseToActivate.affiliateId) {
                 newAffiliateData = {
@@ -164,7 +161,7 @@ export function usePurchases(
     newCompanies[companyIndex] = updatedCompany;
     
     saveConfig({ ...config, companies: newCompanies, admin: newAdminSettings, affiliate: newAffiliateData }, { revalidate: true });
-};
+  };
   
   const declinePurchaseOrder = (orderId: string, reason: string) => {
       if (!config || !config.companies) return;
@@ -206,22 +203,27 @@ export function usePurchases(
     let changed = false;
     let newConfig = JSON.parse(JSON.stringify(config));
   
-    const { demoClientId, demoDurations } = config.admin || {};
+    const { demoClientId, demoDurations, demoStartedAt } = config.admin || {};
   
     const updatedCompanies = newConfig.companies.map((company: Company) => {
       if (!company.purchases || company.purchases.length === 0) return company;
   
       const newPurchases = company.purchases.map((p: Purchase) => {
+        const now = Date.now();
         let expiryTime: number;
         let timeUnit: 'days' | 'minutes' | 'seconds' = 'days';
-        const now = Date.now();
-  
-        // DEMO MODE LOGIC - This now runs first, regardless of current status
-        if (company.id === demoClientId && demoDurations && demoDurations[p.planName]) {
+
+        // ========== DEMO MODE LOGIC ==========
+        const isDemoClient = company.id === demoClientId;
+        const hasDemoSettings = demoDurations && demoDurations[p.planName];
+        
+        if (isDemoClient && hasDemoSettings && demoStartedAt) {
             const demoSettings = demoDurations[p.planName];
-            const purchaseDate = new Date(p.date).getTime();
+            
+            const demoStartTime = new Date(demoStartedAt).getTime();
+            
             let durationMs = 0;
-            timeUnit = demoSettings.unit;
+            timeUnit = demoSettings.unit as 'days' | 'minutes' | 'seconds';
 
             if (demoSettings.unit === 'seconds') {
                 durationMs = demoSettings.value * 1000;
@@ -230,52 +232,80 @@ export function usePurchases(
             } else { // days
                 durationMs = demoSettings.value * 24 * 60 * 60 * 1000;
             }
-            expiryTime = purchaseDate + durationMs;
-        } else {
-            // REGULAR LOGIC
-            if (p.status !== 'active' || !p.expiresAt) {
-                return p; // Skip non-active plans if not in demo mode
+            
+            expiryTime = demoStartTime + durationMs;
+
+            if (expiryTime <= now) {
+                if (p.status !== 'inactive' || p.remainingTime.value !== 0) {
+                    changed = true;
+                    return { 
+                        ...p, 
+                        status: 'inactive' as const, 
+                        remainingTime: { value: 0, unit: timeUnit },
+                        demoExpired: true
+                    };
+                }
+            } else {
+                const remainingMs = expiryTime - now;
+                let remainingValue: number;
+      
+                if (timeUnit === 'seconds') {
+                    remainingValue = Math.ceil(remainingMs / 1000);
+                } else if (timeUnit === 'minutes') {
+                    remainingValue = Math.ceil(remainingMs / (1000 * 60));
+                } else {
+                    remainingValue = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
+                }
+      
+                if (p.remainingTime?.value !== remainingValue || p.remainingTime?.unit !== timeUnit || p.status !== 'active') {
+                    changed = true;
+                    return { 
+                        ...p, 
+                        status: 'active' as const, 
+                        remainingTime: { value: remainingValue, unit: timeUnit } 
+                    };
+                }
             }
-            expiryTime = new Date(p.expiresAt).getTime();
+            
+            return p;
         }
+        // ========== END DEMO MODE LOGIC ==========
+
+        // REGULAR LOGIC - for non-demo purchases
+        if (p.status !== 'active' || !p.expiresAt) {
+            return p;
+        }
+        
+        expiryTime = new Date(p.expiresAt).getTime();
   
-        // Shared Expiry and Update Logic
         if (expiryTime <= now) {
-          // If the plan is not already 'inactive', mark it as such.
           if (p.status !== 'inactive' || p.remainingTime.value !== 0) {
             changed = true;
-            return { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: timeUnit } };
+            return { ...p, status: 'inactive' as const, remainingTime: { value: 0, unit: 'days' as const } };
           }
         } else {
-          // Plan is active (or has been revived by demo mode). Calculate remaining time.
           const remainingMs = expiryTime - now;
-          let remainingValue: number;
+          const remainingValue = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
   
-          if (timeUnit === 'seconds') {
-            remainingValue = Math.ceil(remainingMs / 1000);
-          } else if (timeUnit === 'minutes') {
-            remainingValue = Math.ceil(remainingMs / (1000 * 60));
-          } else { // days
-            remainingValue = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
-          }
-  
-          // Check if there's a change in value, unit, or status
-          if (p.remainingTime?.value !== remainingValue || p.remainingTime?.unit !== timeUnit || p.status !== 'active') {
+          if (p.remainingTime?.value !== remainingValue) {
             changed = true;
-            return { ...p, status: 'active' as const, remainingTime: { value: remainingValue, unit: timeUnit } };
+            return { ...p, remainingTime: { value: remainingValue, unit: 'days' as const } };
           }
         }
   
-        return p; // No change for this purchase
+        return p;
       });
   
-      if (changed) {
+      const purchasesChanged = newPurchases.some((p: Purchase, i: number) => p !== company.purchases![i]);
+      if (purchasesChanged) {
         return { ...company, purchases: newPurchases };
       }
       return company;
     });
+
+    const companiesChanged = updatedCompanies.some((c: Company, i: number) => c !== newConfig.companies[i]);
   
-    if (changed) {
+    if (changed || companiesChanged) {
       saveConfig({ ...newConfig, companies: updatedCompanies }, { redirect: false, revalidate: false });
     }
   }, [config, saveConfig]);

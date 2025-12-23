@@ -119,10 +119,12 @@ export default function ClientDetailsPage() {
 
     let planName = 'Free Trial';
     let remainingDays = 0;
+    let remainingTimeUnit: 'days' | 'minutes' | 'seconds' = 'days';
 
     if (activePurchase) {
         planName = activePurchase.planName;
         remainingDays = activePurchase.remainingTime?.value || 0;
+        remainingTimeUnit = activePurchase.remainingTime?.unit || 'days';
     } else if (pendingPurchase) {
         planName = `${pendingPurchase.planName} (Pending)`;
         remainingDays = 0;
@@ -133,8 +135,9 @@ export default function ClientDetailsPage() {
         name: realCompany.companyName,
         plan: planName,
         remainingDays: remainingDays,
+        remainingTimeUnit: remainingTimeUnit,
         walletBalance: realCompany.walletBalance,
-        status: client.status // Keep affiliate status (active/expired)
+        status: (activePurchase || planName === 'Free Trial') ? 'active' : 'expired',
     };
   }, [client, realCompany]);
 
@@ -230,7 +233,7 @@ export default function ClientDetailsPage() {
         <h2 className="text-xl font-semibold">Client not found</h2>
         <p className="text-muted-foreground">The requested client could not be found.</p>
         <Button asChild variant="outline" className="mt-4">
-          <Link href="/office"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Office</Link>
+          <Link href="/office?tab=clients"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Office</Link>
         </Button>
       </div>
     );
@@ -238,6 +241,23 @@ export default function ClientDetailsPage() {
   
   const isExpired = displayData.status === 'expired';
   const isFreeTrial = displayData.plan === 'Free Trial';
+
+  const formatRemainingTime = () => {
+    if (isExpired) return 'Expired';
+    if (isFreeTrial) return 'Always Active';
+    
+    const value = displayData.remainingDays;
+    const unit = displayData.remainingTimeUnit || 'days';
+    
+    if (unit === 'seconds') {
+        return `${value}s left`;
+    } else if (unit === 'minutes') {
+        return `${value}m left`;
+    } else {
+        return `${value} days left`;
+    }
+  };
+
 
   return (
     <div className="container mx-auto space-y-6">
@@ -264,23 +284,13 @@ export default function ClientDetailsPage() {
                 <Briefcase className="h-4 w-4" /> Plan: <span className="font-semibold text-primary">{displayData.plan}</span>
               </span>
               
-              {!isExpired && (
-                  isFreeTrial ? (
-                    <span className="flex items-center gap-2 text-sm text-green-600 font-medium">
-                        <Clock className="h-4 w-4" /> Always Active
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-2 text-sm">
-                        <Clock className="h-4 w-4" /> {displayData.remainingDays} days left
-                    </span>
-                  )
-              )}
+              <span className={cn(
+                "flex items-center gap-2 text-sm",
+                isExpired ? "text-destructive font-medium" : (isFreeTrial ? "text-green-600 font-medium" : "")
+              )}>
+                  <Clock className="h-4 w-4" /> {formatRemainingTime()}
+              </span>
               
-              {isExpired && (
-                  <span className="flex items-center gap-2 text-destructive font-medium">
-                      <Clock className="h-4 w-4" /> Expired
-                  </span>
-              )}
             </CardDescription>
              <div className="pt-2">
                 <span className={`px-3 py-1 text-xs font-semibold rounded-full ${displayData.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>

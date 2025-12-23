@@ -59,24 +59,23 @@ export default function OfficeClientsPage() {
         const realCompany = config.companies.find(c => c.id === client.id);
         
         if (realCompany) {
-            // Find active purchase - this is the ONLY source of truth for plan info
             const activePurchase = realCompany.purchases?.find(p => p.status === 'active');
             const pendingPurchase = realCompany.purchases?.find(p => p.status === 'pending');
             
-            // Always derive from purchases, never use cached values
             let planName = 'Free Trial';
             let remainingDays = 0;
+            let remainingTimeUnit: 'days' | 'minutes' | 'seconds' = 'days';
 
             if (activePurchase) {
                 planName = activePurchase.planName;
                 remainingDays = activePurchase.remainingTime?.value ?? 0;
+                remainingTimeUnit = activePurchase.remainingTime?.unit ?? 'days';
             } else if (pendingPurchase) {
                 planName = `${pendingPurchase.planName} (Pending)`;
                 remainingDays = 0;
             }
 
-            // Derive status from actual purchase state
-            const isActive = activePurchase || planName === 'Free Trial';
+            const isActive = !!activePurchase || planName === 'Free Trial';
             const status = isActive ? 'active' : 'expired';
 
             return {
@@ -86,11 +85,11 @@ export default function OfficeClientsPage() {
                 walletBalance: realCompany.walletBalance ?? 0,
                 plan: planName,
                 remainingDays: remainingDays,
+                remainingTimeUnit: remainingTimeUnit,
                 status: status,
             };
         }
         
-        // Company not found - mark as unknown/expired
         return {
             ...client,
             plan: 'Unknown',

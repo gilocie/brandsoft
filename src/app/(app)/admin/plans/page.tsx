@@ -299,7 +299,7 @@ const ClientPicker = ({
 
 
 export default function AdminPlansPage() {
-    const { config, saveConfig } = useBrandsoft();
+    const { config, saveConfig, updatePurchaseStatus } = useBrandsoft();
     const { toast } = useToast();
     const [isAddPlanOpen, setIsAddPlanOpen] = useState(false);
     const [planToEdit, setPlanToEdit] = useState<Plan | null>(null);
@@ -530,13 +530,13 @@ export default function AdminPlansPage() {
         if (checked) {
             setIsClientPickerOpen(true);
         } else {
-             saveConfig({ ...config, admin: { ...config.admin, demoClientId: null } }, { redirect: false });
+             saveConfig({ ...config, admin: { ...config.admin, demoClientId: null, demoStartedAt: null } }, { redirect: false });
         }
     };
     
     const handleSelectDemoClient = (client: Company) => {
         if (!config) return;
-        saveConfig({ ...config, admin: { ...config.admin, demoClientId: client.id } }, { redirect: false });
+        saveConfig({ ...config, admin: { ...config.admin, demoClientId: client.id, demoStartedAt: new Date().toISOString() } }, { redirect: false });
         setIsClientPickerOpen(false);
         toast({ title: 'Demo Mode Activated', description: `Demo settings are now active for ${client.companyName}.` });
     };
@@ -554,6 +554,32 @@ export default function AdminPlansPage() {
 
         saveConfig({ ...config, admin: { ...config.admin, demoDurations: newDurations } }, { redirect: false });
     };
+    
+    // Real-time countdown for demo mode
+    useEffect(() => {
+        if (!adminSettings?.demoClientId) return;
+    
+        const demoDurations = adminSettings.demoDurations || {};
+        const hasSecondsUnit = Object.values(demoDurations).some(d => d.unit === 'seconds');
+        const hasMinutesUnit = Object.values(demoDurations).some(d => d.unit === 'minutes');
+    
+        let intervalMs = 60000; // Default: 1 minute
+        if (hasSecondsUnit) {
+            intervalMs = 1000; // Every second
+        } else if (hasMinutesUnit) {
+            intervalMs = 5000; // Every 5 seconds for smoother minute countdown
+        }
+    
+        const interval = setInterval(() => {
+            updatePurchaseStatus();
+        }, intervalMs);
+    
+        // Initial update
+        updatePurchaseStatus();
+    
+        return () => clearInterval(interval);
+    }, [adminSettings?.demoClientId, adminSettings?.demoDurations, updatePurchaseStatus]);
+
 
     const demoClient = useMemo(() => {
         if (!demoClientId) return null;
@@ -973,4 +999,3 @@ const LimitField = ({
         </div>
     </div>
 );
-

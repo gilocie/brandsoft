@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Page } from '@/stores/canvas-store';
@@ -288,6 +289,7 @@ export type AdminSettings = {
   planPeriods: PlanPeriod[];
   commissionRate?: number;
   demoClientId?: string | null;
+  demoStartedAt?: string | null;
   demoDurations?: Record<string, { value: number; unit: 'seconds' | 'minutes' | 'days' }>;
 };
 

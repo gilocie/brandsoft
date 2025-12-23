@@ -15,6 +15,7 @@ export interface ClientCardProps {
     avatar?: string | null;
     plan: string;
     remainingDays?: number;
+    remainingTimeUnit?: 'days' | 'minutes' | 'seconds';
     walletBalance?: number;
     status: 'active' | 'expired';
   };
@@ -25,7 +26,21 @@ export interface ClientCardProps {
 export function ClientCard({ client, baseUrl = '/office', isLoadingImage = false }: ClientCardProps) {
   const isFreeTrial = client.plan === 'Free Trial';
   const isExpired = client.status === 'expired';
-  const remainingDays = client.remainingDays ?? 0;
+  const remainingValue = client.remainingDays ?? 0;
+  const remainingUnit = (client as any).remainingTimeUnit || 'days';
+
+  const formatRemainingTime = () => {
+    if (isExpired) return 'Expired';
+    if (isFreeTrial) return 'Always Active';
+    
+    if (remainingUnit === 'seconds') {
+        return `${remainingValue}s left`;
+    } else if (remainingUnit === 'minutes') {
+        return `${remainingValue}m left`;
+    } else {
+        return `${remainingValue} days left`;
+    }
+  };
 
   return (
     <Card className="overflow-hidden">
@@ -54,13 +69,9 @@ export function ClientCard({ client, baseUrl = '/office', isLoadingImage = false
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center gap-1 text-muted-foreground">
             <Clock className="h-4 w-4" />
-            {isExpired ? (
-              <span className="text-destructive font-medium">Expired</span>
-            ) : isFreeTrial ? (
-              <span className="text-green-600 font-medium">Always Active</span>
-            ) : (
-              <span>{remainingDays} days left</span>
-            )}
+            <span className={isExpired ? 'text-destructive font-medium' : isFreeTrial ? 'text-green-600 font-medium' : ''}>
+                {formatRemainingTime()}
+            </span>
           </div>
           <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
             client.status === 'active' 
