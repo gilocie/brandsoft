@@ -435,7 +435,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               {config ? (
                 <div className="relative flex flex-col items-center justify-center p-2 text-center space-y-2">
                    <Avatar className="h-12 w-12 bg-transparent">
-                      <AvatarImage src={logoImage || brandsoftLogo.src} />
+                      <AvatarImage src={brandsoftLogo.src} />
                   </Avatar>
                   <p className="text-sm font-semibold text-sidebar-foreground/80">{config.brand.businessName}</p>
                 </div>
