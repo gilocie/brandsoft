@@ -20,23 +20,25 @@ const OfficePageContent = dynamic(
 );
 
 export default function OfficePage() {
-  const { config } = useBrandsoft();
+  const { config, isAffiliateLoggedIn } = useBrandsoft();
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    // This logic ensures that if the affiliate data is cleared (e.g., in admin),
-    // the user is redirected away from the office page to prevent crashes.
-    // CRITICAL FIX: Only run this check if we are on the main /office page itself.
-    if (pathname === '/office') {
-        if (config === null) {
-          // Still loading
-        } else if (!config.affiliate) {
-          router.push('/dashboard');
-        }
+    if (isAffiliateLoggedIn === false) { // Check for explicit false after initial load
+      router.push('/staff/login');
     }
-  }, [config, router, pathname]);
+  }, [isAffiliateLoggedIn, router]);
 
+  // If still loading or not logged in, show a loader
+  if (!isAffiliateLoggedIn) {
+      return (
+        <div className="flex h-[80vh] w-full items-center justify-center">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </div>
+     );
+  }
 
+  // If logged in, show the content
   return <OfficePageContent />;
 }

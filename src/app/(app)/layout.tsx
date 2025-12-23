@@ -64,6 +64,7 @@ import {
   XCircle,
   RefreshCw,
   Loader2,
+  LogOut,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -180,27 +181,23 @@ function ThemeToggle() {
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { config, acknowledgeDeclinedPurchase } = useBrandsoft();
+  const { config, acknowledgeDeclinedPurchase, role, setRole, affiliateLogout } = useBrandsoft();
   
   const { image: logoImage } = useBrandImage('logo');
   const { image: affiliateImage } = useBrandImage('affiliateProfilePic');
   const { image: adminImage } = useBrandImage('adminProfilePic');
 
-  const [role, setRole] = useState<'admin' | 'staff' | 'client' | null>(null);
   const [hasMounted, setHasMounted] = useState(false);
   const [isChangingRole, setIsChangingRole] = useState(false);
 
   useEffect(() => {
     setHasMounted(true);
-    const storedRole = (localStorage.getItem('brandsoft-role') as any) || 'client';
-    setRole(storedRole);
   }, []);
 
   const handleRoleChange = (newRole: 'admin' | 'staff' | 'client') => {
     if (role !== newRole) {
         setIsChangingRole(true);
         setRole(newRole);
-        localStorage.setItem('brandsoft-role', newRole);
 
         if (newRole === 'admin') router.push('/admin');
         else if (newRole === 'staff') router.push('/office');
@@ -423,6 +420,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </Accordion>
               </>
             )}
+             {role === 'staff' && (
+                  <>
+                    <SidebarSeparator className="my-2" />
+                     <SidebarMenuItem>
+                        <SidebarMenuButton onClick={affiliateLogout}>
+                            <LogOut />
+                            <span>Logout</span>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  </>
+             )}
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter className="mt-auto relative overflow-hidden">
