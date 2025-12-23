@@ -30,7 +30,7 @@ const createWithdrawSchema = (commissionBalance: number, bonusBalance: number) =
       .min(30000, "Minimum withdrawal is K30,000")
       .max(1000000, "Maximum withdrawal at once is K1,000,000"),
   method: z.string().min(1, "Please select a payment method"),
-  pin: z.string().length(4, "PIN must be 4 digits"),
+  pin: z.string().length(4, "PIN must be 4 digits."),
   includeBonus: z.boolean().default(false),
 }).refine(data => {
     const balance = data.includeBonus ? commissionBalance + bonusBalance : commissionBalance;
@@ -76,7 +76,7 @@ const AmountInput = ({ value, onChange, className }: { value: number, onChange: 
 };
 
 
-export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, isVerified }: { commissionBalance: number, bonusBalance: number, onWithdraw: (amount: number, source: 'commission' | 'combined' | 'bonus') => void, isVerified: boolean }) => {
+export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, isVerified }: { commissionBalance: number, bonusBalance: number, onWithdraw: (amount: number, source: 'commission' | 'combined' | 'bonus', method: string) => void, isVerified: boolean }) => {
     const [step, setStep] = useState(1);
     const [isOpen, setIsOpen] = useState(false);
     const { config } = useBrandsoft();
@@ -150,7 +150,7 @@ export const WithdrawDialog = ({ commissionBalance, bonusBalance, onWithdraw, is
             return;
         }
         
-        onWithdraw(data.amount, data.includeBonus ? 'combined' : 'commission');
+        onWithdraw(data.amount, data.includeBonus ? 'combined' : 'commission', data.method);
         
         toast({ title: 'Withdrawal Successful!', description: `K${data.amount.toLocaleString()} has been processed.` });
         setIsOpen(false);
