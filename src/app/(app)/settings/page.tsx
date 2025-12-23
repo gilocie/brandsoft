@@ -28,6 +28,7 @@ import { Combobox } from '@/components/ui/combobox';
 import Link from 'next/link';
 import { useBrandImage, saveImageToDB } from '@/hooks/use-brand-image';
 import { Skeleton } from '@/components/ui/skeleton';
+import brandsoftLogo from '@/app/brandsoftlogo.png';
 
 
 const fallBackCover = 'https://picsum.photos/seed/settingscover/1200/300';
@@ -127,8 +128,8 @@ export default function SettingsPage() {
   const { config, saveConfig } = useBrandsoft();
   const { toast } = useToast();
   
-  // These modify the GLOBAL settings (Sidebar, etc)
-  const { image: logoImage, isLoading: isLogoLoading, setImage: setLogoImage } = useBrandImage('logo');
+  // This hook now controls ONLY the dynamic logo for the sidebar/etc.
+  const { image: logoImage, setImage: setLogoImage } = useBrandImage('logo');
   const { image: coverImage, isLoading: isCoverLoading, setImage: setCoverImage } = useBrandImage('cover');
   
   const form = useForm<SettingsFormData>({
@@ -161,7 +162,6 @@ export default function SettingsPage() {
     return uniqueIndustries.map(industry => ({ value: industry.toLowerCase(), label: industry }));
   }, [config?.companies]);
 
-  // Determine the Company ID based on the ALREADY SAVED name (before editing)
   const myCompanyId = useMemo(() => {
     if (!config) return null;
     const existingCompany = config.companies?.find(c => c.companyName === config.brand.businessName);
@@ -192,27 +192,21 @@ export default function SettingsPage() {
   }, [config, form]);
 
   const handleLogoChange = async (value: string) => {
-    setLogoImage(value); // Updates UI immediately
+    setLogoImage(value);
   };
 
   const handleCoverChange = async (value: string) => {
-    setCoverImage(value); // Updates UI immediately
+    setCoverImage(value);
   };
 
   const onSubmit = async (data: SettingsFormData) => {
     if (!config) return;
 
-    // 1. Identify the Target ID
-    // If we found a company matching the PREVIOUS name, use that ID.
-    // Otherwise, generate a new one based on the new name.
     let targetCompanyId = myCompanyId;
     if (!targetCompanyId) {
         targetCompanyId = `COMP-ME-${data.businessName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}`;
     }
 
-    // 2. FORCE SAVE images to the Company Specific Key
-    // NOTE: We use `logoImage` (state) because the user might not have changed the image in this session,
-    // but we need to make sure the specific key is populated.
     if (logoImage) {
         await saveImageToDB(`company-logo-${targetCompanyId}`, logoImage);
     }
@@ -220,7 +214,6 @@ export default function SettingsPage() {
         await saveImageToDB(`company-cover-${targetCompanyId}`, coverImage);
     }
 
-    // 3. Update the companies list
     const companies = config.companies || [];
     const myCompanyIndex = companies.findIndex(c => c.id === targetCompanyId);
 
@@ -229,7 +222,6 @@ export default function SettingsPage() {
         name: data.businessName,
         companyName: data.businessName,
         description: data.description,
-        // Mark as indexed-db so Marketplace knows to check DB
         logo: logoImage ? 'indexed-db' : undefined,
         coverImage: coverImage ? 'indexed-db' : undefined,
         website: data.website,
@@ -245,10 +237,8 @@ export default function SettingsPage() {
     const newCompanies = [...companies];
     
     if (myCompanyIndex > -1) {
-        // Update existing
         newCompanies[myCompanyIndex] = { ...newCompanies[myCompanyIndex], ...updatedMyCompany } as Company;
     } else {
-        // Create new
         newCompanies.push({
             ...updatedMyCompany,
             id: targetCompanyId, 
@@ -257,7 +247,6 @@ export default function SettingsPage() {
         } as Company);
     }
 
-    // 4. Update the global config
     const newConfig: BrandsoftConfig = {
         ...config,
         brand: {
@@ -323,7 +312,8 @@ export default function SettingsPage() {
                <div className="absolute inset-0 p-6 flex flex-col md:flex-row items-end gap-6">
                   <div className="relative group/avatar">
                       <Avatar className="h-28 w-28 border-4 border-background flex-shrink-0">
-                          {isLogoLoading ? <Skeleton className="h-full w-full rounded-full" /> : <AvatarImage src={logoImage || undefined} />}
+                          {/* Use the static brandsoftLogo here directly */}
+                          <AvatarImage src={brandsoftLogo.src} />
                           <AvatarFallback><Building className="h-10 w-10" /></AvatarFallback>
                       </Avatar>
                        <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover/avatar:opacity-100 flex items-center justify-center transition-opacity">
