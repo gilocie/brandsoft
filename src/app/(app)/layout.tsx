@@ -196,12 +196,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   // Sync role with URL path
   useEffect(() => {
-    if (pathname.startsWith('/admin')) {
+    const currentBasePath = pathname.split('/')[1];
+
+    if (currentBasePath === 'admin') {
       if (role !== 'admin') setRole('admin');
-    } else if (pathname.startsWith('/office')) {
+    } else if (currentBasePath === 'office') {
       if (role !== 'staff') setRole('staff');
     } else {
-      if (role !== 'client') setRole('client');
+      // Only switch to client if the current role isn't admin or staff.
+      // This allows admins/staff to visit client pages like /marketplace without being logged out.
+      if (role !== 'admin' && role !== 'staff') {
+        if (role !== 'client') setRole('client');
+      }
     }
   }, [pathname, role, setRole]);
 
