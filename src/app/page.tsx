@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useEffect } from 'react';
@@ -14,12 +13,12 @@ import brandsoftBackground from '@/app/backgrounds/background.jpg';
 
 export default function HomePage() {
   const router = useRouter();
-  const { isActivated, isConfigured } = useBrandsoft();
+  const { isActivated, isConfigured, isAffiliateLoggedIn } = useBrandsoft();
   const { image: logoImage } = useBrandImage('logo');
 
   useEffect(() => {
-    if (isActivated === null || isConfigured === null) {
-      // Still loading from localStorage
+    if (isActivated === null || isConfigured === null || isAffiliateLoggedIn === null) {
+      // Still loading from localStorage/sessionStorage
       return;
     }
 
@@ -27,10 +26,12 @@ export default function HomePage() {
       router.replace('/activation');
     } else if (!isConfigured) {
       router.replace('/setup');
+    } else if (isAffiliateLoggedIn) {
+      router.replace('/office');
     } else {
       router.replace('/dashboard');
     }
-  }, [isActivated, isConfigured, router]);
+  }, [isActivated, isConfigured, isAffiliateLoggedIn, router]);
 
   return (
     <div 
