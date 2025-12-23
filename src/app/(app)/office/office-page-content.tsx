@@ -36,7 +36,7 @@ import { Badge } from '@/components/ui/badge';
 import { GenerateKeyDialog } from '@/components/office/dialogs/generate-key-dialog';
 import { PurchaseDialog, type PlanDetails } from '@/components/purchase-dialog';
 import { SellCreditsDialog } from '@/components/office/dialogs/sell-credits-dialog';
-import { BonusProgressDialog } from './bonus-progress-dialog';
+import { BonusProgressDialog } from '@/components/office/bonus-progress-dialog';
 import { useRouter } from 'next/navigation';
 import { useBrandImage } from '@/hooks/use-brand-image';
 
