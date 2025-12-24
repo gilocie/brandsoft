@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, createContext, useContext, ReactNode, useCallback } from 'react';
@@ -57,7 +58,7 @@ interface BrandsoftContextType {
   login: (username: string, password: string) => { success: boolean; role?: 'admin' | 'staff' };
   isAffiliateLoggedIn: boolean | null;
   affiliateLogout: () => void;
-  adminLogout: () => void; // ADD THIS
+  adminLogout: () => void;
   role: 'client' | 'staff' | 'admin';
   setRole: (role: 'client' | 'staff' | 'admin') => void;
   // Company methods
@@ -348,27 +349,6 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
         if ((parsedConfig as any).purchases) {
             delete (parsedConfig as any).purchases;
             needsSave = true;
-        }
-
-        // Migration for wallet balance
-        if (parsedConfig.affiliate?.clients && parsedConfig.companies) {
-            parsedConfig.affiliate.clients.forEach((client: any) => {
-                if (client.walletBalance && client.walletBalance > 0) {
-                    const companyIndex = parsedConfig.companies.findIndex((c: Company) => c.id === client.id);
-                    
-                    if (companyIndex > -1) {
-                        const currentCompanyBalance = parsedConfig.companies[companyIndex].walletBalance || 0;
-                        
-                        if (currentCompanyBalance === 0) {
-                            parsedConfig.companies[companyIndex] = {
-                                ...parsedConfig.companies[companyIndex],
-                                walletBalance: client.walletBalance,
-                            };
-                            needsSave = true;
-                        }
-                    }
-                }
-            });
         }
 
         // Migration logic for affiliate data
