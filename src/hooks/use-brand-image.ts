@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -13,13 +12,16 @@ const openBrandImageDB = (): Promise<IDBDatabase> => {
         reject(new Error('IndexedDB is not available server-side'));
         return;
     }
-    const request = indexedDB.open(BRAND_IMAGE_DB_NAME, 1);
+    
+    // 👇 CRITICAL FIX: Change 1 to 3 here
+    const request = indexedDB.open(BRAND_IMAGE_DB_NAME, 3);
     
     request.onerror = () => reject(new Error('Failed to open IndexedDB'));
     request.onsuccess = () => resolve(request.result);
     
     request.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result;
+      // This checks if the store exists, if not, it creates it
       if (!db.objectStoreNames.contains(BRAND_IMAGE_STORE_NAME)) {
         db.createObjectStore(BRAND_IMAGE_STORE_NAME);
       }
@@ -60,7 +62,6 @@ export const saveImageToDB = async (key: string, imageData: string): Promise<voi
 
 // Define allowed image types
 type BrandImageType = 'logo' | 'cover' | 'affiliateProfilePic' | 'adminProfilePic';
-
 
 // Hook to manage a specific brand image
 export function useBrandImage(imageType: BrandImageType) {

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -530,14 +531,16 @@ export default function AdminPlansPage() {
         if (checked) {
             setIsClientPickerOpen(true);
         } else {
-             saveConfig({ ...config, admin: { ...config.admin, demoClientId: null, demoStartedAt: null } }, { redirect: false });
+             saveConfig({ ...config, admin: { ...config.admin, demoClientId: null, demoStartedAt: null } }, { redirect: false, revalidate: true });
+             updatePurchaseStatus(); // Force re-evaluation
         }
     };
     
     const handleSelectDemoClient = (client: Company) => {
         if (!config) return;
-        saveConfig({ ...config, admin: { ...config.admin, demoClientId: client.id, demoStartedAt: new Date().toISOString() } }, { redirect: false });
+        saveConfig({ ...config, admin: { ...config.admin, demoClientId: client.id, demoStartedAt: new Date().toISOString() } }, { redirect: false, revalidate: true });
         setIsClientPickerOpen(false);
+        updatePurchaseStatus(); // Force re-evaluation
         toast({ title: 'Demo Mode Activated', description: `Demo settings are now active for ${client.companyName}.` });
     };
 
@@ -552,10 +555,9 @@ export default function AdminPlansPage() {
             }
         };
 
-        saveConfig({ ...config, admin: { ...config.admin, demoDurations: newDurations } }, { redirect: false });
+        saveConfig({ ...config, admin: { ...config.admin, demoDurations: newDurations } }, { redirect: false, revalidate: true });
     };
     
-    // Real-time countdown for demo mode
     useEffect(() => {
         if (!adminSettings?.demoClientId) return;
     
@@ -574,7 +576,6 @@ export default function AdminPlansPage() {
             updatePurchaseStatus();
         }, intervalMs);
     
-        // Initial update
         updatePurchaseStatus();
     
         return () => clearInterval(interval);
