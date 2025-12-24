@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -13,8 +14,7 @@ const openBrandImageDB = (): Promise<IDBDatabase> => {
         return;
     }
     
-    // 👇 CRITICAL FIX: Change 1 to 3 here
-    const request = indexedDB.open(BRAND_IMAGE_DB_NAME, 3);
+    const request = indexedDB.open(BRAND_IMAGE_DB_NAME, 1);
     
     request.onerror = () => reject(new Error('Failed to open IndexedDB'));
     request.onsuccess = () => resolve(request.result);

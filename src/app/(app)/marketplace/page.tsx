@@ -13,7 +13,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PublicQuotationRequestList } from '@/components/quotations/public-quotation-request-list';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-// CRITICAL FIX: Import getImageFromDB from the SAME file used in SettingsPage
 import { getImageFromDB } from '@/hooks/use-brand-image';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -27,18 +26,11 @@ const isValidImageUrl = (value: string | undefined): boolean => {
 
 const CompanyCardWithImages = ({
     company,
-    averageRating,
-    reviewCount,
     onSelectAction,
-    showActionsMenu,
     actionButton,
   }: {
-    company: Company;
-    averageRating: number;
-    reviewCount: number;
-    // FIX: Changed to accept only 1 argument to match CompanyCard's expected type
+    company: Company & { averageRating: number; reviewCount: number };
     onSelectAction: (action: 'view' | 'edit' | 'delete') => void;
-    showActionsMenu?: boolean;
     actionButton?: React.ReactNode;
   }) => {
     const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -50,7 +42,6 @@ const CompanyCardWithImages = ({
       const fetchImages = async () => {
         setIsLoading(true);
         
-        // These keys must match exactly what is saved in SettingsPage
         const logoKey = `company-logo-${company.id}`;
         const coverKey = `company-cover-${company.id}`;
   
@@ -63,7 +54,6 @@ const CompanyCardWithImages = ({
             const fallbackLogo = isValidImageUrl(company.logo) ? company.logo : null;
             const fallbackCover = isValidImageUrl(company.coverImage) ? company.coverImage : null;
             
-            // Prioritize the IndexedDB image (logo/cover variable)
             setLogoUrl(logo || fallbackLogo || null);
             setCoverUrl(cover || fallbackCover || null);
             setIsLoading(false);
@@ -73,7 +63,7 @@ const CompanyCardWithImages = ({
       fetchImages();
 
       return () => { isMounted = false; }
-    }, [company.id, company.logo, company.coverImage, company.version]); // Added version dependency
+    }, [company.id, company.logo, company.coverImage, company.version]);
   
     if (isLoading) {
       return (
@@ -94,7 +84,6 @@ const CompanyCardWithImages = ({
       );
     }
   
-    // Construct the company object with the resolved URLs
     const companyWithImages: Company = {
       ...company,
       logo: logoUrl || undefined,
@@ -104,10 +93,9 @@ const CompanyCardWithImages = ({
     return (
       <CompanyCard
         company={companyWithImages}
-        averageRating={averageRating}
-        reviewCount={reviewCount}
+        averageRating={company.averageRating}
+        reviewCount={company.reviewCount}
         onSelectAction={onSelectAction}
-        showActionsMenu={showActionsMenu}
         actionButton={actionButton}
       />
     );
@@ -171,7 +159,6 @@ export default function MarketplacePage() {
   
   const currentUserId = useMemo(() => {
     if (!config || !config.brand) return null;
-    // Attempt to match by ID if possible, otherwise by name
     const myCompany = config.companies?.find(c => c.companyName === config.brand.businessName);
     return myCompany?.id || null;
   }, [config]);
@@ -275,8 +262,6 @@ export default function MarketplacePage() {
                         <CompanyCardWithImages 
                             key={biz.id} 
                             company={biz} 
-                            averageRating={biz.averageRating}
-                            reviewCount={biz.reviewCount}
                             onSelectAction={(action) => handleSelectAction(action, biz)} 
                             actionButton={
                                 isMyCompany ? (

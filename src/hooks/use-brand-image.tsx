@@ -1,10 +1,11 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
 
 const BRAND_IMAGE_DB_NAME = 'BrandImagesDB';
 const BRAND_IMAGE_STORE_NAME = 'brand_images';
-const DB_VERSION = 1; // Reset to 1 with fresh start
+const DB_VERSION = 1;
 
 // Singleton promise to prevent multiple simultaneous opens
 let dbPromise: Promise<IDBDatabase> | null = null;
@@ -29,37 +30,15 @@ const openBrandImageDB = (): Promise<IDBDatabase> => {
     };
 
     request.onupgradeneeded = (event) => {
-      console.log('Creating object store...');
       const db = (event.target as IDBOpenDBRequest).result;
       
-      // Delete old store if exists (clean slate)
-      if (db.objectStoreNames.contains(BRAND_IMAGE_STORE_NAME)) {
-        db.deleteObjectStore(BRAND_IMAGE_STORE_NAME);
+      if (!db.objectStoreNames.contains(BRAND_IMAGE_STORE_NAME)) {
+        db.createObjectStore(BRAND_IMAGE_STORE_NAME);
       }
-      
-      db.createObjectStore(BRAND_IMAGE_STORE_NAME);
-      console.log('Object store created');
     };
 
     request.onsuccess = () => {
       const db = request.result;
-      
-      // Verify store exists
-      if (!db.objectStoreNames.contains(BRAND_IMAGE_STORE_NAME)) {
-        console.error('Store missing after open, resetting...');
-        db.close();
-        dbPromise = null;
-        
-        // Delete and retry
-        const deleteReq = indexedDB.deleteDatabase(BRAND_IMAGE_DB_NAME);
-        deleteReq.onsuccess = () => {
-          openBrandImageDB().then(resolve).catch(reject);
-        };
-        deleteReq.onerror = () => reject(new Error('Failed to reset DB'));
-        return;
-      }
-      
-      console.log('DB ready with stores:', Array.from(db.objectStoreNames));
       resolve(db);
     };
   });

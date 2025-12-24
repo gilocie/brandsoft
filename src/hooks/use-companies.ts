@@ -15,34 +15,31 @@ export function useCompanies(
   saveConfig: (newConfig: BrandsoftConfig, options?: { redirect?: boolean; revalidate?: boolean }) => void
 ) {
 
-  const addCompany = async (company: Omit<Company, 'id'>): Promise<Company> => {
+  const addCompany = async (companyData: Partial<Omit<Company, 'id'>>): Promise<Company> => {
       const companyId = `COMP-${Date.now()}`;
       
-      // Handle logo - save to IndexedDB if it's a data URL
-      let logoValue = company.logo;
-      if (company.logo && isDataUrl(company.logo)) {
+      let logoValue = companyData.logo;
+      if (companyData.logo && isDataUrl(companyData.logo)) {
         try {
-          await saveImageToDB(`company-logo-${companyId}`, company.logo);
+          await saveImageToDB(`company-logo-${companyId}`, companyData.logo);
           logoValue = 'indexed-db';
-        } catch (error) {
-          console.error('Failed to save logo to IndexedDB:', error);
-        }
+        } catch (error) { console.error('Failed to save logo to IndexedDB:', error); }
       }
       
-      // Handle cover image - save to IndexedDB if it's a data URL
-      let coverValue = company.coverImage;
-      if (company.coverImage && isDataUrl(company.coverImage)) {
+      let coverValue = companyData.coverImage;
+      if (companyData.coverImage && isDataUrl(companyData.coverImage)) {
         try {
-          await saveImageToDB(`company-cover-${companyId}`, company.coverImage);
+          await saveImageToDB(`company-cover-${companyId}`, companyData.coverImage);
           coverValue = 'indexed-db';
-        } catch (error) {
-          console.error('Failed to save cover to IndexedDB:', error);
-        }
+        } catch (error) { console.error('Failed to save cover to IndexedDB:', error); }
       }
       
       const newCompany: Company = { 
-        ...company, 
         id: companyId,
+        name: companyData.name || '',
+        companyName: companyData.companyName || '',
+        email: companyData.email || '',
+        ...companyData,
         logo: logoValue,
         coverImage: coverValue,
       };
@@ -57,26 +54,20 @@ export function useCompanies(
   const updateCompany = async (companyId: string, data: Partial<Omit<Company, 'id'>>) => {
       if (!config) return;
       
-      // Handle logo - save to IndexedDB if it's a data URL
       let logoValue = data.logo;
       if (data.logo && isDataUrl(data.logo)) {
         try {
           await saveImageToDB(`company-logo-${companyId}`, data.logo);
           logoValue = 'indexed-db';
-        } catch (error) {
-          console.error('Failed to save logo to IndexedDB:', error);
-        }
+        } catch (error) { console.error('Failed to save logo to IndexedDB:', error); }
       }
       
-      // Handle cover image - save to IndexedDB if it's a data URL
       let coverValue = data.coverImage;
       if (data.coverImage && isDataUrl(data.coverImage)) {
         try {
           await saveImageToDB(`company-cover-${companyId}`, data.coverImage);
           coverValue = 'indexed-db';
-        } catch (error) {
-          console.error('Failed to save cover to IndexedDB:', error);
-        }
+        } catch (error) { console.error('Failed to save cover to IndexedDB:', error); }
       }
       
       const updatedData = {
@@ -86,9 +77,9 @@ export function useCompanies(
       };
       
       const newCompanies = (config.companies || []).map(c => 
-          c.id === companyId ? { ...c, ...updatedData } : c
+          c.id === companyId ? { ...c, ...updatedData, version: (c.version || 0) + 1 } : c
       );
-      saveConfig({ ...config, companies: newCompanies }, { redirect: false, revalidate: false });
+      saveConfig({ ...config, companies: newCompanies }, { redirect: false, revalidate: true });
   };
   
   const deleteCompany = (companyId: string) => {
@@ -96,8 +87,6 @@ export function useCompanies(
           const newCompanies = (config.companies || []).filter(c => c.id !== companyId);
           saveConfig({ ...config, companies: newCompanies }, { redirect: false, revalidate: false });
       }
-      // Note: We could also delete the images from IndexedDB here, but leaving them
-      // doesn't cause issues and they'll be cleaned up if the user clears browser data
   };
 
   const getInitialCompanies = (): Omit<Company, 'id'>[] => {

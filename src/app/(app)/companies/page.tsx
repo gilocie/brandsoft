@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useRef, ChangeEvent, useEffect } from 'react';
@@ -43,7 +44,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-// FIX 1: Import both image functions from the correct hook file
 import { saveImageToDB, getImageFromDB } from '@/hooks/use-brand-image';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
@@ -138,19 +138,12 @@ const ImageUploadField = ({
   );
 };
 
-// FIX 2: Updated component prop types to match CompanyCard expectation (1 arg)
 const CompanyCardWithImages = ({
     company,
-    averageRating,
-    reviewCount,
     onSelectAction,
-    showActionsMenu,
   }: {
     company: Company & { averageRating: number; reviewCount: number };
-    averageRating: number;
-    reviewCount: number;
-    onSelectAction: (action: 'view' | 'edit' | 'delete') => void;
-    showActionsMenu?: boolean;
+    onSelectAction: (action: 'view' | 'edit' | 'delete', company: Company) => void;
   }) => {
     const [logoUrl, setLogoUrl] = useState<string | null>(null);
     const [coverUrl, setCoverUrl] = useState<string | null>(null);
@@ -161,7 +154,6 @@ const CompanyCardWithImages = ({
       const fetchImages = async () => {
         setIsLoading(true);
         
-        // Ensure keys match what is saved in onSubmit
         const logoKey = `company-logo-${company.id}`;
         const coverKey = `company-cover-${company.id}`;
   
@@ -212,16 +204,16 @@ const CompanyCardWithImages = ({
     return (
       <CompanyCard
         company={companyWithImages}
-        averageRating={averageRating}
-        reviewCount={reviewCount}
-        onSelectAction={onSelectAction}
-        showActionsMenu={showActionsMenu}
+        averageRating={company.averageRating}
+        reviewCount={company.reviewCount}
+        onSelectAction={(action) => onSelectAction(action, company)}
+        showActionsMenu={true}
       />
     );
 };
 
 export default function CompaniesPage() {
-  const { config, deleteCompany, saveConfig } = useBrandsoft();
+  const { config, addCompany, updateCompany, deleteCompany, saveConfig } = useBrandsoft();
   const { toast } = useToast();
   const router = useRouter();
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -240,7 +232,6 @@ export default function CompaniesPage() {
 
   const activePlan = useMemo(() => {
     const activePurchase = config?.purchases?.find(p => p.status === 'active');
-    // FIX 3: Cast the empty array as string[] to fix "never" type error
     if (!activePurchase) return { name: 'Free Trial', features: [] as string[] };
     const planDetails = config?.plans?.find(p => p.name === activePurchase.planName);
     return planDetails || { name: activePurchase.planName, features: [] as string[] };
@@ -369,78 +360,14 @@ export default function CompaniesPage() {
 
   const onSubmit = async (data: CompanyFormData) => {
     if (!config) return;
-
-    // 1. Generate ID if new, or use existing
-    const companyId = data.id || `COMP-${Date.now()}`;
     
-    // 2. FIX: Save images to IndexedDB with company-specific keys
-    if (data.logo && isValidImageUrl(data.logo)) {
-      await saveImageToDB(`company-logo-${companyId}`, data.logo);
-    }
-    if (data.coverImage && isValidImageUrl(data.coverImage)) {
-      await saveImageToDB(`company-cover-${companyId}`, data.coverImage);
-    }
-    
-    // 3. Prepare the Company Object
-    const companyToSave: Company = {
-        ...data,
-        id: companyId,
-        customerType: 'company',
-        referredBy: data.activationKey || undefined,
-        logo: (data.logo && isValidImageUrl(data.logo)) ? 'indexed-db' : data.logo,
-        coverImage: (data.coverImage && isValidImageUrl(data.coverImage)) ? 'indexed-db' : data.coverImage,
-        version: (data.id ? (config.companies.find(c => c.id === data.id)?.version || 0) : 0) + 1,
-    } as Company;
-
-    // 4. Prepare the updated List of Companies
-    let updatedCompanies = [...(config.companies || [])];
     if (data.id) {
-        updatedCompanies = updatedCompanies.map(c => c.id === data.id ? companyToSave : c);
+        await updateCompany(data.id, data);
     } else {
-        updatedCompanies = [companyToSave, ...updatedCompanies];
+        await addCompany(data);
     }
 
-    // 5. Prepare Affiliate Data
-    let updatedAffiliate = { ...(config.affiliate || {}) };
-    let wasAddedToAffiliate = false;
-
-    if (data.activationKey && config.affiliate && data.activationKey === config.affiliate.staffId) {
-        const existingClients = updatedAffiliate.clients || [];
-        const isAlreadyClient = existingClients.some(c => c.id === companyId);
-
-        if (!isAlreadyClient) {
-            const newClient: AffiliateClient = {
-                id: companyId,
-                name: companyToSave.companyName,
-                avatar: 'indexed-db', 
-                plan: 'Free Trial',
-                status: 'active',
-                joinDate: new Date().toISOString(),
-                remainingDays: 30,
-                walletBalance: 0,
-            };
-            
-            updatedAffiliate.clients = [newClient, ...existingClients];
-            wasAddedToAffiliate = true;
-        }
-    }
-
-    // 6. Save config
-    saveConfig({
-        ...config,
-        companies: updatedCompanies,
-        affiliate: updatedAffiliate as any
-    }, { redirect: false, revalidate: true });
-
-    // 7. Notifications
-    if (wasAddedToAffiliate) {
-         toast({ title: "Success!", description: "Company created and linked to your Affiliate account." });
-    } else if (data.activationKey) {
-         toast({ title: "Company Saved", description: "Saved to Companies list (Key did not match your Staff ID)." });
-    } else {
-         toast({ title: "Company Saved", description: "Company added to list." });
-    }
-    
+    toast({ title: `Company ${data.id ? 'Updated' : 'Created'}`, description: `${data.companyName} has been saved.` });
     setIsFormOpen(false);
   };
   
@@ -514,11 +441,7 @@ export default function CompaniesPage() {
                     <CompanyCardWithImages 
                         key={company.id} 
                         company={company} 
-                        averageRating={company.averageRating}
-                        reviewCount={company.reviewCount}
-                        // FIX: Passing the action correctly to the 1-arg function defined above
-                        onSelectAction={(action) => handleSelectAction(action, company)} 
-                        showActionsMenu={true}
+                        onSelectAction={handleSelectAction} 
                     />
                 ))}
             </div>
