@@ -528,19 +528,98 @@ export default function AdminPlansPage() {
     // DEMO LOGIC
     const handleDemoToggle = (checked: boolean) => {
         if (!config) return;
+        
         if (checked) {
             setIsClientPickerOpen(true);
         } else {
-             saveConfig({ ...config, admin: { ...config.admin, demoClientId: null, demoStartedAt: null } }, { redirect: false, revalidate: true });
-             updatePurchaseStatus(); // Force re-evaluation
+            const originalPurchase = config.admin?.demoOriginalPurchase;
+            const demoClientId = config.admin?.demoClientId;
+            
+            let updatedCompanies = [...config.companies];
+            
+            if (demoClientId) {
+                updatedCompanies = config.companies.map(company => {
+                    if (company.id === demoClientId) {
+                        // Filter out auto-generated demo purchases
+                        let restoredPurchases = (company.purchases || []).filter(p => 
+                            !p.orderId.startsWith('AUTO-DEMO-')
+                        );
+                        
+                        // If we have an original purchase, restore it
+                        if (originalPurchase) {
+                            // Set all other plans to inactive first
+                            restoredPurchases = restoredPurchases.map(p => {
+                                if (p.orderId === originalPurchase.orderId) {
+                                    // Restore the original purchase exactly as it was
+                                    return { ...originalPurchase };
+                                }
+                                // Set any other active plans to inactive
+                                if (p.status === 'active') {
+                                    return { ...p, status: 'inactive' as const };
+                                }
+                                return p;
+                            });
+                            
+                            // If original wasn't found in the list, add it back
+                            const hasOriginal = restoredPurchases.some(
+                                p => p.orderId === originalPurchase.orderId
+                            );
+                            if (!hasOriginal) {
+                                restoredPurchases.push({ ...originalPurchase });
+                            }
+                        }
+                        
+                        return { ...company, purchases: restoredPurchases };
+                    }
+                    return company;
+                });
+            }
+            
+            saveConfig({ 
+                ...config, 
+                companies: updatedCompanies,
+                admin: { 
+                    ...config.admin, 
+                    demoClientId: null, 
+                    demoStartedAt: null,
+                    demoOriginalPurchase: null,
+                } 
+            }, { redirect: false, revalidate: true });
+            
+            updatePurchaseStatus();
+            
+            toast({ 
+                title: 'Demo Mode Disabled', 
+                description: originalPurchase 
+                    ? `Restored "${originalPurchase.planName}" plan.`
+                    : 'Demo settings cleared.' 
+            });
         }
     };
     
     const handleSelectDemoClient = (client: Company) => {
         if (!config) return;
-        saveConfig({ ...config, admin: { ...config.admin, demoClientId: client.id, demoStartedAt: new Date().toISOString() } }, { redirect: false, revalidate: true });
+        
+        // Find the client's current active plan purchase
+        const clientCompany = config.companies.find(c => c.id === client.id);
+        const originalActivePurchase = clientCompany?.purchases?.find(
+            p => p.status === 'active' && 
+            !p.planName.toLowerCase().includes('top-up') && 
+            !p.planName.toLowerCase().includes('credit')
+        ) || null;
+        
+        saveConfig({ 
+            ...config, 
+            admin: { 
+                ...config.admin, 
+                demoClientId: client.id,
+                demoStartedAt: new Date().toISOString(),
+                demoOriginalPurchase: originalActivePurchase ? { ...originalActivePurchase } : null,
+            } 
+        }, { redirect: false, revalidate: true });
+        
         setIsClientPickerOpen(false);
-        updatePurchaseStatus(); // Force re-evaluation
+        updatePurchaseStatus();
         toast({ title: 'Demo Mode Activated', description: `Demo settings are now active for ${client.companyName}.` });
     };
 

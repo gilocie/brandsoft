@@ -293,6 +293,7 @@ export type AdminSettings = {
   demoClientId?: string | null;
   demoStartedAt?: string | null;
   demoDurations?: Record<string, { value: number; unit: 'seconds' | 'minutes' | 'days' }>;
+  demoOriginalPurchase?: Purchase | null;
 };
 
 export type Invoice = {
