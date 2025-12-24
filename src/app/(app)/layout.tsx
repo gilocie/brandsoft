@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -65,10 +64,12 @@ import {
   RefreshCw,
   Loader2,
   LogOut,
+  Inbox,
+  MessageCircle,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useBrandsoft, type Company, type Purchase } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Company, type Purchase, type Quotation, type QuotationRequest } from '@/hooks/use-brandsoft';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -116,14 +117,13 @@ const HeaderWalletCard = () => {
   
   const { balance, currencyCode } = useMemo(() => {
     if (!config || !config.profile?.id) {
-        return { balance: 0, currencyCode: 'K' };
+      return { balance: 0, currencyCode: 'K' };
     }
-    const company = (config.companies || []).find((c: Company) => c.id === (config.profile as any).id);
+    const company = (config.companies || []).find((c: Company) => c.id === config.profile?.id);
     const walletBalance = company?.walletBalance || 0;
     const code = config.profile.defaultCurrency === 'MWK' ? 'K' : config.profile.defaultCurrency || 'K';
     return { balance: walletBalance, currencyCode: code };
   }, [config]);
-
 
   if (!config?.profile) return null;
 
@@ -149,33 +149,33 @@ const HeaderWalletCard = () => {
           </div>
           <div className="flex flex-col items-center justify-center space-y-2 rounded-lg border bg-muted p-4">
             <p className="text-4xl font-bold">
-                {currencyCode}{balance.toLocaleString()}
+              {currencyCode}{balance.toLocaleString()}
             </p>
             <p className="text-xs text-muted-foreground">
-                ≈ BS {bsCredits.toFixed(2)}
+              ≈ BS {bsCredits.toFixed(2)}
             </p>
           </div>
           <WalletBalance variant="default" className="w-full" />
         </div>
       </PopoverContent>
     </Popover>
-  )
-}
+  );
+};
 
 function ThemeToggle() {
-    const { theme, setTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
 
-    return (
-        <Button
-            variant="primary"
-            size="icon"
-            onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-        >
-            <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-            <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-            <span className="sr-only">Toggle theme</span>
-        </Button>
-    );
+  return (
+    <Button
+      variant="primary"
+      size="icon"
+      onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+    >
+      <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+      <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+      <span className="sr-only">Toggle theme</span>
+    </Button>
+  );
 }
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -203,8 +203,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     } else if (currentBasePath === 'office') {
       if (role !== 'staff') setRole('staff');
     } else {
-      // Only switch to client if the current role isn't admin or staff.
-      // This allows admins/staff to visit client pages like /marketplace without being logged out.
       if (role !== 'admin' && role !== 'staff') {
         if (role !== 'client') setRole('client');
       }
@@ -213,22 +211,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   const handleRoleChange = (newRole: 'client' | 'staff' | 'admin') => {
     if (role !== newRole) {
-        setIsChangingRole(true);
-        setRole(newRole);
+      setIsChangingRole(true);
+      setRole(newRole);
 
-        if (newRole === 'admin') {
-            router.push('/admin');
-        } else if (newRole === 'staff') {
-            router.push('/office');
-        } else {
-            router.push('/dashboard');
-        }
+      if (newRole === 'admin') {
+        router.push('/admin');
+      } else if (newRole === 'staff') {
+        router.push('/office');
+      } else {
+        router.push('/dashboard');
+      }
     }
   };
 
   useEffect(() => {
-    if(isChangingRole) {
-      const isCorrectPage = 
+    if (isChangingRole) {
+      const isCorrectPage =
         (role === 'admin' && pathname.startsWith('/admin')) ||
         (role === 'staff' && pathname.startsWith('/office')) ||
         (role === 'client' && !pathname.startsWith('/admin') && !pathname.startsWith('/office'));
@@ -239,12 +237,23 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [pathname, role, isChangingRole]);
 
-
+  // Get current user's company
   const myCompany = useMemo(() => {
     if (!config || !config.profile?.id) return null;
     return config.companies?.find(c => c.id === config.profile?.id);
   }, [config]);
 
+  // Get current user's company ID
+  const currentUserId = useMemo(() => {
+    return config?.profile?.id || null;
+  }, [config]);
+
+  // Get current user's industry
+  const myIndustry = useMemo(() => {
+    return myCompany?.industry || null;
+  }, [myCompany]);
+
+  // Calculate all notifications
   const {
     notificationCount,
     requestNotificationCount,
@@ -255,79 +264,141 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     declinedPurchasesCount,
     declinedPurchaseOrders,
   } = useMemo(() => {
-    const allPurchases = myCompany?.purchases || [];
-    
-    if (!config) return { notificationCount: 0, requestNotificationCount: 0, incomingRequestsCount: 0, responsesCount: 0, pendingPurchasesCount: 0, processingPurchasesCount: 0, declinedPurchasesCount: 0, declinedPurchaseOrders: [] };
-
-    const incomingRequestsCount = config.incomingRequests?.length || 0;
-    const responsesCount = config.requestResponses?.length || 0;
-    const requestTotal = incomingRequestsCount + responsesCount;
-
-    const pendingPurchases = allPurchases.filter(p => p.status === 'pending');
-    const processingPurchases = allPurchases.filter(p => p.status === 'processing');
-    const declinedPurchases = allPurchases.filter(p => p.status === 'declined' && !p.isAcknowledged);
-
-    const total = requestTotal + pendingPurchases.length + processingPurchases.length + declinedPurchases.length;
-    
-    return { 
-        notificationCount: total, 
-        requestNotificationCount: requestTotal, 
-        incomingRequestsCount, 
-        responsesCount, 
-        pendingPurchasesCount: pendingPurchases.length, 
-        processingPurchasesCount: processingPurchases.length,
-        declinedPurchasesCount: declinedPurchases.length,
-        declinedPurchaseOrders: declinedPurchases,
+    const defaultValues = {
+      notificationCount: 0,
+      requestNotificationCount: 0,
+      incomingRequestsCount: 0,
+      responsesCount: 0,
+      pendingPurchasesCount: 0,
+      processingPurchasesCount: 0,
+      declinedPurchasesCount: 0,
+      declinedPurchaseOrders: [] as Purchase[],
     };
-  }, [config, myCompany]);
+
+    if (!config || !currentUserId) return defaultValues;
+
+    const now = new Date();
+    const allPurchases = myCompany?.purchases || [];
+
+    // ===== QUOTATION REQUEST NOTIFICATIONS =====
+    
+    // INCOMING REQUESTS: Requests from OTHER businesses that I can respond to
+    const incomingRequests = (config.incomingRequests || []).filter((req: QuotationRequest) => {
+      // Don't show my own requests in incoming
+      if (req.requesterId === currentUserId) return false;
+
+      // Check if request is still open and not expired
+      const isOpen = req.status === 'open' && new Date(req.dueDate) >= now;
+      if (!isOpen) return false;
+
+      if (req.isPublic) {
+        // Public request - check if industries match (if specified)
+        if (req.industries && req.industries.length > 0 && myIndustry) {
+          return req.industries.includes(myIndustry);
+        }
+        // If no industries specified or no matching required, show to all
+        return true;
+      } else {
+        // Private request - show only if I'm targeted
+        return req.companyIds?.includes(currentUserId) || false;
+      }
+    });
+
+    // Get my outgoing request IDs
+    const myOutgoingRequests = (config.outgoingRequests || []).filter(
+      (req: QuotationRequest) => req.requesterId === currentUserId
+    );
+    const myOutgoingRequestIds = myOutgoingRequests.map((req: QuotationRequest) => req.id);
+
+    // RESPONSES: Quotations I received from suppliers for my outgoing requests
+    const responses = (config.requestResponses || []).filter(
+      (quote: Quotation) => quote.requestId && myOutgoingRequestIds.includes(quote.requestId)
+    );
+
+    const incomingCount = incomingRequests.length;
+    const responseCount = responses.length;
+    const requestTotal = incomingCount + responseCount;
+
+    // ===== PURCHASE NOTIFICATIONS =====
+    const pendingPurchases = allPurchases.filter((p: Purchase) => p.status === 'pending');
+    const processingPurchases = allPurchases.filter((p: Purchase) => p.status === 'processing');
+    const declinedPurchases = allPurchases.filter((p: Purchase) => p.status === 'declined' && !p.isAcknowledged);
+
+    // Total notification count
+    const total = requestTotal + pendingPurchases.length + processingPurchases.length + declinedPurchases.length;
+
+    return {
+      notificationCount: total,
+      requestNotificationCount: requestTotal,
+      incomingRequestsCount: incomingCount,
+      responsesCount: responseCount,
+      pendingPurchasesCount: pendingPurchases.length,
+      processingPurchasesCount: processingPurchases.length,
+      declinedPurchasesCount: declinedPurchases.length,
+      declinedPurchaseOrders: declinedPurchases,
+    };
+  }, [config, currentUserId, myCompany, myIndustry]);
 
   const handleAcknowledgeAll = () => {
     declinedPurchaseOrders.forEach(order => {
-        acknowledgeDeclinedPurchase(order.orderId);
+      acknowledgeDeclinedPurchase(order.orderId);
     });
     router.push('/history');
-};
-  
+  };
+
+  // Orders notification count for staff
   const ordersNotificationCount = useMemo(() => {
     if (!config?.companies) return 0;
-    return config.companies.flatMap(c => c.purchases || [])
-      .filter(p => (p.planName.startsWith('Credit Purchase') || p.planName === 'Wallet Top-up') && (p.status === 'pending' || p.status === 'processing')).length;
+    return config.companies
+      .flatMap(c => c.purchases || [])
+      .filter(
+        p =>
+          (p.planName.startsWith('Credit Purchase') || p.planName === 'Wallet Top-up') &&
+          (p.status === 'pending' || p.status === 'processing')
+      ).length;
   }, [config?.companies]);
-  
+
+  // Wallet notification count for client
   const walletNotificationCount = useMemo(() => {
     if (!myCompany?.purchases) return 0;
-    const myTopUps = myCompany.purchases.filter(p =>
-      !p.affiliateId && 
-      (p.planName.toLowerCase().includes('top-up') || p.planName.toLowerCase().includes('credit purchase')) &&
-      (p.status === 'pending' || p.status === 'processing')
+    const myTopUps = myCompany.purchases.filter(
+      p =>
+        !p.affiliateId &&
+        (p.planName.toLowerCase().includes('top-up') || p.planName.toLowerCase().includes('credit purchase')) &&
+        (p.status === 'pending' || p.status === 'processing')
     );
     return myTopUps.length;
   }, [myCompany]);
-  
+
   const getVisibleNavItems = (items: typeof mainNavItems, currentRole: typeof role) => {
     if (!config || !currentRole) return [];
     return items.filter(item => {
-        const roleMatch = item.roles.includes(currentRole);
-        if (!roleMatch) return false;
-        if (item.enabledKey === null) return true;
-        return config.modules[item.enabledKey as keyof typeof config.modules];
+      const roleMatch = item.roles.includes(currentRole);
+      if (!roleMatch) return false;
+      if (item.enabledKey === null) return true;
+      return config.modules[item.enabledKey as keyof typeof config.modules];
     });
   };
 
   const getFontClass = (fontName?: string) => {
-    switch(fontName) {
-      case 'Poppins': return 'font-body';
-      case 'Belleza': return 'font-headline';
-      case 'Source Code Pro': return 'font-code';
-      default: return 'font-body';
+    switch (fontName) {
+      case 'Poppins':
+        return 'font-body';
+      case 'Belleza':
+        return 'font-headline';
+      case 'Source Code Pro':
+        return 'font-code';
+      default:
+        return 'font-body';
     }
   };
 
   const visibleMainNavItems = getVisibleNavItems(mainNavItems, role);
   const visibleUpcomingNavItems = getVisibleNavItems(upcomingNavItems, role);
-  
-  const pageTitle = [...mainNavItems, ...upcomingNavItems].find(item => pathname.startsWith(item.href))?.label || 'Dashboard';
-  
+
+  const pageTitle =
+    [...mainNavItems, ...upcomingNavItems].find(item => pathname.startsWith(item.href))?.label || 'Dashboard';
+
   const { avatarSrc, headerTitle, avatarFallback } = useMemo(() => {
     if (!config || !role) {
       return { avatarSrc: undefined, headerTitle: 'BrandSoft', avatarFallback: 'B' };
@@ -356,7 +427,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [role, config, logoImage, affiliateImage, adminImage]);
 
-
   const isLinkActive = (href: string) => {
     if (href === '/office' || href === '/admin' || href === '/dashboard') {
       return pathname === href;
@@ -370,90 +440,98 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <SidebarHeader>
           <div className="flex items-center gap-2">
             {config ? (
-                <Link href={role === 'client' ? '/settings' : (role === 'admin' ? '/admin/profile' : '/office')} className="flex items-center gap-2 text-sidebar-foreground">
-                    <Avatar className="h-8 w-8">
-                       <AvatarImage src={avatarSrc} />
-                       <AvatarFallback>{avatarFallback}</AvatarFallback>
-                    </Avatar>
-                    <h1 className={cn('text-base font-bold', getFontClass(config.brand.font))}>
-                        {headerTitle}
-                    </h1>
-                </Link>
+              <Link
+                href={role === 'client' ? '/settings' : role === 'admin' ? '/admin/profile' : '/office'}
+                className="flex items-center gap-2 text-sidebar-foreground"
+              >
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={avatarSrc} />
+                  <AvatarFallback>{avatarFallback}</AvatarFallback>
+                </Avatar>
+                <h1 className={cn('text-base font-bold', getFontClass(config.brand.font))}>{headerTitle}</h1>
+              </Link>
             ) : (
-                <>
-                    <Skeleton className="h-8 w-8 rounded-full" />
-                    <Skeleton className="h-6 w-24" />
-                </>
+              <>
+                <Skeleton className="h-8 w-8 rounded-full" />
+                <Skeleton className="h-6 w-24" />
+              </>
             )}
           </div>
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu className="mt-4">
-            {config ? visibleMainNavItems.map((item) => (
-              <SidebarMenuItem key={item.href}>
-                <Link href={item.href} className="relative">
-                  <SidebarMenuButton
-                    isActive={isLinkActive(item.href)}
-                    tooltip={item.label}
-                  >
-                    <item.icon />
-                    <span>{item.label}</span>
-                     {item.href === '/quotation-requests' && requestNotificationCount > 0 && (
+            {config ? (
+              visibleMainNavItems.map(item => (
+                <SidebarMenuItem key={item.href}>
+                  <Link href={item.href} className="relative">
+                    <SidebarMenuButton isActive={isLinkActive(item.href)} tooltip={item.label}>
+                      <item.icon />
+                      <span>{item.label}</span>
+                      {/* Quotation Requests notification badge */}
+                      {item.href === '/quotation-requests' && requestNotificationCount > 0 && (
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs font-bold text-destructive-foreground">
-                            {requestNotificationCount}
+                          {requestNotificationCount}
                         </span>
-                    )}
-                    {item.href === '/office/orders' && ordersNotificationCount > 0 && (
+                      )}
+                      {/* Staff orders notification badge */}
+                      {item.href === '/office/orders' && ordersNotificationCount > 0 && (
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs font-bold text-destructive-foreground">
-                            {ordersNotificationCount}
+                          {ordersNotificationCount}
                         </span>
-                    )}
-                    {item.href === '/history' && walletNotificationCount > 0 && (
+                      )}
+                      {/* Client wallet notification badge */}
+                      {item.href === '/history' && walletNotificationCount > 0 && (
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs font-bold text-destructive-foreground">
-                            {walletNotificationCount}
+                          {walletNotificationCount}
                         </span>
-                    )}
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
-            )) : (
-              Array.from({length: 5}).map((_, i) => <SidebarMenuSkeleton key={i} showIcon />)
+                      )}
+                    </SidebarMenuButton>
+                  </Link>
+                </SidebarMenuItem>
+              ))
+            ) : (
+              Array.from({ length: 5 }).map((_, i) => <SidebarMenuSkeleton key={i} showIcon />)
             )}
-            
+
             {visibleUpcomingNavItems.length > 0 && (
               <>
                 <SidebarSeparator className="my-2" />
                 <Accordion type="single" collapsible defaultValue="upcoming-tools" className="w-full px-2">
-                    <AccordionItem value="upcoming-tools" className="border-b-0">
-                        <AccordionTrigger className="p-2 text-xs font-medium text-sidebar-foreground/70 hover:no-underline">
-                            Upcoming Tools
-                        </AccordionTrigger>
-                        <AccordionContent className="pb-0 pl-1">
-                             <SidebarMenu className="px-0">
-                                {visibleUpcomingNavItems.map(item => (
-                                    <SidebarMenuItem key={item.href}>
-                                        <Link href={item.href}><SidebarMenuButton isActive={isLinkActive(item.href)} tooltip={item.label}><item.icon /><span>{item.label}</span></SidebarMenuButton></Link>
-                                    </SidebarMenuItem>
-                                ))}
-                            </SidebarMenu>
-                        </AccordionContent>
-                    </AccordionItem>
+                  <AccordionItem value="upcoming-tools" className="border-b-0">
+                    <AccordionTrigger className="p-2 text-xs font-medium text-sidebar-foreground/70 hover:no-underline">
+                      Upcoming Tools
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-0 pl-1">
+                      <SidebarMenu className="px-0">
+                        {visibleUpcomingNavItems.map(item => (
+                          <SidebarMenuItem key={item.href}>
+                            <Link href={item.href}>
+                              <SidebarMenuButton isActive={isLinkActive(item.href)} tooltip={item.label}>
+                                <item.icon />
+                                <span>{item.label}</span>
+                              </SidebarMenuButton>
+                            </Link>
+                          </SidebarMenuItem>
+                        ))}
+                      </SidebarMenu>
+                    </AccordionContent>
+                  </AccordionItem>
                 </Accordion>
               </>
             )}
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter className="mt-auto relative overflow-hidden">
-          <div 
-            className="absolute inset-0 bg-cover bg-center opacity-20" 
+          <div
+            className="absolute inset-0 bg-cover bg-center opacity-20"
             style={{ backgroundImage: `url(${bgOverlay.src})` }}
           />
           <SidebarMenu>
             <SidebarMenuItem>
               {config ? (
                 <div className="relative flex flex-col items-center justify-center p-2 text-center space-y-2">
-                   <Avatar className="h-12 w-12 bg-transparent">
-                      <AvatarImage src={brandsoftLogo.src} />
+                  <Avatar className="h-12 w-12 bg-transparent">
+                    <AvatarImage src={brandsoftLogo.src} />
                   </Avatar>
                   <p className="text-sm font-semibold text-sidebar-foreground/80">BrandSoft</p>
                 </div>
@@ -469,105 +547,134 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <SidebarInset className="flex flex-col h-screen overflow-hidden">
         <header className="flex h-14 items-center gap-4 bg-background/95 backdrop-blur-sm sticky top-0 px-4 md:px-6 z-10 min-w-0 flex-shrink-0">
           <SidebarTrigger className="md:hidden flex-shrink-0" />
-          <h1 className="text-lg font-semibold font-headline flex-1 truncate hidden sm:block">
-            {pageTitle}
-          </h1>
+          <h1 className="text-lg font-semibold font-headline flex-1 truncate hidden sm:block">{pageTitle}</h1>
           <div className="flex items-center gap-2 w-full sm:w-auto ml-auto">
-             <div className="hidden">
-                <Select value={role || 'client'} onValueChange={(value) => handleRoleChange(value as any)}>
-                    <SelectTrigger className="w-full sm:w-[130px] h-9">
-                        <SelectValue placeholder="Select a role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="admin">Admin</SelectItem>
-                        <SelectItem value="staff">Staff</SelectItem>
-                        <SelectItem value="client">Client</SelectItem>
-                    </SelectContent>
-                </Select>
+            <div className="hidden">
+              <Select value={role || 'client'} onValueChange={value => handleRoleChange(value as any)}>
+                <SelectTrigger className="w-full sm:w-[130px] h-9">
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="staff">Staff</SelectItem>
+                  <SelectItem value="client">Client</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-             {hasMounted && (
+            {hasMounted && (
               <div className="flex items-center gap-2">
-                    {role === 'client' && <HeaderWalletCard />}
-                    <ThemeToggle />
-                    {role === 'client' && (
-                        <>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="flex-shrink-0 relative">
-                                        <Bell className="h-6 w-6" />
-                                        {notificationCount > 0 && (
-                                            <span className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs font-bold text-destructive-foreground">
-                                            {notificationCount}
-                                            </span>
-                                        )}
-                                        <span className="sr-only">Notifications</span>
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-80">
-                                    <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-                                    <DropdownMenuSeparator />
-                                    {notificationCount > 0 ? (
-                                        <>
-                                            {incomingRequestsCount > 0 && (
-                                                <DropdownMenuItem asChild>
-                                                    <Link href="/quotation-requests?subtab=incoming" className="cursor-pointer">
-                                                        <MailQuestion className="mr-2 h-4 w-4 text-blue-500" />
-                                                        <span className="flex-1">You have {incomingRequestsCount} new quotation request(s).</span>
-                                                    </Link>
-                                                </DropdownMenuItem>
-                                            )}
-                                            {responsesCount > 0 && (
-                                                <DropdownMenuItem asChild>
-                                                    <Link href="/quotation-requests?subtab=response" className="cursor-pointer">
-                                                        <FileCheck2 className="mr-2 h-4 w-4 text-green-500" />
-                                                        <span className="flex-1">You have {responsesCount} new quotation response(s).</span>
-                                                    </Link>
-                                                </DropdownMenuItem>
-                                            )}
-                                             {pendingPurchasesCount > 0 && (
-                                                <DropdownMenuItem asChild>
-                                                    <Link href="/history" className="cursor-pointer text-amber-600 focus:bg-amber-100 focus:text-amber-700">
-                                                        <Clock className="mr-2 h-4 w-4" />
-                                                        <span className="flex-1">{pendingPurchasesCount} purchase(s) are pending.</span>
-                                                    </Link>
-                                                </DropdownMenuItem>
-                                            )}
-                                            {processingPurchasesCount > 0 && (
-                                                <DropdownMenuItem asChild>
-                                                    <Link href="/history" className="cursor-pointer text-blue-600 focus:bg-blue-100 focus:text-blue-700">
-                                                        <RefreshCw className="mr-2 h-4 w-4" />
-                                                        <span className="flex-1">{processingPurchasesCount} purchase(s) are processing.</span>
-                                                    </Link>
-                                                </DropdownMenuItem>
-                                            )}
-                                            {declinedPurchasesCount > 0 && (
-                                                <DropdownMenuItem onSelect={(e) => { e.preventDefault(); handleAcknowledgeAll(); }} className="cursor-pointer text-destructive focus:bg-destructive/10">
-                                                    <XCircle className="mr-2 h-4 w-4" />
-                                                    <span className="flex-1">{declinedPurchasesCount} purchase(s) were declined.</span>
-                                                </DropdownMenuItem>
-                                            )}
-                                        </>
-                                    ) : (
-                                        <div className="px-2 py-4 text-center text-sm text-muted-foreground">
-                                            No new notifications.
-                                        </div>
-                                    )}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                            <Button variant="ghost" size="icon" asChild className="flex-shrink-0">
-                                <Link href="/settings">
-                                <Settings className="h-5 w-5" />
-                                <span className="sr-only">Settings</span>
+                {role === 'client' && <HeaderWalletCard />}
+                <ThemeToggle />
+                {role === 'client' && (
+                  <>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="flex-shrink-0 relative">
+                          <Bell className="h-6 w-6" />
+                          {notificationCount > 0 && (
+                            <span className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-xs font-bold text-destructive-foreground">
+                              {notificationCount}
+                            </span>
+                          )}
+                          <span className="sr-only">Notifications</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-80">
+                        <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {notificationCount > 0 ? (
+                          <>
+                            {/* Incoming Quotation Requests */}
+                            {incomingRequestsCount > 0 && (
+                              <DropdownMenuItem asChild>
+                                <Link href="/quotation-requests?subtab=incoming" className="cursor-pointer">
+                                  <Inbox className="mr-2 h-4 w-4 text-blue-500" />
+                                  <span className="flex-1">
+                                    You have {incomingRequestsCount} new quotation request
+                                    {incomingRequestsCount > 1 ? 's' : ''}.
+                                  </span>
                                 </Link>
-                            </Button>
-                        </>
-                    )}
-                    {(role === 'staff' || role === 'admin') && (
-                      <Button variant="outline" size="sm" onClick={role === 'admin' ? adminLogout : affiliateLogout}>
-                          <LogOut className="mr-2 h-4 w-4"/>
-                          Logout
-                      </Button>
-                    )}
+                              </DropdownMenuItem>
+                            )}
+                            {/* Quotation Responses */}
+                            {responsesCount > 0 && (
+                              <DropdownMenuItem asChild>
+                                <Link href="/quotation-requests?subtab=response" className="cursor-pointer">
+                                  <MessageCircle className="mr-2 h-4 w-4 text-green-500" />
+                                  <span className="flex-1">
+                                    You have {responsesCount} new quotation response
+                                    {responsesCount > 1 ? 's' : ''}.
+                                  </span>
+                                </Link>
+                              </DropdownMenuItem>
+                            )}
+                            {/* Pending Purchases */}
+                            {pendingPurchasesCount > 0 && (
+                              <DropdownMenuItem asChild>
+                                <Link
+                                  href="/history"
+                                  className="cursor-pointer text-amber-600 focus:bg-amber-100 focus:text-amber-700"
+                                >
+                                  <Clock className="mr-2 h-4 w-4" />
+                                  <span className="flex-1">
+                                    {pendingPurchasesCount} purchase{pendingPurchasesCount > 1 ? 's are' : ' is'} pending.
+                                  </span>
+                                </Link>
+                              </DropdownMenuItem>
+                            )}
+                            {/* Processing Purchases */}
+                            {processingPurchasesCount > 0 && (
+                              <DropdownMenuItem asChild>
+                                <Link
+                                  href="/history"
+                                  className="cursor-pointer text-blue-600 focus:bg-blue-100 focus:text-blue-700"
+                                >
+                                  <RefreshCw className="mr-2 h-4 w-4" />
+                                  <span className="flex-1">
+                                    {processingPurchasesCount} purchase{processingPurchasesCount > 1 ? 's are' : ' is'}{' '}
+                                    processing.
+                                  </span>
+                                </Link>
+                              </DropdownMenuItem>
+                            )}
+                            {/* Declined Purchases */}
+                            {declinedPurchasesCount > 0 && (
+                              <DropdownMenuItem
+                                onSelect={e => {
+                                  e.preventDefault();
+                                  handleAcknowledgeAll();
+                                }}
+                                className="cursor-pointer text-destructive focus:bg-destructive/10"
+                              >
+                                <XCircle className="mr-2 h-4 w-4" />
+                                <span className="flex-1">
+                                  {declinedPurchasesCount} purchase{declinedPurchasesCount > 1 ? 's were' : ' was'}{' '}
+                                  declined.
+                                </span>
+                              </DropdownMenuItem>
+                            )}
+                          </>
+                        ) : (
+                          <div className="px-2 py-4 text-center text-sm text-muted-foreground">
+                            No new notifications.
+                          </div>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <Button variant="ghost" size="icon" asChild className="flex-shrink-0">
+                      <Link href="/settings">
+                        <Settings className="h-5 w-5" />
+                        <span className="sr-only">Settings</span>
+                      </Link>
+                    </Button>
+                  </>
+                )}
+                {(role === 'staff' || role === 'admin') && (
+                  <Button variant="outline" size="sm" onClick={role === 'admin' ? adminLogout : affiliateLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </Button>
+                )}
               </div>
             )}
           </div>
@@ -575,10 +682,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
           <div className="w-full max-w-full">
             {isChangingRole ? (
-                 <div className="flex h-full w-full items-center justify-center">
-                    <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                </div>
-            ) : children}
+              <div className="flex h-full w-full items-center justify-center">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+              </div>
+            ) : (
+              children
+            )}
           </div>
         </main>
         <footer className="p-4 text-center text-sm text-muted-foreground bg-background flex-shrink-0 border-t">
