@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -194,37 +195,29 @@ export default function MarketplacePage() {
     }
   };
 
-  // Show all public requests (including own requests for demo/single-user mode)
   const filteredRequests = useMemo(() => {
     if (!config || !config.companies) return [];
     
-    // Combine both incoming and outgoing requests
-    const allRequests: QuotationRequest[] = [
+    // Combine both incoming and outgoing requests for a complete public list
+    const allPublicRequests: QuotationRequest[] = [
       ...(config.incomingRequests || []),
       ...(config.outgoingRequests || []),
     ];
     
     // Remove duplicates based on request ID
     const uniqueRequestsMap = new Map<string, QuotationRequest>();
-    allRequests.forEach((req: QuotationRequest) => {
-      if (!uniqueRequestsMap.has(req.id)) {
-        uniqueRequestsMap.set(req.id, req);
-      }
-    });
-    const uniqueRequests = Array.from(uniqueRequestsMap.values());
-    
-    // Filter for open, non-expired requests
-    let requests = uniqueRequests.filter((req: QuotationRequest) => {
+    allPublicRequests.forEach((req: QuotationRequest) => {
+      // Only consider public, open, and non-expired requests
       const isOpen = req.status === 'open';
       const isNotExpired = new Date(req.dueDate) >= new Date();
-      
-      // Check if visible to current user
-      const isVisibleToUser = req.isPublic || 
-        (currentUserId && req.companyIds && req.companyIds.includes(currentUserId));
-      
-      return isOpen && isNotExpired && isVisibleToUser;
+      if (req.isPublic && isOpen && isNotExpired) {
+        if (!uniqueRequestsMap.has(req.id)) {
+            uniqueRequestsMap.set(req.id, req);
+        }
+      }
     });
-
+    let requests = Array.from(uniqueRequestsMap.values());
+    
     const companiesById = new Map<string, Company>(config.companies.map(c => [c.id, c]));
 
     return requests.filter((req: QuotationRequest) => {
