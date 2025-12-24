@@ -1,8 +1,9 @@
 
+
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useBrandsoft, type Purchase, type Company } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type Purchase, type Company, type Plan } from '@/hooks/use-brandsoft';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { History as HistoryIcon, Wallet, Zap, TrendingUp, CreditCard, Trash2, Bell, AlertTriangle, RefreshCw, Clock } from 'lucide-react';
@@ -18,7 +19,7 @@ import { cn } from '@/lib/utils';
 import { HistoryTable } from './history-table';
 
 export function HistoryPageContent() {
-    const { config, saveConfig } = useBrandsoft();
+    const { config, saveConfig, attemptImmediateRenewal } = useBrandsoft();
     const { toast } = useToast();
     const router = useRouter();
     
@@ -43,6 +44,7 @@ export function HistoryPageContent() {
         processingTopups,
         declinedTopups,
         periodReserve,
+        lastActiveOrExpiredPlan,
     } = useMemo(() => {
         const allPurchases = (myCompany?.purchases || [])
             .filter(p => p.status !== 'declined' || !p.isAcknowledged) 
@@ -52,6 +54,8 @@ export function HistoryPageContent() {
         const topUps = allPurchases.filter(p => p.planName.toLowerCase().includes('top-up') || p.planName.toLowerCase().includes('credit purchase'));
         
         const totalReserve = (myCompany?.purchases || []).filter(p => p.status === 'active').reduce((sum, p) => sum + (p.periodReserve || 0), 0);
+
+        const lastPlan = planPurchases.find(p => p.status === 'active' || p.status === 'inactive');
 
         return { 
             planPurchases, 
@@ -64,6 +68,7 @@ export function HistoryPageContent() {
             processingTopups: topUps.filter(p => p.status === 'processing'),
             declinedTopups: topUps.filter(p => p.status === 'declined'),
             periodReserve: totalReserve,
+            lastActiveOrExpiredPlan: lastPlan,
         };
 
     }, [myCompany]);
@@ -75,7 +80,11 @@ export function HistoryPageContent() {
     const handleAutoRenewToggle = (checked: boolean) => {
         setPendingAutoRenewState(checked);
         if (checked) { // Enabling
-            if (walletBalance < 30000) {
+            // Find the plan to be renewed to check its price
+            const planToRenew = config?.plans?.find(p => p.name === lastActiveOrExpiredPlan?.planName);
+            const renewalPrice = planToRenew?.price || 30000; // Fallback price
+            
+            if (walletBalance < renewalPrice) {
                 setIsFundsAlertOpen(true);
             } else {
                 setIsAutoRenewConfirmOpen(true);
@@ -93,9 +102,27 @@ export function HistoryPageContent() {
                 profile: { ...config.profile, autoRenew: pendingAutoRenewState }
             }, { redirect: false });
         }
-        toast({
-            title: `Auto-renewal ${pendingAutoRenewState ? 'Enabled' : 'Disabled'}`,
-        });
+        
+        // If enabling auto-renewal, attempt an immediate renewal if the plan is expired
+        if (pendingAutoRenewState && lastActiveOrExpiredPlan?.status === 'inactive') {
+            const renewed = attemptImmediateRenewal();
+            if (renewed) {
+                 toast({
+                    title: 'Plan Renewed!',
+                    description: 'Your plan has been successfully renewed using your wallet balance.',
+                });
+            } else {
+                 toast({
+                    title: 'Auto-renewal Enabled',
+                    description: 'Your plan will renew automatically upon expiry if you have enough funds.',
+                });
+            }
+        } else {
+             toast({
+                title: `Auto-renewal ${pendingAutoRenewState ? 'Enabled' : 'Disabled'}`,
+            });
+        }
+        
         setIsAutoRenewConfirmOpen(false);
     };
     
@@ -416,7 +443,7 @@ export function HistoryPageContent() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Insufficient Funds</AlertDialogTitle>
                         <AlertDialogDescription>
-                            You need at least K30,000 in your wallet to enable auto-renewal. Please top up your wallet first.
+                            You need a higher balance in your wallet to enable auto-renewal. Please top up your wallet first.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

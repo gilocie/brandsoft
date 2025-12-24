@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Page } from '@/stores/canvas-store';
@@ -108,6 +109,7 @@ export type Purchase = {
     periodReserve?: number; 
     affiliateId?: string;
     isAutoRenew?: boolean;
+    demoExpired?: boolean;
 }
 
 export type Company = {

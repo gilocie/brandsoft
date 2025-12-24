@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, createContext, useContext, ReactNode, useCallback } from 'react';
@@ -91,6 +92,7 @@ interface BrandsoftContextType {
   updatePurchaseStatus: () => void;
   downgradeToTrial: () => void;
   addCreditPurchaseToAffiliate: (credits: number, orderId: string) => void;
+  attemptImmediateRenewal: () => boolean;
   // Currency methods
   addCurrency: (currency: string) => void;
   // Review methods
@@ -342,73 +344,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
       
       if (storedConfig) {
         let parsedConfig = JSON.parse(storedConfig);
-        
-        let needsSave = false;
-
-        // Clean up global purchases if found
-        if ((parsedConfig as any).purchases) {
-            delete (parsedConfig as any).purchases;
-            needsSave = true;
-        }
-
-        // Migration logic for affiliate data
-        if (parsedConfig.affiliate) {
-            const fieldsToCheck: (keyof Affiliate)[] = ['totalSales', 'creditBalance', 'bonus', 'staffId', 'phone', 'transactions', 'isPinSet', 'unclaimedCommission', 'myWallet', 'generatedKeys', 'password'];
-            fieldsToCheck.forEach(field => {
-                if (typeof parsedConfig.affiliate[field] === 'undefined') {
-                    if (field === 'myWallet' && typeof (parsedConfig.affiliate as any).balance !== 'undefined') {
-                        parsedConfig.affiliate.myWallet = (parsedConfig.affiliate as any).balance;
-                        delete (parsedConfig.affiliate as any).balance;
-                    } else {
-                         (parsedConfig.affiliate as any)[field] = initialAffiliateData[field as keyof Affiliate];
-                    }
-                    needsSave = true;
-                }
-            });
-            if (typeof (parsedConfig.affiliate as any).balance !== 'undefined') {
-                delete (parsedConfig.affiliate as any).balance;
-                needsSave = true;
-            }
-        }
-        
-        if (parsedConfig.affiliateSettings) {
-            const adminSettings: AdminSettings = {
-                ...(parsedConfig.affiliateSettings as Omit<AdminSettings, 'fullName' | 'username' | 'soldCredits' | 'creditsBoughtBack' | 'revenueFromKeys' | 'revenueFromPlans' | 'keysSold' | 'trendingPlan'>),
-                soldCredits: (parsedConfig.affiliateSettings.maxCredits || 0) - (parsedConfig.affiliateSettings.availableCredits || 0),
-                creditsBoughtBack: 0,
-                revenueFromKeys: 0,
-                revenueFromPlans: 0,
-                keysSold: 0,
-                trendingPlan: 'None',
-            };
-            parsedConfig.admin = adminSettings;
-            delete parsedConfig.affiliateSettings;
-            needsSave = true;
-        }
-        
-        if (parsedConfig.companies) {
-          parsedConfig.companies.forEach((c: Company) => {
-            if (c.walletBalance === undefined) {
-              c.walletBalance = 0;
-              needsSave = true;
-            }
-          });
-        }
-        
-        if (parsedConfig.profile && !(parsedConfig.profile as any).id) {
-           const userCompany = (parsedConfig.companies || []).find((c:Company) => c.companyName === parsedConfig.brand.businessName);
-           if (userCompany) {
-              (parsedConfig.profile as any).id = userCompany.id;
-              needsSave = true;
-           }
-        }
-
         setConfig(parsedConfig);
-
-        if (needsSave) {
-          localStorage.setItem(CONFIG_KEY, JSON.stringify(parsedConfig));
-        }
-
       }
     } catch (error) {
       console.error("Error accessing localStorage", error);
