@@ -128,8 +128,7 @@ export default function SettingsPage() {
   const { config, saveConfig } = useBrandsoft();
   const { toast } = useToast();
   
-  // This hook now controls ONLY the dynamic logo for the sidebar/etc.
-  const { image: logoImage, setImage: setLogoImage } = useBrandImage('logo');
+  const { image: logoImage, isLoading: isLogoLoading, setImage: setLogoImage } = useBrandImage('logo');
   const { image: coverImage, isLoading: isCoverLoading, setImage: setCoverImage } = useBrandImage('cover');
   
   const form = useForm<SettingsFormData>({
@@ -312,9 +311,14 @@ export default function SettingsPage() {
                <div className="absolute inset-0 p-6 flex flex-col md:flex-row items-end gap-6">
                   <div className="relative group/avatar">
                       <Avatar className="h-28 w-28 border-4 border-background flex-shrink-0">
-                          {/* Use the static brandsoftLogo here directly */}
-                          <AvatarImage src={brandsoftLogo.src} />
-                          <AvatarFallback><Building className="h-10 w-10" /></AvatarFallback>
+                          {isLogoLoading ? (
+                              <Skeleton className="h-full w-full rounded-full" />
+                          ) : (
+                            <>
+                                <AvatarImage src={logoImage || brandsoftLogo.src} />
+                                <AvatarFallback><Building className="h-10 w-10" /></AvatarFallback>
+                            </>
+                          )}
                       </Avatar>
                        <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover/avatar:opacity-100 flex items-center justify-center transition-opacity">
                             <SimpleImageUploadButton
