@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -9,12 +8,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Building, MapPin, Globe, Phone, Mail, FileBarChart2, ArrowLeft, Info, Package, Star, Loader2 } from 'lucide-react';
+import { Building, MapPin, Globe, Phone, Mail, FileBarChart2, ArrowLeft, Info, Package, Star } from 'lucide-react';
 import Link from 'next/link';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Image from 'next/image';
 import { RatingDialog } from '@/components/rating-dialog';
-import { Separator } from '@/components/ui/separator';
 import { getImageFromDB } from '@/hooks/use-brand-image';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -29,7 +27,111 @@ const isValidImageUrl = (value: string | undefined): boolean => {
   return true;
 };
 
+// ============================================
+// NEW: ReviewItem Component (fetches logo from IndexedDB)
+// ============================================
+const ReviewItem = ({ 
+  review, 
+  currentUserId, 
+  config 
+}: { 
+  review: Review; 
+  currentUserId: string | null;
+  config: any;
+}) => {
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
+  const reviewerCompany = useMemo(() => {
+    if (review.reviewerId === currentUserId) {
+      return null;
+    }
+    return config?.companies?.find((c: Company) => c.id === review.reviewerId);
+  }, [config?.companies, review.reviewerId, currentUserId]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchLogo = async () => {
+      setIsLoading(true);
+      
+      try {
+        // Try to get logo from IndexedDB first
+        const dbLogo = await getImageFromDB(`company-logo-${review.reviewerId}`);
+        
+        if (isMounted) {
+          if (dbLogo) {
+            setLogoUrl(dbLogo);
+          } else if (review.reviewerId === currentUserId) {
+            // Current user - use brand logo if valid
+            const brandLogo = config?.brand?.logo;
+            setLogoUrl(isValidImageUrl(brandLogo) ? brandLogo : null);
+          } else if (reviewerCompany?.logo) {
+            // Other company - use their logo if valid URL
+            setLogoUrl(isValidImageUrl(reviewerCompany.logo) ? reviewerCompany.logo : null);
+          } else {
+            setLogoUrl(null);
+          }
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error('Error fetching reviewer logo:', error);
+        if (isMounted) {
+          setLogoUrl(null);
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchLogo();
+
+    return () => { isMounted = false; };
+  }, [review.reviewerId, currentUserId, reviewerCompany?.logo, config?.brand?.logo]);
+
+  return (
+    <div className="p-6">
+      <div className="flex items-start gap-4">
+        <Avatar>
+          {isLoading ? (
+            <Skeleton className="h-full w-full rounded-full" />
+          ) : (
+            <>
+              <AvatarImage src={logoUrl || undefined} />
+              <AvatarFallback>{review.reviewerName.charAt(0)}</AvatarFallback>
+            </>
+          )}
+        </Avatar>
+        <div className="flex-1">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-semibold">{review.reviewerName}</p>
+              <p className="text-xs text-muted-foreground">
+                {new Date(review.date).toLocaleDateString()}
+              </p>
+            </div>
+            <div className="flex items-center gap-1">
+              {[...Array(5)].map((_, i) => (
+                <Star
+                  key={i}
+                  className={`h-4 w-4 ${
+                    i < review.rating
+                      ? 'text-amber-400 fill-amber-400'
+                      : 'text-gray-300'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+          <p className="mt-3 text-sm text-muted-foreground">{review.comment}</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================
+// Main Page Component
+// ============================================
 export default function VirtualShopPage() {
   const params = useParams();
   const router = useRouter();
@@ -111,6 +213,7 @@ export default function VirtualShopPage() {
     const startIndex = reviewsPage * REVIEWS_PER_PAGE;
     return reviews.slice(startIndex, startIndex + REVIEWS_PER_PAGE);
   }, [reviews, reviewsPage]);
+  
   const totalReviewPages = Math.ceil(reviews.length / REVIEWS_PER_PAGE);
 
   const isOwnProfile = business?.id === currentUserId;
@@ -170,6 +273,7 @@ export default function VirtualShopPage() {
         <Link href="/marketplace"><ArrowLeft className="mr-2 h-4 w-4"/> Back to Marketplace</Link>
       </Button>
 
+      {/* Business Header Card */}
       <Card className="overflow-hidden">
         <CardHeader className="p-0">
            <div className="relative h-48 w-full">
@@ -212,6 +316,7 @@ export default function VirtualShopPage() {
         </CardHeader>
       </Card>
       
+      {/* Products Section */}
       <div className="space-y-4">
         <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold font-headline">Product & Service Catalog</h2>
@@ -284,46 +389,21 @@ export default function VirtualShopPage() {
         )}
       </div>
 
-       <div className="space-y-4">
+      {/* Reviews Section - NOW USES ReviewItem COMPONENT */}
+      <div className="space-y-4">
         <h2 className="text-2xl font-bold font-headline mt-8">Customer Reviews</h2>
         {reviews.length > 0 ? (
           <Card>
             <CardContent className="p-0">
               <div className="divide-y">
-                {paginatedReviews.map((review) => {
-                  let reviewerLogo: string | undefined = undefined;
-                  if (review.reviewerId === currentUserId) {
-                      reviewerLogo = isValidImageUrl(config?.brand.logo) ? config?.brand.logo : undefined;
-                  } else {
-                      const reviewer = config?.companies.find(c => c.id === review.reviewerId);
-                      reviewerLogo = isValidImageUrl(reviewer?.logo) ? reviewer?.logo : undefined;
-                  }
-                  
-                  return (
-                      <div key={review.id} className="p-6">
-                        <div className="flex items-start gap-4">
-                            <Avatar>
-                                <AvatarImage src={reviewerLogo} />
-                                <AvatarFallback>{review.reviewerName.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1">
-                                 <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="font-semibold">{review.reviewerName}</p>
-                                        <p className="text-xs text-muted-foreground">{new Date(review.date).toLocaleDateString()}</p>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                        {[...Array(5)].map((_, i) => (
-                                            <Star key={i} className={`h-4 w-4 ${i < review.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-300'}`} />
-                                        ))}
-                                    </div>
-                                 </div>
-                                 <p className="mt-3 text-sm text-muted-foreground">{review.comment}</p>
-                            </div>
-                        </div>
-                      </div>
-                  );
-                })}
+                {paginatedReviews.map((review) => (
+                  <ReviewItem 
+                    key={review.id} 
+                    review={review} 
+                    currentUserId={currentUserId}
+                    config={config}
+                  />
+                ))}
               </div>
             </CardContent>
             {totalReviewPages > 1 && (
@@ -346,12 +426,13 @@ export default function VirtualShopPage() {
         )}
       </div>
 
-       <RatingDialog 
-          isOpen={isRatingOpen}
-          onClose={() => setIsRatingOpen(false)}
-          onSubmit={handleRatingSubmit}
-          businessName={business.companyName}
-        />
+      {/* Rating Dialog */}
+      <RatingDialog 
+        isOpen={isRatingOpen}
+        onClose={() => setIsRatingOpen(false)}
+        onSubmit={handleRatingSubmit}
+        businessName={business.companyName}
+      />
     </div>
   );
 }
