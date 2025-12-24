@@ -1,23 +1,36 @@
-
 'use client';
 
-import { useMemo } from 'react';
-import { useBrandsoft, type QuotationRequest, type Company } from '@/hooks/use-brandsoft';
+import { useMemo, useState, useEffect } from 'react';
+import { useBrandsoft, type QuotationRequest } from '@/hooks/use-brandsoft';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { FileText, Eye, Clock } from 'lucide-react';
+import { FileText, Eye, Clock, Globe, Lock, Star } from 'lucide-react';
 import Link from 'next/link';
-import { formatDistanceToNowStrict, isValid, parseISO } from 'date-fns';
+import { formatDistanceToNowStrict, isValid } from 'date-fns';
+import { Badge } from '@/components/ui/badge';
+import { getImageFromDB } from '@/hooks/use-brand-image';
+import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
+
+// Helper to check if a value is a valid image URL
+const isValidImageUrl = (value: string | undefined): boolean => {
+  if (!value) return false;
+  if (value === 'indexed-db') return false;
+  if (value === '') return false;
+  return true;
+};
 
 const RequestCard = ({ request, currentUserId }: { request: QuotationRequest, currentUserId: string | null }) => {
-    const { config } = useBrandsoft();
+    const { config, updateQuotationRequest } = useBrandsoft();
+    const [logoUrl, setLogoUrl] = useState<string | null>(null);
+    const [isLogoLoading, setIsLogoLoading] = useState(true);
 
+    // Find requester info
     const requesterInfo = useMemo(() => {
         let logo: string | undefined;
         let name: string | undefined;
 
-        // 1. Try to find a Company matching the requester ID exactly
         if (config?.companies) {
             const company = config.companies.find(c => c.id === request.requesterId);
             if (company) {
@@ -26,77 +39,125 @@ const RequestCard = ({ request, currentUserId }: { request: QuotationRequest, cu
             }
         }
 
-        // 2. If no logo found yet, check if it's the current user
         if (!logo && request.requesterId === currentUserId) {
             logo = config?.brand.logo;
             name = config?.brand.businessName;
         }
 
-        // 3. Fallback names if not found in lists
         if (!name) name = request.requesterName;
-
-        // 4. "Smart Link": If we have a name but no logo, try to find a Company 
-        // in the marketplace with the same name to get the logo.
-        if (!logo && name && config?.companies) {
-            const matchingCompany = config.companies.find(c => c.companyName === name);
-            if (matchingCompany) {
-                logo = matchingCompany.logo;
-            }
-        }
-
-        // 5. Final fallback to data stored on the request itself
         if (!logo) logo = request.requesterLogo;
 
         return { logo, name };
-
     }, [config, request, currentUserId]);
 
+    // Fetch logo from IndexedDB
+    useEffect(() => {
+        let isMounted = true;
+        
+        const fetchLogo = async () => {
+            setIsLogoLoading(true);
+            try {
+                const dbLogo = await getImageFromDB(`company-logo-${request.requesterId}`);
+                if (isMounted) {
+                    if (dbLogo) {
+                        setLogoUrl(dbLogo);
+                    } else if (requesterInfo.logo && isValidImageUrl(requesterInfo.logo)) {
+                        setLogoUrl(requesterInfo.logo);
+                    } else {
+                        setLogoUrl(null);
+                    }
+                    setIsLogoLoading(false);
+                }
+            } catch (error) {
+                if (isMounted) {
+                    setLogoUrl(null);
+                    setIsLogoLoading(false);
+                }
+            }
+        };
+        
+        fetchLogo();
+        return () => { isMounted = false; };
+    }, [request.requesterId, requesterInfo.logo]);
+
     const parsedDate = new Date(request.dueDate);
+    const isExpired = parsedDate < new Date();
     const timeLeft = isValid(parsedDate)
         ? formatDistanceToNowStrict(parsedDate, { addSuffix: true })
         : 'Invalid date';
 
     const isMyRequest = request.requesterId === currentUserId;
 
+    const handleToggleFavourite = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        updateQuotationRequest(request.id, { isFavourite: !request.isFavourite });
+    };
 
     return (
-        <Card>
-            <CardHeader>
-                <div className="flex items-start gap-4">
-                    <Avatar className="h-10 w-10 border">
-                        <AvatarImage src={requesterInfo?.logo} />
-                        <AvatarFallback>{requesterInfo?.name?.charAt(0) || '?'}</AvatarFallback>
+        <Card className={cn("relative hover:shadow-md transition-shadow", isExpired && "opacity-60")}>
+            {/* Favourite Button */}
+            <Button 
+                variant="ghost" 
+                size="icon" 
+                className="absolute top-2 right-2 h-8 w-8 z-10"
+                onClick={handleToggleFavourite}
+            >
+                <Star className={cn("h-4 w-4", request.isFavourite && "fill-amber-400 text-amber-400")} />
+            </Button>
+
+            <CardHeader className="pb-3">
+                <div className="flex items-start gap-3 pr-8">
+                    <Avatar className="h-10 w-10 border flex-shrink-0">
+                        {isLogoLoading ? (
+                            <Skeleton className="h-full w-full rounded-full" />
+                        ) : (
+                            <>
+                                <AvatarImage src={logoUrl || undefined} />
+                                <AvatarFallback>{requesterInfo.name?.charAt(0) || '?'}</AvatarFallback>
+                            </>
+                        )}
                     </Avatar>
-                    <div>
-                        <CardTitle className="text-base">{request.title}</CardTitle>
-                        <CardDescription>
-                            by {requesterInfo?.name || request.requesterName}
+                    <div className="min-w-0 flex-1">
+                        <CardTitle className="text-base truncate">{request.title}</CardTitle>
+                        <CardDescription className="truncate">
+                            by {requesterInfo.name || request.requesterName}
                         </CardDescription>
                     </div>
                 </div>
             </CardHeader>
-            <CardContent>
-                <p className="text-sm text-muted-foreground mb-4 line-clamp-2 h-10">
+            <CardContent className="space-y-3">
+                {/* Description */}
+                <p className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
                     {request.description || 'No description provided.'}
                 </p>
-                <div className="flex items-center justify-between text-xs text-muted-foreground mb-4">
-                    <div className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        <span>Expires {timeLeft}</span>
-                    </div>
+
+                {/* Badges */}
+                <div className="flex flex-wrap gap-2">
+                    <Badge variant={request.isPublic ? "secondary" : "outline"} className="text-xs">
+                        {request.isPublic ? <Globe className="h-3 w-3 mr-1" /> : <Lock className="h-3 w-3 mr-1" />}
+                        {request.isPublic ? 'Public' : 'Private'}
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                        {request.items.length} item{request.items.length !== 1 ? 's' : ''}
+                    </Badge>
                 </div>
-                <Button className="w-full" asChild>
-                    {isMyRequest ? (
-                         <Link href={`/quotation-requests/${request.id}`}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            View Request
-                        </Link>
-                    ) : (
-                        <Link href={`/quotation-requests/respond/${request.id}`}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            View & Respond
-                        </Link>
-                    )}
+
+                {/* Time remaining */}
+                <div className={cn(
+                    "flex items-center gap-1.5 text-xs",
+                    isExpired ? "text-destructive" : "text-muted-foreground"
+                )}>
+                    <Clock className="h-3 w-3" />
+                    <span>{isExpired ? 'Expired' : `Expires ${timeLeft}`}</span>
+                </div>
+
+                {/* Action Button */}
+                <Button className="w-full" size="sm" asChild disabled={isExpired}>
+                    <Link href={`/quotation-requests/${request.id}`}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        {isMyRequest ? 'View Details' : 'View & Respond'}
+                    </Link>
                 </Button>
             </CardContent>
         </Card>
@@ -108,15 +169,13 @@ interface PublicQuotationRequestListProps {
   currentUserId: string | null;
 }
 
-
 export const PublicQuotationRequestList = ({ requests, currentUserId }: PublicQuotationRequestListProps) => {
-    
     if (!requests || requests.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center text-center h-64 rounded-lg border-2 border-dashed">
                 <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-lg font-medium text-muted-foreground">No Incoming Quotation Requests</p>
-                <p className="text-sm text-muted-foreground">There are currently no open requests that match your filters.</p>
+                <p className="text-lg font-medium text-muted-foreground">No Quotation Requests</p>
+                <p className="text-sm text-muted-foreground">There are no open requests at the moment.</p>
             </div>
         );
     }

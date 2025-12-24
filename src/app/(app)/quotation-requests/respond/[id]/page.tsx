@@ -1,10 +1,8 @@
-
-
 'use client';
 
 import { useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useBrandsoft, type QuotationRequest, type Product } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type QuotationRequest, type QuotationRequestItem, type Product } from '@/hooks/use-brandsoft';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -22,16 +20,24 @@ export default function RespondToRequestPage() {
     const requestId = params.id as string;
     const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
 
-    const request = useMemo(() => {
-        return config?.quotationRequests?.find(r => r.id === requestId);
+    // FIXED: Use incomingRequests and outgoingRequests instead of quotationRequests
+    const request = useMemo((): QuotationRequest | undefined => {
+        if (!config) return undefined;
+        
+        // Search in both incoming and outgoing requests
+        const incomingRequest = config.incomingRequests?.find((r: QuotationRequest) => r.id === requestId);
+        if (incomingRequest) return incomingRequest;
+        
+        const outgoingRequest = config.outgoingRequests?.find((r: QuotationRequest) => r.id === requestId);
+        return outgoingRequest;
     }, [config, requestId]);
 
     const requester = useMemo(() => {
         if (!config || !request) return null;
-        return config.companies.find(c => c.id === request.requesterId);
+        return config.companies?.find(c => c.id === request.requesterId);
     }, [config, request]);
 
-    const myProducts = useMemo(() => {
+    const myProducts = useMemo((): Product[] => {
         return config?.products || [];
     }, [config]);
     
@@ -92,7 +98,8 @@ export default function RespondToRequestPage() {
                         <Separator className="my-4" />
                         <h3 className="text-md font-semibold mb-2">Requested Items</h3>
                         <div className="space-y-3">
-                            {request.items.map((item, index) => (
+                            {/* FIXED: Added proper typing for item and index */}
+                            {request.items.map((item: QuotationRequestItem, index: number) => (
                                 <div key={index} className="p-3 border rounded-md bg-muted/50">
                                     <p className="font-semibold">{item.productName}</p>
                                     <p className="text-sm text-muted-foreground">{item.description}</p>
@@ -121,7 +128,7 @@ export default function RespondToRequestPage() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {myProducts.map(product => (
+                                        {myProducts.map((product: Product) => (
                                             <TableRow key={product.id}>
                                                 <TableCell>
                                                     <Checkbox

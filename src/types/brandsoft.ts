@@ -220,8 +220,11 @@ export type QuotationRequest = {
   isPublic: boolean;
   companyIds?: string[];
   items: QuotationRequestItem[];
-  status: 'open' | 'closed';
+  status: 'open' | 'closed' | 'expired';
   industries?: string[];
+  isFavourite?: boolean;
+  isSorted?: boolean;
+  responseCount?: number;
 };
 
 export type Review = {
