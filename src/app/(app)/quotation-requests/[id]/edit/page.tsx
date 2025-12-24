@@ -1,18 +1,17 @@
-
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useBrandsoft } from '@/hooks/use-brandsoft';
+import { useBrandsoft, type QuotationRequest } from '@/hooks/use-brandsoft';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { PlusCircle, Send, Trash2, Search, X, CalendarIcon, Loader2, Building2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter, useParams } from 'next/navigation';
@@ -23,7 +22,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { SupplierPicker } from '@/components/supplier-picker';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { format } from "date-fns";
+import { format, addDays } from "date-fns";
 import { Calendar } from '@/components/ui/calendar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
@@ -58,27 +57,50 @@ export default function EditQuotationRequestPage() {
 
   const [isPickerOpen, setIsPickerOpen] = useState(false);
 
-  const requestToEdit = useMemo(() => 
-    config?.quotationRequests?.find(q => q.id === requestId),
-  [config?.quotationRequests, requestId]);
+  // FIXED: Search in both incomingRequests and outgoingRequests
+  const requestToEdit = useMemo((): QuotationRequest | undefined => {
+    if (!config) return undefined;
+    
+    // Search in outgoing requests first (since we're editing our own requests)
+    const outgoingRequest = config.outgoingRequests?.find((q: QuotationRequest) => q.id === requestId);
+    if (outgoingRequest) return outgoingRequest;
+    
+    // Also check incoming requests
+    const incomingRequest = config.incomingRequests?.find((q: QuotationRequest) => q.id === requestId);
+    return incomingRequest;
+  }, [config, requestId]);
 
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      title: '',
+      description: '',
       isPublic: true,
-      items: [],
+      items: [{ productName: '', description: '', quantity: 1 }],
       companyIds: [],
       industries: [],
+      dueDate: addDays(new Date(), 7),
     },
   });
 
   useEffect(() => {
     if (requestToEdit) {
-      form.reset({
-        ...requestToEdit,
-        dueDate: new Date(requestToEdit.dueDate),
-      });
+      // Sanitize the data to ensure no undefined values
+      const sanitizedData = {
+        title: requestToEdit.title ?? '',
+        description: requestToEdit.description ?? '',
+        isPublic: requestToEdit.isPublic ?? true,
+        companyIds: requestToEdit.companyIds ?? [],
+        industries: requestToEdit.industries ?? [],
+        dueDate: requestToEdit.dueDate ? new Date(requestToEdit.dueDate) : addDays(new Date(), 7),
+        items: (requestToEdit.items || [{ productName: '', description: '', quantity: 1 }]).map((item) => ({
+          productName: item.productName ?? '',
+          description: item.description ?? '',
+          quantity: item.quantity ?? 1,
+        })),
+      };
+      form.reset(sanitizedData);
       setIsLoading(false);
     } else if (!requestToEdit && config) {
       toast({ title: 'Error', description: 'Quotation request not found.', variant: 'destructive' });
@@ -154,13 +176,35 @@ export default function EditQuotationRequestPage() {
                     <CardTitle>Request Details</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                    {/* FIXED: Added value fallback */}
                     <FormField control={form.control} name="title" render={({ field }) => (
-                        <FormItem><FormLabel>Request Title</FormLabel><FormControl><Input placeholder="e.g., Office Supplies for Q3" {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormItem>
+                            <FormLabel>Request Title</FormLabel>
+                            <FormControl>
+                                <Input 
+                                    placeholder="e.g., Office Supplies for Q3" 
+                                    {...field} 
+                                    value={field.value ?? ''} 
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
                     )} />
-                     <FormField control={form.control} name="description" render={({ field }) => (
-                        <FormItem><FormLabel>General Description (Optional)</FormLabel><FormControl><Textarea placeholder="Provide more details about your overall needs..." {...field} /></FormControl><FormMessage /></FormItem>
+                    {/* FIXED: Added value fallback */}
+                    <FormField control={form.control} name="description" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>General Description (Optional)</FormLabel>
+                            <FormControl>
+                                <Textarea 
+                                    placeholder="Provide more details about your overall needs..." 
+                                    {...field} 
+                                    value={field.value ?? ''} 
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
                     )} />
-                     <FormField
+                    <FormField
                         control={form.control}
                         name="dueDate"
                         render={({ field }) => (
@@ -201,18 +245,39 @@ export default function EditQuotationRequestPage() {
                 <CardHeader>
                     <CardTitle>Requested Items</CardTitle>
                 </CardHeader>
-                 <CardContent className="space-y-4">
+                <CardContent className="space-y-4">
                     {fields.map((field, index) => (
                         <div key={field.id} className="grid grid-cols-[1fr_auto] gap-4 items-start border p-4 rounded-md">
                            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                            {/* FIXED: Added value fallback */}
                             <FormField control={form.control} name={`items.${index}.productName`} render={({ field }) => (
-                                <FormItem className="md:col-span-2"><FormLabel>Product/Service Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormItem className="md:col-span-2">
+                                    <FormLabel>Product/Service Name</FormLabel>
+                                    <FormControl>
+                                        <Input {...field} value={field.value ?? ''} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
                             )} />
+                            {/* FIXED: Added value fallback */}
                             <FormField control={form.control} name={`items.${index}.description`} render={({ field }) => (
-                                <FormItem className="md:col-span-2"><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormItem className="md:col-span-2">
+                                    <FormLabel>Description</FormLabel>
+                                    <FormControl>
+                                        <Textarea {...field} value={field.value ?? ''} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
                             )} />
+                            {/* FIXED: Added value fallback */}
                             <FormField control={form.control} name={`items.${index}.quantity`} render={({ field }) => (
-                                <FormItem className="md:col-span-1"><FormLabel>Quantity</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                <FormItem className="md:col-span-1">
+                                    <FormLabel>Quantity</FormLabel>
+                                    <FormControl>
+                                        <Input type="number" {...field} value={field.value ?? 1} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
                             )} />
                            </div>
                             <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)} className="mt-8">
@@ -230,14 +295,17 @@ export default function EditQuotationRequestPage() {
                 <CardHeader>
                     <CardTitle>Visibility & Targeting</CardTitle>
                 </CardHeader>
-                 <CardContent className="space-y-4">
+                <CardContent className="space-y-4">
+                    {/* FIXED: Added value fallback for Switch */}
                     <FormField control={form.control} name="isPublic" render={({ field }) => (
                         <FormItem className="flex items-center justify-between rounded-lg border p-3">
                             <div className="space-y-0.5">
                                 <FormLabel>Make Request Public</FormLabel>
-                                <FormMessage>Allow any business on the marketplace to respond.</FormMessage>
+                                <FormDescription>Allow any business on the marketplace to respond.</FormDescription>
                             </div>
-                            <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                            <FormControl>
+                                <Switch checked={field.value ?? true} onCheckedChange={field.onChange} />
+                            </FormControl>
                         </FormItem>
                     )} />
 
@@ -248,7 +316,8 @@ export default function EditQuotationRequestPage() {
                             render={({ field }) => (
                                 <FormItem>
                                 <FormLabel>Target Industries (Optional)</FormLabel>
-                                 <Popover>
+                                <FormDescription>Help suppliers find your request by tagging relevant industries.</FormDescription>
+                                <Popover>
                                     <PopoverTrigger asChild>
                                     <FormControl>
                                         <Button variant="outline" className={cn("w-full justify-start font-normal h-auto py-2", !field.value?.length && "text-muted-foreground")}>
@@ -275,7 +344,8 @@ export default function EditQuotationRequestPage() {
                                                         field.onChange(newValue);
                                                     }}
                                                 >
-                                                    <X className="mr-2 h-4 w-4" />
+                                                    {/* FIXED: Changed X icon to Checkbox and added fallback */}
+                                                    <Checkbox className="mr-2" checked={field.value?.includes(industry) ?? false} />
                                                     {industry}
                                                 </CommandItem>
                                             ))}
@@ -329,7 +399,7 @@ export default function EditQuotationRequestPage() {
                             </Dialog>
                         </div>
                     )}
-                 </CardContent>
+                </CardContent>
             </Card>
 
 

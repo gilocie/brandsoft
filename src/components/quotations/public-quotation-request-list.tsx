@@ -5,7 +5,7 @@ import { useBrandsoft, type QuotationRequest } from '@/hooks/use-brandsoft';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { FileText, Eye, Clock, Globe, Lock, Star } from 'lucide-react';
+import { FileText, Eye, Clock, Globe, Lock, Star, FilePenLine, Send } from 'lucide-react';
 import Link from 'next/link';
 import { formatDistanceToNowStrict, isValid } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
@@ -21,10 +21,21 @@ const isValidImageUrl = (value: string | undefined): boolean => {
   return true;
 };
 
-const RequestCard = ({ request, currentUserId }: { request: QuotationRequest, currentUserId: string | null }) => {
+interface RequestCardProps {
+  request: QuotationRequest;
+  currentUserId: string | null;
+  currentUserIds: string[];
+}
+
+const RequestCard = ({ request, currentUserId, currentUserIds }: RequestCardProps) => {
     const { config, updateQuotationRequest } = useBrandsoft();
     const [logoUrl, setLogoUrl] = useState<string | null>(null);
     const [isLogoLoading, setIsLogoLoading] = useState(true);
+
+    // Check if this is the current user's own request
+    const isMyRequest = useMemo(() => {
+        return currentUserIds.includes(request.requesterId);
+    }, [currentUserIds, request.requesterId]);
 
     // Find requester info
     const requesterInfo = useMemo(() => {
@@ -39,7 +50,7 @@ const RequestCard = ({ request, currentUserId }: { request: QuotationRequest, cu
             }
         }
 
-        if (!logo && request.requesterId === currentUserId) {
+        if (!logo && isMyRequest) {
             logo = config?.brand.logo;
             name = config?.brand.businessName;
         }
@@ -48,7 +59,7 @@ const RequestCard = ({ request, currentUserId }: { request: QuotationRequest, cu
         if (!logo) logo = request.requesterLogo;
 
         return { logo, name };
-    }, [config, request, currentUserId]);
+    }, [config, request, isMyRequest]);
 
     // Fetch logo from IndexedDB
     useEffect(() => {
@@ -86,8 +97,6 @@ const RequestCard = ({ request, currentUserId }: { request: QuotationRequest, cu
         ? formatDistanceToNowStrict(parsedDate, { addSuffix: true })
         : 'Invalid date';
 
-    const isMyRequest = request.requesterId === currentUserId;
-
     const handleToggleFavourite = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
@@ -119,7 +128,14 @@ const RequestCard = ({ request, currentUserId }: { request: QuotationRequest, cu
                         )}
                     </Avatar>
                     <div className="min-w-0 flex-1">
-                        <CardTitle className="text-base truncate">{request.title}</CardTitle>
+                        <div className="flex items-center gap-2">
+                            <CardTitle className="text-base truncate">{request.title}</CardTitle>
+                            {isMyRequest && (
+                                <Badge variant="secondary" className="text-xs flex-shrink-0">
+                                    Your Request
+                                </Badge>
+                            )}
+                        </div>
                         <CardDescription className="truncate">
                             by {requesterInfo.name || request.requesterName}
                         </CardDescription>
@@ -141,6 +157,11 @@ const RequestCard = ({ request, currentUserId }: { request: QuotationRequest, cu
                     <Badge variant="outline" className="text-xs">
                         {request.items.length} item{request.items.length !== 1 ? 's' : ''}
                     </Badge>
+                    {(request.responseCount || 0) > 0 && (
+                        <Badge variant="outline" className="text-xs">
+                            {request.responseCount} response{request.responseCount !== 1 ? 's' : ''}
+                        </Badge>
+                    )}
                 </div>
 
                 {/* Time remaining */}
@@ -152,13 +173,32 @@ const RequestCard = ({ request, currentUserId }: { request: QuotationRequest, cu
                     <span>{isExpired ? 'Expired' : `Expires ${timeLeft}`}</span>
                 </div>
 
-                {/* Action Button */}
-                <Button className="w-full" size="sm" asChild disabled={isExpired}>
-                    <Link href={`/quotation-requests/${request.id}`}>
-                        <Eye className="mr-2 h-4 w-4" />
-                        {isMyRequest ? 'View Details' : 'View & Respond'}
-                    </Link>
-                </Button>
+                {/* Action Buttons - Different for own requests vs others */}
+                {isMyRequest ? (
+                    // Own request: Show View and Edit buttons
+                    <div className="flex gap-2">
+                        <Button variant="outline" className="flex-1" size="sm" asChild>
+                            <Link href={`/quotation-requests/${request.id}`}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                View Details
+                            </Link>
+                        </Button>
+                        <Button className="flex-1" size="sm" asChild disabled={isExpired}>
+                            <Link href={`/quotation-requests/${request.id}/edit`}>
+                                <FilePenLine className="mr-2 h-4 w-4" />
+                                Edit
+                            </Link>
+                        </Button>
+                    </div>
+                ) : (
+                    // Other's request: Show Respond button
+                    <Button className="w-full" size="sm" asChild disabled={isExpired}>
+                        <Link href={`/quotation-requests/respond/${request.id}`}>
+                            <Send className="mr-2 h-4 w-4" />
+                            Respond to Request
+                        </Link>
+                    </Button>
+                )}
             </CardContent>
         </Card>
     );
@@ -167,9 +207,10 @@ const RequestCard = ({ request, currentUserId }: { request: QuotationRequest, cu
 interface PublicQuotationRequestListProps {
   requests: QuotationRequest[];
   currentUserId: string | null;
+  currentUserIds: string[];
 }
 
-export const PublicQuotationRequestList = ({ requests, currentUserId }: PublicQuotationRequestListProps) => {
+export const PublicQuotationRequestList = ({ requests, currentUserId, currentUserIds }: PublicQuotationRequestListProps) => {
     if (!requests || requests.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center text-center h-64 rounded-lg border-2 border-dashed">
@@ -183,7 +224,12 @@ export const PublicQuotationRequestList = ({ requests, currentUserId }: PublicQu
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {requests.map(request => (
-                <RequestCard key={request.id} request={request} currentUserId={currentUserId} />
+                <RequestCard 
+                    key={request.id} 
+                    request={request} 
+                    currentUserId={currentUserId}
+                    currentUserIds={currentUserIds}
+                />
             ))}
         </div>
     );

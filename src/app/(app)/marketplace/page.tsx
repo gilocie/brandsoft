@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -157,6 +156,28 @@ export default function MarketplacePage() {
     return [...new Set(businesses.map(b => b.town).filter((t): t is string => !!t))];
   }, [businesses]);
   
+  // Get all possible IDs that belong to the current user
+  const currentUserIds = useMemo((): string[] => {
+    if (!config || !config.brand) return [];
+    
+    const ids: string[] = [];
+    const businessName = config.brand.businessName?.toLowerCase();
+    
+    // Find matching company
+    const myCompany = config.companies?.find(c => 
+      c.companyName?.toLowerCase() === businessName
+    );
+    if (myCompany?.id) ids.push(myCompany.id);
+    
+    // Also check for profile ID
+    if (config.profile?.id) ids.push(config.profile.id);
+    
+    // Add common demo IDs that might be used
+    ids.push('CUST-DEMO-ME');
+    
+    return ids;
+  }, [config]);
+
   const currentUserId = useMemo(() => {
     if (!config || !config.brand) return null;
     const myCompany = config.companies?.find(c => c.companyName === config.brand.businessName);
@@ -173,34 +194,55 @@ export default function MarketplacePage() {
     }
   };
 
-   const filteredRequests = useMemo(() => {
-    if (!config || !config.companies || !currentUserId) return [];
+  // Show all public requests (including own requests for demo/single-user mode)
+  const filteredRequests = useMemo(() => {
+    if (!config || !config.companies) return [];
     
-    let requests = (config.incomingRequests || []).filter((req: QuotationRequest) => 
-        req.status === 'open' && 
-        new Date(req.dueDate) >= new Date() &&
-        req.requesterId !== currentUserId &&
-        (req.isPublic || (req.companyIds && req.companyIds.includes(currentUserId)))
-    );
+    // Combine both incoming and outgoing requests
+    const allRequests: QuotationRequest[] = [
+      ...(config.incomingRequests || []),
+      ...(config.outgoingRequests || []),
+    ];
+    
+    // Remove duplicates based on request ID
+    const uniqueRequestsMap = new Map<string, QuotationRequest>();
+    allRequests.forEach((req: QuotationRequest) => {
+      if (!uniqueRequestsMap.has(req.id)) {
+        uniqueRequestsMap.set(req.id, req);
+      }
+    });
+    const uniqueRequests = Array.from(uniqueRequestsMap.values());
+    
+    // Filter for open, non-expired requests
+    let requests = uniqueRequests.filter((req: QuotationRequest) => {
+      const isOpen = req.status === 'open';
+      const isNotExpired = new Date(req.dueDate) >= new Date();
+      
+      // Check if visible to current user
+      const isVisibleToUser = req.isPublic || 
+        (currentUserId && req.companyIds && req.companyIds.includes(currentUserId));
+      
+      return isOpen && isNotExpired && isVisibleToUser;
+    });
 
     const companiesById = new Map<string, Company>(config.companies.map(c => [c.id, c]));
 
     return requests.filter((req: QuotationRequest) => {
-        const requester = companiesById.get(req.requesterId);
+      const requester = companiesById.get(req.requesterId);
 
-        const searchMatch = searchTerm 
-          ? req.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-            (req.description && req.description.toLowerCase().includes(searchTerm.toLowerCase()))
-          : true;
-        
-        const requestIndustries = req.industries || [];
-        const industryMatch = industryFilter === 'all' || 
-                              requestIndustries.length === 0 || 
-                              requestIndustries.includes(industryFilter);
-        
-        const townMatch = townFilter === 'all' || (requester && requester.town === townFilter);
+      const searchMatch = searchTerm 
+        ? req.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+          (req.description && req.description.toLowerCase().includes(searchTerm.toLowerCase()))
+        : true;
+      
+      const requestIndustries = req.industries || [];
+      const industryMatch = industryFilter === 'all' || 
+                            requestIndustries.length === 0 || 
+                            requestIndustries.includes(industryFilter);
+      
+      const townMatch = townFilter === 'all' || (requester && requester.town === townFilter);
 
-        return searchMatch && industryMatch && townMatch;
+      return searchMatch && industryMatch && townMatch;
     });
 
   }, [config, searchTerm, industryFilter, townFilter, currentUserId]);
@@ -287,6 +329,7 @@ export default function MarketplacePage() {
             <PublicQuotationRequestList 
               requests={filteredRequests}
               currentUserId={currentUserId}
+              currentUserIds={currentUserIds}
             />
         </TabsContent>
       </Tabs>

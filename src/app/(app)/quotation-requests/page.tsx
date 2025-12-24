@@ -51,6 +51,11 @@ export default function QuotationRequestsPage() {
     return myCompany?.id || null;
   }, [config]);
 
+  // Get current user IDs as array (for components that need array format)
+  const currentUserIds = useMemo(() => {
+    return currentUserId ? [currentUserId] : [];
+  }, [currentUserId]);
+
   // Get current user's industry
   const myIndustry = useMemo(() => {
     if (!config || !currentUserId) return null;
@@ -248,6 +253,7 @@ export default function QuotationRequestsPage() {
             <PublicQuotationRequestList 
               requests={filteredRequests.incoming}
               currentUserId={currentUserId}
+              currentUserIds={currentUserIds}
             />
           ) : (
             <EmptyState 

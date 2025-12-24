@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, Globe, Clock, Layers, Trash2, FilePenLine, Eye, CheckCircle2, MoreHorizontal, CalendarDays, Star } from 'lucide-react';
+import { Users, Globe, Clock, Layers, Trash2, FilePenLine, Eye, CheckCircle2, MoreHorizontal, CalendarDays, Star, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { QuotationRequest } from '@/hooks/use-brandsoft';
 import { format } from 'date-fns';
@@ -20,13 +20,21 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
 
 interface QuotationRequestListProps {
     requests: QuotationRequest[];
     onSelectAction: (action: 'view' | 'edit' | 'delete' | 'close' | 'favourite' | 'sort', request: QuotationRequest) => void;
+    isOwner?: boolean; // Whether current user owns these requests
+    currentUserIds?: string[]; // Array of current user's possible IDs
 }
 
-export const QuotationRequestList = ({ requests, onSelectAction }: QuotationRequestListProps) => {
+export const QuotationRequestList = ({ 
+    requests, 
+    onSelectAction, 
+    isOwner = true,
+    currentUserIds = []
+}: QuotationRequestListProps) => {
     if (requests.length === 0) {
         return (
             <div className="flex h-60 items-center justify-center rounded-lg border-2 border-dashed bg-muted/40">
@@ -44,12 +52,22 @@ export const QuotationRequestList = ({ requests, onSelectAction }: QuotationRequ
 
               const isExpired = new Date(request.dueDate) < new Date();
               const isClosed = request.status === 'closed' || request.status === 'expired';
+              
+              // Check if this request belongs to current user
+              const isMyRequest = isOwner || currentUserIds.includes(request.requesterId);
 
               return (
               <Card key={request.id} className={cn("flex flex-col relative", (isExpired || isClosed) && "opacity-70")}>
                 {/* Favourite indicator */}
                 {request.isFavourite && (
                   <Star className="absolute top-3 right-3 h-4 w-4 fill-amber-400 text-amber-400" />
+                )}
+                
+                {/* Your Request badge */}
+                {isMyRequest && !isOwner && (
+                  <Badge variant="secondary" className="absolute top-3 left-3 text-xs">
+                    Your Request
+                  </Badge>
                 )}
                 
                 <CardHeader className="p-4">
@@ -104,36 +122,53 @@ export const QuotationRequestList = ({ requests, onSelectAction }: QuotationRequ
                     </div>
                     
                     <div className="flex items-center gap-2 mt-4">
-                        <Button variant="outline" size="sm" className="flex-1" onClick={() => onSelectAction('view', request)}>
-                            <Eye className="h-4 w-4 mr-2" /> View
-                        </Button>
-                        {request.status === 'open' && !isExpired && (
-                             <Button size="sm" className="flex-1" onClick={() => onSelectAction('close', request)}>
-                                <CheckCircle2 className="h-4 w-4 mr-2" /> Sorted
-                            </Button>
-                        )}
-                         <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="secondary" size="icon" className="h-9 w-9 flex-shrink-0">
-                                    <MoreHorizontal className="h-4 w-4" />
+                        {isMyRequest ? (
+                            // Owner actions
+                            <>
+                                <Button variant="outline" size="sm" className="flex-1" onClick={() => onSelectAction('view', request)}>
+                                    <Eye className="h-4 w-4 mr-2" /> View
                                 </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => onSelectAction('favourite', request)}>
-                                    <Star className={cn("mr-2 h-4 w-4", request.isFavourite && "fill-amber-400 text-amber-400")} />
-                                    {request.isFavourite ? 'Remove from Favourites' : 'Add to Favourites'}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => onSelectAction('edit', request)}>
-                                    <FilePenLine className="mr-2 h-4 w-4" />
-                                    Edit Request
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => onSelectAction('delete', request)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Delete Request
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                                {request.status === 'open' && !isExpired && (
+                                    <Button size="sm" className="flex-1" onClick={() => onSelectAction('close', request)}>
+                                        <CheckCircle2 className="h-4 w-4 mr-2" /> Sorted
+                                    </Button>
+                                )}
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="secondary" size="icon" className="h-9 w-9 flex-shrink-0">
+                                            <MoreHorizontal className="h-4 w-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => onSelectAction('favourite', request)}>
+                                            <Star className={cn("mr-2 h-4 w-4", request.isFavourite && "fill-amber-400 text-amber-400")} />
+                                            {request.isFavourite ? 'Remove from Favourites' : 'Add to Favourites'}
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => onSelectAction('edit', request)}>
+                                            <FilePenLine className="mr-2 h-4 w-4" />
+                                            Edit Request
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem onClick={() => onSelectAction('delete', request)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            Delete Request
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </>
+                        ) : (
+                            // Non-owner actions (respond)
+                            <>
+                                <Button variant="outline" size="sm" className="flex-1" onClick={() => onSelectAction('view', request)}>
+                                    <Eye className="h-4 w-4 mr-2" /> View
+                                </Button>
+                                <Button size="sm" className="flex-1" asChild disabled={isExpired || isClosed}>
+                                    <Link href={`/quotation-requests/respond/${request.id}`}>
+                                        <Send className="h-4 w-4 mr-2" /> Respond
+                                    </Link>
+                                </Button>
+                            </>
+                        )}
                     </div>
                 </CardContent>
               </Card>
