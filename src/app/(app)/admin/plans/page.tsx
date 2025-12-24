@@ -525,32 +525,31 @@ export default function AdminPlansPage() {
     const totalFromKeys = adminSettings?.revenueFromKeys || 0;
     const totalFromPlans = adminSettings?.revenueFromPlans || 0;
     
-    // DEMO LOGIC
     const handleDemoToggle = (checked: boolean) => {
         if (!config) return;
-        
+
         if (checked) {
             setIsClientPickerOpen(true);
         } else {
             const originalPurchase = config.admin?.demoOriginalPurchase;
             const demoClientId = config.admin?.demoClientId;
-            
+
             let updatedCompanies = [...config.companies];
-            
+
             if (demoClientId) {
                 updatedCompanies = config.companies.map(company => {
                     if (company.id === demoClientId) {
                         // Filter out auto-generated demo purchases
-                        let restoredPurchases = (company.purchases || []).filter(p => 
+                        let restoredPurchases = (company.purchases || []).filter(p =>
                             !p.orderId.startsWith('AUTO-DEMO-')
                         );
-                        
+
                         // If we have an original purchase, restore it
                         if (originalPurchase) {
-                            // Set all other plans to inactive first
+                            // Set all other plans to inactive first, then restore the correct one
                             restoredPurchases = restoredPurchases.map(p => {
                                 if (p.orderId === originalPurchase.orderId) {
-                                    // Restore the original purchase exactly as it was
+                                    // This is the one we want to restore, return its saved state
                                     return { ...originalPurchase };
                                 }
                                 // Set any other active plans to inactive
@@ -560,10 +559,10 @@ export default function AdminPlansPage() {
                                 return p;
                             });
                             
-                            // If original wasn't found in the list, add it back
                             const hasOriginal = restoredPurchases.some(
                                 p => p.orderId === originalPurchase.orderId
                             );
+                            // If the original purchase wasn't in the list (e.g., was filtered out), add it back
                             if (!hasOriginal) {
                                 restoredPurchases.push({ ...originalPurchase });
                             }
@@ -574,25 +573,25 @@ export default function AdminPlansPage() {
                     return company;
                 });
             }
-            
-            saveConfig({ 
-                ...config, 
+
+            saveConfig({
+                ...config,
                 companies: updatedCompanies,
-                admin: { 
-                    ...config.admin, 
-                    demoClientId: null, 
+                admin: {
+                    ...config.admin,
+                    demoClientId: null,
                     demoStartedAt: null,
                     demoOriginalPurchase: null,
-                } 
+                }
             }, { redirect: false, revalidate: true });
             
             updatePurchaseStatus();
             
-            toast({ 
-                title: 'Demo Mode Disabled', 
-                description: originalPurchase 
+            toast({
+                title: 'Demo Mode Disabled',
+                description: originalPurchase
                     ? `Restored "${originalPurchase.planName}" plan.`
-                    : 'Demo settings cleared.' 
+                    : 'Demo settings cleared.'
             });
         }
     };
