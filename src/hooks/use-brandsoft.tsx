@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState, useEffect, createContext, useContext, ReactNode, useCallback } from 'react';
@@ -62,27 +60,33 @@ interface BrandsoftContextType {
   adminLogout: () => void;
   role: 'client' | 'staff' | 'admin';
   setRole: (role: 'client' | 'staff' | 'admin') => void;
+  
   // Company methods
-  addCompany: (company: Omit<Company, 'id'>) => Company;
-  updateCompany: (companyId: string, data: Partial<Omit<Company, 'id'>>) => void;
+  addCompany: (company: Omit<Company, 'id'>) => Promise<Company>;
+  updateCompany: (companyId: string, data: Partial<Omit<Company, 'id'>>) => Promise<void>;
   deleteCompany: (companyId: string) => void;
   addCustomer: (customer: Omit<Customer, 'id'>) => Customer;
+  
   // Product methods
   addProduct: (product: Omit<Product, 'id'>) => Product;
   updateProduct: (productId: string, data: Partial<Omit<Product, 'id'>>) => void;
   deleteProduct: (productId: string) => void;
+  
   // Invoice methods
   addInvoice: (invoice: Omit<Invoice, 'invoiceId'>, numbering?: { prefix?: string; startNumber?: number; }) => Invoice;
   updateInvoice: (invoiceId: string, data: Partial<Omit<Invoice, 'invoiceId'>>) => void;
   deleteInvoice: (invoiceId: string) => void;
+  
   // Quotation methods
   addQuotation: (quotation: Omit<Quotation, 'quotationId'>, numbering?: { prefix?: string; startNumber?: number; }) => Quotation;
   updateQuotation: (quotationId: string, data: Partial<Omit<Quotation, 'quotationId'>>) => void;
   deleteQuotation: (quotationId: string) => void;
+  
   // Quotation Request methods
   addQuotationRequest: (request: Omit<QuotationRequest, 'id'>) => QuotationRequest;
   updateQuotationRequest: (requestId: string, data: Partial<Omit<QuotationRequest, 'id'>>) => void;
   deleteQuotationRequest: (requestId: string) => void;
+  
   // Purchase methods
   addPurchaseOrder: (purchase: Omit<Purchase, 'remainingTime'>) => Purchase;
   getPurchaseOrder: (orderId: string) => Purchase | null;
@@ -93,12 +97,17 @@ interface BrandsoftContextType {
   downgradeToTrial: () => void;
   addCreditPurchaseToAffiliate: (credits: number, orderId: string) => void;
   attemptImmediateRenewal: () => boolean;
+  checkAndRenewAfterTopUp: (companyId: string) => boolean;
+  
   // Currency methods
   addCurrency: (currency: string) => void;
+  
   // Review methods
   addReview: (review: Omit<Review, 'id'>) => void;
+  
   // Key activation
   useActivationKey: (key: string, companyId: string) => boolean;
+  
   // Affiliate registration
   registerAffiliate: (data: any) => string | null;
 }
@@ -142,7 +151,7 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
   
       const costInMWK = parseFloat(order.planPrice.replace(/[^0-9.-]+/g,""));
       
-      let newConfig = { ...config };
+      let newConfig = JSON.parse(JSON.stringify(config));
       
       const newAffiliateData: Affiliate = {
         ...initialAffiliateData,
@@ -151,7 +160,7 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
       
       newAffiliateData.creditBalance = (newAffiliateData.creditBalance || 0) - credits;
   
-      const companyIndex = newConfig.companies.findIndex(c => c.id === order.customerId);
+      const companyIndex = newConfig.companies.findIndex((c: Company) => c.id === order.customerId);
       if (companyIndex > -1) {
           const company = newConfig.companies[companyIndex];
           newConfig.companies[companyIndex] = {
@@ -173,20 +182,32 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
               };
           }
       }
-      
-      purchaseMethods.activatePurchaseOrder(orderId);
-      
-      const updatedConfigWithActivatedPurchase = get().config;
 
       const newAdminSettings: AdminSettings = {
-          ...((updatedConfigWithActivatedPurchase || newConfig).admin as AdminSettings),
-          soldCredits: ((updatedConfigWithActivatedPurchase || newConfig).admin?.soldCredits || 0) + credits,
+          ...(newConfig.admin as AdminSettings),
+          soldCredits: (newConfig.admin?.soldCredits || 0) + credits,
       };
       
       newConfig.admin = newAdminSettings;
       newConfig.affiliate = newAffiliateData;
+      
+      // Update purchases to mark as active
+      const purchaseCompanyIndex = newConfig.companies.findIndex((c: Company) => 
+        (c.purchases || []).some((p: Purchase) => p.orderId === orderId)
+      );
+      
+      if (purchaseCompanyIndex > -1) {
+        newConfig.companies[purchaseCompanyIndex].purchases = newConfig.companies[purchaseCompanyIndex].purchases.map((p: Purchase) =>
+          p.orderId === orderId ? { ...p, status: 'active' as const, date: new Date().toISOString() } : p
+        );
+      }
   
       saveConfig(newConfig, { revalidate: true });
+      
+      // After top-up, check for auto-renewal
+      setTimeout(() => {
+        purchaseMethods.checkAndRenewAfterTopUp(order.customerId!);
+      }, 100);
     };
     
     const useActivationKey = (key: string, companyId: string): boolean => {
@@ -219,7 +240,6 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
     
     const registerAffiliate = (data: Partial<Affiliate>): string | null => {
         if (config?.affiliate) {
-            // In this demo, we only allow one affiliate.
             return null; 
         }
         
@@ -231,7 +251,7 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
             fullName: data.fullName!,
             username: data.username!,
             phone: data.phone!,
-            password: data.password!, // In a real app, this should be hashed
+            password: data.password!,
             staffId: staffId,
             affiliateLink: affiliateLink,
         };
@@ -244,8 +264,6 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
         saveConfig(newConfig, { redirect: false });
         return staffId;
     };
-    
-    const get = () => ({ config });
 
     return {
         ...companyMethods,
@@ -260,7 +278,6 @@ function useBrandsoftData(config: BrandsoftConfig | null, saveConfig: (newConfig
         addCreditPurchaseToAffiliate,
         useActivationKey,
         registerAffiliate,
-        get
     };
 }
 
@@ -412,9 +429,7 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
   const login = (username: string, password: string): { success: boolean, role?: 'admin' | 'staff' } => {
       if (!config) return { success: false };
 
-      // Check for Admin
       const adminUser = config.admin?.username;
-      // If admin password isn't set, allow default 'password'
       const isAdminPasswordMatch = 
           (config.admin?.password && config.admin.password === password) || 
           (!config.admin?.password && password === 'password');
@@ -425,11 +440,9 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
           return { success: true, role: 'admin' };
       }
 
-      // Check for Affiliate/Staff
       const affiliate = config.affiliate;
       if (affiliate) {
           const isUsernameMatch = affiliate.username.toLowerCase() === username.toLowerCase();
-          // If affiliate password isn't set, allow default 'password'
           const isPasswordMatch = 
               (affiliate.password && affiliate.password === password) ||
               (!affiliate.password && password === 'password');
@@ -463,11 +476,9 @@ export function BrandsoftProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(CONFIG_KEY);
     setIsActivated(false);
     setIsConfigured(false);
-    affiliateLogout(); // Also log out affiliate
+    affiliateLogout();
     router.push('/activation');
   };
-  
-  const get = () => ({ config });
 
   const value: BrandsoftContextType = {
     isActivated,
